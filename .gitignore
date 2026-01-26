@@ -1,0 +1,11 @@
+www_full_backup.zip
+full_migration_backup_final.tar.gz
+*.sql
+**/*.pyc
+**/__pycache__
+**.env
+**/venv
+talabahamkorbot_db_backup.sql
+latest_full_db_backup.sql
+grant_code/backend/students.csv
+grant_code/backend/students.xlsx

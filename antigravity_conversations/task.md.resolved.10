@@ -1,0 +1,6 @@
+# Automation Script Task
+
+- [x] Create [install.sh](file:///var/www/talabahamkorbot/install.sh) script to automate dependencies, DB, and service setup <!-- id: 0 -->
+- [x] Make [install.sh](file:///var/www/talabahamkorbot/install.sh) executable <!-- id: 1 -->
+- [x] Update `www_full_backup.zip` to include the script <!-- id: 2 -->
+- [x] Notify user with the script and zip location <!-- id: 3 -->
