@@ -15,7 +15,7 @@ router = APIRouter(prefix="/student/documents", tags=["Documents"])
 class DocumentRequest(BaseModel):
     type: str # 'reference', 'transcript', 'contract'
 
-@router.get("/")
+@router.get("")
 async def get_my_documents(
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_session)
