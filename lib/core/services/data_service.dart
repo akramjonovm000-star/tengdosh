@@ -392,14 +392,23 @@ class DataService {
       }
     }
 
-    return await _backgroundRefreshAttendance(studentId, semCode);
+    return await _backgroundRefreshAttendance(studentId, semCode, refresh: forceRefresh);
   }
 
-  Future<List<Attendance>> _backgroundRefreshAttendance(int studentId, String semCode) async {
+  Future<List<Attendance>> _backgroundRefreshAttendance(int studentId, String semCode, {bool refresh = false}) async {
     try {
       String url = ApiConstants.attendanceList;
+      List<String> queryParams = [];
+      
       if (semCode != 'all') {
-        url += "?semester=$semCode";
+        queryParams.add("semester=$semCode");
+      }
+      if (refresh) {
+        queryParams.add("refresh=true");
+      }
+      
+      if (queryParams.isNotEmpty) {
+        url += "?${queryParams.join('&')}";
       }
 
       final response = await _get(url);
