@@ -504,11 +504,28 @@ class HemisService:
                 result = GPACalculator.calculate_gpa(subjects)
                 return result.gpa
             else:
-                # Cumulative Logic
+                # 1. Try Cumulative Logic first
                 all_subjects = await HemisService.get_all_subjects(token)
-                if not all_subjects: return 0.0
-                result = GPACalculator.calculate_cumulative(all_subjects)
-                return result.gpa
+                cumulative = 0.0
+                if all_subjects:
+                    cumulative = GPACalculator.calculate_cumulative(all_subjects).gpa
+                
+                if cumulative > 0:
+                    return cumulative
+                
+                # 2. Fallback: Find first semester with non-zero GPA
+                # User mentioned semester 11 specifically, but let's be dynamic
+                semesters = await HemisService.get_semester_list(token)
+                for sem in semesters:
+                   code = str(sem.get("code") or sem.get("id"))
+                   # Skip if we suspect it's the current empty one, but actually simple check is enough
+                   subj = await HemisService.get_student_subject_list(token, semester_code=code)
+                   if subj:
+                       val = GPACalculator.calculate_gpa(subj).gpa
+                       if val > 0:
+                           return val
+                           
+                return 0.0
             
         except Exception as e:
             logger.error(f"Performance Error: {e}")
