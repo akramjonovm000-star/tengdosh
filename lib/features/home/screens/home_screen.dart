@@ -246,7 +246,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       if (student?.isPremium == true) ...[
                         const SizedBox(width: 6),
-                        const Icon(Icons.verified, color: Colors.blue, size: 20),
+                        GestureDetector(
+                          onTap: () {
+                             Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionScreen()));
+                          },
+                          child: const Icon(Icons.verified, color: Colors.blue, size: 20),
+                        ),
                       ]
                     ],
                   ),
