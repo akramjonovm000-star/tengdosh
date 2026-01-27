@@ -114,7 +114,7 @@ class DataService {
   DateTime? _lastDashboardFetch;
 
   // 2. Get Dashboard Stats (Via Backend Proxy for Real Data)
-  Future<Map<String, dynamic>> getDashboardStats({bool forceRefresh = false}) async {
+  Future<Map<String, dynamic>> getDashboardStats({bool forceRefresh = false, String? semester}) async {
     final student = await _authService.getSavedUser();
     final studentId = student?.id ?? 0;
 
@@ -132,11 +132,15 @@ class DataService {
     return await _backgroundRefreshDashboard(studentId, refresh: forceRefresh);
   }
 
-  Future<Map<String, dynamic>> _backgroundRefreshDashboard(int studentId, {bool refresh = false}) async {
+  Future<Map<String, dynamic>> _backgroundRefreshDashboard(int studentId, {bool refresh = false, String? semester}) async {
     try {
       String url = ApiConstants.dashboard;
       if (refresh) {
         url += (url.contains('?') ? '&' : '?') + 'refresh=true';
+      }
+      if (studentId > 0 && semester != null) {
+         // Note: Backend dashboard might not support filtering yet, 
+         // but we adding param structure for future or if we modify backend
       }
       
       final response = await _get(url);
@@ -496,27 +500,49 @@ class DataService {
         print("Grades API Error: ${response.statusCode} - ${response.body}");
       }
     } catch (e) {
+    } catch (e) {
       print("Grades Sync Error: $e");
+    }
+    return [];
+  }
+  
+  // NEW: Get Semesters
+  Future<List<dynamic>> getSemesters() async {
+    try {
+      final response = await _get("${ApiConstants.academic}/semesters");
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) {
+          return body['data'];
+        }
+      }
+    } catch (e) {
+      print("DataService: Error fetching semesters: $e");
     }
     return [];
   }
 
   // 13. Get Detailed Subjects
-  Future<List<dynamic>> getSubjects() async {
+  Future<List<dynamic>> getSubjects({String? semester}) async {
     final student = await _authService.getSavedUser();
     final studentId = student?.id ?? 0;
 
-    final cached = await _dbService.getCache('subjects', studentId);
+    final cached = await _dbService.getCache('subjects', studentId, semesterCode: semester ?? 'all');
     if (cached != null && cached.containsKey('list')) {
-      _backgroundRefreshSubjects(studentId);
+      _backgroundRefreshSubjects(studentId, semester: semester);
       return cached['list'];
     }
-    return await _backgroundRefreshSubjects(studentId);
+    return await _backgroundRefreshSubjects(studentId, semester: semester);
   }
 
-  Future<List<dynamic>> _backgroundRefreshSubjects(int studentId) async {
+  Future<List<dynamic>> _backgroundRefreshSubjects(int studentId, {String? semester}) async {
     try {
-      final response = await _get(ApiConstants.subjects);
+      String url = ApiConstants.subjects;
+      if (semester != null) {
+        url += "?semester=$semester";
+      }
+
+      final response = await _get(url);
 
       if (response.statusCode == 200) {
         final body = json.decode(response.body);

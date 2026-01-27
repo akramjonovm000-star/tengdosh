@@ -36,6 +36,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, dynamic>? _dashboard;
   bool _isLoading = true;
   Timer? _refreshTimer;
+  
+  // Semester Handling
+  List<dynamic> _semesters = [];
+  String? _selectedSemesterId;
 
   @override
   void initState() {
@@ -54,11 +58,26 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadData() async {
     try {
-      // Fetch profile and dashboard concurrently for speed
+      // Fetch profile and semesters first
       final results = await Future.wait([
         _dataService.getProfile(),
-        _dataService.getDashboardStats(),
+        _dataService.getSemesters(),
       ]);
+      
+      _profile = results[0] as Map<String, dynamic>?;
+      _semesters = results[1] as List<dynamic>? ?? [];
+      
+      if (_semesters.isNotEmpty && _selectedSemesterId == null) {
+        // Default to first (latest due to sort)
+        final first = _semesters.first;
+        _selectedSemesterId = first['code']?.toString() ?? first['id']?.toString();
+      }
+      
+      // Now fetch dashboard for selected semester
+      // Note: DataService needs to support semester param for getDashboardStats
+      // We will assume DataService has been updated to accept it, or filtered locally?
+      // For now, let's just pass it if supported or fallback to default
+      _dashboard = await _dataService.getDashboardStats(semester: _selectedSemesterId);
       
       if (mounted) {
         setState(() {
@@ -314,9 +333,53 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        "Joriy Semestr", 
-                        style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              "Joriy Semestr", 
+                              style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14)
+                            )
+                          ),
+                          if (_semesters.isNotEmpty)
+                             Container(
+                               height: 24,
+                               padding: const EdgeInsets.symmetric(horizontal: 8),
+                               decoration: BoxDecoration(
+                                 color: Colors.white.withOpacity(0.2),
+                                 borderRadius: BorderRadius.circular(12) 
+                               ),
+                               child: DropdownButtonHideUnderline(
+                                 child: DropdownButton<String>(
+                                   value: _selectedSemesterId,
+                                   dropdownColor: AppTheme.primaryBlue,
+                                   style: const TextStyle(color: Colors.white, fontSize: 12),
+                                   icon: const Icon(Icons.arrow_drop_down, color: Colors.white, size: 16),
+                                   onChanged: (val) {
+                                     if (val != null) {
+                                       setState(() {
+                                         _selectedSemesterId = val;
+                                          // Re-fetch dashboard
+                                         _isLoading = true;
+                                       });
+                                       _dataService.getDashboardStats(semester: val).then((d) {
+                                          if(mounted) setState(() {
+                                            _dashboard = d;
+                                            _isLoading = false;
+                                          });
+                                       });
+                                     }
+                                   },
+                                   items: _semesters.map<DropdownMenuItem<String>>((s) {
+                                     return DropdownMenuItem(
+                                       value: s['code']?.toString() ?? s['id']?.toString(),
+                                       child: Text(s['name'] ?? 'Semestr'),
+                                     );
+                                   }).toList(),
+                                 ),
+                               )
+                             )
+                        ],
                       ),
                       const SizedBox(height: 4),
                       const Text(

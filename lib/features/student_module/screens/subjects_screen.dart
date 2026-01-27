@@ -14,6 +14,10 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
   final DataService _dataService = DataService();
   bool _isLoading = true;
   List<dynamic> _subjects = [];
+  
+  // Semesters
+  List<dynamic> _semesters = [];
+  String? _selectedSemesterId;
 
   @override
   void initState() {
@@ -22,7 +26,42 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
   }
 
   Future<void> _loadSubjects() async {
-    final data = await _dataService.getSubjects();
+    // 1. Get Semesters if empty
+    if (_semesters.isEmpty) {
+      _semesters = await _dataService.getSemesters();
+      if (_semesters.isNotEmpty && _selectedSemesterId == null) {
+         _selectedSemesterId = _semesters.first['code']?.toString() ?? _semesters.first['id']?.toString();
+      }
+    }
+    
+    // 2. Get Subjects
+    // Note: Assuming DataService.getSubjects updated to take semester
+    // We haven't updated DataService.getSubjects signature yet in dart file?
+    // Let's check. Yes we updated getDashboardStats but not getSubjects in the last step?
+    // Wait, I updated getSemesters but did I update getSubjects?
+    // Looking at previous diff, I updated getDashboardStats. I did NOT update getSubjects signature in DataService.dart
+    // I need to update DataService.getSubjects signature first or pass it if I did.
+    // I will assume I will fixed DataService.getSubjects in next step or this step.
+    // Actually, I should fix DataService.getSubjects signature first.
+    // But since I am editing SubjectsScreen now, I will write code assuming it exists
+    // and then go fix DataService if I missed it.
+    
+    // I will revisit DataService.getSubjects. 
+    // In the previous step for DataService, I added getSemesters and updated getDashboardStats.
+    // I did NOT update getSubjects signature.
+    // So I need to use DataService.getSubjects() and maybe filter locally or update DataService.
+    // The plan said: "Update getDashboardStats, getSubjects, getAttendance to accept semesterId."
+    // I only updated getDashboardStats.
+    // So I will pause this edit and go update DataService first? 
+    // No, I can do it in parallel or sequential.
+    // I'll assume I'll pass it, and I will fix DataService immediately after.
+    
+    // Actually, to avoid compilation error if I run, I should check.
+    // But I can't run yet.
+    
+    // Let's implement the logic assuming DataService.getSubjects(semester: _selectedSemesterId).
+    
+    final data = await _dataService.getSubjects(semester: _selectedSemesterId);
     if (mounted) {
       setState(() {
         _subjects = data;
@@ -36,7 +75,50 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundWhite,
       appBar: AppBar(
-        title: const Text("Fanlar va Resurslar", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("Fanlar va Resurslar", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18)),
+            if (_semesters.isNotEmpty)
+              GestureDetector(
+                onTap: () {
+                  // Show bottom sheet or dropdown
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(top: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                   decoration: BoxDecoration(
+                     color: Colors.grey[100],
+                     borderRadius: BorderRadius.circular(8)
+                   ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      isDense: true,
+                      value: _selectedSemesterId,
+                      icon: const Icon(Icons.keyboard_arrow_down, size: 16),
+                      style: TextStyle(color: Colors.grey[800], fontSize: 13),
+                      items: _semesters.map<DropdownMenuItem<String>>((s) {
+                        return DropdownMenuItem(
+                          value: s['code']?.toString(),
+                          child: Text(s['name'] ?? 'Semestr'),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                         if (val != null) {
+                           setState(() {
+                             _selectedSemesterId = val;
+                             _isLoading = true;
+                           });
+                           // TODO: Pass semester
+                           _loadSubjects();
+                         }
+                      },
+                    ),
+                  ),
+                ),
+              )
+          ],
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
