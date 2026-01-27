@@ -302,49 +302,111 @@ class _HomeScreenState extends State<HomeScreen> {
                 BoxShadow(color: AppTheme.primaryBlue.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 10)),
               ],
             ),
-            child: Row(
+            child: Stack(
               children: [
-                SizedBox(
-                  width: 80,
-                  height: 80,
-                  child: Stack(
-                    alignment: Alignment.center,
+                // Decorative Background Gradient (subtle)
+                Positioned(
+                  right: -20,
+                  top: -20,
+                  child: Container(
+                    width: 150,
+                    height: 150,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withOpacity(0.1),
+                    ),
+                  ),
+                ),
+                
+                Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Row(
                     children: [
-                      CircularProgressIndicator(
-                        value: (_dashboard?['gpa'] ?? 0.0) / 5.0,
-                        strokeWidth: 8,
-                        color: AppTheme.accentGreen,
-                        backgroundColor: Colors.white.withOpacity(0.2),
+                      // Premium GPA Indicator
+                      Container(
+                        width: 90,
+                        height: 90,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.1),
+                          border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            )
+                          ]
+                        ),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            SizedBox(
+                              width: 90,
+                              height: 90,
+                              child: CircularProgressIndicator(
+                                value: (_dashboard?['gpa'] ?? 0.0) / 5.0,
+                                strokeWidth: 8,
+                                strokeCap: StrokeCap.round, 
+                                valueColor: const AlwaysStoppedAnimation(Colors.white),
+                                backgroundColor: Colors.white.withOpacity(0.2),
+                              ),
+                            ),
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  "${_dashboard?['gpa']?.toStringAsFixed(1) ?? '0.0'}", 
+                                  style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold, height: 1.0)
+                                ),
+                                Text(
+                                  "GPA", 
+                                  style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 10, fontWeight: FontWeight.w500)
+                                ),
+                              ],
+                            )
+                          ],
+                        ),
                       ),
-                      Text(
-                        "${_dashboard?['gpa'] ?? '0.0'}", 
-                        style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)
-                      ),
+                      const SizedBox(width: 24),
+                      
+                      // Text Info
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(8)
+                              ),
+                              child: Text(
+                                "O'zlashtirish", 
+                                style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 12, fontWeight: FontWeight.w500)
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              (_dashboard?['gpa'] ?? 0.0) >= 4.5 ? "A'lo natija! 🏆" : 
+                              (_dashboard?['gpa'] ?? 0.0) >= 4.0 ? "Yaxshi natija! 👏" :
+                              (_dashboard?['gpa'] ?? 0.0) >= 3.0 ? "Yomon emas 👍" : "Harakat qiling 💪",
+                              style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "${_profile?['group_number'] ?? 'Guruh'}",
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 13)
+                            ),
+                          ],
+                        ),
+                      )
                     ],
                   ),
                 ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "O'zlashtirish (Umumiy)", 
-                        style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14)
-                      ),
-                      const SizedBox(height: 4),
-                      const SizedBox(height: 4),
-                      const Text(
-                        "A'lo natija! 🏆", 
-                        style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)
-                      ),
-                      Text(
-                        "Guruh: ${_profile?['group_number'] ?? '...'}", 
-                        style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12)
-                      ),
-                    ],
-                  ),
-                )
               ],
             ),
           ),
