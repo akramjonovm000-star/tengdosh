@@ -118,15 +118,8 @@ class DataService {
     final student = await _authService.getSavedUser();
     final studentId = student?.id ?? 0;
 
-    // 1. Try Local Database Cache First (Instant Speed)
-    if (!refresh) {
-      final cached = await _dbService.getCache('dashboard', studentId);
-      if (cached != null) {
-        // Return cached immediately. Do NOT trigger background refresh automatically
-        // to avoid overwriting manual refresh data with stale data.
-        return cached;
-      }
-    }
+    // 1. Skip Local Cache - Always Fetch from API (User Request)
+    // if (!refresh) { ... }
 
     // 2. Fetch from API
     return await _backgroundRefreshDashboard(studentId, refresh: refresh);
@@ -382,15 +375,8 @@ class DataService {
     final studentId = student?.id ?? 0;
     final semCode = semester ?? 'all';
 
-    // 1. Try Local cache (if not forcing refresh)
-    if (!forceRefresh) {
-      final cached = await _dbService.getCache('attendance', studentId, semesterCode: semCode);
-      if (cached != null && cached.containsKey('items')) {
-        final List<dynamic> items = cached['items'];
-        // _backgroundRefreshAttendance(studentId, semCode); // Removed to prevent race condition
-        return items.map((json) => Attendance.fromJson(json)).toList();
-      }
-    }
+    // 1. Skip Local Cache - Always Fetch from API (User Request)
+    // if (!forceRefresh) { ... }
 
     return await _backgroundRefreshAttendance(studentId, semCode, refresh: forceRefresh);
   }
