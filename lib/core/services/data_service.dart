@@ -122,8 +122,8 @@ class DataService {
     if (!refresh) {
       final cached = await _dbService.getCache('dashboard', studentId);
       if (cached != null) {
-        // Return cached immediately, trigger background refresh if needed
-        _backgroundRefreshDashboard(studentId);
+        // Return cached immediately. Do NOT trigger background refresh automatically
+        // to avoid overwriting manual refresh data with stale data.
         return cached;
       }
     }
@@ -387,7 +387,7 @@ class DataService {
       final cached = await _dbService.getCache('attendance', studentId, semesterCode: semCode);
       if (cached != null && cached.containsKey('items')) {
         final List<dynamic> items = cached['items'];
-        _backgroundRefreshAttendance(studentId, semCode);
+        // _backgroundRefreshAttendance(studentId, semCode); // Removed to prevent race condition
         return items.map((json) => Attendance.fromJson(json)).toList();
       }
     }
