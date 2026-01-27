@@ -81,8 +81,6 @@ class _HomeScreenState extends State<HomeScreen> {
       
       if (mounted) {
         setState(() {
-          _profile = results[0];
-          _dashboard = results[1];
           _isLoading = false;
         });
         
