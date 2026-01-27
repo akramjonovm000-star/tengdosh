@@ -541,7 +541,19 @@ class _FeedbackWizardState extends State<_FeedbackWizard> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   elevation: 2,
                 ),
-                child: const Text("YUBORISH", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (_wantsFile) ...[
+                      const Icon(Icons.telegram_rounded, color: Colors.white),
+                      const SizedBox(width: 8),
+                    ],
+                    Text(
+                      _wantsFile ? "TELEGRAM ORQALI YUBORISH" : "YUBORISH", 
+                      style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1)
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

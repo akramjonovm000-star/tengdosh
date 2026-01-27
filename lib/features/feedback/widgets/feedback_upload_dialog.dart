@@ -124,7 +124,7 @@ class _FeedbackUploadDialogState extends State<FeedbackUploadDialog> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text("Fayl biriktirish", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const Text("Yangi murojaat", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
             ],
           ),
@@ -141,14 +141,21 @@ class _FeedbackUploadDialogState extends State<FeedbackUploadDialog> {
                child: ElevatedButton.icon(
                 onPressed: _isReceived && !_isSaving ? _finalize : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
+                  backgroundColor: _isReceived ? Colors.green : Colors.grey[300],
                   foregroundColor: Colors.white,
-                  disabledBackgroundColor: Colors.grey[300],
+                  disabledBackgroundColor: Colors.grey[200],
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: 0,
                 ),
-                icon: Icon(_isSaving ? Icons.hourglass_empty : Icons.send_rounded),
-                label: Text(_isSaving ? "Yuborilmoqda..." : "Yuborish", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                icon: Icon(_isSaving ? Icons.hourglass_empty : Icons.check_circle_rounded, color: _isReceived ? Colors.white : Colors.grey),
+                label: Text(
+                  _isSaving ? "Saqlanmoqda..." : "Saqlash", 
+                  style: TextStyle(
+                    fontSize: 16, 
+                    fontWeight: FontWeight.bold,
+                    color: _isReceived ? Colors.white : Colors.grey[600],
+                  )
+                ),
                ),
              ),
           ],
@@ -199,7 +206,7 @@ class _FeedbackUploadDialogState extends State<FeedbackUploadDialog> {
                         const SizedBox(height: 4),
                         Text(
                           _isReceived 
-                            ? "Yuborish tugmasini bosishingiz mumkin" 
+                            ? "Saqlash tugmasini bosishingiz mumkin" 
                             : "Telegram botga faylni yuboring",
                           style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                         ),
@@ -210,7 +217,12 @@ class _FeedbackUploadDialogState extends State<FeedbackUploadDialog> {
               ),
               if (!_isReceived) ...[
                 const SizedBox(height: 20),
-                const LinearProgressIndicator(minHeight: 6, borderRadius: BorderRadius.all(Radius.circular(3))),
+                const LinearProgressIndicator(
+                  minHeight: 6, 
+                  borderRadius: BorderRadius.all(Radius.circular(3)),
+                  backgroundColor: Color(0xFFE0E0E0),
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                ),
               ],
             ],
           ),
