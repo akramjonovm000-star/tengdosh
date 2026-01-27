@@ -508,6 +508,25 @@ class DataService {
     return [];
   }
   
+  // 5. Get Dashboard Stats
+  Future<DashboardStats?> getDashboardStats({bool refresh = false}) async {
+    try {
+      String url = ApiConstants.dashboard;
+      if (refresh) {
+        url += "?refresh=true";
+      }
+      
+      final response = await _get(url);
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        return DashboardStats.fromJson(body);
+      }
+    } catch (e) {
+      print("DataService: Error fetching dashboard: $e");
+    }
+    return null;
+  }
+
   // NEW: Get Semesters
   Future<List<dynamic>> getSemesters() async {
     try {
