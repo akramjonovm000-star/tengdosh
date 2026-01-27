@@ -34,6 +34,12 @@ class _FeedbackUploadDialogState extends State<FeedbackUploadDialog> {
   Timer? _pollingTimer;
 
   @override
+  void initState() {
+    super.initState();
+    _initiateUpload();
+  }
+
+  @override
   void dispose() {
     _pollingTimer?.cancel();
     super.dispose();
@@ -58,6 +64,7 @@ class _FeedbackUploadDialogState extends State<FeedbackUploadDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(result['message'] ?? "Xatolik yuz berdi"), backgroundColor: Colors.red),
         );
+        Navigator.pop(context); // Close if initiation fails
       }
     }
   }
@@ -123,16 +130,12 @@ class _FeedbackUploadDialogState extends State<FeedbackUploadDialog> {
           ),
           const SizedBox(height: 20),
           
-          if (!_isInitiated) ...[
-            _buildSummaryView(),
-            const SizedBox(height: 24),
-            _buildActionButton(
-              onPressed: _isLoading ? null : _initiateUpload,
-              label: _isLoading ? "Yuborilmoqda..." : "Telegram orqali yuklash",
-              icon: Icons.telegram_rounded,
-              color: AppTheme.primaryBlue,
-            ),
-          ] else ...[
+          if (!_isInitiated) 
+            const Center(child: Padding(
+              padding: EdgeInsets.all(20.0),
+              child: CircularProgressIndicator(),
+            ))
+          else ...[
              _buildProgressView(),
              const SizedBox(height: 24),
              _buildActionButton(

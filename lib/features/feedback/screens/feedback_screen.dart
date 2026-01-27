@@ -519,43 +519,72 @@ class _FeedbackWizardState extends State<_FeedbackWizard> {
 
             const SizedBox(height: 24),
             
-            // Submit Button
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: () {
-                   final text = _textController.text.trim();
-                   final roleId = _selectedSubCategory?['id'] ?? _selectedCategory?['id'];
-                   
-                   if (text.isEmpty) {
-                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Iltimos, murojaat matnini yozing")));
-                     return;
-                   }
-                   
-                   Navigator.pop(context);
-                   widget.onSubmit(text, roleId, _isAnonymous, _wantsFile);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryBlue,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  elevation: 2,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (_wantsFile) ...[
-                      const Icon(Icons.telegram_rounded, color: Colors.white),
-                      const SizedBox(width: 8),
-                    ],
-                    Text(
-                      _wantsFile ? "TELEGRAM ORQALI YUBORISH" : "YUBORISH", 
-                      style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1)
-                    ),
-                  ],
+            if (_wantsFile) ...[
+               const SizedBox(height: 16),
+               SizedBox(
+                 width: double.infinity,
+                 height: 54,
+                 child: ElevatedButton.icon(
+                  onPressed: () {
+                       final text = _textController.text.trim();
+                       final roleId = _selectedSubCategory?['id'] ?? _selectedCategory?['id'];
+                       
+                       if (text.isEmpty) {
+                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Iltimos, murojaat matnini yozing")));
+                         return;
+                       }
+                       
+                       // For file uploads, we delegate to the dialog. 
+                       // Upon success, we just close the wizard and refresh.
+                       Navigator.pop(context);
+                       widget.onSubmit(text, roleId, _isAnonymous, true);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryBlue,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 2,
+                  ),
+                  icon: const Icon(Icons.telegram_rounded),
+                  label: const Text(
+                    "Telegram orqali yuklash", 
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)
+                  ),
+                 ),
+               ),
+            ],
+
+            const SizedBox(height: 24),
+            
+            // Submit Button (Only for text)
+            if (!_wantsFile)
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: () {
+                     final text = _textController.text.trim();
+                     final roleId = _selectedSubCategory?['id'] ?? _selectedCategory?['id'];
+                     
+                     if (text.isEmpty) {
+                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Iltimos, murojaat matnini yozing")));
+                       return;
+                     }
+                     
+                     Navigator.pop(context);
+                     widget.onSubmit(text, roleId, _isAnonymous, false);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryBlue,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 2,
+                  ),
+                  child: const Text(
+                    "YUBORISH", 
+                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1)
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       );
