@@ -396,7 +396,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              "${_profile?['group_number'] ?? 'Guruh'}",
+                              "${(_profile?['group_number'] ?? 'Guruh').toString().split(' ').first}",
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 13)
