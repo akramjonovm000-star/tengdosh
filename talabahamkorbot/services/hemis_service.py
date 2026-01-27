@@ -224,15 +224,25 @@ class HemisService:
                 total += hour
                 
                 # Check status
-                status = item.get("absent_status", {})
-                code = str(status.get("code", "12"))
-                name = status.get("name", "").lower()
+                # New Logic based on logs: 'explicable': True
+                is_explicable = item.get("explicable", False)
                 
-                # Codes: 11 (Sababli), 13 (Kasallik) -> Excused
-                if code in ["11", "13"] or "sababli" in name or "kasallik" in name: 
+                # Check absent_on vs absent_off
+                # absent_on -> excused hours?
+                # absent_off -> unexcused hours?
+                
+                if is_explicable:
                     excused += hour
-                else: 
-                    unexcused += hour
+                else:
+                    # Fallback to old logic just in case
+                    status = item.get("absent_status", {})
+                    code = str(status.get("code", "12"))
+                    name = status.get("name", "").lower()
+                    
+                    if code in ["11", "13"] or any(x in name for x in ["sababli", "kasallik", "ruxsat", "xizmat"]): 
+                         excused += hour
+                    else:
+                         unexcused += hour
             return total, excused, unexcused
 
         if student_id:

@@ -165,8 +165,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                     if (student.isPremium) ...[
-                      const SizedBox(width: 6),
-                      const Icon(Icons.verified, color: Colors.blue, size: 24),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () => _showBadgeSelector(context),
+                        child: student.customBadge != null 
+                            ? Text(student.customBadge!, style: const TextStyle(fontSize: 24))
+                            : const Icon(Icons.verified, color: Colors.blue, size: 24),
+                      ),
+                      if (student.customBadge == null) // Show edit hint if default
+                        Padding(
+                          padding: const EdgeInsets.only(left: 4),
+                          child: GestureDetector(
+                            onTap: () => _showBadgeSelector(context),
+                            child: Icon(Icons.edit, size: 14, color: Colors.grey[400]),
+                          ),
+                        )
                     ]
                   ],
                 ),
@@ -591,6 +604,73 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Navigator.pop(ctx);
                 _pickAndUploadImage(context);
               },
+            ),
+            const SizedBox(height: 10),
+          ],
+        ),
+      )
+    );
+  }
+
+  void _showBadgeSelector(BuildContext context) {
+    // Popular Emojis
+    final List<String> emojis = [
+      "🔥", "⚡", "🚀", "🎓", "👑", "💎", "🌟", "🇺🇿", 
+      "💻", "🧠", "📚", "💼", "🎨", "⚽", "🎵", "🕶️", 
+      "🦁", "🐯", "🤖", "🍕", "🦾", "🧬", "🧸", "🇺🇸"
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("Status Belgisini Tanlang", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 15),
+            Wrap(
+              spacing: 15,
+              runSpacing: 15,
+              children: emojis.map((emoji) => GestureDetector(
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  
+                  // Optimistic UI Update first? No, await API.
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Belgi o'zgartirilmoqda...")));
+                  
+                  final success = await DataService().updateBadge(emoji);
+                  
+                  if (success && context.mounted) {
+                    final auth = Provider.of<AuthProvider>(context, listen: false);
+                    if (auth.currentUser != null) {
+                       var json = auth.currentUser!.toJson();
+                       json['custom_badge'] = emoji;
+                       await auth.updateUser(json);
+                    }
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Belgi o'zgartirildi: $emoji")));
+                  } else if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Xatolik yuz berdi")));
+                  }
+                },
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.grey[300]!)
+                  ),
+                  child: Text(emoji, style: const TextStyle(fontSize: 24)),
+                ),
+              )).toList(),
             ),
             const SizedBox(height: 10),
           ],

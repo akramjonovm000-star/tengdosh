@@ -142,9 +142,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               const SizedBox(height: 25),
               
               // 2. Features
-              _buildFeatureItem(Icons.verified, "Premium belgisi"),
-              _buildFeatureItem(Icons.psychology, "AI moduli"),
-              _buildFeatureItem(Icons.public, "Ijtimoiy faollik tizimi"),
+              _buildFeatureItem(Icons.verified, "Premium belgisi (Custom Emoji)"),
+              _buildFeatureItem(Icons.psychology, "AI moduli (Oyiga 25 ta)"),
+              _buildFeatureItem(Icons.public, "Ijtimoiy faollik va reklamasiz"),
               
               const SizedBox(height: 30),
 
@@ -167,8 +167,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
               const SizedBox(height: 20),
 
-              // 6. Trial Section
-              if (_student?.trialUsed == false) _buildTrialSection(),
+              // 6. Trial Section (Hide if Premium)
+              if (_student?.isPremium == false && _student?.trialUsed == false) _buildTrialSection(),
               
               const SizedBox(height: 40),
             ],
@@ -179,19 +179,30 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   }
 
   Widget _buildPremiumBanner() {
+    bool isPremium = _student?.isPremium ?? false;
+    String expiryText = "";
+    
+    if (isPremium && _student?.premiumExpiry != null) {
+      // Simple date formatting
+      DateTime expiry = DateTime.parse(_student!.premiumExpiry!);
+      expiryText = "${expiry.day}.${expiry.month}.${expiry.year}";
+    }
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF6A11CB), Color(0xFF2575FC)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: isPremium 
+            ? const LinearGradient(colors: [Color(0xFF00C853), Color(0xFF64DD17)]) // Green for Active
+            : const LinearGradient(
+                colors: [Color(0xFF6A11CB), Color(0xFF2575FC)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
+            color: (isPremium ? Colors.green : Colors.blue).withOpacity(0.3),
             blurRadius: 15,
             offset: const Offset(0, 8),
           )
@@ -199,22 +210,36 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       ),
       child: Column(
         children: [
-          const Icon(Icons.workspace_premium, size: 70, color: Colors.amber),
+          Icon(isPremium ? Icons.check_circle : Icons.workspace_premium, size: 70, color: Colors.white),
           const SizedBox(height: 15),
-          const Text(
-            "Premium talaba bo'ling",
-            style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+          Text(
+            isPremium ? "Premium Faol" : "Premium talaba bo'ling",
+            style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-          const Text(
-            "Barcha imkoniyatlardan cheklovsiz foydalaning",
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white70, fontSize: 15),
-          ),
+          if (isPremium)
+            Text(
+              "Amal qilish muddati: $expiryText gacha",
+              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
+            )
+          else
+            const Text(
+              "Barcha imkoniyatlardan cheklovsiz foydalaning",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white70, fontSize: 15),
+            ),
         ],
       ),
     );
   }
+
+  // ... (Balance Header and TopUp Section kept largely same, but verify context) ...
+  // Actually I need to replace them or keep them if outside the range target.
+  // The ReplaceContent chunk is huge. I will only target specific methods to be safe.
+ 
+  // ...
+  
+  // (Moving to specific method replacements below)
 
   Widget _buildBalanceHeader() {
     return Container(
@@ -352,9 +377,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       margin: const EdgeInsets.only(top: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.amber[50],
+        color: const Color(0xFFFFF9C4), // Light yellow
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.amber[200]!),
+        border: Border.all(color: Colors.amber[300]!),
       ),
       child: Column(
         children: [
@@ -364,7 +389,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               const SizedBox(width: 10),
               const Expanded(
                 child: Text(
-                  "Bir Haftalik Bepul Sinov Davri!",
+                  "Bir haftalik bepul sinov davri!",
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.amber),
                 ),
               ),
@@ -372,11 +397,36 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           ),
           const SizedBox(height: 10),
           const Text("Premium imkoniyatlarni bepul sinab ko'ring (faqat bir marta)."),
+          const SizedBox(height: 8),
+          const Text(
+             "Cheklov: AI modulidan 5 marta foydalanish mumkin.", 
+             style: TextStyle(fontSize: 12, color: Colors.grey)
+          ),
           const SizedBox(height: 15),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: loading ? null : _activateTrial,
+              onPressed: loading ? null : () {
+                showDialog(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text("Tasdiqlash"),
+                    content: const Text(
+                      "Ushbu imkoniyatdan faqat bir marta foydalana olasiz. Davom etasizmi?"
+                    ),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Yo'q")),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          _activateTrial();
+                        },
+                        child: const Text("Ha, boshlash"),
+                      )
+                    ],
+                  )
+                );
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.amber,
                 padding: const EdgeInsets.symmetric(vertical: 12),

@@ -250,7 +250,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           onTap: () {
                              Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionScreen()));
                           },
-                          child: const Icon(Icons.verified, color: Colors.blue, size: 20),
+                          child: student?.customBadge != null
+                              ? Text(student!.customBadge!, style: const TextStyle(fontSize: 20))
+                              : const Icon(Icons.verified, color: Colors.blue, size: 20),
                         ),
                       ]
                     ],

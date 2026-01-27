@@ -950,15 +950,14 @@ class DataService {
   }
 
   // 27. Get Subscription Plans
-  Future<List<Map<String, dynamic>>> getSubscriptionPlans() async {
+  Future<List<dynamic>> getSubscriptionPlans() async {
     try {
       final response = await http.get(
-        Uri.parse('${ApiConstants.backendUrl}/subscription/plans'),
+        Uri.parse('${ApiConstants.backendUrl}/plans'),
         headers: await _getHeaders(),
       );
       if (response.statusCode == 200) {
-        final List<dynamic> body = json.decode(response.body);
-        return body.cast<Map<String, dynamic>>();
+        return json.decode(response.body);
       }
       return [];
     } catch (e) {
@@ -968,14 +967,19 @@ class DataService {
   }
 
   // 28. Purchase Subscription Plan
-  Future<Map<String, dynamic>> purchasePlan(int planId) async {
+  Future<Map<String, dynamic>> purchasePlan(String planId) async {
     try {
       final response = await http.post(
-        Uri.parse('${ApiConstants.backendUrl}/subscription/purchase'),
+        Uri.parse('${ApiConstants.backendUrl}/plans/buy/$planId'),
         headers: await _getHeaders(),
-        body: json.encode({'plan_id': planId}),
       );
-      return json.decode(response.body);
+      final body = json.decode(response.body);
+      
+      if (response.statusCode == 200) {
+         return {"status": "success", "message": body['message'] ?? "Muvaffaqiyatli xarid"};
+      } else {
+         return {"status": "error", "message": body['detail'] ?? "Xatolik"};
+      }
     } catch (e) {
       print("Error purchasing plan: $e");
       return {'status': 'error', 'message': e.toString()};
@@ -986,13 +990,35 @@ class DataService {
   Future<Map<String, dynamic>> activateTrial() async {
     try {
       final response = await http.post(
-        Uri.parse('${ApiConstants.backendUrl}/subscription/trial'),
+        Uri.parse('${ApiConstants.backendUrl}/plans/trial'),
         headers: await _getHeaders(),
       );
-      return json.decode(response.body);
+      final body = json.decode(response.body);
+      
+      if (response.statusCode == 200) {
+        return body; 
+      } else {
+        return {"status": "error", "message": body['detail'] ?? "Xatolik"};
+      }
     } catch (e) {
       print("Error activating trial: $e");
       return {'status': 'error', 'message': e.toString()};
+    }
+  }
+
+  // 30. Update Badge
+  Future<bool> updateBadge(String emoji) async {
+    try {
+      final response = await http.put(
+        Uri.parse("${ApiConstants.backendUrl}/student/badge"),
+        headers: await _getHeaders(),
+        body: json.encode({"emoji": emoji}),
+      );
+      
+      return response.statusCode == 200;
+    } catch (e) {
+      print("DataService: Error updating badge: $e");
+      return false;
     }
   }
 }

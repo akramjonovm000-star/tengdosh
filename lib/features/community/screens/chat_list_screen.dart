@@ -58,7 +58,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       radius: 24,
                       backgroundColor: AppTheme.primaryBlue.withOpacity(0.1),
                       child: Text(
-                        chat.partnerName[0],
+                        chat.partnerName.isNotEmpty ? chat.partnerName[0] : "?",
                         style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
                       ),
                     ),

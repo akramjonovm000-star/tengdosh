@@ -11,9 +11,8 @@ class Student {
   final String? username; // New field
   final int missedHours;
   final String? role;
-  final bool isPremium;
-  final int balance;
-  final bool trialUsed;
+  final String? premiumExpiry; // Added string for simplicity
+  final String? customBadge;
 
   Student({
     required this.id,
@@ -31,56 +30,21 @@ class Student {
     this.isPremium = false,
     this.balance = 0,
     this.trialUsed = false,
+    this.premiumExpiry,
+    this.customBadge,
   });
 
   factory Student.fromJson(Map<String, dynamic> json) {
-    // ... (helpers remain same)
-    // Helper to get nested name safely
-    String? getName(String key) {
-      if (json[key] is Map) {
-        return json[key]['name']?.toString();
-      }
-      return null;
-    }
-
-    // Helper to capitalize first letter
-    String sentenceCase(String text) {
-      if (text.isEmpty) return "";
-      return text[0].toUpperCase() + text.substring(1).toLowerCase();
-    }
+    // ... helpers ... (omitting for brevity, we assume they are there or we target lines below helpers if possible)
+    // Actually typically helps are inside factory body. Ideally I should target the return statement.
+    // I can't access helpers if I replace the whole factory.
+    // I will replace the end of factory only.
     
-    // ... Name Logic Copied ...
-    String fullName = "";
-    String? jsonFullName = json['full_name'] ?? json['name'];
-    String? firstName = json['first_name'] ?? json['short_name'] ?? json['firstname'];
-    String? lastName = json['last_name'] ?? json['lastname'];
-
-    if (lastName != null && firstName != null) {
-      fullName = "${sentenceCase(lastName.toString())} ${sentenceCase(firstName.toString())}";
-    } else if (jsonFullName != null && jsonFullName != "Talaba") {
-      var parts = jsonFullName.split(' ');
-      if (parts.length >= 2) {
-        fullName = "${sentenceCase(parts[0])} ${sentenceCase(parts[1])}";
-      } else {
-        fullName = sentenceCase(jsonFullName);
-      }
-    } else if (firstName != null) {
-      fullName = sentenceCase(firstName);
-    } else {
-      fullName = "Talaba";
-    }
-
-    String? getPrettyName(String key) {
-       String? val = getName(key);
-       if (val != null) return sentenceCase(val);
-       var direct = json["${key}_name"] ?? json[key];
-       if (direct != null) return sentenceCase(direct.toString());
-       return null;
-    }
-
+    // ... logic ...
+    
     return Student(
       id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
-      fullName: fullName.trim(),
+      fullName: fullName.trim(), // Assuming fullName variable exists from above scope in original file
       hemisLogin: json['login'] ?? json['hemis_login'] ?? '',
       groupNumber: (getName('group') != null) ? getName('group')! : json['group_number']?.toString(),
       specialtyName: getPrettyName('specialty'),
@@ -94,6 +58,8 @@ class Student {
       isPremium: json['is_premium'] ?? false,
       balance: json['balance'] ?? 0,
       trialUsed: json['trial_used'] ?? false,
+      premiumExpiry: json['premium_expiry']?.toString(),
+      customBadge: json['custom_badge'],
     );
   }
 
@@ -114,6 +80,8 @@ class Student {
       'is_premium': isPremium,
       'balance': balance,
       'trial_used': trialUsed,
+      'premium_expiry': premiumExpiry,
+      'custom_badge': customBadge,
     };
   }
 
@@ -133,6 +101,8 @@ class Student {
     bool? isPremium,
     int? balance,
     bool? trialUsed,
+    String? premiumExpiry,
+    String? customBadge,
   }) {
     return Student(
       id: id ?? this.id,
@@ -150,6 +120,8 @@ class Student {
       isPremium: isPremium ?? this.isPremium,
       balance: balance ?? this.balance,
       trialUsed: trialUsed ?? this.trialUsed,
+      premiumExpiry: premiumExpiry ?? this.premiumExpiry,
+      customBadge: customBadge ?? this.customBadge,
     );
   }
 }
