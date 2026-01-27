@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "190217311647",
+    "project_id": "talabahamkor",
+    "storage_bucket": "talabahamkor.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:190217311647:android:2958af6d7dc1ed6d2f99aa",
+        "android_client_info": {
+          "package_name": "com.talaba.hamkor"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDYndw1URNh9Pu3CZANTInx5fEXyS_B-v0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
