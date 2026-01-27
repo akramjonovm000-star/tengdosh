@@ -213,7 +213,7 @@ class HemisService:
                 return None
 
     @staticmethod
-    async def get_student_absence(token: str, semester_code: str = None, student_id: int = None):
+    async def get_student_absence(token: str, semester_code: str = None, student_id: int = None, force_refresh: bool = False):
         # Simplified Cache Logic
         key = f"attendance_{semester_code}" if semester_code else "attendance_all"
         
@@ -245,7 +245,8 @@ class HemisService:
                          unexcused += hour
             return total, excused, unexcused
 
-        if student_id:
+        stale_data = None
+        if student_id and not force_refresh:
             try:
                 async with AsyncSessionLocal() as session:
                     cache = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
@@ -257,11 +258,7 @@ class HemisService:
                             return t, e, u, cache.data
                         # If stale, we keep it for fallback
                         stale_data = cache.data
-                    else:
-                        stale_data = None
-            except: stale_data = None
-        else:
-            stale_data = None
+            except: pass
 
         async with httpx.AsyncClient(verify=False) as client:
             try:

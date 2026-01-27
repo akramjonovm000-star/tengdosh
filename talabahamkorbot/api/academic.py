@@ -76,8 +76,32 @@ async def get_semesters(
     if await HemisService.check_auth_status(student.hemis_token) == "AUTH_ERROR":
         raise HTTPException(status_code=401, detail="HEMIS_AUTH_ERROR")
 
-    data = await HemisService.get_semester_list(student.hemis_token)
-    return {"success": True, "data": data}
+    # Match Bot Logic: Calculate semesters from 11 (1-semestr) up to current
+    me_data = await HemisService.get_me(student.hemis_token)
+    current_sem_code = 11
+    if me_data:
+        sem = me_data.get("semester", {})
+        if not sem: sem = me_data.get("currentSemester", {})
+        if sem and isinstance(sem, dict):
+            try:
+                current_sem_code = int(sem.get("code") or 11)
+            except: pass
+            
+    if current_sem_code < 11: current_sem_code = 11
+    
+    results = []
+    for code in range(11, current_sem_code + 1):
+        sem_num = code - 10
+        results.append({
+            "code": str(code),
+            "id": str(code),
+            "name": f"{sem_num}-semestr"
+        })
+    
+    # Sort descending so latest is first
+    results.reverse()
+    
+    return {"success": True, "data": results}
 
 @router.get("/schedule")
 @cache(expire=3600)  # Cache for 1 hour
@@ -258,14 +282,12 @@ async def get_attendance(
                 if sem and isinstance(sem, dict):
                      sem_code = str(sem.get("code") or sem.get("id"))
     
-    # If refresh is requested, bypass cache by NOT providing student_id to get_student_absence
-    # HemisService.get_student_absence uses student_id as part of cache key
-    fetch_student_id = student.id if not refresh else None
-    
+    # Use force_refresh parameter in HemisService call
     _, _, _, data = await HemisService.get_student_absence(
         student.hemis_token, 
         semester_code=sem_code, 
-        student_id=fetch_student_id
+        student_id=student.id,
+        force_refresh=refresh
     )
     
     if not semester and not data:

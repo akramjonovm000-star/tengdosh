@@ -98,7 +98,8 @@ async def sync_student_data(session: AsyncSession, student_id: int):
     total, excused, unexcused, attendance_list = await HemisService.get_student_absence(
         student.hemis_token, 
         semester_code=None,
-        student_id=student.id
+        student_id=student.id,
+        force_refresh=True
     )
     
     # Fallback: if total is 0, try the explicit latest semester
@@ -107,7 +108,8 @@ async def sync_student_data(session: AsyncSession, student_id: int):
         f_total, f_excused, f_unexcused, f_list = await HemisService.get_student_absence(
             student.hemis_token, 
             semester_code=sem_code,
-            student_id=student.id
+            student_id=student.id,
+            force_refresh=True
         )
         if f_total > 0:
             total, excused, unexcused, attendance_list = f_total, f_excused, f_unexcused, f_list
