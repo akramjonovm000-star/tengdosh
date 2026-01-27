@@ -11,6 +11,9 @@ class Student {
   final String? username; // New field
   final int missedHours;
   final String? role;
+  final bool isPremium;
+  final int balance;
+  final bool trialUsed;
   final String? premiumExpiry; // Added string for simplicity
   final String? customBadge;
 
