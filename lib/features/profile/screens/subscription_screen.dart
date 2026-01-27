@@ -398,10 +398,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           const SizedBox(height: 10),
           const Text("Premium imkoniyatlarni bepul sinab ko'ring (faqat bir marta)."),
           const SizedBox(height: 8),
-          const Text(
-             "Cheklov: AI modulidan 5 marta foydalanish mumkin.", 
-             style: TextStyle(fontSize: 12, color: Colors.grey)
-          ),
+          const SizedBox(height: 8),
           const SizedBox(height: 15),
           SizedBox(
             width: double.infinity,
