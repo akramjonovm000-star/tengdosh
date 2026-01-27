@@ -1,0 +1,26 @@
+
+📊 FOYDALANUVCHILAR STATISTIKASI:
+
+👥 Jami Talabalar (Baza): 15
+📱 Telegram Ulangan: 17
+🔑 Faol Sessiyalar (Tokenli): 15
+------------------------------
+🆕 Barcha Ro'yxatdan O'tganlar:
+
+#   | Ism Familiya                   | HEMIS Login     | Manba    | Vaqt
+--------------------------------------------------------------------------------
+1   | Talaba                         | 395251101440    | Telegram | 01-19 17:47
+2   | Talaba                         | 395251101415    | Telegram | 01-19 17:42
+3   | Talaba                         | 395251101412    | Telegram | 01-19 17:25
+4   | Talaba                         | 395251101661    | Telegram | 01-19 17:20
+5   | Talaba                         | 395251101424    | Telegram | 01-19 17:15
+6   | Talaba                         | 395251101414    | Telegram | 01-16 12:05
+7   | Talaba                         | 395251101261    | Telegram | 01-16 11:16
+8   | Talaba                         | 395251101407    | Telegram | 01-16 10:55
+9   | Talaba                         | 395251101423    | Telegram | 01-16 10:52
+10  | Talaba                         | 395251101405    | Telegram | 01-16 10:43
+11  | Talaba                         | 395251101268    | Telegram | 01-16 10:42
+12  | Talaba                         | 395251101936    | Telegram | 01-16 10:42
+13  | Talaba                         | 395251101437    | Telegram | 01-16 10:40
+14  | RAHIMXONOV JAVOHIRXON RUSTAM   | 395251101397    | Telegram | 01-12 09:12
+15  | AKRAMJONOV MUXAMMADALI ULUG‘   | 395251101411    | Telegram | 01-06 17:11
