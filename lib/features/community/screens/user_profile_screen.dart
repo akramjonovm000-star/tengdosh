@@ -113,7 +113,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     });
 
     final output = await _service.toggleSubscription(widget.authorId);
-    if (output.containsKey('subscribed')) {
+    if (output != null && output.containsKey('subscribed')) {
       if (mounted) {
         setState(() {
           _isFollowing = output['subscribed'];

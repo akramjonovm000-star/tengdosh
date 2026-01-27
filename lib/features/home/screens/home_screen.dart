@@ -17,6 +17,7 @@ import '../../certificates/screens/certificates_screen.dart';
 import 'package:talabahamkor_mobile/features/profile/screens/subscription_screen.dart';
 import '../../clubs/screens/clubs_screen.dart';
 import '../../appeals/screens/appeals_screen.dart';
+import 'package:talabahamkor_mobile/features/notifications/screens/notifications_screen.dart';
 import 'package:talabahamkor_mobile/core/providers/notification_provider.dart';
 import '../../auth/widgets/password_update_dialog.dart';
 import 'dart:async';
