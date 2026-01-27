@@ -187,25 +187,32 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Row(
             children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: Colors.grey[200],
-                child: () {
-                   final url = student?.imageUrl;
-                   if (url != null && url.isNotEmpty) {
-                     return ClipOval(
-                       child: CachedNetworkImage(
-                         imageUrl: url,
-                         width: 48,
-                         height: 48,
-                         fit: BoxFit.cover,
-                         placeholder: (context, url) => const Icon(Icons.person, color: Colors.grey),
-                         errorWidget: (context, url, error) => const Icon(Icons.person, color: Colors.grey),
-                       ),
-                     );
-                   }
-                   return const Icon(Icons.person, color: Colors.grey);
-                }(),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _currentIndex = 4; // Switch to Profile Screen
+                  });
+                },
+                child: CircleAvatar(
+                  radius: 24,
+                  backgroundColor: Colors.grey[200],
+                  child: () {
+                     final url = student?.imageUrl;
+                     if (url != null && url.isNotEmpty) {
+                       return ClipOval(
+                         child: CachedNetworkImage(
+                           imageUrl: url,
+                           width: 48,
+                           height: 48,
+                           fit: BoxFit.cover,
+                           placeholder: (context, url) => const Icon(Icons.person, color: Colors.grey),
+                           errorWidget: (context, url, error) => const Icon(Icons.person, color: Colors.grey),
+                         ),
+                       );
+                     }
+                     return const Icon(Icons.person, color: Colors.grey);
+                  }(),
+                ),
               ),
               const SizedBox(width: 12),
               Column(
