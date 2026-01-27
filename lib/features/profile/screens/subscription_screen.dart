@@ -142,8 +142,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               const SizedBox(height: 25),
               
               // 2. Features
-              _buildFeatureItem(Icons.verified, "Premium belgisi (Custom Emoji)"),
-              _buildFeatureItem(Icons.psychology, "AI moduli (Oyiga 25 ta)"),
+              _buildFeatureItem(Icons.verified, "Premium belgisi"),
+              _buildFeatureItem(Icons.psychology, "AI moduli"),
               _buildFeatureItem(Icons.public, "Ijtimoiy faollik va reklamasiz"),
               
               const SizedBox(height: 30),
