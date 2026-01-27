@@ -36,8 +36,12 @@ ios/Flutter/flutter_export_environment.sh
 lib/generated_plugin_registrant.dart
 *.log
 
+# Admin & Bot (Not tracked in this repo)
+talabahamkorbot/
+/talabahamkorbot
+/venv/
+
 # Backend specific ignores
-talabahamkorbot/venv/
 talabahamkorbot/__pycache__/
 talabahamkorbot/.env
 talabahamkorbot/nohup.out

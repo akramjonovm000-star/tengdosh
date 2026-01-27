@@ -780,17 +780,23 @@ class DataService {
     String? sessionId,
   }) async {
     try {
-      final Map<String, String> body = {
-        'text': text,
-        'role': role,
-        'is_anonymous': isAnonymous.toString(),
-      };
-      if (sessionId != null) body['session_id'] = sessionId;
+      final uri = Uri.parse("${ApiConstants.backendUrl}/student/feedback/");
+      var request = http.MultipartRequest('POST', uri);
+      
+      final token = await _authService.getToken();
+      request.headers['Authorization'] = 'Bearer $token';
 
-      final response = await _post(
-        "${ApiConstants.backendUrl}/student/feedback/",
-        body: body,
-      );
+      request.fields['text'] = text;
+      request.fields['role'] = role;
+      request.fields['is_anonymous'] = isAnonymous.toString();
+      
+      if (sessionId != null) {
+        request.fields['session_id'] = sessionId;
+      }
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      
       return json.decode(response.body);
     } catch (e) {
       print("DataService: Error creating feedback: $e");
