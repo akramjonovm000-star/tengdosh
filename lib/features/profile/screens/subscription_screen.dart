@@ -77,7 +77,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   Future<void> _purchasePlan(SubscriptionPlan plan) async {
     setState(() => _loadingAction = 'purchase_${plan.id}');
     try {
-      final result = await _dataService.purchasePlan(plan.id);
+      final result = await _dataService.purchasePlan(plan.id.toString());
       if (result['status'] == 'success') {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(result['message']), backgroundColor: Colors.green),

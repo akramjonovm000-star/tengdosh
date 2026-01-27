@@ -38,16 +38,51 @@ class Student {
   });
 
   factory Student.fromJson(Map<String, dynamic> json) {
-    // ... helpers ... (omitting for brevity, we assume they are there or we target lines below helpers if possible)
-    // Actually typically helps are inside factory body. Ideally I should target the return statement.
-    // I can't access helpers if I replace the whole factory.
-    // I will replace the end of factory only.
+    // Helper to get nested name safely
+    String? getName(String key) {
+      if (json[key] is Map) {
+        return json[key]['name']?.toString();
+      }
+      return null;
+    }
+
+    // Helper to capitalize first letter
+    String sentenceCase(String text) {
+      if (text.isEmpty) return "";
+      return text[0].toUpperCase() + text.substring(1).toLowerCase();
+    }
     
-    // ... logic ...
-    
+    String fullName = "";
+    String? jsonFullName = json['full_name'] ?? json['name'];
+    String? firstName = json['first_name'] ?? json['short_name'] ?? json['firstname'];
+    String? lastName = json['last_name'] ?? json['lastname'];
+
+    if (lastName != null && firstName != null) {
+      fullName = "${sentenceCase(lastName.toString())} ${sentenceCase(firstName.toString())}";
+    } else if (jsonFullName != null && jsonFullName != "Talaba") {
+      var parts = jsonFullName.split(' ');
+      if (parts.length >= 2) {
+        fullName = "${sentenceCase(parts[0])} ${sentenceCase(parts[1])}";
+      } else {
+        fullName = sentenceCase(jsonFullName);
+      }
+    } else if (firstName != null) {
+      fullName = sentenceCase(firstName);
+    } else {
+      fullName = "Talaba";
+    }
+
+    String? getPrettyName(String key) {
+       String? val = getName(key);
+       if (val != null) return sentenceCase(val);
+       var direct = json["${key}_name"] ?? json[key];
+       if (direct != null) return sentenceCase(direct.toString());
+       return null;
+    }
+
     return Student(
       id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
-      fullName: fullName.trim(), // Assuming fullName variable exists from above scope in original file
+      fullName: fullName.trim(),
       hemisLogin: json['login'] ?? json['hemis_login'] ?? '',
       groupNumber: (getName('group') != null) ? getName('group')! : json['group_number']?.toString(),
       specialtyName: getPrettyName('specialty'),
@@ -55,7 +90,7 @@ class Student {
       semesterName: getPrettyName('semester'),
       universityName: json['university_name'] ?? getPrettyName('university') ?? "Jizzax davlat pedagogika universiteti",
       imageUrl: json['image'] ?? json['image_url'],
-      username: json['username'], // Map username
+      username: json['username'], 
       missedHours: json['missed_hours'] ?? 0,
       role: json['role'] ?? json['user_role'],
       isPremium: json['is_premium'] ?? false,
