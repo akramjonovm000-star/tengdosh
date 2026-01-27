@@ -6,8 +6,7 @@ class ApiConstants {
   static const String apiToken = 'LXjqwQE0Xemgq3E7LeB0tn2yMQWY0zXW';
 
   // Backend API (Talaba Hamkor)
-  // FIXED: Using IP directly because Emulator DNS is failing to resolve 'tengdoshbozor.uz'
-  static const String backendUrl = 'http://38.242.223.171/api/v1';
+  static const String backendUrl = 'https://tengdosh.uzjoku.uz/api/v1';
   
   // Auth (Back to Backend Proxy)
   static const String authLogin = '$backendUrl/auth/hemis';
