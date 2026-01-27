@@ -90,7 +90,8 @@ async def get_semesters(
     if current_sem_code < 11: current_sem_code = 11
     
     results = []
-    for code in range(11, current_sem_code + 1):
+    # range(11, 12) gives only [11], excluding 12 (which is 'Joriy')
+    for code in range(11, current_sem_code):
         sem_num = code - 10
         results.append({
             "code": str(code),
@@ -98,7 +99,7 @@ async def get_semesters(
             "name": f"{sem_num}-semestr"
         })
     
-    # Sort descending so latest is first
+    # Sort descending so latest history is first
     results.reverse()
     
     return {"success": True, "data": results}
