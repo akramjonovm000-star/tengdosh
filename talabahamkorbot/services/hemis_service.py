@@ -457,75 +457,20 @@ class HemisService:
                 return []
 
     @staticmethod
-    async def get_all_subjects(token: str):
-        """Fetch subjects from ALL semesters for cumulative GPA (Throttled Parallel Fetch)"""
-        import asyncio
-        semesters = await HemisService.get_semester_list(token)
-        if not semesters: return []
-        
-        sem_lock = asyncio.Semaphore(2) # Limit to 2-3 concurrent requests to be safe
-        
-        async def fetch_sem(sem):
-            async with sem_lock:
-                code = str(sem.get("code") or sem.get("id"))
-                # Small delay to be nicer to the server
-                await asyncio.sleep(0.1)
-                return await HemisService.get_student_subject_list(token, semester_code=code)
-
-        tasks = [fetch_sem(sem) for sem in semesters]
-        
-        # Run with throttle
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-        
-        all_subjects = []
-        for res in results:
-            if isinstance(res, list):
-                all_subjects.extend(res)
-            else:
-                logger.warning(f"Failed to fetch semester subjects: {res}")
-            
-        logger.info(f"Cumulative GPA: Fetched {len(all_subjects)} subjects from {len(semesters)} semesters.")
-        return all_subjects
-
-    @staticmethod
     async def get_student_performance(token: str, semester_code: str = None):
         """
-        Calculates GPA. 
-        If semester_code provided -> Single Semester GPA.
-        If None -> Overall Cumulative GPA.
+        Calculates average GPA using GPACalculator (Weighted Average).
         """
         try:
-            from services.gpa_calculator import GPACalculator
-
-            if semester_code:
-                # Single Semester Logic
-                subjects = await HemisService.get_student_subject_list(token, semester_code)
-                if not subjects: return 0.0
-                result = GPACalculator.calculate_gpa(subjects)
-                return result.gpa
-            else:
-                # 1. Try Cumulative Logic first
-                all_subjects = await HemisService.get_all_subjects(token)
-                cumulative = 0.0
-                if all_subjects:
-                    cumulative = GPACalculator.calculate_cumulative(all_subjects).gpa
-                
-                if cumulative > 0:
-                    return cumulative
-                
-                # 2. Fallback: Find first semester with non-zero GPA
-                # User mentioned semester 11 specifically, but let's be dynamic
-                semesters = await HemisService.get_semester_list(token)
-                for sem in semesters:
-                   code = str(sem.get("code") or sem.get("id"))
-                   # Skip if we suspect it's the current empty one, but actually simple check is enough
-                   subj = await HemisService.get_student_subject_list(token, semester_code=code)
-                   if subj:
-                       val = GPACalculator.calculate_gpa(subj).gpa
-                       if val > 0:
-                           return val
-                           
+            subjects = await HemisService.get_student_subject_list(token, semester_code)
+            if not subjects:
                 return 0.0
+            
+            from services.gpa_calculator import GPACalculator
+            
+            # Use the robust calculator
+            result = GPACalculator.calculate_gpa(subjects)
+            return result.gpa
             
         except Exception as e:
             logger.error(f"Performance Error: {e}")
