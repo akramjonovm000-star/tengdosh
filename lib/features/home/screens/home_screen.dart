@@ -94,7 +94,28 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // ... (logout method omitted)
+  void _logout() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Chiqish"),
+        content: const Text("Tizimdan chiqmoqchimisiz?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Yo'q"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Provider.of<AuthProvider>(context, listen: false).logout();
+            },
+            child: const Text("Ha", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

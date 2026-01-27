@@ -119,7 +119,7 @@ class DataService {
     final studentId = student?.id ?? 0;
 
     // 1. Try Local Database Cache First (Instant Speed)
-    if (!forceRefresh) {
+    if (!refresh) {
       final cached = await _dbService.getCache('dashboard', studentId);
       if (cached != null) {
         // Return cached immediately, trigger background refresh if needed
@@ -129,7 +129,7 @@ class DataService {
     }
 
     // 2. Fetch from API
-    return await _backgroundRefreshDashboard(studentId, refresh: forceRefresh);
+    return await _backgroundRefreshDashboard(studentId, refresh: refresh);
   }
 
   Future<Map<String, dynamic>> _backgroundRefreshDashboard(int studentId, {bool refresh = false, String? semester}) async {

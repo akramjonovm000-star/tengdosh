@@ -31,7 +31,7 @@ class _AcademicScreenState extends State<AcademicScreen> {
     if (!forceRefresh) setState(() => _isLoading = true);
     
     try {
-      final data = await _dataService.getDashboardStats(forceRefresh: forceRefresh);
+      final data = await _dataService.getDashboardStats(refresh: forceRefresh);
       if (mounted) {
         setState(() {
           _gpa = double.tryParse(data['gpa']?.toString() ?? '0.0') ?? 0.0;
