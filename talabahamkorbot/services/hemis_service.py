@@ -457,20 +457,41 @@ class HemisService:
                 return []
 
     @staticmethod
+    async def get_all_subjects(token: str):
+        """Fetch subjects from ALL semesters for cumulative GPA"""
+        semesters = await HemisService.get_semester_list(token)
+        all_subjects = []
+        
+        # Parallel fetch could be better but let's be safe with rate limits
+        for sem in semesters:
+            code = str(sem.get("code") or sem.get("id"))
+            subjects = await HemisService.get_student_subject_list(token, semester_code=code)
+            all_subjects.extend(subjects)
+            
+        return all_subjects
+
+    @staticmethod
     async def get_student_performance(token: str, semester_code: str = None):
         """
-        Calculates average GPA using GPACalculator (Weighted Average).
+        Calculates GPA. 
+        If semester_code provided -> Single Semester GPA.
+        If None -> Overall Cumulative GPA.
         """
         try:
-            subjects = await HemisService.get_student_subject_list(token, semester_code)
-            if not subjects:
-                return 0.0
-            
             from services.gpa_calculator import GPACalculator
-            
-            # Use the robust calculator
-            result = GPACalculator.calculate_gpa(subjects)
-            return result.gpa
+
+            if semester_code:
+                # Single Semester Logic
+                subjects = await HemisService.get_student_subject_list(token, semester_code)
+                if not subjects: return 0.0
+                result = GPACalculator.calculate_gpa(subjects)
+                return result.gpa
+            else:
+                # Cumulative Logic
+                all_subjects = await HemisService.get_all_subjects(token)
+                if not all_subjects: return 0.0
+                result = GPACalculator.calculate_cumulative(all_subjects)
+                return result.gpa
             
         except Exception as e:
             logger.error(f"Performance Error: {e}")
