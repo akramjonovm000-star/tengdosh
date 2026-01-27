@@ -214,4 +214,22 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
   }
+
+  Future<Student?> loginWithOAuthToken(String token) async {
+    try {
+      // 1. Save token first
+      await _saveToken(token);
+      
+      // 2. Fetch profile using this token
+      final student = await fetchAndSaveProfile(token);
+      
+      // 3. Save role (standard for token login)
+      await _saveRole('student');
+      
+      return student;
+    } catch (e) {
+      print("OAuth Token Login Error: $e");
+      return null;
+    }
+  }
 }

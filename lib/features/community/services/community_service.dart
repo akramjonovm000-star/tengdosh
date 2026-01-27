@@ -21,37 +21,6 @@ class CommunityService {
 
    // --- Subscription / Social ---
 
-  Future<Map<String, dynamic>> toggleSubscription(String targetId) async {
-    try {
-      final response = await http.post(
-        Uri.parse('${ApiConstants.backendUrl}/community/subscribe/$targetId'),
-        headers: await _getHeaders(),
-      );
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      }
-      return {};
-    } catch (e) {
-      print("Error toggling subscription: $e");
-      return {};
-    }
-  }
-
-  Future<bool> checkSubscription(String targetId) async {
-    try {
-      final response = await http.get(
-        Uri.parse('${ApiConstants.backendUrl}/community/check-subscription/$targetId'),
-        headers: await _getHeaders(),
-      );
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return data['subscribed'] ?? false;
-      }
-      return false;
-    } catch (e) {
-      return false;
-    }
-  }
 
   Future<Map<String, int>> getProfileStats(String targetId) async {
     try {

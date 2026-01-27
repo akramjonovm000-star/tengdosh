@@ -12,6 +12,7 @@ import 'package:firebase_core/firebase_core.dart';
 
 import 'package:app_links/app_links.dart';
 import 'dart:async';
+import 'dart:io';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

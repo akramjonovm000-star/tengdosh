@@ -130,7 +130,7 @@ class _PasswordUpdateDialogState extends State<PasswordUpdateDialog> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blueAccent,
                     foregroundColor: Colors.white,
-                    shape: BorderRadius.circular(16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     elevation: 0,
                   ),
                   child: _isLoading

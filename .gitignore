@@ -14,8 +14,8 @@
 !/web/
 !/assets/
 !/google-services.json
-!/README.md
 !/.gitignore
+!/talabahamkorbot/
 
 # Standard Flutter ignores (even for white-listed folders)
 .dart_tool/
@@ -35,3 +35,12 @@ ios/Flutter/Generated.xcconfig
 ios/Flutter/flutter_export_environment.sh
 lib/generated_plugin_registrant.dart
 *.log
+
+# Backend specific ignores
+talabahamkorbot/venv/
+talabahamkorbot/__pycache__/
+talabahamkorbot/.env
+talabahamkorbot/nohup.out
+talabahamkorbot/*.log
+talabahamkorbot/*.sql
+talabahamkorbot/*.zip

@@ -244,7 +244,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     IconButton(
                       icon: const Icon(Icons.notifications_none_rounded, size: 28),
                       onPressed: () async {
-                        await Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()));
+                        await Navigator.push(context, MaterialPageRoute(builder: (_) => NotificationsScreen()));
                         notificationProvider.refreshUnreadCount();
                       },
                     ),
