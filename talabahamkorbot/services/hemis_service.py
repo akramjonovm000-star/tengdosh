@@ -458,15 +458,24 @@ class HemisService:
 
     @staticmethod
     async def get_all_subjects(token: str):
-        """Fetch subjects from ALL semesters for cumulative GPA"""
+        """Fetch subjects from ALL semesters for cumulative GPA (Parallel Fetch)"""
+        import asyncio
         semesters = await HemisService.get_semester_list(token)
-        all_subjects = []
+        if not semesters: return []
         
-        # Parallel fetch could be better but let's be safe with rate limits
+        tasks = []
         for sem in semesters:
             code = str(sem.get("code") or sem.get("id"))
-            subjects = await HemisService.get_student_subject_list(token, semester_code=code)
-            all_subjects.extend(subjects)
+            tasks.append(HemisService.get_student_subject_list(token, semester_code=code))
+            
+        # Run all fetch requests in parallel
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        all_subjects = []
+        for res in results:
+            if isinstance(res, list):
+                all_subjects.extend(res)
+            # Ignore errors/exceptions from individual semester fetches
             
         return all_subjects
 
