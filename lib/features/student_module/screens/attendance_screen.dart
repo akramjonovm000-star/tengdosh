@@ -26,15 +26,18 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     _loadData();
   }
 
-  void _loadData() async {
-    setState(() {
-      _isLoading = true;
-      _error = "";
-    });
+  void _loadData({bool forceRefresh = false}) async {
+    if (!forceRefresh) {
+      setState(() {
+        _isLoading = true;
+        _error = "";
+      });
+    }
 
     try {
       final data = await _dataService.getAttendanceList(
-        semester: _selectedSemester?.toString()
+        semester: _selectedSemester?.toString(),
+        forceRefresh: forceRefresh
       );
       setState(() {
         _attendanceList = data;
@@ -101,46 +104,58 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           const SizedBox(width: 16),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error.isNotEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline, size: 48, color: Colors.orange),
-                      const SizedBox(height: 16),
-                      Text("Ma'lumot topilmadi", style: TextStyle(color: Colors.grey[700])),
-                      TextButton(onPressed: _loadData, child: const Text("Qayta urinish"))
-                    ],
-                  ),
-                )
-              : Column(
-                  children: [
-                    // Stats Cards
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      color: Colors.white,
-                      child: Row(
+      body: RefreshIndicator(
+        onRefresh: () async => _loadData(forceRefresh: true),
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _error.isNotEmpty
+                ? Center(
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          _buildStatCard("Sababli", excused, Colors.green),
-                          const SizedBox(width: 12),
-                          _buildStatCard("Sababsiz", unexcused, Colors.red),
-                          const SizedBox(width: 12),
-                          _buildStatCard("Jami", total, AppTheme.primaryBlue),
+                          const Icon(Icons.error_outline, size: 48, color: Colors.orange),
+                          const SizedBox(height: 16),
+                          Text("Ma'lumot topilmadi", style: TextStyle(color: Colors.grey[700])),
+                          TextButton(onPressed: () => _loadData(forceRefresh: true), child: const Text("Qayta urinish"))
                         ],
                       ),
                     ),
-                    const SizedBox(height: 10),
+                  )
+                : Column(
+                    children: [
+                      // Stats Cards
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        color: Colors.white,
+                        child: Row(
+                          children: [
+                            _buildStatCard("Sababli", excused, Colors.green),
+                            const SizedBox(width: 12),
+                            _buildStatCard("Sababsiz", unexcused, Colors.red),
+                            const SizedBox(width: 12),
+                            _buildStatCard("Jami", total, AppTheme.primaryBlue),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
 
-                    // Detailed List
-                    Expanded(
-                      child: _attendanceList.isEmpty
-                          ? const Center(child: Text("Qoldirilgan darslar yo'q 🎉"))
-                          : _buildGroupedList(),
-                    ),
-                  ],
-                ),
+                      // Detailed List
+                      Expanded(
+                        child: _attendanceList.isEmpty
+                            ? ListView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                children: const [
+                                  SizedBox(height: 100),
+                                  Center(child: Text("Qoldirilgan darslar yo'q 🎉"))
+                                ],
+                              )
+                            : _buildGroupedList(),
+                      ),
+                    ],
+                  ),
+      ),
     );
   }
 

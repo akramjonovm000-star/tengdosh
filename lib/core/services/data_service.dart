@@ -377,17 +377,19 @@ class DataService {
   }
 
   // 9. Get Detailed Attendance List
-  Future<List<Attendance>> getAttendanceList({String? semester}) async {
+  Future<List<Attendance>> getAttendanceList({String? semester, bool forceRefresh = false}) async {
     final student = await _authService.getSavedUser();
     final studentId = student?.id ?? 0;
     final semCode = semester ?? 'all';
 
-    // 1. Try Local cache
-    final cached = await _dbService.getCache('attendance', studentId, semesterCode: semCode);
-    if (cached != null && cached.containsKey('items')) {
-      final List<dynamic> items = cached['items'];
-       _backgroundRefreshAttendance(studentId, semCode);
-      return items.map((json) => Attendance.fromJson(json)).toList();
+    // 1. Try Local cache (if not forcing refresh)
+    if (!forceRefresh) {
+      final cached = await _dbService.getCache('attendance', studentId, semesterCode: semCode);
+      if (cached != null && cached.containsKey('items')) {
+        final List<dynamic> items = cached['items'];
+        _backgroundRefreshAttendance(studentId, semCode);
+        return items.map((json) => Attendance.fromJson(json)).toList();
+      }
     }
 
     return await _backgroundRefreshAttendance(studentId, semCode);
