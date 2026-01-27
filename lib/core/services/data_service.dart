@@ -725,6 +725,19 @@ class DataService {
     return {"status": "pending"};
   }
 
+  Future<Map<String, dynamic>> finalizeDocUpload(String sessionId) async {
+    try {
+      final response = await _post(
+        "${ApiConstants.backendUrl}/student/documents/finalize",
+        body: {'session_id': sessionId},
+      );
+      return json.decode(response.body);
+    } catch (e) {
+      print("DataService: Error finalizing upload: $e");
+      return {"success": false, "message": "Tarmoq xatosi"};
+    }
+  }
+
   Future<Map<String, dynamic>> initiateFeedbackUpload({
     required String sessionId,
     required String text,
