@@ -510,6 +510,20 @@ class DataService {
   
   // 5. Get Dashboard Stats
   Future<DashboardStats?> getDashboardStats({bool refresh = false}) async {
+    final student = await _authService.getSavedUser();
+    final studentId = student?.id ?? 0;
+    
+    // 1. Try Cache (if not refreshing)
+    if (!refresh) {
+      final cached = await _dbService.getCache('dashboard', studentId);
+      if (cached != null) {
+        // Background refresh if needed? For now, just return cache.
+        // Or trigger background refresh if cache is old? 
+        // Let's stick to simple cache-first.
+        return DashboardStats.fromJson(cached);
+      }
+    }
+
     try {
       String url = ApiConstants.dashboard;
       if (refresh) {
@@ -519,6 +533,10 @@ class DataService {
       final response = await _get(url);
       if (response.statusCode == 200) {
         final body = json.decode(response.body);
+        
+        // 2. Update Cache
+        await _dbService.saveCache('dashboard', studentId, body);
+        
         return DashboardStats.fromJson(body);
       }
     } catch (e) {
