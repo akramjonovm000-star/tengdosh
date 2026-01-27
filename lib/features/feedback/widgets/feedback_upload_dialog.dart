@@ -34,12 +34,6 @@ class _FeedbackUploadDialogState extends State<FeedbackUploadDialog> {
   Timer? _pollingTimer;
 
   @override
-  void initState() {
-    super.initState();
-    _initiateUpload();
-  }
-
-  @override
   void dispose() {
     _pollingTimer?.cancel();
     super.dispose();
@@ -64,7 +58,6 @@ class _FeedbackUploadDialogState extends State<FeedbackUploadDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(result['message'] ?? "Xatolik yuz berdi"), backgroundColor: Colors.red),
         );
-        Navigator.pop(context);
       }
     }
   }
@@ -124,42 +117,73 @@ class _FeedbackUploadDialogState extends State<FeedbackUploadDialog> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text("Yangi murojaat", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const Text("Murojaatga fayl biriktirish", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
             ],
           ),
           const SizedBox(height: 20),
           
-          if (!_isInitiated) 
-            const Center(child: CircularProgressIndicator())
-          else ...[
+          if (!_isInitiated) ...[
+            _buildSummaryView(),
+            const SizedBox(height: 24),
+            _buildActionButton(
+              onPressed: _isLoading ? null : _initiateUpload,
+              label: _isLoading ? "Yuborilmoqda..." : "Telegram orqali yuklash",
+              icon: Icons.telegram_rounded,
+              color: AppTheme.primaryBlue,
+            ),
+          ] else ...[
              _buildProgressView(),
              const SizedBox(height: 24),
-             SizedBox(
-               width: double.infinity,
-               height: 54,
-               child: ElevatedButton.icon(
-                onPressed: _isReceived && !_isSaving ? _finalize : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _isReceived ? Colors.green : Colors.grey[300],
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: Colors.grey[200],
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
-                ),
-                icon: Icon(_isSaving ? Icons.hourglass_empty : Icons.check_circle_rounded, color: _isReceived ? Colors.white : Colors.grey),
-                label: Text(
-                  _isSaving ? "Saqlanmoqda..." : "Saqlash", 
-                  style: TextStyle(
-                    fontSize: 16, 
-                    fontWeight: FontWeight.bold,
-                    color: _isReceived ? Colors.white : Colors.grey[600],
-                  )
-                ),
-               ),
-             ),
+             _buildActionButton(
+              onPressed: _isReceived && !_isSaving ? _finalize : null,
+              label: _isSaving ? "Saqlanmoqda..." : "Saqlash",
+              icon: Icons.check_circle_rounded,
+              color: Colors.green,
+            ),
           ],
           const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryView() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.person_pin_circle_rounded, size: 18, color: AppTheme.primaryBlue),
+              const SizedBox(width: 8),
+              Text(
+                "Kimga: ${widget.role.toUpperCase()}",
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              if (widget.isAnonymous) ...[
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(color: Colors.black87, borderRadius: BorderRadius.circular(4)),
+                  child: const Text("ANONIM", style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                )
+              ]
+            ],
+          ),
+          const Divider(height: 24),
+          Text(
+            widget.text,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: Colors.grey[800], fontSize: 14),
+          ),
         ],
       ),
     );
@@ -220,14 +244,31 @@ class _FeedbackUploadDialogState extends State<FeedbackUploadDialog> {
                 const LinearProgressIndicator(
                   minHeight: 6, 
                   borderRadius: BorderRadius.all(Radius.circular(3)),
-                  backgroundColor: Color(0xFFE0E0E0),
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
                 ),
               ],
             ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildActionButton({required VoidCallback? onPressed, required String label, required IconData icon, required Color color}) {
+    return SizedBox(
+      width: double.infinity,
+      height: 54,
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: Colors.grey[300],
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          elevation: 0,
+        ),
+        icon: Icon(icon),
+        label: Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+      ),
     );
   }
 }
