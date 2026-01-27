@@ -92,30 +92,32 @@ async def sync_student_data(session: AsyncSession, student_id: int):
     if current_sem:
         sem_code = str(current_sem.get("code") or current_sem.get("id") or "")
         
-    total, excused, unexcused, attendance_list = await HemisService.get_student_absence(
-        student.hemis_token, 
-        semester_code=sem_code
-    )
-    
     old_missed = student.missed_hours or 0
     
-    # Recalculate precisely
-    cur_total, cur_excused, cur_unexcused = 0, 0, 0
-    for item in attendance_list:
-        h = item.get("hour") or 2
-        status = item.get("absent_status", {}).get("code")
-        if status == "11" or item.get("is_valid") == True:
-            cur_excused += h
-        else:
-            cur_unexcused += h
-        cur_total += h
-
-    student.missed_hours = cur_total
-    student.missed_hours_excused = cur_excused
-    student.missed_hours_unexcused = cur_unexcused
+    # Match Bot Logic: First try fetching without a specific semester code (returns current/total active)
+    total, excused, unexcused, attendance_list = await HemisService.get_student_absence(
+        student.hemis_token, 
+        semester_code=None,
+        student_id=student.id
+    )
     
-    if cur_total > old_missed:
-        await _notify_attendance(student, cur_total, old_missed)
+    # Fallback: if total is 0, try the explicit latest semester
+    if total == 0 and sem_code:
+        logger.info(f"Sync: Default attendance is 0. Trying explicit sem: {sem_code}")
+        f_total, f_excused, f_unexcused, f_list = await HemisService.get_student_absence(
+            student.hemis_token, 
+            semester_code=sem_code,
+            student_id=student.id
+        )
+        if f_total > 0:
+            total, excused, unexcused, attendance_list = f_total, f_excused, f_unexcused, f_list
+
+    student.missed_hours = total
+    student.missed_hours_excused = excused
+    student.missed_hours_unexcused = unexcused
+    
+    if total > old_missed:
+        await _notify_attendance(student, total, old_missed)
 
     # 4. Update Performance (GPA) - Match Bot Logic
     # The Bot gets 5.0 by passing None (fetching 'default' active subjects - often more reliable)

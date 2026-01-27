@@ -17,13 +17,23 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   String _error = "";
   
   // Semester Handling
-  final List<int> _semesters = [11, 12, 13, 14, 15, 16, 17, 18];
-  int? _selectedSemester; // null = Default/Current
+  List<dynamic> _semesters = [];
+  String? _selectedSemester; // null = Default/Joriy
 
   @override
   void initState() {
     super.initState();
+    _loadSemesters();
     _loadData();
+  }
+
+  Future<void> _loadSemesters() async {
+    final sems = await _dataService.getSemesters();
+    if (mounted && sems.isNotEmpty) {
+      setState(() {
+        _semesters = sems;
+      });
+    }
   }
 
   void _loadData({bool forceRefresh = false}) async {
@@ -36,7 +46,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
     try {
       final data = await _dataService.getAttendanceList(
-        semester: _selectedSemester?.toString(),
+        semester: _selectedSemester,
         forceRefresh: forceRefresh
       );
       setState(() {
@@ -75,20 +85,22 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: DropdownButtonHideUnderline(
-              child: DropdownButton<int>(
+              child: DropdownButton<String>(
                 value: _selectedSemester,
                 hint: const Text("Semestr", style: TextStyle(fontSize: 14)),
                 icon: const Icon(Icons.arrow_drop_down, color: Colors.black54),
                 borderRadius: BorderRadius.circular(12),
                 items: [
-                   const DropdownMenuItem<int>(
+                   const DropdownMenuItem<String>(
                      value: null,
                      child: Text("Joriy", style: TextStyle(fontWeight: FontWeight.bold)),
                    ),
                    ..._semesters.map((s) {
-                    return DropdownMenuItem<int>(
-                      value: s,
-                      child: Text("${s - 10}-semestr"),
+                    final code = (s['code'] ?? s['id']).toString();
+                    final name = s['name'] ?? "${int.tryParse(code) != null ? int.parse(code) - 10 : code}-semestr";
+                    return DropdownMenuItem<String>(
+                      value: code,
+                      child: Text(name),
                     );
                   }).toList(),
                 ],

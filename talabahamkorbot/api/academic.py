@@ -230,6 +230,7 @@ async def get_resources(
 @cache(expire=300)
 async def get_attendance(
     semester: str = None,
+    refresh: bool = False,
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_session)
 ):
@@ -240,7 +241,6 @@ async def get_attendance(
     if await HemisService.check_auth_status(student.hemis_token) == "AUTH_ERROR":
         raise HTTPException(status_code=401, detail="HEMIS_AUTH_ERROR")
 
-    sem_code = semester
     sem_code = semester
     if not sem_code:
         # Resolve latest semester dynamically
@@ -254,10 +254,19 @@ async def get_attendance(
             me_data = await HemisService.get_me(student.hemis_token)
             if me_data:
                 sem = me_data.get("semester", {})
+                if not sem: sem = me_data.get("currentSemester", {}) # Multi-key fallback
                 if sem and isinstance(sem, dict):
                      sem_code = str(sem.get("code") or sem.get("id"))
     
-    _, _, _, data = await HemisService.get_student_absence(student.hemis_token, semester_code=sem_code, student_id=student.id)
+    # If refresh is requested, bypass cache by NOT providing student_id to get_student_absence
+    # HemisService.get_student_absence uses student_id as part of cache key
+    fetch_student_id = student.id if not refresh else None
+    
+    _, _, _, data = await HemisService.get_student_absence(
+        student.hemis_token, 
+        semester_code=sem_code, 
+        student_id=fetch_student_id
+    )
     
     if not semester and not data:
         me_data = await HemisService.get_me(student.hemis_token)
