@@ -233,6 +233,7 @@ class DocumentAddStates(StatesGroup):
 class CertificateAddStates(StatesGroup):
     TITLE = State()
     FILE = State()
+    WAIT_FOR_APP_FILE = State() # [NEW] Specifically for App-initiated flow
 
 from aiogram.fsm.state import State, StatesGroup
 

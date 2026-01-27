@@ -804,20 +804,44 @@ class DataService {
     return [];
   }
 
-  Future<String?> initiateCertificateUpload(String title) async {
+  Future<Map<String, dynamic>> initiateCertificateUpload({required String sessionId, String? title}) async {
     try {
-      final response = await http.post(
-        Uri.parse("${ApiConstants.backendUrl}/student/certificates/init-upload"),
-        headers: await _getHeaders(),
-        body: json.encode({
+      final response = await _post(
+        "${ApiConstants.backendUrl}/student/certificates/init-upload",
+        body: {
+          'session_id': sessionId,
           'title': title,
-        }),
+        },
       );
-      final data = json.decode(response.body);
-      return data['message'];
+      return json.decode(response.body);
     } catch (e) {
-      print("DataService: Error initiating cert upload: $e");
-      return "Tarmoq xatosi";
+      print("DataService: Error initiating certificate upload: $e");
+      return {"success": false, "message": "Tarmoq xatosi"};
+    }
+  }
+
+  Future<Map<String, dynamic>> checkCertUploadStatus(String sessionId) async {
+    try {
+      final response = await _get("${ApiConstants.backendUrl}/student/certificates/upload-status/$sessionId");
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      print("DataService: Error checking certificate status: $e");
+    }
+    return {"status": "pending"};
+  }
+
+  Future<Map<String, dynamic>> finalizeCertUpload(String sessionId) async {
+    try {
+      final response = await _post(
+        "${ApiConstants.backendUrl}/student/certificates/finalize",
+        body: {'session_id': sessionId},
+      );
+      return json.decode(response.body);
+    } catch (e) {
+      print("DataService: Error finalizing certificate upload: $e");
+      return {"success": false, "message": "Tarmoq xatosi"};
     }
   }
 
