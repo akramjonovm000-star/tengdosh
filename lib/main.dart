@@ -20,7 +20,8 @@ void main() async {
   // Initialize Firebase (Requires project settings)
   try {
     await Firebase.initializeApp();
-    await PushNotificationService.initialize();
+    // Non-blocking initialization to speed up startup
+    PushNotificationService.initialize(); 
   } catch (e) {
     debugPrint("Firebase Init Error: $e");
   }

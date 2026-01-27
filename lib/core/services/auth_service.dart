@@ -6,7 +6,14 @@ import '../constants/api_constants.dart';
 
 class AuthService {
   
-  // Bridge for AuthProvider
+  SharedPreferences? _prefs;
+
+  Future<SharedPreferences> get _getPrefs async {
+    _prefs ??= await SharedPreferences.getInstance();
+    return _prefs!;
+  }
+
+  // Bridger for AuthProvider
   Future<bool> loginWithHemis(String login, String password) async {
     final student = await this.login(login, password);
     return student != null;
@@ -102,7 +109,7 @@ class AuthService {
       final body = jsonDecode(response.body);
       if (response.statusCode == 200) {
         // Update local cache if successful
-        final prefs = await SharedPreferences.getInstance();
+        final prefs = await _getPrefs;
         final profileStr = prefs.getString('user_profile');
         if (profileStr != null) {
           final profile = jsonDecode(profileStr);
@@ -143,12 +150,12 @@ class AuthService {
   }
 
   Future<void> _saveRole(String role) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs;
     await prefs.setString('user_role', role);
   }
 
   Future<String?> getUserRole() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs;
     return prefs.getString('user_role') ?? 'student';
   }
 
@@ -183,12 +190,12 @@ class AuthService {
   }
 
   Future<void> _saveToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs;
     await prefs.setString('auth_token', token);
   }
 
   Future<void> saveProfileManually(Map<String, dynamic> profile) async {
-     final prefs = await SharedPreferences.getInstance();
+     final prefs = await _getPrefs;
      await prefs.setString('user_profile', jsonEncode(profile));
   }
   
@@ -197,7 +204,7 @@ class AuthService {
   }
   
   Future<Student?> getSavedUser() async {
-     final prefs = await SharedPreferences.getInstance();
+     final prefs = await _getPrefs;
      final profileStr = prefs.getString('user_profile');
      if (profileStr != null) {
        return Student.fromJson(jsonDecode(profileStr));
@@ -206,12 +213,12 @@ class AuthService {
   }
 
   Future<String?> getToken() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs;
     return prefs.getString('auth_token');
   }
 
   Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await _getPrefs;
     await prefs.clear();
   }
 

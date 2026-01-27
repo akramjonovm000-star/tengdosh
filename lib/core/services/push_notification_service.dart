@@ -25,7 +25,8 @@ class PushNotificationService {
       String? token = await _fcm.getToken();
       if (token != null) {
         if (kDebugMode) print("FCM Token: $token");
-        await _registerTokenWithBackend(token);
+        // Move to background to avoid blocking initialization
+        _registerTokenWithBackend(token); 
       }
 
       // 3. Listen for Token Refreshes
