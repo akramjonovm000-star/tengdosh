@@ -1,9 +1,9 @@
 // Last Updated: 2026-01-16 19:10
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:talabahamkor_mobile/core/services/data_service.dart';
 import 'package:talabahamkor_mobile/core/theme/app_theme.dart';
 import 'package:talabahamkor_mobile/features/feedback/screens/feedback_detail_screen.dart';
+import 'package:talabahamkor_mobile/features/feedback/widgets/feedback_upload_dialog.dart';
 
 class FeedbackScreen extends StatefulWidget {
   const FeedbackScreen({super.key});
@@ -93,20 +93,47 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _FeedbackWizard(
-        hierarchy: _recipientHierarchy,
-        onSubmit: _submitFeedback,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: _FeedbackWizard(
+          hierarchy: _recipientHierarchy,
+          onSubmit: _submitFeedback,
+        ),
       ),
     );
   }
 
-  Future<void> _submitFeedback(String text, String roleId, String? filePath, bool isAnonymous) async {
+  void _showTelegramUploadDialog(String text, String roleId, bool isAnonymous) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: FeedbackUploadDialog(
+          text: text,
+          role: roleId,
+          isAnonymous: isAnonymous,
+          onUploadSuccess: _loadFeedbacks,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _submitFeedback(String text, String roleId, bool isAnonymous, bool wantsFile) async {
+    if (wantsFile) {
+      _showTelegramUploadDialog(text, roleId, isAnonymous);
+      return;
+    }
+
     setState(() => _isLoading = true);
+    final result = await _dataService.createFeedback(
+      text: text,
+      role: roleId,
+      isAnonymous: isAnonymous,
+    );
     
-    // Optimistic UI update or just wait for reload
-    final success = await _dataService.sendFeedback(text, roleId, filePath, isAnonymous: isAnonymous);
-    
-    if (success) {
+    if (result['status'] == 'success') {
       _loadFeedbacks();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -117,7 +144,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Xatolik yuz berdi. Qaytadan urinib ko'ring."), backgroundColor: Colors.red),
+           SnackBar(content: Text(result['message'] ?? "Xatolik yuz berdi"), backgroundColor: Colors.red),
         );
       }
     }
@@ -218,7 +245,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
 
 class _FeedbackWizard extends StatefulWidget {
   final List<Map<String, dynamic>> hierarchy;
-  final Function(String, String, String?, bool) onSubmit;
+  final Function(String, String, bool, bool) onSubmit;
 
   const _FeedbackWizard({required this.hierarchy, required this.onSubmit});
 
@@ -231,9 +258,8 @@ class _FeedbackWizardState extends State<_FeedbackWizard> {
   Map<String, dynamic>? _selectedCategory;
   Map<String, dynamic>? _selectedSubCategory;
   bool _isAnonymous = false;
+  bool _wantsFile = false;
   final TextEditingController _textController = TextEditingController();
-  String? _filePath;
-  String? _fileName;
 
   void _selectCategory(Map<String, dynamic> item) {
     setState(() {
@@ -461,48 +487,33 @@ class _FeedbackWizardState extends State<_FeedbackWizard> {
             
             const SizedBox(height: 12),
             
-            // File Attachment
-            InkWell(
-              onTap: () async {
-                FilePickerResult? result = await FilePicker.platform.pickFiles();
-                if (result != null) {
-                  setState(() {
-                    _filePath = result.files.single.path;
-                    _fileName = result.files.single.name;
-                  });
-                }
-              },
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  border: Border.all(color: _fileName != null ? AppTheme.primaryBlue : Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(12),
-                  color: _fileName != null ? AppTheme.primaryBlue.withOpacity(0.05) : null,
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.attach_file, color: _fileName != null ? AppTheme.primaryBlue : Colors.grey),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _fileName ?? "Fayl biriktirish (ixtiyoriy)",
-                        style: TextStyle(
-                          color: _fileName != null ? AppTheme.primaryBlue : Colors.grey,
-                          fontWeight: _fileName != null ? FontWeight.bold : FontWeight.normal,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+            // File Attachment Toggle (Progress-based)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border.all(color: _wantsFile ? AppTheme.primaryBlue : Colors.grey.shade200),
+                borderRadius: BorderRadius.circular(12),
+                color: _wantsFile ? AppTheme.primaryBlue.withOpacity(0.05) : null,
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.telegram_rounded, color: _wantsFile ? AppTheme.primaryBlue : Colors.grey),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Fayl biriktirish (Telegram)", style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text("Rasm, video yoki PDF yuborish", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                      ],
                     ),
-                    if (_fileName != null)
-                       IconButton(
-                         icon: const Icon(Icons.close, size: 18, color: Colors.red), 
-                         onPressed: () => setState(() { _fileName = null; _filePath = null; }),
-                         constraints: const BoxConstraints(),
-                         padding: EdgeInsets.zero,
-                       )
-                  ],
-                ),
+                  ),
+                  Switch(
+                    value: _wantsFile,
+                    onChanged: (v) => setState(() => _wantsFile = v),
+                    activeColor: AppTheme.primaryBlue,
+                  ),
+                ],
               ),
             ),
 
@@ -523,7 +534,7 @@ class _FeedbackWizardState extends State<_FeedbackWizard> {
                    }
                    
                    Navigator.pop(context);
-                   widget.onSubmit(text, roleId, _filePath, _isAnonymous);
+                   widget.onSubmit(text, roleId, _isAnonymous, _wantsFile);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryBlue,

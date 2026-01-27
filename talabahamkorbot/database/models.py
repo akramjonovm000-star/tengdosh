@@ -592,6 +592,11 @@ class StudentFeedback(Base):
     file_type: Mapped[str | None] = mapped_column(String(32), nullable=True)
     is_anonymous: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
+    student_full_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    student_group: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    student_faculty: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    student_phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    
     parent_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("student_feedback.id"), nullable=True)
 
     student: Mapped["Student"] = relationship("Student", back_populates="feedbacks")

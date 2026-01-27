@@ -725,16 +725,63 @@ class DataService {
     return {"status": "pending"};
   }
 
-  Future<Map<String, dynamic>> finalizeDocUpload(String sessionId) async {
+  Future<Map<String, dynamic>> initiateFeedbackUpload({
+    required String sessionId,
+    required String text,
+    String role = "dekanat",
+    bool isAnonymous = false,
+  }) async {
     try {
       final response = await _post(
-        "${ApiConstants.backendUrl}/student/documents/finalize",
-        body: {'session_id': sessionId},
+        "${ApiConstants.backendUrl}/student/feedback/init-upload",
+        body: {
+          'session_id': sessionId,
+          'text': text,
+          'role': role,
+          'is_anonymous': isAnonymous,
+        },
       );
       return json.decode(response.body);
     } catch (e) {
-      print("DataService: Error finalizing upload: $e");
+      print("DataService: Error initiating feedback upload: $e");
       return {"success": false, "message": "Tarmoq xatosi"};
+    }
+  }
+
+  Future<Map<String, dynamic>> checkFeedbackUploadStatus(String sessionId) async {
+    try {
+      final response = await _get("${ApiConstants.backendUrl}/student/feedback/upload-status/$sessionId");
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      print("DataService: Error checking feedback status: $e");
+    }
+    return {"status": "pending"};
+  }
+
+  Future<Map<String, dynamic>> createFeedback({
+    required String text,
+    String role = "dekanat",
+    bool isAnonymous = false,
+    String? sessionId,
+  }) async {
+    try {
+      final Map<String, String> body = {
+        'text': text,
+        'role': role,
+        'is_anonymous': isAnonymous.toString(),
+      };
+      if (sessionId != null) body['session_id'] = sessionId;
+
+      final response = await _post(
+        "${ApiConstants.backendUrl}/student/feedback/",
+        body: body,
+      );
+      return json.decode(response.body);
+    } catch (e) {
+      print("DataService: Error creating feedback: $e");
+      return {"status": "error", "message": "Tarmoq xatosi"};
     }
   }
 

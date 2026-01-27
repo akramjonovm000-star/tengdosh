@@ -249,6 +249,7 @@ class FeedbackStates(StatesGroup):
     select_teacher = State()    # Yangi: O'qituvchini tanlash
     waiting_message = State()
     reappealing = State()
+    WAIT_FOR_APP_FILE = State() # [NEW] For App-initiated flow with files
 
 from aiogram.fsm.state import StatesGroup, State
 
