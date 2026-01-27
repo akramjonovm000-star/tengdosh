@@ -312,8 +312,15 @@ class HemisService:
                 
                 if response.status_code == 200:
                     data = response.json().get("data", [])
-                    # Sort by code descending (latest first)
-                    data.sort(key=lambda x: str(x.get("code", "0")), reverse=True)
+                    # Sort by code descending (latest first) using INT comparison
+                    def get_code(x):
+                        try:
+                            val = x.get("code") or x.get("id")
+                            return int(str(val))
+                        except:
+                            return 0
+                            
+                    data.sort(key=get_code, reverse=True)
                     return data
                 return []
             except Exception as e:

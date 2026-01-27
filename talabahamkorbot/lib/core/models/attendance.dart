@@ -25,10 +25,11 @@ class Attendance {
     final hourVal = json['hour'] != null ? int.tryParse(json['hour'].toString()) ?? 2 : 2;
     
     // Status 11 = Sababli, 12 = Sababsiz
-    // Also checking "is_valid" field which sometimes indicates excused status
-    final int status = json['absent_status'] ?? 0;
+    // Also checking "is_valid" and "explicable" fields
+    final int status = json['absent_status'] is int ? json['absent_status'] : 0;
     final bool valid = json['is_valid'] == true;
-    final bool excused = status == 11 || valid;
+    final bool explicable = json['explicable'] == true;
+    final bool excused = status == 11 || valid || explicable;
 
     return Attendance(
       id: json['id'] ?? 0,

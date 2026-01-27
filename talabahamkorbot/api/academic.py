@@ -241,12 +241,21 @@ async def get_attendance(
         raise HTTPException(status_code=401, detail="HEMIS_AUTH_ERROR")
 
     sem_code = semester
+    sem_code = semester
     if not sem_code:
-        me_data = await HemisService.get_me(student.hemis_token)
-        if me_data:
-            sem = me_data.get("semester", {})
-            if sem and isinstance(sem, dict):
-                 sem_code = str(sem.get("code") or sem.get("id"))
+        # Resolve latest semester dynamically
+        semesters = await HemisService.get_semester_list(student.hemis_token)
+        if semesters:
+            # get_semester_list is already sorted descending by code
+            latest = semesters[0]
+            sem_code = str(latest.get("code") or latest.get("id"))
+        else:
+            # Fallback to profile if list fails
+            me_data = await HemisService.get_me(student.hemis_token)
+            if me_data:
+                sem = me_data.get("semester", {})
+                if sem and isinstance(sem, dict):
+                     sem_code = str(sem.get("code") or sem.get("id"))
     
     _, _, _, data = await HemisService.get_student_absence(student.hemis_token, semester_code=sem_code, student_id=student.id)
     
