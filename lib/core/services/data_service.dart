@@ -696,21 +696,45 @@ class DataService {
     return [];
   }
 
-  Future<String?> initiateDocumentUpload({String? category, String? title}) async {
+  Future<Map<String, dynamic>> initiateDocUpload({required String sessionId, String? category, String? title}) async {
     try {
-      final response = await http.post(
-        Uri.parse("${ApiConstants.backendUrl}/student/documents/init-upload"),
-        headers: await _getHeaders(),
-        body: json.encode({
+      final response = await _post(
+        "${ApiConstants.backendUrl}/student/documents/init-upload",
+        body: {
+          'session_id': sessionId,
           'category': category,
           'title': title,
-        }),
+        },
       );
-      final data = json.decode(response.body);
-      return data['message'];
+      return json.decode(response.body);
     } catch (e) {
       print("DataService: Error initiating upload: $e");
-      return "Tarmoq xatosi";
+      return {"success": false, "message": "Tarmoq xatosi"};
+    }
+  }
+
+  Future<Map<String, dynamic>> checkDocUploadStatus(String sessionId) async {
+    try {
+      final response = await _get("${ApiConstants.backendUrl}/student/documents/upload-status/$sessionId");
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      print("DataService: Error checking status: $e");
+    }
+    return {"status": "pending"};
+  }
+
+  Future<Map<String, dynamic>> finalizeDocUpload(String sessionId) async {
+    try {
+      final response = await _post(
+        "${ApiConstants.backendUrl}/student/documents/finalize",
+        body: {'session_id': sessionId},
+      );
+      return json.decode(response.body);
+    } catch (e) {
+      print("DataService: Error finalizing upload: $e");
+      return {"success": false, "message": "Tarmoq xatosi"};
     }
   }
 

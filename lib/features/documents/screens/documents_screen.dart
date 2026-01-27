@@ -1,6 +1,4 @@
-import 'package:flutter/material.dart';
-import '../../../core/theme/app_theme.dart';
-import '../../../core/services/data_service.dart';
+import '../widgets/document_upload_dialog.dart';
 
 class DocumentsScreen extends StatefulWidget {
   const DocumentsScreen({super.key});
@@ -31,148 +29,15 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     }
   }
 
-  Future<void> _initiateUpload({String? category, String? title}) async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Botga yuklash so'rovi yuborilmoqda...")),
-    );
-    
-    final msg = await _dataService.initiateDocumentUpload(
-      category: category,
-      title: title,
-    );
-    
-    if (mounted && msg != null) {
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(msg),
-          backgroundColor: msg.toLowerCase().contains("xato") ? Colors.red : AppTheme.primaryBlue,
-          duration: const Duration(seconds: 4),
-        ),
-      );
-    }
-  }
-
-  void _showCategorySheet() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 8),
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
-            const Padding(
-              padding: EdgeInsets.all(24),
-              child: Text("Hujjat turini tanlang", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            ),
-            Divider(height: 1, color: Colors.grey[100]),
-            _buildCategoryItem(Icons.credit_card_rounded, "Passport", "passport"),
-            _buildCategoryItem(Icons.school_rounded, "Diplom", "diplom"),
-            _buildCategoryItem(Icons.work_outline_rounded, "Rezyume", "rezyume"),
-            _buildCategoryItem(Icons.assignment_ind_rounded, "Obyektivka", "obyektivka"),
-            _buildCategoryItem(Icons.folder_shared_rounded, "Boshqa", "boshqa"),
-            const SizedBox(height: 32),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCategoryItem(IconData icon, String title, String category) {
-    return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(color: Colors.blue[50], borderRadius: BorderRadius.circular(10)),
-        child: Icon(icon, color: AppTheme.primaryBlue, size: 22),
-      ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-      trailing: const Icon(Icons.chevron_right_rounded, color: Colors.grey),
-      onTap: () {
-        Navigator.pop(context);
-        if (category == "boshqa") {
-          _showOtherDocumentForm();
-        } else {
-          _initiateUpload(category: category, title: title);
-        }
-      },
-    );
-  }
-
-  void _showOtherDocumentForm() {
-    final TextEditingController titleController = TextEditingController();
-    
+  void _showUploadDialog() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text("Boshqa hujjat", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 20),
-              TextField(
-                controller: titleController,
-                decoration: InputDecoration(
-                  labelText: "Hujjat nomi",
-                  hintText: "Masalan: Tug'ilganlik haqida guvohnoma",
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  prefixIcon: const Icon(Icons.edit_note_rounded),
-                ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    if (titleController.text.isEmpty) {
-                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Iltimos, hujjat nomini kiriting")));
-                       return;
-                    }
-                    _initiateUpload(category: "boshqa", title: titleController.text);
-                  },
-                  icon: const Icon(Icons.telegram_rounded, color: AppTheme.primaryBlue),
-                  label: const Text("Telegram orqali yuklash"),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppTheme.primaryBlue),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _loadDocuments();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text("Saqlash", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
+        child: DocumentUploadDialog(
+          onUploadSuccess: _loadDocuments,
         ),
       ),
     );
@@ -331,7 +196,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
           width: double.infinity,
           height: 56,
           child: ElevatedButton(
-            onPressed: _showCategorySheet,
+            onPressed: _showUploadDialog,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primaryBlue,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
