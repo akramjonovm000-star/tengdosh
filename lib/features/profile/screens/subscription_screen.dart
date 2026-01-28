@@ -185,7 +185,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     if (isPremium && _student?.premiumExpiry != null) {
       // Simple date formatting
       DateTime expiry = DateTime.parse(_student!.premiumExpiry!);
-      expiryText = "${expiry.day}.${expiry.month}.${expiry.year}";
+      String day = expiry.day.toString().padLeft(2, '0');
+      String month = expiry.month.toString().padLeft(2, '0');
+      expiryText = "$day.$month.${expiry.year}";
     }
 
     return Container(
