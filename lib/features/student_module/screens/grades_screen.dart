@@ -95,6 +95,7 @@ class _GradesScreenState extends State<GradesScreen> {
                       );
                     }).toList(),
                   ],
+                  onChanged: (val) {
                     setState(() {
                       _selectedSemester = val;
                     });
