@@ -12,6 +12,7 @@ router = APIRouter()
 @router.get("/grades")
 @cache(expire=600)
 async def get_grades(
+    semester: str = None,
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_session)
 ):
@@ -23,12 +24,13 @@ async def get_grades(
         raise HTTPException(status_code=401, detail="HEMIS_AUTH_ERROR")
 
     # 1. Determine Semester Code
-    me_data = await HemisService.get_me(student.hemis_token)
-    sem_code = None
-    if me_data:
-        sem = me_data.get("semester", {})
-        if sem and isinstance(sem, dict):
-             sem_code = str(sem.get("code") or sem.get("id"))
+    sem_code = semester
+    if not sem_code:
+        me_data = await HemisService.get_me(student.hemis_token)
+        if me_data:
+            sem = me_data.get("semester", {})
+            if sem and isinstance(sem, dict):
+                 sem_code = str(sem.get("code") or sem.get("id"))
 
     # 2. Get Subjects (Grades are embedded in subject list)
     subjects_data = await HemisService.get_student_subject_list(
@@ -107,6 +109,7 @@ async def get_semesters(
 @router.get("/schedule")
 @cache(expire=3600)  # Cache for 1 hour
 async def get_schedule(
+    semester: str = None,
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_session)
 ):
@@ -118,12 +121,13 @@ async def get_schedule(
         raise HTTPException(status_code=401, detail="HEMIS_AUTH_ERROR")
 
     # 1. Determine Semester Code
-    me_data = await HemisService.get_me(student.hemis_token)
-    sem_code = None
-    if me_data:
-        sem = me_data.get("semester", {})
-        if sem and isinstance(sem, dict):
-             sem_code = str(sem.get("code") or sem.get("id"))
+    sem_code = semester
+    if not sem_code:
+        me_data = await HemisService.get_me(student.hemis_token)
+        if me_data:
+            sem = me_data.get("semester", {})
+            if sem and isinstance(sem, dict):
+                 sem_code = str(sem.get("code") or sem.get("id"))
 
     # 2. Fetch Schedule
     schedule_data = await HemisService.get_student_schedule_cached(
@@ -182,6 +186,7 @@ async def get_schedule(
 @router.get("/subjects")
 @cache(expire=600)
 async def get_subjects(
+    semester: str = None,
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_session)
 ):
@@ -195,12 +200,13 @@ async def get_subjects(
     import asyncio
     
     # 1. Determine Semester Code
-    me_data = await HemisService.get_me(student.hemis_token)
-    sem_code = None
-    if me_data:
-        sem = me_data.get("semester", {})
-        if sem and isinstance(sem, dict):
-             sem_code = str(sem.get("code") or sem.get("id"))
+    sem_code = semester
+    if not sem_code:
+        me_data = await HemisService.get_me(student.hemis_token)
+        if me_data:
+            sem = me_data.get("semester", {})
+            if sem and isinstance(sem, dict):
+                 sem_code = str(sem.get("code") or sem.get("id"))
     
     # 2. Fetch data concurrently
     subjects_task = HemisService.get_student_subject_list(student.hemis_token, semester_code=sem_code, student_id=student.id)
