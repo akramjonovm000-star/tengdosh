@@ -454,22 +454,27 @@ class DataService {
 
 
   // 12. Get Detailed Grades (O'zlashtirish)
-  Future<List<dynamic>> getGrades() async {
+  Future<List<dynamic>> getGrades({String? semester}) async {
     final student = await _authService.getSavedUser();
     final studentId = student?.id ?? 0;
+    final semCode = semester ?? 'all';
 
-    final cached = await _dbService.getCache('subjects', studentId); // Using subjects table for grades/subjects
+    final cached = await _dbService.getCache('subjects', studentId, semesterCode: semCode); // Using subjects table for grades/subjects
     if (cached != null && cached.containsKey('grades')) {
-      _backgroundRefreshGrades(studentId);
+      _backgroundRefreshGrades(studentId, semester: semester);
       return cached['grades'];
     }
 
-    return await _backgroundRefreshGrades(studentId);
+    return await _backgroundRefreshGrades(studentId, semester: semester);
   }
 
-  Future<List<dynamic>> _backgroundRefreshGrades(int studentId) async {
+  Future<List<dynamic>> _backgroundRefreshGrades(int studentId, {String? semester}) async {
     try {
-      final response = await _get(ApiConstants.grades);
+      String url = ApiConstants.grades;
+      if (semester != null) {
+        url += (url.contains('?') ? '&' : '?') + "semester=$semester";
+      }
+      final response = await _get(url);
 
       if (response.statusCode == 200) {
         final dynamic body = json.decode(response.body);
@@ -484,10 +489,11 @@ class DataService {
         if (items.isNotEmpty) {
           // Update Local Cache (Non-blocking)
           try {
-            final dynamic cached = await _dbService.getCache('subjects', studentId);
+            final semCode = semester ?? 'all';
+            final dynamic cached = await _dbService.getCache('subjects', studentId, semesterCode: semCode);
             final Map<String, dynamic> existing = (cached is Map) ? Map<String, dynamic>.from(cached) : {};
             existing['grades'] = items;
-            await _dbService.saveCache('subjects', studentId, existing);
+            await _dbService.saveCache('subjects', studentId, existing, semesterCode: semCode);
           } catch (e) {
             print("Warning: Failed to cache grades: $e");
           }

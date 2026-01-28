@@ -14,20 +14,48 @@ class _GradesScreenState extends State<GradesScreen> {
   final DataService _dataService = DataService();
   bool _isLoading = true;
   List<dynamic> _grades = [];
+  List<dynamic> _semesters = [];
+  String? _selectedSemester;
 
   @override
   void initState() {
     super.initState();
-    _loadGrades();
+    _loadInitialData();
+  }
+
+  Future<void> _loadInitialData() async {
+    setState(() => _isLoading = true);
+    try {
+      final sems = await _dataService.getSemesters();
+      if (mounted) {
+        setState(() {
+          _semesters = sems;
+          if (sems.isNotEmpty) {
+            // Try to find the 'current' semester or pick the last one (usually highest ID)
+            final current = sems.firstWhere((s) => s['current'] == true, orElse: () => sems.last);
+            _selectedSemester = current['id'].toString();
+          }
+        });
+        await _loadGrades();
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _loadGrades() async {
-    final grades = await _dataService.getGrades();
-    if (mounted) {
-      setState(() {
-        _grades = grades;
-        _isLoading = false;
-      });
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+    try {
+      final grades = await _dataService.getGrades(semester: _selectedSemester);
+      if (mounted) {
+        setState(() {
+          _grades = grades;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -41,18 +69,66 @@ class _GradesScreenState extends State<GradesScreen> {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _grades.isEmpty
-              ? const Center(child: Text("Ma'lumot topilmadi"))
-              : ListView.builder(
-                  padding: const EdgeInsets.all(20),
-                  itemCount: _grades.length,
-                  itemBuilder: (context, index) {
-                    final item = _grades[index];
-                    return _buildGradeCard(item);
-                  },
-                ),
+      body: Column(
+        children: [
+          if (_semesters.isNotEmpty)
+            Container(
+              height: 60,
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: _semesters.length,
+                itemBuilder: (context, index) {
+                  final sem = _semesters[index];
+                  final isSelected = _selectedSemester == sem['id'].toString();
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      label: Text(sem['name'] ?? ""),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        if (selected) {
+                          setState(() => _selectedSemester = sem['id'].toString());
+                          _loadGrades();
+                        }
+                      },
+                      selectedColor: AppTheme.primaryBlue,
+                      backgroundColor: Colors.white,
+                      labelStyle: TextStyle(
+                        color: isSelected ? Colors.white : Colors.black87,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        side: BorderSide(
+                          color: isSelected ? AppTheme.primaryBlue : Colors.grey[300]!,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _loadGrades,
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _grades.isEmpty
+                      ? const Center(child: Text("Ma'lumot topilmadi"))
+                      : ListView.builder(
+                          padding: const EdgeInsets.all(20),
+                          itemCount: _grades.length,
+                          itemBuilder: (context, index) {
+                            final item = _grades[index];
+                            return _buildGradeCard(item);
+                          },
+                        ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
