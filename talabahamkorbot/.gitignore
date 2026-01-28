@@ -41,19 +41,19 @@ __pycache__/
 !docs.json
 
 # Ignore Bot Source Code
-*.py
-handlers/
-services/
-database/
-keyboards/
-middlewares/
-utils/
-scripts/
-api/
-static/
-requirements.txt
-install.sh
-*.sh
-data/
-migrations/
-tests/
+# *.py
+# handlers/
+# services/
+# database/
+# keyboards/
+# middlewares/
+# utils/
+# scripts/
+# api/
+# static/
+# requirements.txt
+# install.sh
+# *.sh
+# data/
+# migrations/
+# tests/
