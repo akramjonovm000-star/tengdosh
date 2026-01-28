@@ -457,17 +457,10 @@ class DataService {
   Future<List<dynamic>> getGrades({String? semester, bool forceRefresh = false}) async {
     final student = await _authService.getSavedUser();
     final studentId = student?.id ?? 0;
-    final semCode = semester ?? 'all';
-
-    if (!forceRefresh) {
-      final cached = await _dbService.getCache('subjects', studentId, semesterCode: semCode); 
-      if (cached != null && cached.containsKey('grades')) {
-        _backgroundRefreshGrades(studentId, semester: semester);
-        return cached['grades'];
-      }
-    }
-
-    return await _backgroundRefreshGrades(studentId, semester: semester, forceRefresh: forceRefresh);
+    
+    // User requested to remove cache usage for grades.
+    // Always force refresh to ensure fresh data from backend.
+    return await _backgroundRefreshGrades(studentId, semester: semester, forceRefresh: true);
   }
 
   Future<List<dynamic>> _backgroundRefreshGrades(int studentId, {String? semester, bool forceRefresh = false}) async {

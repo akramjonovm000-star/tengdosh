@@ -39,11 +39,12 @@ class _GradesScreenState extends State<GradesScreen> {
     }
   }
 
-  Future<void> _loadGrades({bool forceRefresh = false}) async {
+  Future<void> _loadGrades() async {
     if (!mounted) return;
-    if (!forceRefresh) setState(() => _isLoading = true);
+    setState(() => _isLoading = true);
     try {
-      final grades = await _dataService.getGrades(semester: _selectedSemester, forceRefresh: forceRefresh);
+      // DataService now enforces forceRefresh: true internally for grades
+      final grades = await _dataService.getGrades(semester: _selectedSemester);
       if (mounted) {
         setState(() {
           _grades = grades;
@@ -97,7 +98,7 @@ class _GradesScreenState extends State<GradesScreen> {
                     setState(() {
                       _selectedSemester = val;
                     });
-                    _loadGrades(forceRefresh: true);
+                    _loadGrades();
                   },
                 ),
               ),
@@ -106,7 +107,7 @@ class _GradesScreenState extends State<GradesScreen> {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () async => _loadGrades(forceRefresh: true),
+        onRefresh: _loadGrades,
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : _grades.isEmpty
