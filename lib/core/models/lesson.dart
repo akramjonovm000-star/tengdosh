@@ -59,7 +59,6 @@ class Lesson {
     String start = json['start_time'] ?? '';
     String end = json['end_time'] ?? '';
     
-    final lessonPair = json['lessonPair'];
     if (lessonPair != null && lessonPair is Map) {
       if (start.isEmpty) start = (lessonPair['start_time'] ?? '').toString();
       if (end.isEmpty) end = (lessonPair['end_time'] ?? '').toString();
