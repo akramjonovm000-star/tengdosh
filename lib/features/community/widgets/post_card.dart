@@ -285,6 +285,7 @@ class _PostCardState extends State<PostCard> {
                   authorAvatar: widget.post.authorAvatar,
                   authorRole: widget.post.authorRole,
                   authorIsPremium: widget.post.authorIsPremium, // NEW
+                  authorCustomBadge: widget.post.authorCustomBadge, // NEW
                 )));
               },
               child: Row(
@@ -318,7 +319,9 @@ class _PostCardState extends State<PostCard> {
                             ),
                             if (widget.post.authorIsPremium) ...[
                               const SizedBox(width: 4),
-                              const Icon(Icons.verified, color: Colors.blue, size: 16),
+                              widget.post.authorCustomBadge != null 
+                                  ? Text(widget.post.authorCustomBadge!, style: const TextStyle(fontSize: 16))
+                                  : const Icon(Icons.verified, color: Colors.blue, size: 16),
                             ]
                           ],
                         ),
@@ -548,6 +551,7 @@ class _PostCardState extends State<PostCard> {
   Widget _buildFoldableContent() {
     final content = _currentContent; 
     
+    // Unified Parsing Logic
     final RegExp titleRegex = RegExp(r'^\*\*(.*?)\*\*\n+(.*)', multiLine: true, dotAll: true);
     final match = titleRegex.firstMatch(content);
     
@@ -560,8 +564,9 @@ class _PostCardState extends State<PostCard> {
       body = match.group(2)?.trim() ?? "";
       hasTitle = true;
     } else {
+      // Fallback for simple single-newline posts (Legacy/Quick posts)
       final lines = content.split('\n');
-      if (lines.length > 1) {
+      if (lines.length > 1 && lines.first.length < 100) { // Limit title length for fallback
          title = lines.first.trim();
          body = lines.sublist(1).join('\n').trim();
          hasTitle = title.isNotEmpty && body.isNotEmpty;

@@ -147,7 +147,9 @@ class UserSearchDelegate extends SearchDelegate {
          Text(student.fullName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
          if (student.isPremium) ...[
            const SizedBox(width: 4),
-           const Icon(Icons.verified, color: Colors.blue, size: 16),
+           student.customBadge != null 
+               ? Text(student.customBadge!, style: const TextStyle(fontSize: 16))
+               : const Icon(Icons.verified, color: Colors.blue, size: 16),
          ]
        ],
       ),

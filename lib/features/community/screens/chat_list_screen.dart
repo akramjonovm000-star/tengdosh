@@ -78,9 +78,17 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       )
                   ],
                 ),
-                title: Text(
-                  chat.formattedName,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                title: Row(
+                  children: [
+                    Text(
+                      chat.formattedName,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    if (chat.partnerCustomBadge != null) ...[
+                      const SizedBox(width: 4),
+                      Text(chat.partnerCustomBadge!, style: const TextStyle(fontSize: 14)),
+                    ]
+                  ],
                 ),
                 subtitle: Text(
                   chat.isLastMessageMine ? "Siz: ${chat.lastMessage}" : chat.lastMessage,

@@ -431,7 +431,9 @@ class _CommentSheetState extends State<CommentSheet> {
                         Text(post.authorName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                         if (post.authorIsPremium) ...[
                           const SizedBox(width: 4),
-                          const Icon(Icons.verified, color: Colors.blue, size: 14),
+                          post.authorCustomBadge != null 
+                              ? Text(post.authorCustomBadge!, style: const TextStyle(fontSize: 14))
+                              : const Icon(Icons.verified, color: Colors.blue, size: 14),
                         ]
                       ],
                     ),

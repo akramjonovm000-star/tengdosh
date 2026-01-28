@@ -19,6 +19,7 @@ class UserProfileScreen extends StatefulWidget {
   final String authorAvatar;
   final String authorRole;
   final bool authorIsPremium; // NEW
+  final String? authorCustomBadge; // NEW
 
   const UserProfileScreen({
     super.key,
@@ -28,6 +29,7 @@ class UserProfileScreen extends StatefulWidget {
     required this.authorAvatar,
     required this.authorRole,
     this.authorIsPremium = false, // NEW
+    this.authorCustomBadge, // NEW
   });
 
   @override
@@ -312,7 +314,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                       Text(line1, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                       if (widget.authorIsPremium) ...[
                         const SizedBox(width: 6),
-                        const Icon(Icons.verified, color: Colors.blue, size: 20),
+                        widget.authorCustomBadge != null 
+                            ? Text(widget.authorCustomBadge!, style: const TextStyle(fontSize: 20))
+                            : const Icon(Icons.verified, color: Colors.blue, size: 20),
                       ]
                     ],
                   ),

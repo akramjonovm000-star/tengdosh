@@ -29,6 +29,7 @@ class Post {
   final bool isRepostedByMe;
   final DateTime createdAt; // Added
   final bool authorIsPremium; // NEW
+  final String? authorCustomBadge; // NEW
 
   Post({
     required this.id,
@@ -61,6 +62,7 @@ class Post {
     this.isMine = false,
     this.isRepostedByMe = false,
     this.authorIsPremium = false, // NEW
+    this.authorCustomBadge, // NEW
   });
 
   factory Post.fromJson(Map<String, dynamic> json) {
@@ -85,6 +87,10 @@ class Post {
       targetFacultyId: json['target_faculty_id']?.toString(),
       targetSpecialtyId: json['target_specialty_name'],
       authorIsPremium: json['author_is_premium'] ?? false, // NEW
+      authorCustomBadge: json['author_custom_badge'], // NEW
+      pollOptions: json['poll_options'] != null ? List<String>.from(json['poll_options']) : null,
+      pollVotes: json['poll_votes'] != null ? List<int>.from(json['poll_votes']) : null,
+      userVote: json['user_vote_index'],
     );
   }
 
@@ -119,6 +125,7 @@ class Post {
     bool? isRepostedByMe,
     DateTime? createdAt,
     bool? authorIsPremium, // NEW
+    String? authorCustomBadge, // NEW
   }) {
     return Post(
       id: id ?? this.id,
@@ -151,6 +158,7 @@ class Post {
       isMine: isMine ?? this.isMine,
       isRepostedByMe: isRepostedByMe ?? this.isRepostedByMe,
       authorIsPremium: authorIsPremium ?? this.authorIsPremium, // NEW
+      authorCustomBadge: authorCustomBadge ?? this.authorCustomBadge, // NEW
     );
   }
 }
@@ -174,6 +182,7 @@ class Comment {
   final bool isMine;             // Restored
   final String? replyToCommentId; // NEW
   final bool authorIsPremium; // NEW
+  final String? authorCustomBadge; // NEW
 
   Comment({
     required this.id,
@@ -194,6 +203,7 @@ class Comment {
     this.isMine = false,
     this.replyToCommentId, // NEW
     this.authorIsPremium = false, // NEW
+    this.authorCustomBadge, // NEW
   });
 
   factory Comment.fromJson(Map<String, dynamic> json) {
@@ -216,6 +226,7 @@ class Comment {
       replyToContent: json['reply_to_content'], // Assumed this was missing
       replyToCommentId: json['reply_to_comment_id']?.toString(), // NEW
       authorIsPremium: json['author_is_premium'] ?? false, // NEW
+      authorCustomBadge: json['author_custom_badge'], // NEW
     );
   }
 
@@ -238,6 +249,7 @@ class Comment {
     bool? isMine,
     String? replyToCommentId, // NEW
     bool? authorIsPremium, // NEW
+    String? authorCustomBadge, // NEW
   }) {
     return Comment(
       id: id ?? this.id,
@@ -258,6 +270,7 @@ class Comment {
       isMine: isMine ?? this.isMine,
       replyToCommentId: replyToCommentId ?? this.replyToCommentId, // NEW
       authorIsPremium: authorIsPremium ?? this.authorIsPremium, // NEW
+      authorCustomBadge: authorCustomBadge ?? this.authorCustomBadge, // NEW
     );
   }
 }
@@ -274,6 +287,7 @@ class Chat {
   final int unreadCount;
   final bool isOnline;
   final bool isLastMessageMine; 
+  final String? partnerCustomBadge; // NEW
 
   Chat({
     required this.id,
@@ -287,6 +301,7 @@ class Chat {
     this.unreadCount = 0,
     this.isOnline = false,
     this.isLastMessageMine = false, 
+    this.partnerCustomBadge, // NEW
   });
 
   factory Chat.fromJson(Map<String, dynamic> json) {
@@ -303,6 +318,7 @@ class Chat {
       unreadCount: json['unread_count'] ?? 0,
       isOnline: false, 
       isLastMessageMine: json['is_last_message_mine'] ?? false, 
+      partnerCustomBadge: user['custom_badge'], // NEW
     );
   }
 

@@ -159,6 +159,8 @@ class CommunityService {
         body: json.encode({
           'content': post.content,
           'category_type': post.scope,
+          'is_poll': post.pollOptions != null && post.pollOptions!.isNotEmpty,
+          'poll_options': post.pollOptions,
         }),
       );
 
@@ -274,9 +276,18 @@ class CommunityService {
   }
 
   Future<bool> votePoll(String postId, int optionIndex) async {
-    // Stub functionality to fix compilation. Implement backend later.
-    await Future.delayed(const Duration(milliseconds: 500));
-    return true; 
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConstants.communityPosts}/$postId/vote'),
+        headers: await _getHeaders(),
+        body: json.encode({'option_index': optionIndex}),
+      );
+      
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      print("CommunityService: Error voting in poll: $e");
+      return false;
+    }
   }
 
   Future<bool> deletePost(String postId) async {

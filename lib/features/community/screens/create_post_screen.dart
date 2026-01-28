@@ -53,19 +53,25 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
        return;
     }
 
-    // Mock Current User
+    // Enforce Markdown Format for Title
+    String finalContent = content;
+    if (title.isNotEmpty) {
+      finalContent = "**$title**\n\n$content";
+    }
+
+    // Improve local Optimistic Post
     final newPost = Post(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      authorId: "0", // NEW (Optimistic ID)
-      authorName: "Men (Talaba)", 
-      authorUsername: "@me",
+      id: "temp_${DateTime.now().millisecondsSinceEpoch}",
+      authorId: "0",
+      authorName: "Siz", 
+      authorUsername: "me",
       authorAvatar: "",
-      authorRole: _selectedScope == 'specialty' ? "Guruhdoshingiz" : "Talaba",
-      content: title.isNotEmpty ? "$title\n\n$content" : content,
+      authorRole: "student",
+      content: finalContent,
       timeAgo: "Hozirgina",
       createdAt: DateTime.now(),
       scope: _selectedScope,
-      // Poll logic if needed
+      isMine: true,
       pollOptions: _isPoll ? _pollControllers.map((c) => c.text).where((t) => t.isNotEmpty).toList() : null,
       pollVotes: _isPoll ? List.filled(_pollControllers.where((c) => c.text.isNotEmpty).length, 0) : null,
     );
