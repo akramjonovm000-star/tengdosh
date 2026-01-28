@@ -402,6 +402,7 @@ class CommunityService {
       commentsCount: json['comments_count'] ?? 0,
       isVerified: json['author_is_premium'] ?? false,
       authorIsPremium: json['author_is_premium'] ?? false, // NEW
+      authorCustomBadge: json['author_custom_badge'], // NEW
       isMine: json['is_mine'] ?? false,
     );
   }
