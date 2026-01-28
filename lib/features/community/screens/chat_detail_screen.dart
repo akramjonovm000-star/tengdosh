@@ -126,9 +126,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             ],
           ),
         ),
-        actions: [
-          IconButton(icon: const Icon(Icons.more_vert), onPressed: (){}),
-        ],
       ),
       body: Column(
         children: [
