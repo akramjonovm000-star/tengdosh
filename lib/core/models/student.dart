@@ -56,15 +56,15 @@ class Student {
     String? jsonFullName = json['full_name'] ?? json['name'];
     String? firstName = json['first_name'] ?? json['short_name'] ?? json['firstname'];
     String? lastName = json['last_name'] ?? json['lastname'];
-    String? fatherName = json['father_name'] ?? json['fathername'] ?? json['patronymic'];
+    String? patronymic = json['father_name'] ?? json['fathername'] ?? json['patronymic'];
 
     if (lastName != null && firstName != null) {
-      if (fatherName != null) {
-        fullName = "${sentenceCase(lastName.toString())} ${sentenceCase(firstName.toString())} ${sentenceCase(fatherName.toString())}";
+      if (patronymic != null) {
+        fullName = "${sentenceCase(lastName)} ${sentenceCase(firstName)} ${sentenceCase(patronymic)}";
       } else {
-        fullName = "${sentenceCase(lastName.toString())} ${sentenceCase(firstName.toString())}";
+        fullName = "${sentenceCase(lastName)} ${sentenceCase(firstName)}";
       }
-    } else if (jsonFullName != null && jsonFullName.toString().trim().isNotEmpty && jsonFullName != "Talaba") {
+        } else if (jsonFullName != null && jsonFullName.toString().trim().isNotEmpty && jsonFullName != "Talaba") {
       var parts = jsonFullName.toString().trim().split(' ');
       // Preserve all parts (Family, Name, Patronymic)
       fullName = parts.map((p) => sentenceCase(p)).join(' ');
