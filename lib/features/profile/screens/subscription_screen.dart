@@ -116,6 +116,45 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     }
   }
 
+  void _confirmPurchase(SubscriptionPlan plan) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text("Tasdiqlash"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+             Text("Siz quyidagi tarifni sotib olmoqchimisiz?", style: TextStyle(color: Colors.grey[700])),
+             const SizedBox(height: 10),
+             Text("Tarif: ${plan.name}", style: const TextStyle(fontWeight: FontWeight.bold)),
+             Text("Narxi: ${plan.priceUzs} so'm", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+             const SizedBox(height: 10),
+             Text("Balansingizdan ${plan.priceUzs} so'm yechiladi.", style: const TextStyle(fontSize: 13)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Bekor qilish", style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _purchasePlan(plan);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2575FC),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text("Sotib olish", style: TextStyle(color: Colors.white)),
+          )
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -348,7 +387,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               const SizedBox(height: 4),
               SizedBox(
                 height: 32,
-                child: ElevatedButton(
                 child: ElevatedButton(
                   onPressed: loading ? null : () => _confirmPurchase(plan),
                   style: ElevatedButton.styleFrom(
