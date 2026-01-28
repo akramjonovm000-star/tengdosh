@@ -21,8 +21,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   final List<String> _weekDays = ["Dushanba", "Seshanba", "Chorshanba", "Payshanba", "Juma", "Shanba"];
   final List<String> _months = [
-    "Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun",
-    "Iyul", "Avgust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr"
+    "yanvar", "fevral", "mart", "aprel", "may", "iyun",
+    "iyul", "avgust", "sentyabr", "oktyabr", "noyabr", "dekabr"
   ];
 
   @override
@@ -101,7 +101,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "${_weekDays[_selectedDay - 1]}, ${selectedDate.day}-${_months[selectedDate.month - 1]}", 
+                  "${_weekDays[_selectedDay - 1]}, ${selectedDate.day} - ${_months[selectedDate.month - 1]}", 
                   style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87)
                 ),
                 const SizedBox(height: 16),
