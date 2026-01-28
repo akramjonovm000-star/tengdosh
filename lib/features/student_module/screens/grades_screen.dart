@@ -64,73 +64,67 @@ class _GradesScreenState extends State<GradesScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Semester Selection Popup
+        actions: [
+          // Semi-transparent dropdown container (Aligned with Attendance Screen)
           if (_semesters.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: PopupMenuButton<String?>(
-                initialValue: _selectedSemester,
-                onSelected: (String? value) {
-                  setState(() => _selectedSemester = value);
-                  _loadGrades();
-                },
-                offset: const Offset(0, 45),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: null,
-                    child: Text("Joriy"),
-                  ),
-                  ..._semesters.map((sem) => PopupMenuItem(
-                    value: sem['id'].toString(),
-                    child: Text(sem['name'] ?? ""),
-                  )),
-                ],
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryBlue,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.check, color: Colors.white, size: 16),
-                      const SizedBox(width: 8),
-                      Text(
-                        _selectedSemester == null 
-                            ? "Joriy" 
-                            : (_semesters.firstWhere((s) => s['id'].toString() == _selectedSemester, orElse: () => {'name': ''})['name'] ?? ""),
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: Colors.grey.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String?>(
+                  value: _selectedSemester,
+                  hint: const Text("Semestr", style: TextStyle(fontSize: 14)),
+                  icon: const Icon(Icons.arrow_drop_down, color: Colors.black54),
+                  borderRadius: BorderRadius.circular(12),
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text("Joriy", style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                    ..._semesters.map((s) {
+                      final code = s['id'].toString();
+                      final name = s['name'] ?? "";
+                      return DropdownMenuItem<String?>(
+                        value: code,
+                        child: Text(name),
+                      );
+                    }).toList(),
+                  ],
+                  onChanged: (val) {
+                    setState(() {
+                      _selectedSemester = val;
+                    });
+                    _loadGrades();
+                  },
                 ),
               ),
             ),
-            
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: _loadGrades,
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _grades.isEmpty
-                      ? const Center(child: Text("Ma'lumot topilmadi"))
-                      : ListView.builder(
-                          padding: const EdgeInsets.all(20),
-                          itemCount: _grades.length,
-                          itemBuilder: (context, index) {
-                            final item = _grades[index];
-                            return _buildGradeCard(item);
-                          },
-                        ),
-            ),
-          ),
+          const SizedBox(width: 16),
         ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: _loadGrades,
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _grades.isEmpty
+                ? const Center(
+                    child: SingleChildScrollView(
+                      physics: AlwaysScrollableScrollPhysics(),
+                      child: Text("Ma'lumot topilmadi"),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(20),
+                    itemCount: _grades.length,
+                    itemBuilder: (context, index) {
+                      final item = _grades[index];
+                      return _buildGradeCard(item);
+                    },
+                  ),
       ),
     );
   }
