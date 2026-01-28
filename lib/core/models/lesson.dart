@@ -30,20 +30,39 @@ class Lesson {
 
     final training = json['trainingType'] != null ? json['trainingType']['name'] ?? 'Dars' : (json['training_type_name'] ?? 'Dars');
 
-    // Time parsing
-    final start = json['start_time'] ?? '';
-    final end = json['end_time'] ?? '';
+    // Time parsing - Try multiple common HEMIS locations
+    String start = json['start_time'] ?? '';
+    String end = json['end_time'] ?? '';
     
+    final lessonPair = json['lessonPair'];
+    if (lessonPair != null && lessonPair is Map) {
+      if (start.isEmpty) start = (lessonPair['start_time'] ?? '').toString();
+      if (end.isEmpty) end = (lessonPair['end_time'] ?? '').toString();
+    }
+
     // Weekday: 1=Mon ... 6=Sat
     int day = 1;
+
+    // 1. Try to derive from lesson_date (timestamp)
+    final timestamp = json['lesson_date'];
+    if (timestamp != null) {
+      try {
+        final ts = int.parse(timestamp.toString());
+        if (ts > 5000000) { // Basic sanity check for unix timestamp
+           day = DateTime.fromMillisecondsSinceEpoch(ts * 1000).weekday;
+        }
+      } catch (_) {}
+    }
+
+    // 2. Fallback to explicit day IDs
     if (json['week_day_id'] != null) {
-       int val = int.tryParse(json['week_day_id'].toString()) ?? 1;
+       int val = int.tryParse(json['week_day_id'].toString()) ?? day;
        day = (val > 10) ? val - 10 : val;
     } else if (json['day_of_week'] != null) {
-       int val = int.tryParse(json['day_of_week'].toString()) ?? 1;
+       int val = int.tryParse(json['day_of_week'].toString()) ?? day;
        day = (val > 10) ? val - 10 : val;
-    } else if (json['week_day'] != null) {
-       day = int.tryParse(json['week_day'].toString()) ?? 1;
+    } else if (json['week_day'] != null && json['week_day'] is! Map) {
+       day = int.tryParse(json['week_day'].toString()) ?? day;
     }
 
     return Lesson(

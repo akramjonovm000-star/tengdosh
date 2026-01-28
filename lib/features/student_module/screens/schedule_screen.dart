@@ -52,22 +52,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     // 1. Filter by Selected Day
     final daysLessons = _allLessons.where((l) => l.weekDay == _selectedDay).toList();
 
-    // 2. Deduplicate: Group by StartTime and keep only one
-    final Map<String, Lesson> uniqueMap = {};
-    for (var lesson in daysLessons) {
-       // Key: StartTime. If collision, keep first (or logic to merge?)
-       // HEMIS often sends duplicates for same subject/time.
-       if (!uniqueMap.containsKey(lesson.startTime)) {
-         uniqueMap[lesson.startTime] = lesson;
-       }
-    }
-
-    final uniqueList = uniqueMap.values.toList();
-
-    // 3. Sort by Time
-    uniqueList.sort((a, b) => a.startTime.compareTo(b.startTime));
+    // 2. Sort by Time and Subject Name (to keep stable order)
+    daysLessons.sort((a, b) {
+      int timeComp = a.startTime.compareTo(b.startTime);
+      if (timeComp != 0) return timeComp;
+      return a.subjectName.compareTo(b.subjectName);
+    });
     
-    return uniqueList;
+    return daysLessons;
   }
 
   @override
