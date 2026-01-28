@@ -206,19 +206,43 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
        isPast = DateTime.now().weekday > lesson.weekDay || (DateTime.now().weekday == lesson.weekDay && now.hour > 18);
     }
 
-    // 2. Check for Absence record
+    // 2. Check for Absence record and extract Topic if available
     // Match by Subject Name (approx) and Date
     bool hasAbsence = false;
+    String attTopic = "";
+    
     if (isPast) {
        final lessonDateStr = lesson.lessonDate != null 
           ? DateFormat('yyyy-MM-dd').format(DateTime.fromMillisecondsSinceEpoch(lesson.lessonDate! * 1000)) 
           : "";
           
-       hasAbsence = _attendance.any((a) => 
-          (a.subjectName.toLowerCase().contains(lesson.subjectName.toLowerCase()) || 
-           lesson.subjectName.toLowerCase().contains(a.subjectName.toLowerCase())) &&
-          (lessonDateStr.isEmpty || a.date == lessonDateStr)
-       );
+       // Try to find matching attendance
+       for (var a in _attendance) {
+         bool nameMatch = a.subjectName.toLowerCase().contains(lesson.subjectName.toLowerCase()) || 
+                          lesson.subjectName.toLowerCase().contains(a.subjectName.toLowerCase());
+         bool dateMatch = lessonDateStr.isEmpty || a.date == lessonDateStr;
+         
+         if (nameMatch && dateMatch) {
+            // Found match
+            if (!a.isExcused) {
+              // Technically Attendance model 'isExcused' logic in this codebase:
+              // true = present? No, wait. 
+              // attendance.dart line 7: isExcused; // true = sababli (11), false = sababsiz (12)
+              // Actually, Attendance represents AN ABSENCE RECORD in this app context.
+              hasAbsence = true;
+            }
+            if (a.lessonTheme.isNotEmpty && a.lessonTheme != "Mavzu kiritilmagan") {
+               attTopic = a.lessonTheme;
+            }
+            break;
+         }
+       }
+    }
+
+    // Determine final topic to display
+    String topicToDisplay = lesson.lessonTopic;
+    if (topicToDisplay == "Mavzu kiritilmagan" && attTopic.isNotEmpty) {
+       topicToDisplay = attTopic;
     }
 
     Color statusColor = Colors.blue; 
@@ -276,9 +300,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       ),
                       const SizedBox(height: 4),
                       // Lesson Topic
-                      if (lesson.lessonTopic != "Mavzu kiritilmagan")
+                      if (topicToDisplay != "Mavzu kiritilmagan")
                         Text(
-                          lesson.lessonTopic,
+                          topicToDisplay,
                           style: TextStyle(
                             color: Colors.grey[700],
                             fontSize: 13,

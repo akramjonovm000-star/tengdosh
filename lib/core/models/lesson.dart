@@ -36,10 +36,23 @@ class Lesson {
 
     // Topic parsing
     String topic = "Mavzu kiritilmagan";
-    if (json['lesson_topic'] != null) {
-      topic = json['lesson_topic'];
-    } else if (json['theme'] != null) {
-      topic = json['theme'];
+    if (json['lesson_topic'] != null && json['lesson_topic'].toString().isNotEmpty) {
+      topic = json['lesson_topic'].toString();
+    } else if (json['lesson_theme'] != null && json['lesson_theme'].toString().isNotEmpty) {
+      topic = json['lesson_theme'].toString();
+    } else if (json['theme'] != null && json['theme'].toString().isNotEmpty) {
+      topic = json['theme'].toString();
+    } else if (json['topic'] != null && json['topic'].toString().isNotEmpty) {
+      topic = json['topic'].toString();
+    } else if (json['lesson'] != null && json['lesson'] is Map) {
+      topic = (json['lesson']['name'] ?? json['lesson']['title'] ?? topic).toString();
+    }
+    
+    final lessonPair = json['lessonPair'];
+    if (lessonPair != null && lessonPair is Map) {
+      if (topic == "Mavzu kiritilmagan" && lessonPair['lesson_topic'] != null) {
+        topic = lessonPair['lesson_topic'].toString();
+      }
     }
 
     // Time parsing - Try multiple common HEMIS locations
