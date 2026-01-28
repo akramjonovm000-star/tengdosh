@@ -58,22 +58,27 @@ class Student {
     String? lastName = json['last_name'] ?? json['lastname'];
 
     if (lastName != null && firstName != null) {
-      fullName = "${sentenceCase(lastName.toString())} ${sentenceCase(firstName.toString())}";
+      if (fatherName != null) {
+        fullName = "${sentenceCase(lastName.toString())} ${sentenceCase(firstName.toString())} ${sentenceCase(fatherName.toString())}";
+      } else {
+        fullName = "${sentenceCase(lastName.toString())} ${sentenceCase(firstName.toString())}";
+      }
     } else if (jsonFullName != null && jsonFullName.toString().trim().isNotEmpty && jsonFullName != "Talaba") {
       var parts = jsonFullName.toString().trim().split(' ');
-      if (parts.length >= 2) {
-        fullName = "${sentenceCase(parts[0])} ${sentenceCase(parts[1])}";
-      } else {
-        fullName = sentenceCase(jsonFullName.toString().trim());
-      }
+      // Preserve all parts (Family, Name, Patronymic)
+      fullName = parts.map((p) => sentenceCase(p)).join(' ');
     } else if (firstName != null && firstName.toString().trim().isNotEmpty) {
       fullName = sentenceCase(firstName.toString().trim());
     } else {
       fullName = "Talaba";
     }
     
-    if (fullName.trim().isEmpty) {
-      fullName = "Talaba";
+    if (fullName.trim().isEmpty || fullName == "Talaba") {
+      if (json['short_name'] != null && json['short_name'].toString().length > 3) {
+         fullName = json['short_name'].toString();
+      } else {
+         fullName = "Talaba";
+      }
     }
 
     String? getPrettyName(String key) {

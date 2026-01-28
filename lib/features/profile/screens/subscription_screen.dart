@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart'; // Force reload
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/data_service.dart';
 import '../../../../core/models/student.dart';
@@ -18,6 +18,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   List<SubscriptionPlan> _plans = [];
   bool _isLoading = true;
   String? _loadingAction;
+
+  String _formatMoney(int amount) {
+    return amount.toString().replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]} ');
+  }
 
   @override
   void initState() {
@@ -129,9 +134,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
              Text("Siz quyidagi tarifni sotib olmoqchimisiz?", style: TextStyle(color: Colors.grey[700])),
              const SizedBox(height: 10),
              Text("Tarif: ${plan.name}", style: const TextStyle(fontWeight: FontWeight.bold)),
-             Text("Narxi: ${plan.priceUzs} so'm", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+             Text("Narxi: ${_formatMoney(plan.priceUzs)} so'm", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
              const SizedBox(height: 10),
-             Text("Balansingizdan ${plan.priceUzs} so'm yechiladi.", style: const TextStyle(fontSize: 13)),
+             Text("Balansingizdan ${_formatMoney(plan.priceUzs)} so'm yechiladi.", style: const TextStyle(fontSize: 13)),
           ],
         ),
         actions: [
@@ -296,7 +301,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               Text("Sizning balansingiz", style: TextStyle(color: Colors.grey[600], fontSize: 14)),
               const SizedBox(height: 4),
               Text(
-                "${_student?.balance ?? 0} so'm",
+                "${_formatMoney(_student?.balance ?? 0)} so'm",
                 style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
               ),
             ],
@@ -381,7 +386,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                "${plan.priceUzs} so'm",
+                "${_formatMoney(plan.priceUzs)} so'm",
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green),
               ),
               const SizedBox(height: 4),

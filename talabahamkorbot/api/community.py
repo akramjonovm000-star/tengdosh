@@ -153,14 +153,28 @@ async def get_reposted_posts(
     
     return [_map_post(p, p.student, student.id) for p in posts]
 
-def format_name(full_name: str):
-    if not full_name: return "Talaba"
-    # Debugging Name Logic
-    parts = full_name.split()
-    if len(parts) >= 2:
-        # Assumes LAST FIRST in DB -> Returns FIRST LAST
-        return f"{parts[1]} {parts[0]}".title()
-    return full_name.title()
+def format_name(student: Student):
+    if not student: return "Unknown"
+    
+    # Priority 1: Use full_name if it has at least 2 parts (Last First)
+    f_name = (student.full_name or "").strip()
+    if f_name and len(f_name.split()) >= 2:
+        parts = f_name.split()
+        # standard is Last First [Father] -> We can return as is or First Last
+        # User requested "ismi va familiyasi ochestvasi", so full string is best.
+        # But for posts, often "Last First" looks cleaner. 
+        # Let's return the whole string but title-cased.
+        return f_name.title()
+    
+    # Priority 2: Use short_name if available (e.g. "Mirzajonov I. O'.")
+    s_name = (student.short_name or "").strip()
+    if s_name and len(s_name) > 3:
+        return s_name.title()
+    
+    # Priority 3: Combine what we have
+    if f_name: return f_name.title()
+    
+    return "Talaba"
 
 def _map_post(post: ChoyxonaPost, author: Student, current_user_id: int):
     # Use stored counts
@@ -172,7 +186,7 @@ def _map_post(post: ChoyxonaPost, author: Student, current_user_id: int):
         content=post.content,
         category_type=post.category_type,
         author_id=author.id if author else 0, # NEW
-        author_name=format_name(author.full_name) if author else "Unknown",
+        author_name=format_name(author) if author else "Unknown",
         author_username=author.username if author else None,
         author_avatar=author.image_url,
         author_image=author.image_url, # FALLBACK
