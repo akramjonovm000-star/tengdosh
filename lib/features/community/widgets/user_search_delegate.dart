@@ -173,6 +173,7 @@ class UserSearchDelegate extends SearchDelegate {
           authorAvatar: student.imageUrl ?? "",
           authorRole: student.role ?? "student", 
           authorIsPremium: student.isPremium,
+          authorCustomBadge: student.customBadge,
         )));
       },
     );

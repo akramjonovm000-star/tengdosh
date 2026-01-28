@@ -233,13 +233,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     );
   }
 
-  // ... (Balance Header and TopUp Section kept largely same, but verify context) ...
-  // Actually I need to replace them or keep them if outside the range target.
-  // The ReplaceContent chunk is huge. I will only target specific methods to be safe.
- 
-  // ...
-  
-  // (Moving to specific method replacements below)
+
 
   Widget _buildBalanceHeader() {
     return Container(
