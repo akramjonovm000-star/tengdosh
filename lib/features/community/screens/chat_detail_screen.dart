@@ -212,10 +212,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       child: SafeArea( 
         child: Row(
           children: [
-            IconButton(
-              icon: const Icon(Icons.add, color: AppTheme.primaryBlue),
-              onPressed: () {},
-            ),
             Expanded(
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
