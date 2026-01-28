@@ -30,11 +30,7 @@ class _GradesScreenState extends State<GradesScreen> {
       if (mounted) {
         setState(() {
           _semesters = sems;
-          if (sems.isNotEmpty) {
-            // Try to find the 'current' semester or pick the last one (usually highest ID)
-            final current = sems.firstWhere((s) => s['current'] == true, orElse: () => sems.last);
-            _selectedSemester = current['id'].toString();
-          }
+          _selectedSemester = null; // Default to 'Joriy'
         });
         await _loadGrades();
       }
@@ -70,46 +66,53 @@ class _GradesScreenState extends State<GradesScreen> {
         iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Semester Selection Popup
           if (_semesters.isNotEmpty)
-            Container(
-              height: 60,
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: _semesters.length,
-                itemBuilder: (context, index) {
-                  final sem = _semesters[index];
-                  final isSelected = _selectedSemester == sem['id'].toString();
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(sem['name'] ?? ""),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        if (selected) {
-                          setState(() => _selectedSemester = sem['id'].toString());
-                          _loadGrades();
-                        }
-                      },
-                      selectedColor: AppTheme.primaryBlue,
-                      backgroundColor: Colors.white,
-                      labelStyle: TextStyle(
-                        color: isSelected ? Colors.white : Colors.black87,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        side: BorderSide(
-                          color: isSelected ? AppTheme.primaryBlue : Colors.grey[300]!,
-                        ),
-                      ),
-                    ),
-                  );
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: PopupMenuButton<String?>(
+                initialValue: _selectedSemester,
+                onSelected: (String? value) {
+                  setState(() => _selectedSemester = value);
+                  _loadGrades();
                 },
+                offset: const Offset(0, 45),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: null,
+                    child: Text("Joriy"),
+                  ),
+                  ..._semesters.map((sem) => PopupMenuItem(
+                    value: sem['id'].toString(),
+                    child: Text(sem['name'] ?? ""),
+                  )),
+                ],
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryBlue,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.check, color: Colors.white, size: 16),
+                      const SizedBox(width: 8),
+                      Text(
+                        _selectedSemester == null 
+                            ? "Joriy" 
+                            : (_semesters.firstWhere((s) => s['id'].toString() == _selectedSemester, orElse: () => {'name': ''})['name'] ?? ""),
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
+            
           Expanded(
             child: RefreshIndicator(
               onRefresh: _loadGrades,
