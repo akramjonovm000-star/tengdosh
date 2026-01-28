@@ -85,7 +85,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text("Dars Jadvali", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        title: const Text("Dars jadvali", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),

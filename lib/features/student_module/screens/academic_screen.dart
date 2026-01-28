@@ -140,7 +140,7 @@ class _AcademicScreenState extends State<AcademicScreen> {
 
             // Menu List
             _buildMenuItem(context, "Davomat", Icons.calendar_month_rounded, Colors.green),
-            _buildMenuItem(context, "Dars Jadvali", Icons.schedule_rounded, Colors.blue),
+            _buildMenuItem(context, "Dars jadvali", Icons.schedule_rounded, Colors.blue),
             _buildMenuItem(context, "Fanlar va resurslar", Icons.library_books_rounded, Colors.orange),
             _buildMenuItem(context, "O'zlashtirish", Icons.grade_rounded, Colors.purple),
             _buildMenuItem(context, "Imtihonlar", Icons.edit_document, Colors.redAccent),
