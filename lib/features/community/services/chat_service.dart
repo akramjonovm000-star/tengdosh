@@ -127,4 +127,23 @@ class ChatService {
       return null;
     }
   }
+
+  // Get Total Unread Count
+  Future<int> getTotalUnreadCount() async {
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConstants.backendUrl}/chat/unread-count'),
+        headers: await _getHeaders(),
+      );
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(utf8.decode(response.bodyBytes));
+        return data['total'] ?? 0;
+      }
+      return 0;
+    } catch (e) {
+      print("Unread Count Error: $e");
+      return 0;
+    }
+  }
 }

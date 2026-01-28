@@ -5,6 +5,7 @@ from database.db_connect import AsyncSessionLocal
 from database.models import Student, PrivateChat, PrivateMessage, StudentNotification
 from api.dependencies import get_current_student, get_db
 from datetime import datetime
+from sqlalchemy import case # NEW
 import logging
 
 router = APIRouter()
@@ -45,6 +46,24 @@ async def start_chat(
         
     chat = await get_or_create_chat(student.id, target_user_id, db)
     return {"chat_id": chat.id, "target_user": {"id": target.id, "full_name": target.full_name, "image_url": target.image_url, "username": target.username, "custom_badge": target.custom_badge}}
+
+@router.get("/unread-count")
+async def get_total_unread_count(
+    student: Student = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get total unread messages count for the current student"""
+    # Simple two-query approach for reliability
+    q1 = select(func.sum(PrivateChat.user1_unread_count)).where(PrivateChat.user1_id == student.id)
+    q2 = select(func.sum(PrivateChat.user2_unread_count)).where(PrivateChat.user2_id == student.id)
+    
+    res1 = await db.execute(q1)
+    res2 = await db.execute(q2)
+    
+    c1 = res1.scalar() or 0
+    c2 = res2.scalar() or 0
+    
+    return {"total": int(c1 + c2)}
 
 @router.get("/list")
 async def list_chats(

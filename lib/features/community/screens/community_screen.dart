@@ -18,8 +18,10 @@ class CommunityScreen extends StatefulWidget {
 
 class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProviderStateMixin {
   final CommunityService _service = CommunityService();
+  final ChatService _chatService = ChatService(); // NEW
   late TabController _tabController;
   Timer? _pollTimer;
+  int _unreadCount = 0; // NEW
 
   // State Management for Silent Updates
   final Map<String, List<Post>> _posts = {
@@ -97,8 +99,22 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
       if (mounted) {
         // Refresh ONLY the active scope to save bandwidth
         _fetchPosts(_getCurrentScope(), isSilent: true);
+        _fetchUnreadCount(); // NEW
       }
     });
+  }
+
+  Future<void> _fetchUnreadCount() async {
+    try {
+      final count = await _chatService.getTotalUnreadCount();
+      if (mounted) {
+        setState(() {
+          _unreadCount = count;
+        });
+      }
+    } catch (e) {
+      debugPrint("Unread Count Error: $e");
+    }
   }
 
   Future<void> _loadAllScopes() async {
@@ -212,31 +228,33 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                 showSearch(context: context, delegate: UserSearchDelegate());
               },
             ),
-            IconButton(
-              icon: Stack(
-                children: [
-                   const Icon(Icons.chat_bubble_outline_rounded, color: Colors.black),
-                   Positioned(
-                     right: 0,
-                     top: 0,
-                     child: Container(
-                       width: 8,
-                       height: 8,
-                       decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                       child: Center(
-                         child: Text(
-                             "1", 
-                             style: TextStyle(color: Colors.white, fontSize: 6, fontWeight: FontWeight.bold)
-                         ),
-                       ),
-                     ),
-                   )
-                ],
-              ),
-              onPressed: () {
-                 Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatListScreen()));
-              },
-            ),
+             IconButton(
+               icon: Stack(
+                 children: [
+                    const Icon(Icons.chat_bubble_outline_rounded, color: Colors.black),
+                    if (_unreadCount > 0) // DYNAMIC
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(2), // Proper spacing
+                          decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                          constraints: const BoxConstraints(minWidth: 10, minHeight: 10),
+                          child: Center(
+                            child: Text(
+                                "$_unreadCount", 
+                                style: const TextStyle(color: Colors.white, fontSize: 7, fontWeight: FontWeight.bold)
+                            ),
+                          ),
+                        ),
+                      )
+                 ],
+               ),
+               onPressed: () async {
+                  await Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatListScreen()));
+                  _fetchUnreadCount(); // Immediate refresh when returning
+               },
+             ),
             const SizedBox(width: 8),
           ],
         ),
