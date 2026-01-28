@@ -37,8 +37,7 @@ lib/generated_plugin_registrant.dart
 *.log
 
 # Admin & Bot (Tracked)
-!talabahamkorbot/
-!/talabahamkorbot
+!talabahamkorbot/**
 /venv/
 
 # Backend specific ignores
