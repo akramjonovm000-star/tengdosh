@@ -56,6 +56,7 @@ class Student {
     String? jsonFullName = json['full_name'] ?? json['name'];
     String? firstName = json['first_name'] ?? json['short_name'] ?? json['firstname'];
     String? lastName = json['last_name'] ?? json['lastname'];
+    String? fatherName = json['father_name'] ?? json['fathername'] ?? json['patronymic'];
 
     if (lastName != null && firstName != null) {
       if (fatherName != null) {
