@@ -274,6 +274,19 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                           fontSize: 15,
                         ),
                       ),
+                      const SizedBox(height: 4),
+                      // Lesson Topic
+                      if (lesson.lessonTopic != "Mavzu kiritilmagan")
+                        Text(
+                          lesson.lessonTopic,
+                          style: TextStyle(
+                            color: Colors.grey[700],
+                            fontSize: 13,
+                            fontStyle: FontStyle.italic,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       const SizedBox(height: 6),
                       // Type & Teacher
                       Text(

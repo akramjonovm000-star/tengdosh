@@ -6,6 +6,7 @@ class Lesson {
   final String auditorium;
   final String teacherName;
   final String trainingType;
+  final String lessonTopic;
   final int weekDay; // 1 = Monday, 6 = Saturday
   final int? lessonDate; // Unix timestamp
 
@@ -17,6 +18,7 @@ class Lesson {
     required this.auditorium,
     required this.teacherName,
     required this.trainingType,
+    required this.lessonTopic,
     required this.weekDay,
     this.lessonDate,
   });
@@ -31,6 +33,14 @@ class Lesson {
     final teacher = employee != null ? employee['name'] ?? '' : (json['teacher_name'] ?? '');
 
     final training = json['trainingType'] != null ? json['trainingType']['name'] ?? 'Dars' : (json['training_type_name'] ?? 'Dars');
+
+    // Topic parsing
+    String topic = "Mavzu kiritilmagan";
+    if (json['lesson_topic'] != null) {
+      topic = json['lesson_topic'];
+    } else if (json['theme'] != null) {
+      topic = json['theme'];
+    }
 
     // Time parsing - Try multiple common HEMIS locations
     String start = json['start_time'] ?? '';
@@ -77,6 +87,7 @@ class Lesson {
       auditorium: room,
       teacherName: teacher,
       trainingType: training,
+      lessonTopic: topic,
       weekDay: day,
       lessonDate: lessonTs,
     );
