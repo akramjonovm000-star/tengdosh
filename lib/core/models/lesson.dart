@@ -7,6 +7,7 @@ class Lesson {
   final String teacherName;
   final String trainingType;
   final int weekDay; // 1 = Monday, 6 = Saturday
+  final int? lessonDate; // Unix timestamp
 
   Lesson({
     required this.id,
@@ -17,6 +18,7 @@ class Lesson {
     required this.teacherName,
     required this.trainingType,
     required this.weekDay,
+    this.lessonDate,
   });
 
   factory Lesson.fromJson(Map<String, dynamic> json) {
@@ -42,6 +44,7 @@ class Lesson {
 
     // Weekday: 1=Mon ... 6=Sat
     int day = 1;
+    int? lessonTs;
 
     // 1. Try to derive from lesson_date (timestamp)
     final timestamp = json['lesson_date'];
@@ -49,6 +52,7 @@ class Lesson {
       try {
         final ts = int.parse(timestamp.toString());
         if (ts > 5000000) { // Basic sanity check for unix timestamp
+           lessonTs = ts;
            day = DateTime.fromMillisecondsSinceEpoch(ts * 1000).weekday;
         }
       } catch (_) {}
@@ -74,6 +78,7 @@ class Lesson {
       teacherName: teacher,
       trainingType: training,
       weekDay: day,
+      lessonDate: lessonTs,
     );
   }
 }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/services/data_service.dart';
 import '../../../core/models/lesson.dart';
+import '../../../core/models/attendance.dart';
+import 'package:intl/intl.dart';
 
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
@@ -14,9 +16,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   final DataService _dataService = DataService();
   bool _isLoading = true;
   List<Lesson> _allLessons = [];
+  List<Attendance> _attendance = [];
   int _selectedDay = 1; // 1 = Monday, 6 = Saturday
 
   final List<String> _weekDays = ["Dushanba", "Seshanba", "Chorshanba", "Payshanba", "Juma", "Shanba"];
+  final List<String> _months = [
+    "Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun",
+    "Iyul", "Avgust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr"
+  ];
 
   @override
   void initState() {
@@ -36,10 +43,15 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   Future<void> _loadData() async {
     try {
-      final data = await _dataService.getSchedule();
+      final scheduleFuture = _dataService.getSchedule();
+      final attendanceFuture = _dataService.getAttendance(); // Fetch all attendance for cross-ref
+
+      final results = await Future.wait([scheduleFuture, attendanceFuture]);
+      
       if (mounted) {
         setState(() {
-          _allLessons = data;
+          _allLessons = results[0] as List<Lesson>;
+          _attendance = results[1] as List<Attendance>;
           _isLoading = false;
         });
       }
@@ -71,7 +83,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     final selectedDate = firstDayOfWeek.add(Duration(days: _selectedDay - 1));
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F7), // Light clean background
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text("Dars Jadvali", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
@@ -89,8 +101,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "${_weekDays[_selectedDay - 1]}, ${selectedDate.day}.${selectedDate.month.toString().padLeft(2, '0')}", 
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87)
+                  "${_weekDays[_selectedDay - 1]}, ${selectedDate.day}-${_months[selectedDate.month - 1]}", 
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87)
                 ),
                 const SizedBox(height: 16),
                 Row(
@@ -105,13 +117,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         width: 45,
-                        height: 60,
+                        height: 55,
                         decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFFD81B60) : Colors.grey[100],
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: isSelected 
-                            ? [BoxShadow(color: const Color(0xFFD81B60).withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))]
-                            : [],
+                          color: isSelected ? Colors.black : Colors.grey[50],
+                          borderRadius: BorderRadius.circular(15),
+                          border: isSelected ? null : Border.all(color: Colors.grey[200]!),
                         ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -119,16 +129,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                             Text(
                               _weekDays[index].substring(0, 3), // "Dus", "Ses"
                               style: TextStyle(
-                                fontSize: 12, 
+                                fontSize: 11, 
                                 fontWeight: FontWeight.w500,
-                                color: isSelected ? Colors.white.withOpacity(0.8) : Colors.grey,
+                                color: isSelected ? Colors.white.withOpacity(0.7) : Colors.grey[400],
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 2),
                             Text(
                               "${dateForIndex.day}", 
                               style: TextStyle(
-                                fontSize: 16, 
+                                fontSize: 15, 
                                 fontWeight: FontWeight.bold,
                                 color: isSelected ? Colors.white : Colors.black87,
                               ),
@@ -142,6 +152,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               ],
             ),
           ),
+          const Divider(height: 1, thickness: 1, color: Color(0xFFF0F0F0)),
           
           // Lessons List
           Expanded(
@@ -172,168 +183,152 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   Widget _buildLessonCard(Lesson lesson) {
-    // Colors based on user design
-    const primaryPink = Color(0xFFC2185B);
-    const bgPink = Color(0xFFFCE4EC);
-    const accentPink = Color(0xFFD81B60);
-
-    // Format Times
-    String startTime = lesson.startTime;
-    if (int.tryParse(lesson.startTime) != null) {
-       final dt = DateTime.fromMillisecondsSinceEpoch(int.parse(lesson.startTime) * 1000);
-       startTime = "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
-    }
-
-    String endTime = lesson.endTime;
-    if (int.tryParse(lesson.endTime) != null) {
-       final dt = DateTime.fromMillisecondsSinceEpoch(int.parse(lesson.endTime) * 1000);
-       endTime = "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
-    }
+    // 1. Determine Status
+    final now = DateTime.now();
+    bool isPast = false;
     
-    final timeRange = endTime.isNotEmpty ? "$startTime - $endTime" : startTime;
+    // Parse lesson date and time
+    if (lesson.lessonDate != null) {
+      final lessonDt = DateTime.fromMillisecondsSinceEpoch(lesson.lessonDate! * 1000);
+      
+      // Assume end time is 80 mins after start if not provided
+      // If start is e.g. "08:30"
+      if (lesson.startTime.contains(":")) {
+        final parts = lesson.startTime.split(":");
+        final startDt = DateTime(lessonDt.year, lessonDt.month, lessonDt.day, int.parse(parts[0]), int.parse(parts[1]));
+        isPast = now.isAfter(startDt.add(const Duration(minutes: 80)));
+      } else {
+        // Fallback for non-time strings
+        isPast = now.isAfter(lessonDt.add(const Duration(hours: 18))); // End of day fallback
+      }
+    } else {
+       // Calculation based on day only if timestamp missing
+       isPast = DateTime.now().weekday > lesson.weekDay || (DateTime.now().weekday == lesson.weekDay && now.hour > 18);
+    }
+
+    // 2. Check for Absence record
+    // Match by Subject Name (approx) and Date
+    bool hasAbsence = false;
+    if (isPast) {
+       final lessonDateStr = lesson.lessonDate != null 
+          ? DateFormat('yyyy-MM-dd').format(DateTime.fromMillisecondsSinceEpoch(lesson.lessonDate! * 1000)) 
+          : "";
+          
+       hasAbsence = _attendance.any((a) => 
+          (a.subjectName.toLowerCase().contains(lesson.subjectName.toLowerCase()) || 
+           lesson.subjectName.toLowerCase().contains(a.subjectName.toLowerCase())) &&
+          (lessonDateStr.isEmpty || a.date == lessonDateStr)
+       );
+    }
+
+    Color statusColor = Colors.blue; 
+    IconData? statusIcon;
+    Color iconColor = Colors.white;
+
+    if (!isPast) {
+       statusColor = Colors.blue[400]!;
+    } else if (hasAbsence) {
+       statusColor = Colors.red[500]!;
+       statusIcon = Icons.close;
+       iconColor = Colors.red;
+    } else {
+       statusColor = Colors.green[500]!;
+       statusIcon = Icons.check;
+       iconColor = Colors.green;
+    }
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       decoration: BoxDecoration(
-        color: bgPink,
-        borderRadius: BorderRadius.circular(8),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[100]!),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: IntrinsicHeight(
-        child: Row(
-          children: [
-            // Left Accent Border
-            Container(
-              width: 4,
-              decoration: const BoxDecoration(
-                color: accentPink,
-                borderRadius: BorderRadius.horizontal(left: Radius.circular(8)),
-              ),
-            ),
-            // Main Content
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Subject Name (Uppercase, bold)
-                    Text(
-                      lesson.subjectName.toUpperCase(),
-                      style: const TextStyle(
-                        color: accentPink,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    // Type & Teacher
-                    Text(
-                      "${lesson.trainingType}  (${lesson.teacherName})",
-                      style: const TextStyle(
-                        color: primaryPink,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    // Footer: Time and Room
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          "$timeRange  ",
-                          style: const TextStyle(
-                            color: accentPink,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: IntrinsicHeight(
+          child: Row(
+            children: [
+              // Left Accent Border (Status based)
+              Container(width: 4, color: statusColor),
+              // Main Content
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Subject Name (Uppercase, bold)
+                      Text(
+                        lesson.subjectName,
+                        style: const TextStyle(
+                          color: Colors.black87,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
                         ),
-                        Text(
-                          lesson.auditorium.isNotEmpty ? lesson.auditorium : "",
-                          style: const TextStyle(
-                            color: accentPink,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            // Right Side Decoration (Checkmark and Track)
-            Container(
-              width: 40,
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Vertical "Track" indicator
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    bottom: 8,
-                    child: Container(
-                      width: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(2),
                       ),
-                      child: Stack(
+                      const SizedBox(height: 6),
+                      // Type & Teacher
+                      Text(
+                        "${lesson.trainingType}  •  ${lesson.teacherName}",
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Footer: Time and Room
+                      Row(
                         children: [
-                          Positioned(
-                            top: 0,
-                            right: 0,
-                            left: 0,
-                            height: 20,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: accentPink.withOpacity(0.3),
-                                borderRadius: BorderRadius.circular(2),
-                              ),
+                          Icon(Icons.access_time_filled, size: 14, color: Colors.grey[400]),
+                          const SizedBox(width: 4),
+                          Text(
+                            "${lesson.startTime}${lesson.endTime.isNotEmpty ? ' - ${lesson.endTime}' : ''}",
+                            style: TextStyle(
+                              color: Colors.grey[700],
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            lesson.auditorium.isNotEmpty ? lesson.auditorium : "",
+                            style: const TextStyle(
+                              color: Colors.black54,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ],
                       ),
-                    ),
+                    ],
                   ),
-                  // Progress indicator dot/arrow (top right)
-                  const Positioned(
-                    top: 12,
-                    right: 8,
-                    child: Icon(Icons.arrow_drop_up, color: accentPink, size: 16),
-                  ),
-                  // Checkmark in bottom right
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.8),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.green.withOpacity(0.3), width: 2),
-                      ),
-                      child: const Icon(
-                        Icons.check,
-                        color: Colors.green,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ],
+              // Right Side Icon (Status based)
+              if (statusIcon != null)
+                Container(
+                  width: 40,
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: iconColor.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(statusIcon, color: iconColor, size: 18),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
