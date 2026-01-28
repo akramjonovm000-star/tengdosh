@@ -94,13 +94,17 @@ async def upload_profile_image(
         size = os.path.getsize(file_path)
         logger.info(f"DEBUG: File saved. Size: {size} bytes")
             
-        # Build URL
-        # request.base_url might be http://host/api/v1/
-        # We need http://host/
+        # Build URL - Better protocol handling
         base_url = str(request.base_url).rstrip("/")
         if base_url.endswith("/api/v1"):
             base_url = base_url[:-7] # Remove /api/v1
-            
+        
+        # Check scheme from X-Forwarded-Proto if proxy middleware didn't catch it
+        scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
+        if "://" in base_url:
+            current_scheme = base_url.split("://")[0]
+            base_url = base_url.replace(f"{current_scheme}://", f"{scheme}://")
+
         full_url = f"{base_url}/{file_path}"
         logger.info(f"DEBUG: Generated URL: {full_url}")
         

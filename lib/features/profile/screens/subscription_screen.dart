@@ -349,7 +349,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               SizedBox(
                 height: 32,
                 child: ElevatedButton(
-                  onPressed: loading ? null : () => _purchasePlan(plan),
+                child: ElevatedButton(
+                  onPressed: loading ? null : () => _confirmPurchase(plan),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryBlue,
                     padding: const EdgeInsets.symmetric(horizontal: 16),

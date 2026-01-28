@@ -59,16 +59,20 @@ class Student {
 
     if (lastName != null && firstName != null) {
       fullName = "${sentenceCase(lastName.toString())} ${sentenceCase(firstName.toString())}";
-    } else if (jsonFullName != null && jsonFullName != "Talaba") {
-      var parts = jsonFullName.split(' ');
+    } else if (jsonFullName != null && jsonFullName.toString().trim().isNotEmpty && jsonFullName != "Talaba") {
+      var parts = jsonFullName.toString().trim().split(' ');
       if (parts.length >= 2) {
         fullName = "${sentenceCase(parts[0])} ${sentenceCase(parts[1])}";
       } else {
-        fullName = sentenceCase(jsonFullName);
+        fullName = sentenceCase(jsonFullName.toString().trim());
       }
-    } else if (firstName != null) {
-      fullName = sentenceCase(firstName);
+    } else if (firstName != null && firstName.toString().trim().isNotEmpty) {
+      fullName = sentenceCase(firstName.toString().trim());
     } else {
+      fullName = "Talaba";
+    }
+    
+    if (fullName.trim().isEmpty) {
       fullName = "Talaba";
     }
 
