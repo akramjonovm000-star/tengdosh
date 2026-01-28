@@ -325,9 +325,9 @@ class HemisService:
                 return []
 
     @staticmethod
-    async def get_student_subject_list(token: str, semester_code: str = None, student_id: int = None):
+    async def get_student_subject_list(token: str, semester_code: str = None, student_id: int = None, force_refresh: bool = False):
         key = f"subjects_{semester_code}" if semester_code else "subjects_all"
-        if student_id:
+        if student_id and not force_refresh:
             try:
                 async with AsyncSessionLocal() as session:
                     cache = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))

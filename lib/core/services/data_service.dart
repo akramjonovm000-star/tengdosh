@@ -454,26 +454,34 @@ class DataService {
 
 
   // 12. Get Detailed Grades (O'zlashtirish)
-  Future<List<dynamic>> getGrades({String? semester}) async {
+  Future<List<dynamic>> getGrades({String? semester, bool forceRefresh = false}) async {
     final student = await _authService.getSavedUser();
     final studentId = student?.id ?? 0;
     final semCode = semester ?? 'all';
 
-    final cached = await _dbService.getCache('subjects', studentId, semesterCode: semCode); // Using subjects table for grades/subjects
-    if (cached != null && cached.containsKey('grades')) {
-      _backgroundRefreshGrades(studentId, semester: semester);
-      return cached['grades'];
+    if (!forceRefresh) {
+      final cached = await _dbService.getCache('subjects', studentId, semesterCode: semCode); 
+      if (cached != null && cached.containsKey('grades')) {
+        _backgroundRefreshGrades(studentId, semester: semester);
+        return cached['grades'];
+      }
     }
 
-    return await _backgroundRefreshGrades(studentId, semester: semester);
+    return await _backgroundRefreshGrades(studentId, semester: semester, forceRefresh: forceRefresh);
   }
 
-  Future<List<dynamic>> _backgroundRefreshGrades(int studentId, {String? semester}) async {
+  Future<List<dynamic>> _backgroundRefreshGrades(int studentId, {String? semester, bool forceRefresh = false}) async {
     try {
       String url = ApiConstants.grades;
-      if (semester != null) {
-        url += (url.contains('?') ? '&' : '?') + "semester=$semester";
+      // Build query parameters
+      Map<String, String> queryParams = {};
+      if (semester != null) queryParams['semester'] = semester;
+      if (forceRefresh) queryParams['refresh'] = 'true';
+      
+      if (queryParams.isNotEmpty) {
+        url += (url.contains('?') ? '&' : '?') + Uri(queryParameters: queryParams).query;
       }
+      
       final response = await _get(url);
 
       if (response.statusCode == 200) {

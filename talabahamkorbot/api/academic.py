@@ -13,6 +13,7 @@ router = APIRouter()
 @cache(expire=600)
 async def get_grades(
     semester: str = None,
+    refresh: bool = False,
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_session)
 ):
@@ -36,7 +37,8 @@ async def get_grades(
     subjects_data = await HemisService.get_student_subject_list(
         student.hemis_token, 
         semester_code=sem_code, 
-        student_id=student.id
+        student_id=student.id,
+        force_refresh=refresh
     )
 
     results = []
