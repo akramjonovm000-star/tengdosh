@@ -7,6 +7,7 @@ import '../widgets/post_card.dart';
 import '../widgets/shimmer_post.dart';
 import '../screens/create_post_screen.dart';
 import 'chat_list_screen.dart';
+import '../services/chat_service.dart'; // NEW
 import '../widgets/user_search_delegate.dart';
 
 class CommunityScreen extends StatefulWidget {
