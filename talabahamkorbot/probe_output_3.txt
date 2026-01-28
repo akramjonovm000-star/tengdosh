@@ -1,0 +1,42 @@
+Testing for Student: Talaba (ID: 8286)
+
+--- Testing API Semesters ---
+API Sem 11: Status 200, Items: 0
+API Sem 12: Status 200, Items: 0
+API Sem 13: Status 200, Items: 0
+API Sem 14: Status 200, Items: 0
+API Sem 15: Status 200, Items: 0
+API Sem 16: Status 200, Items: 0
+API Sem 17: Status 200, Items: 0
+API Sem 18: Status 200, Items: 0
+
+--- Testing Web Auth Bypass ---
+Web Probe: https://student.jmcu.uz/education/performance (Headers: []) ... Status: 302
+Web Probe: https://student.jmcu.uz/education/performance?access-token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJ2MVwvYXV0aFwvbG9naW4iLCJhdWQiOiJ2MVwvYXV0aFwvbG9naW4iLCJleHAiOjE3Njg4MTM5NTQsImp0aSI6IjM5NTI1MTEwMTM5NyIsInN1YiI6IjgyODYifQ.mtsPwcbjKwmLe68UR38rcU2KybvXHhfv2xyRU3nt3Bw (Headers: []) ... Status: 302
+Web Probe: https://student.jmcu.uz/education/performance (Headers: ['X-Requested-With']) ... Status: 302
+Web Probe: https://student.jmcu.uz/education/performance?semester=11 (Headers: ['X-Requested-With']) ... Status: 302
+Web Probe: https://student.jmcu.uz/education/performance (Headers: ['Cookie']) ... Status: 302
+Fatal error on SSL transport
+protocol: <asyncio.sslproto.SSLProtocol object at 0x7f1e906e8910>
+transport: <_SelectorSocketTransport closing fd=6>
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/asyncio/selector_events.py", line 924, in write
+    n = self._sock.send(data)
+OSError: [Errno 9] Bad file descriptor
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/asyncio/sslproto.py", line 690, in _process_write_backlog
+    self._transport.write(chunk)
+  File "/usr/lib/python3.10/asyncio/selector_events.py", line 930, in write
+    self._fatal_error(exc, 'Fatal write error on socket transport')
+  File "/usr/lib/python3.10/asyncio/selector_events.py", line 725, in _fatal_error
+    self._force_close(exc)
+  File "/usr/lib/python3.10/asyncio/selector_events.py", line 737, in _force_close
+    self._loop.call_soon(self._call_connection_lost, exc)
+  File "/usr/lib/python3.10/asyncio/base_events.py", line 753, in call_soon
+    self._check_closed()
+  File "/usr/lib/python3.10/asyncio/base_events.py", line 515, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed

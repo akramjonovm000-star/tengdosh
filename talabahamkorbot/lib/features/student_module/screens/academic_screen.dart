@@ -27,17 +27,15 @@ class _AcademicScreenState extends State<AcademicScreen> {
     _loadData();
   }
 
-  Future<void> _loadData({bool forceRefresh = false}) async {
-    if (!forceRefresh) setState(() => _isLoading = true);
-    
+  Future<void> _loadData() async {
     try {
-      final data = await _dataService.getDashboardStats(refresh: forceRefresh);
+      final data = await _dataService.getDashboardStats();
       if (mounted) {
         setState(() {
-          _gpa = double.tryParse(data['gpa']?.toString() ?? '0.0') ?? 0.0;
-          _missedHours = int.tryParse(data['missed_hours']?.toString() ?? '0') ?? 0;
-          _excusedHours = int.tryParse(data['missed_hours_excused']?.toString() ?? '0') ?? 0;
-          _unexcusedHours = int.tryParse(data['missed_hours_unexcused']?.toString() ?? '0') ?? 0;
+          _gpa = (data['gpa'] ?? 0.0).toDouble();
+          _missedHours = (data['missed_hours'] ?? 0).toInt();
+          _excusedHours = (data['missed_hours_excused'] ?? 0).toInt();
+          _unexcusedHours = (data['missed_hours_unexcused'] ?? 0).toInt();
           _isLoading = false;
         });
       }
@@ -56,13 +54,10 @@ class _AcademicScreenState extends State<AcademicScreen> {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
       ),
-      body: RefreshIndicator(
-        onRefresh: () => _loadData(forceRefresh: true),
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
             // Stats Box
             Container(
               padding: const EdgeInsets.all(24),
@@ -116,7 +111,7 @@ class _AcademicScreenState extends State<AcademicScreen> {
                   const Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      "Davomat statistikasi (soatlar)",
+                      "Davomat Statistikasi (Soatlar)",
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -141,18 +136,15 @@ class _AcademicScreenState extends State<AcademicScreen> {
             // Menu List
             _buildMenuItem(context, "Davomat", Icons.calendar_month_rounded, Colors.green),
             _buildMenuItem(context, "Dars Jadvali", Icons.schedule_rounded, Colors.blue),
-            _buildMenuItem(context, "Fanlar va resurslar", Icons.library_books_rounded, Colors.orange),
+            _buildMenuItem(context, "Fanlar va Resurslar", Icons.library_books_rounded, Colors.orange),
             _buildMenuItem(context, "O'zlashtirish", Icons.grade_rounded, Colors.purple),
             _buildMenuItem(context, "Imtihonlar", Icons.edit_document, Colors.redAccent),
             _buildMenuItem(context, "Reyting Daftarchasi", Icons.history_edu_rounded, Colors.teal),
           ],
-        ), // Column
-      ), // SingleChildScrollView
-    ), // RefreshIndicator
-  );
-}
-
-  bool _navigationLock = false;
+        ),
+      ),
+    );
+  }
 
   Widget _buildMenuItem(BuildContext context, String title, IconData icon, Color color) {
     return Container(
@@ -183,31 +175,27 @@ class _AcademicScreenState extends State<AcademicScreen> {
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey),
-        onTap: () async {
-          if (_navigationLock) return;
-          
-          setState(() => _navigationLock = true);
-          
-          try {
-            if (title == "Davomat") {
-               await Navigator.push(context, MaterialPageRoute(builder: (_) => const AttendanceScreen()));
-            } else if (title == "Dars Jadvali") {
-               await Navigator.push(context, MaterialPageRoute(builder: (_) => const ScheduleScreen()));
-            } else if (title == "O'zlashtirish") { 
-               await Navigator.push(context, MaterialPageRoute(builder: (_) => const GradesScreen()));
-            } else if (title == "Fanlar va resurslar") {
-               await Navigator.push(context, MaterialPageRoute(builder: (_) => const SubjectsScreen()));
-            } else {
-               ScaffoldMessenger.of(context).showSnackBar(
-                 SnackBar(content: Text("$title bo'limi tez orada ishga tushadi")),
-               );
-            }
-          } finally {
-            // Ensure lock is released even if navigation fails or returns
-            if (mounted) {
-               setState(() => _navigationLock = false);
-            }
+        onTap: () {
+          if (title == "Davomat") {
+             Navigator.push(context, MaterialPageRoute(builder: (_) => const AttendanceScreen()));
+             return;
           }
+          if (title == "Dars Jadvali") {
+             Navigator.push(context, MaterialPageRoute(builder: (_) => const ScheduleScreen()));
+             return;
+          }
+          if (title == "O'zlashtirish") { 
+             Navigator.push(context, MaterialPageRoute(builder: (_) => const GradesScreen()));
+             return;
+          }
+          if (title == "Fanlar va Resurslar") {
+             Navigator.push(context, MaterialPageRoute(builder: (_) => const SubjectsScreen()));
+             return;
+          }
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("$title bo'limi tez orada ishga tushadi")),
+          );
         },
       ),
     );
