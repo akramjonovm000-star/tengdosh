@@ -66,6 +66,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Widget build(BuildContext context) {
     final displayLessons = _getFilteredLessons();
 
+    final now = DateTime.now();
+    final firstDayOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    final selectedDate = firstDayOfWeek.add(Duration(days: _selectedDay - 1));
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F7), // Light clean background
       appBar: AppBar(
@@ -85,7 +89,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _weekDays[_selectedDay - 1], 
+                  "${_weekDays[_selectedDay - 1]}, ${selectedDate.day}.${selectedDate.month.toString().padLeft(2, '0')}", 
                   style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87)
                 ),
                 const SizedBox(height: 16),
@@ -94,6 +98,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   children: List.generate(6, (index) {
                     final dayNum = index + 1;
                     final isSelected = dayNum == _selectedDay;
+                    final dateForIndex = firstDayOfWeek.add(Duration(days: index));
+                    
                     return GestureDetector(
                       onTap: () => setState(() => _selectedDay = dayNum),
                       child: AnimatedContainer(
@@ -120,7 +126,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              "${index + 1}", // Simple number representation (optional, could be removed or changed to date if complex)
+                              "${dateForIndex.day}", 
                               style: TextStyle(
                                 fontSize: 16, 
                                 fontWeight: FontWeight.bold,
