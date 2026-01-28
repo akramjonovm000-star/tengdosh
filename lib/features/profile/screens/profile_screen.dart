@@ -152,40 +152,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        student.fullName,
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.textBlack,
-                        ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(text: student.fullName),
+                        if (student.isPremium) ...[
+                          WidgetSpan(
+                            alignment: PlaceholderAlignment.middle,
+                            child: Padding(
+                              padding: const EdgeInsets.only(left: 8),
+                              child: GestureDetector(
+                                onTap: () => _showBadgeSelector(context),
+                                child: student.customBadge != null
+                                    ? Text(student.customBadge!, style: const TextStyle(fontSize: 24))
+                                    : const Icon(Icons.verified, color: Colors.blue, size: 24),
+                              ),
+                            ),
+                          ),
+                          if (student.customBadge == null)
+                            WidgetSpan(
+                              alignment: PlaceholderAlignment.middle,
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: 4),
+                                child: GestureDetector(
+                                  onTap: () => _showBadgeSelector(context),
+                                  child: Icon(Icons.edit, size: 14, color: Colors.grey[400]),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ],
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textBlack,
+                        height: 1.3,
                       ),
                     ),
-                    if (student.isPremium) ...[
-                      const SizedBox(width: 8),
-                      GestureDetector(
-                        onTap: () => _showBadgeSelector(context),
-                        child: student.customBadge != null 
-                            ? Text(student.customBadge!, style: const TextStyle(fontSize: 24))
-                            : const Icon(Icons.verified, color: Colors.blue, size: 24),
-                      ),
-                      if (student.customBadge == null) // Show edit hint if default
-                        Padding(
-                          padding: const EdgeInsets.only(left: 4),
-                          child: GestureDetector(
-                            onTap: () => _showBadgeSelector(context),
-                            child: Icon(Icons.edit, size: 14, color: Colors.grey[400]),
-                          ),
-                        )
-                    ]
-                  ],
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
                 Text(
                   "ID: ${student.hemisLogin}",
