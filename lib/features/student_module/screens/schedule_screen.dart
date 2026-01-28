@@ -43,10 +43,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   Future<void> _loadData() async {
     try {
-      final scheduleFuture = _dataService.getSchedule();
-      final attendanceFuture = _dataService.getAttendance(); // Fetch all attendance for cross-ref
+      final Future<List<Lesson>> scheduleFuture = _dataService.getSchedule();
+      final Future<List<Attendance>> attendanceFuture = _dataService.getAttendanceList(); // Fetch all attendance for cross-ref
 
-      final results = await Future.wait([scheduleFuture, attendanceFuture]);
+      final List<dynamic> results = await Future.wait([scheduleFuture, attendanceFuture]);
       
       if (mounted) {
         setState(() {
