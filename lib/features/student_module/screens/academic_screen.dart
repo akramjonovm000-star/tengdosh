@@ -191,7 +191,7 @@ class _AcademicScreenState extends State<AcademicScreen> {
           try {
             if (title == "Davomat") {
                await Navigator.push(context, MaterialPageRoute(builder: (_) => const AttendanceScreen()));
-            } else if (title == "Dars Jadvali") {
+            } else if (title == "Dars jadvali") {
                await Navigator.push(context, MaterialPageRoute(builder: (_) => const ScheduleScreen()));
             } else if (title == "O'zlashtirish") { 
                await Navigator.push(context, MaterialPageRoute(builder: (_) => const GradesScreen()));
