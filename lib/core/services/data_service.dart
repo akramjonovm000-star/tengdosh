@@ -136,7 +136,7 @@ class DataService {
          // but we adding param structure for future or if we modify backend
       }
       
-      final response = await _get(url);
+      final response = await _get(url, timeout: const Duration(seconds: 60));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
