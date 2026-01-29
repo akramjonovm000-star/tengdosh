@@ -25,50 +25,7 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
     _loadSubjects();
   }
 
-  Future<void> _loadSubjects() async {
-    // 1. Get Semesters if empty
-    if (_semesters.isEmpty) {
-      _semesters = await _dataService.getSemesters();
-      // if (_semesters.isNotEmpty && _selectedSemesterId == null) {
-      //    _selectedSemesterId = _semesters.first['code']?.toString() ?? _semesters.first['id']?.toString();
-      // }
-    }
-    
-    // 2. Get Subjects
-    // Note: Assuming DataService.getSubjects updated to take semester
-    // We haven't updated DataService.getSubjects signature yet in dart file?
-    // Let's check. Yes we updated getDashboardStats but not getSubjects in the last step?
-    // Wait, I updated getSemesters but did I update getSubjects?
-    // Looking at previous diff, I updated getDashboardStats. I did NOT update getSubjects signature in DataService.dart
-    // I need to update DataService.getSubjects signature first or pass it if I did.
-    // I will assume I will fixed DataService.getSubjects in next step or this step.
-    // Actually, I should fix DataService.getSubjects signature first.
-    // But since I am editing SubjectsScreen now, I will write code assuming it exists
-    // and then go fix DataService if I missed it.
-    
-    // I will revisit DataService.getSubjects. 
-    // In the previous step for DataService, I added getSemesters and updated getDashboardStats.
-    // I did NOT update getSubjects signature.
-    // So I need to use DataService.getSubjects() and maybe filter locally or update DataService.
-    // The plan said: "Update getDashboardStats, getSubjects, getAttendance to accept semesterId."
-    // I only updated getDashboardStats.
-    // So I will pause this edit and go update DataService first? 
-    // No, I can do it in parallel or sequential.
-    // I'll assume I'll pass it, and I will fix DataService immediately after.
-    
-    // Actually, to avoid compilation error if I run, I should check.
-    // But I can't run yet.
-    
-    // Let's implement the logic assuming DataService.getSubjects(semester: _selectedSemesterId).
-    
-    final data = await _dataService.getSubjects(semester: _selectedSemesterId);
-    if (mounted) {
-      setState(() {
-        _subjects = data;
-        _isLoading = false;
-      });
-    }
-  }
+
 
   @override
   Widget build(BuildContext context) {
