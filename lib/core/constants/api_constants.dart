@@ -16,7 +16,7 @@ class ApiConstants {
   static const String profile = '$backendUrl/student/me';
   
   // Dashboard
-  static const String dashboard = '$backendUrl/student/dashboard';
+  static const String dashboard = '$backendUrl/student/dashboard/';
   
   // Data
   static const String gpaList = '$baseUrl/data/student-gpa-list';
