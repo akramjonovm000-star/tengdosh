@@ -22,15 +22,23 @@ class Appeal {
   });
 
   factory Appeal.fromJson(Map<String, dynamic> json) {
+    // Safe Date Parsing
+    DateTime parsedDate;
+    try {
+      parsedDate = DateTime.parse(json['created_at'].toString());
+    } catch (e) {
+      parsedDate = DateTime.now(); // Fallback
+    }
+
     return Appeal(
-      id: json['id'],
-      title: json['title'], // Backend might not send this yet on list view, but detail does
-      text: json['text'],
-      status: json['status'] ?? 'pending',
-      recipient: json['assigned_role'], // Mapping assigned_role to recipient for UI
-      createdAt: DateTime.parse(json['created_at']),
-      isAnonymous: json['is_anonymous'] ?? false,
-      assignedRole: json['assigned_role'],
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
+      title: json['title']?.toString() ?? "Murojaat #${json['id']}",
+      text: json['text']?.toString(),
+      status: json['status']?.toString() ?? 'pending',
+      recipient: json['assigned_role']?.toString(), 
+      createdAt: parsedDate,
+      isAnonymous: json['is_anonymous'] == true || json['is_anonymous'] == "true",
+      assignedRole: json['assigned_role']?.toString(),
     );
   }
   
