@@ -74,6 +74,7 @@ class AppealService {
     required String text,
     required String role,
     bool isAnonymous = false,
+    String? sessionId,
   }) async {
     final token = await _getToken();
     if (token == null) return false;
@@ -81,24 +82,25 @@ class AppealService {
     final url = Uri.parse("${ApiConstants.backendUrl}/student/feedback/");
 
     try {
+      final body = {
+        'text': text,
+        'role': role,
+        'is_anonymous': isAnonymous.toString(),
+      };
+      if (sessionId != null) {
+        body['session_id'] = sessionId;
+      }
+
       final response = await http.post(
         url,
         headers: {
           'Authorization': 'Bearer $token',
-          'Content-Type': 'application/x-www-form-urlencoded', // Using form data as per backend
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: {
-          'text': text,
-          'role': role,
-          'is_anonymous': isAnonymous.toString(),
-        },
+        body: body,
       );
 
       return response.statusCode == 200 || response.statusCode == 201;
-    } catch (e) {
-      print("Exception creating appeal: $e");
-      return false;
-    }
     } catch (e) {
       print("Exception creating appeal: $e");
       return false;
