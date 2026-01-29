@@ -414,8 +414,8 @@ class DataService {
         final data = body is Map && body.containsKey('data') ? body['data'] : body;
         final List<dynamic> items = (data is List) ? data : (data['items'] ?? []);
         
-        // Update Local DB
-        await _dbService.saveCache('attendance', studentId, {'items': items}, semesterCode: semCode);
+        // DISABLED LOCAL CACHE: No update
+        // await _dbService.saveCache('attendance', studentId, {'items': items}, semesterCode: semCode);
         
         return items.map((json) => Attendance.fromJson(json)).toList();
       }
@@ -430,13 +430,13 @@ class DataService {
     final student = await _authService.getSavedUser();
     final studentId = student?.id ?? 0;
     
-    // 1. Try Local cache
-    final cached = await _dbService.getCache('schedule', studentId);
-    if (cached != null && cached.containsKey('items')) {
-       final List<dynamic> items = cached['items'];
-       // _backgroundRefreshSchedule(studentId);
-       return items.map((json) => Lesson.fromJson(json)).toList();
-    }
+    // DISABLED LOCAL CACHE
+    // final cached = await _dbService.getCache('schedule', studentId);
+    // if (cached != null && cached.containsKey('items')) {
+    //    final List<dynamic> items = cached['items'];
+    //    // _backgroundRefreshSchedule(studentId);
+    //    return items.map((json) => Lesson.fromJson(json)).toList();
+    // }
 
     return await _backgroundRefreshSchedule(studentId);
   }
@@ -450,8 +450,8 @@ class DataService {
         final data = body['data'];
         final List<dynamic> items = (data is List) ? data : (data['items'] ?? []);
         
-        // Update Local DB
-        await _dbService.saveCache('schedule', studentId, {'items': items});
+        // DISABLED LOCAL CACHE: No update
+        // await _dbService.saveCache('schedule', studentId, {'items': items});
         
         return items.map((json) => Lesson.fromJson(json)).toList();
       }
@@ -498,22 +498,21 @@ class DataService {
         }
 
         if (items.isNotEmpty) {
-          // Update Local Cache (Non-blocking)
-          try {
-            final semCode = semester ?? 'all';
-            final dynamic cached = await _dbService.getCache('subjects', studentId, semesterCode: semCode);
-            final Map<String, dynamic> existing = (cached is Map) ? Map<String, dynamic>.from(cached) : {};
-            existing['grades'] = items;
-            await _dbService.saveCache('subjects', studentId, existing, semesterCode: semCode);
-          } catch (e) {
-            print("Warning: Failed to cache grades: $e");
-          }
+          // DISABLED LOCAL CACHE: No update
+          // try {
+          //   final semCode = semester ?? 'all';
+          //   final dynamic cached = await _dbService.getCache('subjects', studentId, semesterCode: semCode);
+          //   final Map<String, dynamic> existing = (cached is Map) ? Map<String, dynamic>.from(cached) : {};
+          //   existing['grades'] = items;
+          //   await _dbService.saveCache('subjects', studentId, existing, semesterCode: semCode);
+          // } catch (e) {
+          //   print("Warning: Failed to cache grades: $e");
+          // }
           return items;
         }
       } else {
         print("Grades API Error: ${response.statusCode} - ${response.body}");
       }
-    } catch (e) {
     } catch (e) {
       print("Grades Sync Error: $e");
     }
@@ -547,14 +546,15 @@ class DataService {
     final student = await _authService.getSavedUser();
     final studentId = student?.id ?? 0;
 
-    if (!refresh) {
-      final cached = await _dbService.getCache('subjects', studentId, semesterCode: semester ?? 'all');
-      if (cached != null && cached.containsKey('list')) {
-        // Disable silent background refresh to prevent stale backend data from overwriting fresh local cache ("rollback" bug)
-        // _backgroundRefreshSubjects(studentId, semester: semester);
-        return cached['list'];
-      }
-    }
+    // DISABLED LOCAL CACHE: Force live data
+    // if (!refresh) {
+    //   final cached = await _dbService.getCache('subjects', studentId, semesterCode: semester ?? 'all');
+    //   if (cached != null && cached.containsKey('list')) {
+    //     // Disable silent background refresh to prevent stale backend data from overwriting fresh local cache ("rollback" bug)
+    //     // _backgroundRefreshSubjects(studentId, semester: semester);
+    //     return cached['list'];
+    //   }
+    // }
     return await _backgroundRefreshSubjects(studentId, semester: semester, refresh: refresh);
   }
 
@@ -577,8 +577,8 @@ class DataService {
         final body = json.decode(response.body);
         if (body['success'] == true) {
           final items = body['data'];
-          // Fix: Save with correct semester code
-          await _dbService.saveCache('subjects', studentId, {'list': items}, semesterCode: semester ?? 'all');
+          // DISABLED LOCAL CACHE: No update
+          // await _dbService.saveCache('subjects', studentId, {'list': items}, semesterCode: semester ?? 'all');
           return items;
         }
       }

@@ -244,18 +244,18 @@ class HemisService:
             return total, excused, unexcused
 
         stale_data = None
-        if student_id and not force_refresh:
-            try:
-                # Use synchronous session creation pattern? No, keep async but careful with loops
-                async with AsyncSessionLocal() as session:
-                    cache = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
-                    if cache: 
-                        age = (datetime.utcnow() - cache.updated_at).total_seconds()
-                        if age < 4 * 3600:
-                            t, e, u = calculate_totals(cache.data)
-                            return t, e, u, cache.data
-                        stale_data = cache.data
-            except: pass
+        # DISABLED StudentCache: Force live data
+        # if student_id and not force_refresh:
+        #     try:
+        #         async with AsyncSessionLocal() as session:
+        #             cache = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
+        #             if cache: 
+        #                 age = (datetime.utcnow() - cache.updated_at).total_seconds()
+        #                 if age < 4 * 3600:
+        #                     t, e, u = calculate_totals(cache.data)
+        #                     return t, e, u, cache.data
+        #                 stale_data = cache.data
+        #     except: pass
 
         client = await HemisService.get_client()
         try:
@@ -268,16 +268,16 @@ class HemisService:
             if response.status_code == 200:
                 data = response.json().get("data", [])
                 
-                # Update Cache
-                if student_id:
-                     async with AsyncSessionLocal() as session:
-                         c = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
-                         if c: 
-                             c.data = data
-                             c.updated_at = datetime.utcnow()
-                         else:
-                             session.add(StudentCache(student_id=student_id, key=key, data=data))
-                         await session.commit()
+                # DISABLED StudentCache: No update
+                # if student_id:
+                #      async with AsyncSessionLocal() as session:
+                #          c = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
+                #          if c: 
+                #              c.data = data
+                #              c.updated_at = datetime.utcnow()
+                #          else:
+                #              session.add(StudentCache(student_id=student_id, key=key, data=data))
+                #          await session.commit()
                          
                 t, e, u = calculate_totals(data)
                 return t, e, u, data
@@ -314,13 +314,14 @@ class HemisService:
     @staticmethod
     async def get_student_subject_list(token: str, semester_code: str = None, student_id: int = None, force_refresh: bool = False):
         key = f"subjects_{semester_code}" if semester_code else "subjects_all"
-        if student_id and not force_refresh:
-            try:
-                async with AsyncSessionLocal() as session:
-                    cache = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
-                    if cache and (datetime.utcnow() - cache.updated_at).total_seconds() < 1800:
-                        return cache.data
-            except: pass
+        # DISABLED StudentCache
+        # if student_id and not force_refresh:
+        #     try:
+        #         async with AsyncSessionLocal() as session:
+        #             cache = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
+        #             if cache and (datetime.utcnow() - cache.updated_at).total_seconds() < 1800:
+        #                 return cache.data
+        #     except: pass
 
         client = await HemisService.get_client()
         try:
@@ -331,15 +332,16 @@ class HemisService:
             )
             if response.status_code == 200:
                 data = response.json().get("data", [])
-                if student_id:
-                     async with AsyncSessionLocal() as session:
-                         c = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
-                         if c: 
-                             c.data = data
-                             c.updated_at = datetime.utcnow()
-                         else:
-                             session.add(StudentCache(student_id=student_id, key=key, data=data))
-                         await session.commit()
+                # DISABLED StudentCache
+                # if student_id:
+                #      async with AsyncSessionLocal() as session:
+                #          c = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
+                #          if c: 
+                #              c.data = data
+                #              c.updated_at = datetime.utcnow()
+                #          else:
+                #              session.add(StudentCache(student_id=student_id, key=key, data=data))
+                #          await session.commit()
                 return data
             return []
         except: return []
@@ -347,13 +349,14 @@ class HemisService:
     @staticmethod
     async def get_student_schedule_cached(token: str, semester_code: str = None, student_id: int = None, force_refresh: bool = False):
         key = f"schedule_{semester_code}" if semester_code else "schedule_all"
-        if student_id and not force_refresh:
-            try:
-                async with AsyncSessionLocal() as session:
-                    cache = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
-                    if cache and (datetime.utcnow() - cache.updated_at).total_seconds() < 1800:
-                            return cache.data
-            except: pass
+        # DISABLED StudentCache
+        # if student_id and not force_refresh:
+        #     try:
+        #         async with AsyncSessionLocal() as session:
+        #             cache = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
+        #             if cache and (datetime.utcnow() - cache.updated_at).total_seconds() < 1800:
+        #                     return cache.data
+        #     except: pass
 
         client = await HemisService.get_client()
         try:
@@ -364,15 +367,16 @@ class HemisService:
             )
             if response.status_code == 200:
                 data = response.json().get("data", [])
-                if student_id:
-                     async with AsyncSessionLocal() as session:
-                         c = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
-                         if c: 
-                             c.data = data
-                             c.updated_at = datetime.utcnow()
-                         else:
-                             session.add(StudentCache(student_id=student_id, key=key, data=data))
-                         await session.commit()
+                # DISABLED StudentCache
+                # if student_id:
+                #      async with AsyncSessionLocal() as session:
+                #          c = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
+                #          if c: 
+                #              c.data = data
+                #              c.updated_at = datetime.utcnow()
+                #          else:
+                #              session.add(StudentCache(student_id=student_id, key=key, data=data))
+                #          await session.commit()
                 return data
             return []
         except: return []
