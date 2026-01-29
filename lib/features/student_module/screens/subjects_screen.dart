@@ -29,9 +29,9 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
     // 1. Get Semesters if empty
     if (_semesters.isEmpty) {
       _semesters = await _dataService.getSemesters();
-      if (_semesters.isNotEmpty && _selectedSemesterId == null) {
-         _selectedSemesterId = _semesters.first['code']?.toString() ?? _semesters.first['id']?.toString();
-      }
+      // if (_semesters.isNotEmpty && _selectedSemesterId == null) {
+      //    _selectedSemesterId = _semesters.first['code']?.toString() ?? _semesters.first['id']?.toString();
+      // }
     }
     
     // 2. Get Subjects
@@ -84,51 +84,43 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
         actions: [
-          if (_semesters.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey[200]!),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: _selectedSemesterId,
-                    isDense: true,
-                    icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: Colors.blue),
-                    style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 13),
-                    borderRadius: BorderRadius.circular(12),
-                    underline: const SizedBox(),
-                    items: _semesters.map<DropdownMenuItem<String>>((s) {
-                      final bool isCurrent = s['current'] == true;
-                      final String label = isCurrent ? "Joriy" : (s['name'] ?? 'Semestr');
-                      return DropdownMenuItem(
-                        value: s['code']?.toString(),
-                        child: Text(
-                          label,
-                          style: TextStyle(
-                            fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-                            color: isCurrent ? Colors.blue : Colors.black87
-                          )
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) {
-                        setState(() {
-                          _selectedSemesterId = val;
-                          _isLoading = true;
-                        });
-                        _loadSubjects();
-                      }
-                    },
-                  ),
-                ),
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: Colors.grey.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _selectedSemesterId,
+                hint: const Text("Semestr", style: TextStyle(fontSize: 14)),
+                icon: const Icon(Icons.arrow_drop_down, color: Colors.black54),
+                borderRadius: BorderRadius.circular(12),
+                items: [
+                   const DropdownMenuItem<String>(
+                     value: null,
+                     child: Text("Joriy", style: TextStyle(fontWeight: FontWeight.bold)),
+                   ),
+                   ..._semesters.map((s) {
+                    final code = (s['code'] ?? s['id']).toString();
+                    final name = s['name'] ?? "${int.tryParse(code) != null ? int.parse(code) - 10 : code}-semestr";
+                    return DropdownMenuItem<String>(
+                      value: code,
+                      child: Text(name),
+                    );
+                  }).toList(),
+                ],
+                onChanged: (val) {
+                  setState(() {
+                    _selectedSemesterId = val;
+                    _isLoading = true;
+                  });
+                  _loadSubjects();
+                },
               ),
-            )
+            ),
+          ),
         ],
       ),
       body: _isLoading
