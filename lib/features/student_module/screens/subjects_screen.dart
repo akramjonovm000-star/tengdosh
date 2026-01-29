@@ -75,53 +75,52 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundWhite,
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text("Fanlar va Resurslar", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18)),
-            if (_semesters.isNotEmpty)
-              GestureDetector(
-                onTap: () {
-                  // Show bottom sheet or dropdown
-                },
-                child: Container(
-                  margin: const EdgeInsets.only(top: 2),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                   decoration: BoxDecoration(
-                     color: Colors.grey[100],
-                     borderRadius: BorderRadius.circular(8)
-                   ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      isDense: true,
-                      value: _selectedSemesterId,
-                      icon: const Icon(Icons.keyboard_arrow_down, size: 16),
-                      style: TextStyle(color: Colors.grey[800], fontSize: 13),
-                      items: _semesters.map<DropdownMenuItem<String>>((s) {
-                        return DropdownMenuItem(
-                          value: s['code']?.toString(),
-                          child: Text(s['name'] ?? 'Semestr'),
-                        );
-                      }).toList(),
-                      onChanged: (val) {
-                         if (val != null) {
-                           setState(() {
-                             _selectedSemesterId = val;
-                             _isLoading = true;
-                           });
-                           // TODO: Pass semester
-                           _loadSubjects();
-                         }
-                      },
-                    ),
-                  ),
-                ),
-              )
-          ],
+        title: const Text(
+          "Fanlar va Resurslar",
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18),
         ),
+        centerTitle: false,
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
+        actions: [
+          if (_semesters.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[200]!),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: _selectedSemesterId,
+                    isDense: true,
+                    icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: Colors.blue),
+                    style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 13),
+                    borderRadius: BorderRadius.circular(12),
+                    items: _semesters.map<DropdownMenuItem<String>>((s) {
+                      return DropdownMenuItem(
+                        value: s['code']?.toString(),
+                        child: Text(s['name'] ?? 'Semestr'),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() {
+                          _selectedSemesterId = val;
+                          _isLoading = true;
+                        });
+                        _loadSubjects();
+                      }
+                    },
+                  ),
+                ),
+              ),
+            )
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
