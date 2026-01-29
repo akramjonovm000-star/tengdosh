@@ -318,7 +318,7 @@ class HemisService:
             try:
                 async with AsyncSessionLocal() as session:
                     cache = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
-                    if cache and (datetime.utcnow() - cache.updated_at).total_seconds() < 4 * 3600:
+                    if cache and (datetime.utcnow() - cache.updated_at).total_seconds() < 1800:
                         return cache.data
             except: pass
 
@@ -351,7 +351,7 @@ class HemisService:
             try:
                 async with AsyncSessionLocal() as session:
                     cache = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
-                    if cache and (datetime.utcnow() - cache.updated_at).total_seconds() < 4 * 3600:
+                    if cache and (datetime.utcnow() - cache.updated_at).total_seconds() < 1800:
                             return cache.data
             except: pass
 

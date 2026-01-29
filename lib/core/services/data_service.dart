@@ -434,7 +434,7 @@ class DataService {
     final cached = await _dbService.getCache('schedule', studentId);
     if (cached != null && cached.containsKey('items')) {
        final List<dynamic> items = cached['items'];
-       _backgroundRefreshSchedule(studentId);
+       // _backgroundRefreshSchedule(studentId);
        return items.map((json) => Lesson.fromJson(json)).toList();
     }
 
@@ -550,7 +550,8 @@ class DataService {
     if (!refresh) {
       final cached = await _dbService.getCache('subjects', studentId, semesterCode: semester ?? 'all');
       if (cached != null && cached.containsKey('list')) {
-        _backgroundRefreshSubjects(studentId, semester: semester);
+        // Disable silent background refresh to prevent stale backend data from overwriting fresh local cache ("rollback" bug)
+        // _backgroundRefreshSubjects(studentId, semester: semester);
         return cached['list'];
       }
     }
