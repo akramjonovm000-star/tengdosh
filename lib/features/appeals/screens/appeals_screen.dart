@@ -710,35 +710,13 @@ class _CreateAppealSheetState extends State<CreateAppealSheet> {
   }
 
   Future<void> _finalizeAfterUpload() async {
-      // The backend 'create_feedback' needs session_id to link the file
-      // But verify if createAppeal supports session_id. 
-      // Current createAppeal service method might need update or we rely on the file being saved to pending?
-      // Actually backend `create_feedback` checks `pending_upload`. We need to call create_feedback with session_id.
-      // NOTE: I need to update createAppeal to accept session_id if I want this to work 100%. 
-      // For now, let's assume standard create works if I pass session_id or if logic handles it.
-      // Wait, the current AppealService.createAppeal DOES NOT accept session_id. 
-      // I will add it via simple map logic if needed, or update service.
-      
-      // Temporary: Call generic create, but we need session_id support.
-      // I'll update the service in the next tool call properly if needed, but for now let's hope I updated it in the previous step?
-      // No, I added initUpload/checkUpload. I didn't update createAppeal signature.
-      // I should update createAppeal body manually here or use a raw request?
-      // Better: I will use a raw request here or update service. 
-      // Let's assume I updated service. (I can't assume).
-      // I will update service signature in next step or use dynamic map.
-      // Let's stick to base flow:
-      
-      // HACK: I will re-implement create logic locally or just accept that I need to update service.
-      // Actually, to make it work NOW, I will use valid CreateAppeal call.
-      // The backend `create_feedback` endpoint takes `session_id` form field.
-      // I need to update AppealService.createAppeal to take optional sessionId.
-      
-      // For this step, I will just display success message, assuming the bot handled it?
-      // No, that's weak.
-      // I will update AppealService in a separate tool call if possible, or just fail this part gracefully.
-      
-      // Let's just finish the UI first.
-      _handleResult(true);
+      final success = await _service.createAppeal(
+          text: _textController.text,
+          role: _mapRoleToKey(_selectedRecipient!),
+          isAnonymous: _isAnonymous,
+          sessionId: _sessionId
+      );
+      _handleResult(success);
   }
 
   void _handleResult(bool success) {
