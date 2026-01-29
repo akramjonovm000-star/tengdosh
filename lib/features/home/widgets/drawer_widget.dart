@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:talabahamkor_mobile/features/auth/auth_provider.dart';
 import 'package:talabahamkor_mobile/core/theme/app_theme.dart';
-import 'package:talabahamkor_mobile/features/feedback/screens/feedback_screen.dart';
+import 'package:talabahamkor_mobile/features/appeals/screens/appeals_screen.dart';
 import 'package:talabahamkor_mobile/features/documents/screens/documents_screen.dart';
 
 class AppDrawer extends StatelessWidget {
@@ -31,10 +31,7 @@ class AppDrawer extends StatelessWidget {
             title: const Text("Murojaatlar"),
             onTap: () {
                Navigator.pop(context);
-               // Navigator.push(context, MaterialPageRoute(builder: (_) => const FeedbackScreen()));
-               ScaffoldMessenger.of(context).showSnackBar(
-                 const SnackBar(content: Text("Tez orada ishga tushiramiz! 🚧")),
-               );
+               Navigator.push(context, MaterialPageRoute(builder: (_) => const AppealsScreen()));
             },
           ),
           ListTile(

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:talabahamkor_mobile/features/feedback/screens/feedback_screen.dart';
+
 import 'package:provider/provider.dart';
 import 'package:talabahamkor_mobile/core/services/data_service.dart';
 import 'package:talabahamkor_mobile/core/theme/app_theme.dart';
@@ -487,7 +487,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: "Murojaatlar",
                     icon: Icons.chat_bubble_outline_rounded,
                     color: Colors.redAccent,
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FeedbackScreen())),
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AppealsScreen())),
                   ),
               ],
             ),
