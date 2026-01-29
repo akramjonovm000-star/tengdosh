@@ -563,9 +563,8 @@ class DataService {
         final body = json.decode(response.body);
         if (body['success'] == true) {
           final items = body['data'];
-          final existing = await _dbService.getCache('subjects', studentId) ?? {};
-          existing['list'] = items;
-          await _dbService.saveCache('subjects', studentId, existing);
+          // Fix: Save with correct semester code
+          await _dbService.saveCache('subjects', studentId, {'list': items}, semesterCode: semester ?? 'all');
           return items;
         }
       }
