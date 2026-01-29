@@ -125,16 +125,49 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _subjects.isEmpty
-              ? const Center(child: Text("Ma'lumot topilmadi"))
-              : ListView.builder(
-                  padding: const EdgeInsets.all(20),
-                  itemCount: _subjects.length,
-                  itemBuilder: (context, index) {
-                    return _buildSubjectCard(_subjects[index]);
-                  },
-                ),
+          : RefreshIndicator(
+              onRefresh: () async => _loadSubjects(forceRefresh: true),
+              child: _subjects.isEmpty
+                  ? SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Container(
+                        height: MediaQuery.of(context).size.height * 0.7,
+                        alignment: Alignment.center,
+                        child: const Text("Ma'lumot topilmadi"),
+                      ),
+                    )
+                  : ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(20),
+                      itemCount: _subjects.length,
+                      itemBuilder: (context, index) {
+                        return _buildSubjectCard(_subjects[index]);
+                      },
+                    ),
+            ),
     );
+  }
+
+  Future<void> _loadSubjects({bool forceRefresh = false}) async {
+    // 1. Get Semesters if empty
+    if (_semesters.isEmpty) {
+      _semesters = await _dataService.getSemesters();
+      // Only set default if it's the very first load and we don't have "Joriy" concept
+      // But now we want Joriy (null) as default. So we don't force select first.
+    }
+    
+    // 2. Get Subjects
+    final data = await _dataService.getSubjects(
+      semester: _selectedSemesterId, 
+      refresh: forceRefresh
+    );
+    
+    if (mounted) {
+      setState(() {
+        _subjects = data;
+        _isLoading = false;
+      });
+    }
   }
 
   Widget _buildSubjectCard(dynamic item) {

@@ -538,14 +538,17 @@ class DataService {
   }
 
   // 13. Get Detailed Subjects
-  Future<List<dynamic>> getSubjects({String? semester}) async {
+  // 13. Get Detailed Subjects
+  Future<List<dynamic>> getSubjects({String? semester, bool refresh = false}) async {
     final student = await _authService.getSavedUser();
     final studentId = student?.id ?? 0;
 
-    final cached = await _dbService.getCache('subjects', studentId, semesterCode: semester ?? 'all');
-    if (cached != null && cached.containsKey('list')) {
-      _backgroundRefreshSubjects(studentId, semester: semester);
-      return cached['list'];
+    if (!refresh) {
+      final cached = await _dbService.getCache('subjects', studentId, semesterCode: semester ?? 'all');
+      if (cached != null && cached.containsKey('list')) {
+        _backgroundRefreshSubjects(studentId, semester: semester);
+        return cached['list'];
+      }
     }
     return await _backgroundRefreshSubjects(studentId, semester: semester);
   }
