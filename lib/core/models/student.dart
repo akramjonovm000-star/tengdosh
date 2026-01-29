@@ -60,14 +60,21 @@ class Student {
 
     if (lastName != null && firstName != null) {
       if (patronymic != null) {
-        fullName = "${sentenceCase(lastName)} ${sentenceCase(firstName)} ${sentenceCase(patronymic)}";
+        fullName = "${sentenceCase(firstName)} ${sentenceCase(lastName)} ${sentenceCase(patronymic)}";
       } else {
-        fullName = "${sentenceCase(lastName)} ${sentenceCase(firstName)}";
+        fullName = "${sentenceCase(firstName)} ${sentenceCase(lastName)}";
       }
-        } else if (jsonFullName != null && jsonFullName.toString().trim().isNotEmpty && jsonFullName != "Talaba") {
+    } else if (jsonFullName != null && jsonFullName.toString().trim().isNotEmpty && jsonFullName != "Talaba") {
       var parts = jsonFullName.toString().trim().split(' ');
-      // Preserve all parts (Family, Name, Patronymic)
-      fullName = parts.map((p) => sentenceCase(p)).join(' ');
+      if (parts.length >= 2) {
+        // Swap Last Name and First Name from the "Last First [Patronymic]" string
+        String f = sentenceCase(parts[1]);
+        String l = sentenceCase(parts[0]);
+        String rest = parts.length > 2 ? " ${parts.sublist(2).map((p) => sentenceCase(p)).join(' ')}" : "";
+        fullName = "$f $l$rest";
+      } else {
+        fullName = sentenceCase(jsonFullName.toString().trim());
+      }
     } else if (firstName != null && firstName.toString().trim().isNotEmpty) {
       fullName = sentenceCase(firstName.toString().trim());
     } else {

@@ -156,23 +156,20 @@ async def get_reposted_posts(
 def format_name(student: Student):
     if not student: return "Unknown"
     
-    # Priority 1: Use full_name if it has at least 2 parts (Last First)
+    # We want "First Last" for community posts as requested
+    # Database full_name is stored as "Last First [Patronymic]"
+    
     f_name = (student.full_name or "").strip()
     if f_name and len(f_name.split()) >= 2:
         parts = f_name.split()
-        # standard is Last First [Father] -> We can return as is or First Last
-        # User requested "ismi va familiyasi ochestvasi", so full string is best.
-        # But for posts, often "Last First" looks cleaner. 
-        # Let's return the whole string but title-cased.
-        return f_name.title()
+        # parts[0] is Last, parts[1] is First
+        # Return "First Last"
+        return f"{parts[1]} {parts[0]}".title()
     
-    # Priority 2: Use short_name if available (e.g. "Mirzajonov I. O'.")
+    # Fallback to short_name
     s_name = (student.short_name or "").strip()
-    if s_name and len(s_name) > 3:
-        return s_name.title()
-    
-    # Priority 3: Combine what we have
     if f_name: return f_name.title()
+    if s_name: return s_name.title()
     
     return "Talaba"
 

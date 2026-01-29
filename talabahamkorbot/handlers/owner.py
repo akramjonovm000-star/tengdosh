@@ -1,0 +1,1117 @@
+import logging
+import csv
+import asyncio
+from datetime import datetime, timedelta
+from io import StringIO
+from pathlib import Path
+
+from utils.owner_stats import get_owner_dashboard_text
+
+from aiogram import Router, F
+from aiogram.types import Message, CallbackQuery, BufferedInputFile
+from aiogram.fsm.context import FSMContext
+
+from sqlalchemy import select, func, distinct, case
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from config import OWNER_TELEGRAM_ID
+
+from database.models import TutorGroup, UserActivityImage, TgAccount, StudentFeedback, UserAppeal, UserDocument
+
+
+from database.models import (
+    Staff,
+    StaffRole,
+    University,
+    Faculty,
+    Student,
+)
+
+from models.states import OwnerStates
+
+from keyboards.inline_kb import (
+    get_start_role_inline_kb,
+    get_owner_main_menu_inline_kb,
+    get_back_inline_kb,
+    get_university_actions_kb,
+    get_import_confirm_kb,
+    get_import_retry_kb,
+)
+
+logger = logging.getLogger(__name__)
+router = Router()
+
+
+# -------------------------------------------------------------
+#                 OWNER HUQUQINI TEKSHIRISH
+# -------------------------------------------------------------
+async def _ensure_owner(message: Message, session: AsyncSession) -> Staff | None:
+    """
+    Owner yoki developer ekanligini tekshiruvchi funksiya.
+    """
+
+    # Egasi bo‘lsa → to‘g‘ridan to‘g‘ri owner
+    if message.from_user.id == OWNER_TELEGRAM_ID:
+        return Staff(id=0, full_name="Owner", role=StaffRole.OWNER, is_active=True)
+
+    # Boshqa owner/developer xodimni tekshiramiz
+    result = await session.execute(
+        select(Staff).where(
+            Staff.is_active.is_(True),
+            Staff.role.in_([StaffRole.OWNER, StaffRole.DEVELOPER]),
+        )
+    )
+    staff = result.scalar_one_or_none()
+
+    if staff:
+        return staff
+
+    # Ruxsat yo‘q
+    await message.answer(
+        "❌ Sizda owner/developer huquqlari mavjud emas.\n\n"
+        "Bosh menyuga qayting va mos rol bilan tizimga kiring.",
+        reply_markup=get_start_role_inline_kb(),
+    )
+    return None
+
+
+# -------------------------------------------------------------
+#                OWNER ASOSIY MENYUSI (INLINE)
+# -------------------------------------------------------------
+@router.callback_query(F.data == "owner_menu")
+async def cb_owner_main_menu(call: CallbackQuery, state: FSMContext, session: AsyncSession):
+    await state.set_state(OwnerStates.main_menu)
+    
+    text = await get_owner_dashboard_text(session)
+
+    await call.message.edit_text(
+        text,
+        reply_markup=get_owner_main_menu_inline_kb(),
+        parse_mode="HTML"
+    )
+    await call.answer()
+
+# ==============================================================
+#        📌 OWNER — OTM VA FAKULTETLAR BLOKI (TARTIBLI)
+# ==============================================================
+
+from aiogram import F
+from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup
+from aiogram.fsm.context import FSMContext
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from pathlib import Path
+from io import StringIO
+import csv
+import logging
+
+from database.models import University, Faculty, Staff, Student, StaffRole
+from models.states import OwnerStates
+from keyboards.inline_kb import (
+    get_back_inline_kb,
+    get_university_actions_kb,
+    get_import_retry_kb
+)
+
+logger = logging.getLogger(__name__)
+
+
+# -------------------------------------------------------------
+# 1) 📌 OTM VA FAKULTETLAR — KIRISH
+# -------------------------------------------------------------
+@router.callback_query(F.data == "owner_universities")
+async def cb_owner_universities(call: CallbackQuery, state: FSMContext, session: AsyncSession):
+
+    await state.clear()  # ortga tugma ishlashi uchun state tozalaymiz
+
+    staff = await _ensure_owner(call.message, session)
+    if not staff:
+        return
+
+    await state.set_state(OwnerStates.entering_uni_code)
+
+    await call.message.edit_text(
+        "🏛 OTM qo'shish / tahrirlash bo‘limi.\n\n"
+        "Iltimos, OTM uchun <b>uni_code</b> kiriting.\n"
+        "Masalan: <code>UZB_UZJOKU_001</code>",
+        parse_mode="HTML",
+        reply_markup=get_back_inline_kb("owner_menu")
+    )
+
+    await call.answer()
+
+    # -------------------------------------------------------------
+#          OTM KODINI QABUL QILISH (OwnerStates.entering_uni_code)
+# -------------------------------------------------------------
+@router.message(OwnerStates.entering_uni_code)
+async def owner_enter_uni_code(
+    message: Message,
+    state: FSMContext,
+    session: AsyncSession,
+):
+    uni_code = message.text.strip()
+
+    # Bazadan qidiramiz (ilike -> case insensitive)
+    result = await session.execute(
+        select(University).where(University.uni_code.ilike(uni_code))
+    )
+    uni = result.scalar_one_or_none()
+
+    if not uni:
+        await message.answer(
+            "❌ Bunday OTM topilmadi.\n"
+            "Iltimos, to‘g‘ri <b>uni_code</b> kiriting.",
+            parse_mode="HTML",
+        )
+        return
+
+    # Statega yozamiz
+    await state.update_data(university_id=uni.id, uni_code=uni.uni_code)
+    await state.set_state(OwnerStates.university_selected)
+
+    await message.answer(
+        f"✅ <b>{uni.name}</b> topildi!\n\n"
+        "Endi quyidagi bo‘limlardan birini tanlang:",
+        reply_markup=get_university_actions_kb(uni.id),
+        parse_mode="HTML",
+    )
+
+
+    
+# =============================================================
+#         📌  KANAL MAJBURIYATI MODULI (TO‘G‘RI ISHLAYDIGAN YANGI VERSIYA)
+# =============================================================
+
+from keyboards.inline_kb import (
+    get_channel_menu_kb,
+    get_channel_save_confirm_kb,
+    get_channel_remove_confirm_kb,
+    get_retry_channel_forward_kb,
+    get_channel_add_confirm_kb
+)
+
+# -------------------------------------------------------------
+#   Owner → Kanal majburiyati menyusi
+# -------------------------------------------------------------
+@router.callback_query(F.data.startswith("uni_channel_menu:"))
+async def cb_uni_channel_menu(call: CallbackQuery, state: FSMContext, session: AsyncSession):
+
+    _, uni_id = call.data.split(":")
+    university_id = int(uni_id)
+
+    result = await session.execute(select(University).where(University.id == university_id))
+    university = result.scalar_one_or_none()
+
+    if not university:
+        return await call.message.edit_text(
+            "❌ Universitet topilmadi.",
+            reply_markup=get_back_inline_kb("owner_universities"),
+        )
+
+    await state.update_data(university_id=university_id)
+
+    await call.message.edit_text(
+        f"🏛 <b>{university.name}</b>\n\n"
+        f"📌 Majburiy kanal: <code>{university.required_channel or 'YO‘Q'}</code>\n\n"
+        "Quyidagilardan birini tanlang:",
+        reply_markup=get_channel_menu_kb(university_id),
+    )
+    await call.answer()
+
+
+# -------------------------------------------------------------
+#       ➕ Kanal qo‘shish / yangilash → Forward so‘rash
+# -------------------------------------------------------------
+@router.callback_query(F.data.startswith("channel_menu_add:"))
+async def cb_channel_add(call: CallbackQuery, state: FSMContext):
+
+    _, uni_id = call.data.split(":")
+    university_id = int(uni_id)
+
+    await state.update_data(university_id=university_id)
+    await state.set_state(OwnerStates.waiting_channel_forward)
+
+    await call.message.edit_text(
+        "📌 Majburiy kanal qo‘shish uchun:\n\n"
+        "👉 Kanal ichidagi <b>istalgan xabarni botga forward</b> qiling.",
+        reply_markup=get_back_inline_kb(f"uni_channel_menu:{university_id}"),
+    )
+    await call.answer()
+
+
+# =============================================================
+#   🔥 Forwardni qabul qilish — to‘g‘ri 1 dona handler
+# =============================================================
+@router.message(
+    OwnerStates.waiting_channel_forward,
+    F.forward_origin | F.forward_from_chat | F.sender_chat
+)
+async def process_forwarded_channel(message: Message, state: FSMContext):
+
+    channel_id = None
+    channel_title = None
+
+    # --- Yangi forward turi ---
+    if message.forward_origin and hasattr(message.forward_origin, "chat"):
+        chat = message.forward_origin.chat
+        if chat and chat.type == "channel":
+            channel_id = chat.id
+            channel_title = chat.title
+
+    # --- Eski forward turi ---
+    elif message.forward_from_chat and message.forward_from_chat.type == "channel":
+        channel_id = message.forward_from_chat.id
+        channel_title = message.forward_from_chat.title
+
+    # --- sender_chat ---
+    elif message.sender_chat and message.sender_chat.type == "channel":
+        channel_id = message.sender_chat.id
+        channel_title = message.sender_chat.title
+
+    # ❌ Forward kanal emas
+    if not channel_id:
+        return await message.answer(
+            "❌ Forward qilingan xabar <b>kanaldan emas</b>.",
+            reply_markup=get_retry_channel_forward_kb(),
+        )
+
+    # 🔥 Bot adminligini tekshirish
+    try:
+        me = await message.bot.me()
+        member = await message.bot.get_chat_member(channel_id, me.id)
+
+        if member.status not in ("administrator", "creator"):
+            return await message.answer(
+                "❌ Bot kanalga admin emas.\n"
+                "Botni kanalga admin qiling va qayta urinib ko‘ring.",
+                reply_markup=get_retry_channel_forward_kb(),
+            )
+
+    except Exception:
+        return await message.answer(
+            "❌ Bot kanal bilan aloqa o‘rnata olmadi.\n"
+            "Ehtimol, bot kanalga qo‘shilmagan yoki admin emas.",
+            reply_markup=get_retry_channel_forward_kb(),
+        )
+
+    # ✔ Saqlashga tayyor
+    await state.update_data(channel_id=channel_id, channel_title=channel_title)
+    await state.set_state(OwnerStates.confirming_channel_save)
+
+    await message.answer(
+        f"📡 Kanal topildi!\n\n"
+        f"🏷 <b>{channel_title}</b>\n"
+        f"🆔 <code>{channel_id}</code>\n\n"
+        "Ushbu kanalni majburiy kanal sifatida saqlaysizmi?",
+        reply_markup=get_channel_save_confirm_kb(),
+    )
+
+
+# =============================================================
+#          ❗ Forward emas → fallback
+# =============================================================
+@router.message(
+    OwnerStates.waiting_channel_forward,
+    ~F.forward_origin & ~F.forward_from_chat & ~F.sender_chat
+)
+async def fallback_not_forward(message: Message):
+    await message.answer(
+        "❌ Bu forward emas.\n"
+        "Iltimos, kanal ichidagi xabarni forward qiling.",
+        reply_markup=get_retry_channel_forward_kb(),
+    )
+
+
+# =============================================================
+#     📌 “Tasdiqlayman” → Kanalni bazaga yozish
+# =============================================================
+@router.callback_query(F.data == "channel_save_yes")
+async def cb_channel_save_yes(call: CallbackQuery, state: FSMContext, session: AsyncSession):
+
+    data = await state.get_data()
+    university_id = data.get("university_id")
+    channel_id = data.get("channel_id")
+
+    result = await session.execute(select(University).where(University.id == university_id))
+    university = result.scalar_one_or_none()
+
+    university.required_channel = str(channel_id)
+    await session.commit()
+
+    await state.set_state(OwnerStates.university_selected)
+
+    await call.message.edit_text(
+        "✅ Kanal majburiyati saqlandi!",
+        reply_markup=get_back_inline_kb("owner_universities"),
+    )
+    await call.answer()
+
+
+# -------------------------------------------------------------
+#     ❌ Bekor qilish
+# -------------------------------------------------------------
+@router.callback_query(F.data == "channel_save_no")
+async def cb_channel_save_no(call: CallbackQuery, state: FSMContext):
+
+    await state.set_state(OwnerStates.university_selected)
+    await call.message.edit_text(
+        "ℹ️ Saqlash bekor qilindi.",
+        reply_markup=get_back_inline_kb("owner_universities"),
+    )
+    await call.answer()
+
+
+# -------------------------------------------------------------
+#         ❗ “Qayta urinaman”
+# -------------------------------------------------------------
+@router.callback_query(F.data == "retry_forward")
+async def cb_retry_forward(call: CallbackQuery, state: FSMContext):
+
+    university_id = (await state.get_data()).get("university_id")
+
+    await state.set_state(OwnerStates.waiting_channel_forward)
+
+    await call.message.edit_text(
+        "📌 Qayta urinib ko‘ring.\n"
+        "👉 Kanal ichidagi xabarni forward yuboring.",
+        reply_markup=get_back_inline_kb(f"uni_channel_menu:{university_id}"),
+    )
+    await call.answer()
+
+
+# -------------------------------------------------------------
+#      ➖ Kanalni o‘chirish
+# -------------------------------------------------------------
+@router.callback_query(F.data.startswith("channel_menu_del:"))
+async def cb_channel_delete_menu(call: CallbackQuery, state: FSMContext, session: AsyncSession):
+
+    _, uni_id = call.data.split(":")
+    university_id = int(uni_id)
+
+    result = await session.execute(select(University).where(University.id == university_id))
+    university = result.scalar_one_or_none()
+
+    if not university.required_channel:
+        return await call.message.edit_text(
+            "ℹ️ Majburiy kanal mavjud emas.",
+            reply_markup=get_back_inline_kb("owner_universities"),
+        )
+
+    await state.update_data(university_id=university_id)
+    await state.set_state(OwnerStates.confirming_channel_delete)
+
+    await call.message.edit_text(
+        f"⚠️ Joriy kanal: <code>{university.required_channel}</code>\n"
+        "Haqiqatan ham o‘chirilsinmi?",
+        reply_markup=get_channel_remove_confirm_kb(),
+    )
+    await call.answer()
+
+
+@router.callback_query(F.data == "channel_remove_yes")
+async def cb_channel_remove_yes(call: CallbackQuery, state: FSMContext, session: AsyncSession):
+
+    uni_id = (await state.get_data()).get("university_id")
+
+    result = await session.execute(select(University).where(University.id == uni_id))
+    university = result.scalar_one_or_none()
+
+    university.required_channel = None
+    await session.commit()
+
+    await call.message.edit_text(
+        "🗑 Kanal o‘chirildi.",
+        reply_markup=get_back_inline_kb("owner_universities"),
+    )
+    await call.answer()
+
+
+@router.callback_query(F.data == "channel_remove_no")
+async def cb_channel_remove_no(call: CallbackQuery, state: FSMContext):
+    await call.message.edit_text(
+        "ℹ️ O‘chirish bekor qilindi.",
+        reply_markup=get_back_inline_kb("owner_universities"),
+    )
+    await call.answer()
+
+
+
+
+# -------------------------------------------------------------
+#                 IMPORT BO‘LIMI (ESKI STUB)
+# -------------------------------------------------------------
+@router.callback_query(F.data == "owner_import")
+async def cb_owner_import(
+    call: CallbackQuery,
+    state: FSMContext,
+    session: AsyncSession,
+):
+
+    staff = await _ensure_owner(call.message, session)
+    if not staff:
+        return
+
+    await state.set_state(OwnerStates.main_menu)
+
+    await call.message.edit_text(
+        "👥 Xodimlar va talabalarni import qilish bo‘limi.\n\n"
+        "Hozircha import funksiyasi '🏛 OTM va fakultetlar' bo‘limi orqali amalga oshiriladi.",
+        reply_markup=get_back_inline_kb("owner_menu"),
+    )
+    await call.answer()
+
+
+# -------------------------------------------------------------
+#                 BROADCAST (E‘LON YUBORISH)
+# -------------------------------------------------------------
+@router.callback_query(F.data == "owner_broadcast")
+async def cb_owner_broadcast(
+    call: CallbackQuery,
+    state: FSMContext,
+    session: AsyncSession,
+):
+    staff = await _ensure_owner(call.message, session)
+    if not staff:
+        return
+
+    await state.set_state(OwnerStates.broadcasting_message)
+
+    await call.message.edit_text(
+        "📢 <b>Keng qamrovli xabar (Broadcast)</b>\n\n"
+        "Barcha foydalanuvchilarga (talaba va xodimlarga) xabar yuboriladi.\n"
+        "Matn, rasm, video yoki hujjat yuborishingiz mumkin.\n\n"
+        "👇 Xabarni yuboring:",
+        reply_markup=get_back_inline_kb("owner_menu"),
+        parse_mode="HTML"
+    )
+    await call.answer()
+
+
+@router.message(OwnerStates.broadcasting_message)
+async def owner_process_broadcast(message: Message, state: FSMContext):
+    
+    # Xabarni nusxalash uchun message_id va chat_id saqlaymiz
+    await state.update_data(
+        broadcast_chat_id=message.chat.id,
+        broadcast_message_id=message.message_id
+    )
+    
+    # Tasdiqlash tugmasi
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="✅ Yuborishni boshlash", callback_data="owner_broadcast_confirm")],
+        [InlineKeyboardButton(text="❌ Bekor qilish", callback_data="owner_menu")]
+    ])
+
+    await message.copy_to(chat_id=message.chat.id, reply_markup=kb)
+    
+    await message.answer(
+        "👆 Yuqorida xabar ko'rinishi.\n"
+        "Agar hammasi to'g'ri bo'lsa, <b>Yuborishni boshlash</b> tugmasini bosing.",
+        parse_mode="HTML"
+    )
+
+
+@router.callback_query(F.data == "owner_broadcast_confirm")
+async def cb_confirm_broadcast(call: CallbackQuery, state: FSMContext, session: AsyncSession):
+    data = await state.get_data()
+    chat_id = data.get("broadcast_chat_id")
+    message_id = data.get("broadcast_message_id")
+    
+    if not chat_id or not message_id:
+        await call.answer("Xatolik: Xabar topilmadi.", show_alert=True)
+        return
+
+    await call.message.edit_text("⏳ <b>Xabar yuborish boshlandi...</b>\n\nBu biroz vaqt olishi mumkin.", parse_mode="HTML")
+    
+    # Barcha foydalanuvchilar (TgAccount)
+    try:
+        accounts = await session.scalars(select(TgAccount))
+        accounts = accounts.all()
+    except Exception as e:
+         logger.error(f"Error fetching accounts: {e}")
+         await call.message.answer(f"Xatolik: {e}")
+         return
+
+    total = len(accounts)
+    sent = 0
+    blocked = 0
+    errors = 0
+    
+    start_time = datetime.utcnow()
+    
+    for i, acc in enumerate(accounts):
+        try:
+            await call.bot.copy_message(
+                chat_id=acc.telegram_id,
+                from_chat_id=chat_id,
+                message_id=message_id
+            )
+            sent += 1
+        except Exception as e:
+            # TelegramForbiddenError va boshqalar
+            err_str = str(e).lower()
+            if "blocked" in err_str or "chat not found" in err_str or "forbidden" in err_str:
+                blocked += 1
+            else:
+                errors += 1
+                logger.error(f"Broadcast error for {acc.telegram_id}: {e}")
+        
+        # Throttling to avoid 30 msg/sec limit
+        # Har 20 ta xabarda biroz kutish
+        if i % 20 == 0:
+            await asyncio.sleep(0.5) 
+            
+    duration = (datetime.utcnow() - start_time).total_seconds()
+    
+    report = (
+        f"✅ <b>Broadcast yakunlandi!</b>\n\n"
+        f"👥 Umumiy: {total}\n"
+        f"✅ Yuborildi: {sent}\n"
+        f"🚫 Bloklagan: {blocked}\n"
+        f"⚠️ Xatoliklar: {errors}\n\n"
+        f"⏱ Vaqt: {duration:.1f} soniya"
+    )
+    
+    await call.message.answer(report, reply_markup=get_back_inline_kb("owner_menu"), parse_mode="HTML")
+    await state.clear()
+    await call.answer()
+
+
+# -------------------------------------------------------------
+#                   DEVELOPER MENYUSI
+# -------------------------------------------------------------
+@router.callback_query(F.data == "owner_dev")
+async def cb_owner_dev(
+    call: CallbackQuery,
+    state: FSMContext,
+    session: AsyncSession,
+):
+
+    if call.from_user.id != OWNER_TELEGRAM_ID:
+        await call.message.edit_text(
+            "❌ Bu bo'lim faqat bot egasi (owner) uchun.\n\n"
+            "Developer qo'shish imkoniyati keyingi bosqichda qo‘shiladi.",
+            reply_markup=get_back_inline_kb("owner_menu"),
+        )
+        await call.answer()
+        return
+
+    await call.message.edit_text(
+        "👨‍💻 Developerlar boshqaruvi.\n\n"
+        "Keyingi bosqichda developer qo‘shish/tahrirlash tizimi qo‘shiladi.",
+        reply_markup=get_back_inline_kb("owner_menu"),
+    )
+    await state.set_state(OwnerStates.main_menu)
+    await call.answer()
+
+
+# -------------------------------------------------------------
+#                 BOT SOZLAMALARI MENYUSI
+# -------------------------------------------------------------
+@router.callback_query(F.data == "owner_settings")
+async def cb_owner_settings(
+    call: CallbackQuery,
+    state: FSMContext,
+    session: AsyncSession,
+):
+
+    staff = await _ensure_owner(call.message, session)
+    if not staff:
+        return
+
+    await call.message.edit_text(
+        "⚙️ Bot umumiy sozlamalari.\n\n"
+        "Keyingi bosqichda real sozlamalar bilan to‘ldiriladi.",
+        reply_markup=get_back_inline_kb("owner_menu"),
+    )
+    await state.set_state(OwnerStates.main_menu)
+    await call.answer()
+
+
+
+
+# ============================================================
+# 2) IMPORTNI BOSHLASH
+# ============================================================
+@router.callback_query(F.data.func(lambda d: d.startswith("uni_import_start:")))
+async def cb_import_start(call: CallbackQuery, state: FSMContext):
+
+    _, uni_id_str = call.data.split(":", 1)
+    university_id = int(uni_id_str)
+
+    # Bu bayroq 3 ta tugma chiqmasligi uchun kerak
+    await state.update_data(
+        university_id=university_id,
+        import_faculties=[],
+        import_staff=[],
+        import_students=[],
+        import_ready_shown=False
+    )
+
+    await state.set_state(OwnerStates.importing_csv_files)
+
+    await call.message.edit_text(
+        "📥 <b>CSV import boshlandi.</b>\n\n"
+        "Ketma-ket 3 ta faylni yuboring:\n"
+        "1️⃣ faculties.csv\n"
+        "2️⃣ staff.csv\n"
+        "3️⃣ students.csv",
+        parse_mode="HTML",
+        reply_markup=get_import_retry_kb(university_id)
+    )
+    await call.answer()
+
+
+# ============================================================
+# 3) CSV FAYL QABUL QILISH (YANGILANGAN — TYUTOR GURUHLARI BILAN)
+# ============================================================
+@router.message(OwnerStates.importing_csv_files, F.document)
+async def owner_handle_import_files(message: Message, state: FSMContext):
+
+    data = await state.get_data()
+    university_id = data["university_id"]
+
+    doc = message.document
+    filename = doc.file_name.lower()
+
+    upload_dir = Path("/var/www/talabahamkorbot/uploads/import")
+    upload_dir.mkdir(parents=True, exist_ok=True)
+
+    file_info = await message.bot.get_file(doc.file_id)
+    local_path = upload_dir / filename
+    await message.bot.download_file(file_info.file_path, destination=local_path)
+
+    try:
+        with open(local_path, "r", encoding="utf-8-sig") as f:
+            raw = f.read()
+    except Exception:
+        return await message.answer("❌ CSV faylni o‘qib bo‘lmadi.")
+
+    rows = list(csv.DictReader(StringIO(raw)))
+    if not rows:
+        return await message.answer("❌ CSV bo‘sh.")
+
+    errors = []
+
+    # ============================================================
+    # 1) FAKULTETLAR
+    # ============================================================
+    if filename == "faculties.csv":
+        facs = data.get("import_faculties", [])
+        for i, r in enumerate(rows, start=2):
+            code = (r.get("faculty_code") or "").strip()
+            name = (r.get("faculty_name") or "").strip()
+
+            if not code or not name:
+                errors.append(f"{i}-qator: faculty_code va faculty_name majburiy.")
+            else:
+                facs.append({"faculty_code": code, "faculty_name": name})
+
+        if errors:
+            return await message.answer("\n".join(errors))
+
+        await state.update_data(import_faculties=facs)
+        return await message.answer("📘 faculties.csv qabul qilindi.")
+
+    # ============================================================
+    # 2) XODIMLAR (TYUTOR GURUHLARI BILAN)
+    # ============================================================
+    elif filename == "staff.csv":
+
+        staff_list = data.get("import_staff", [])
+        tutor_groups_map = data.get("tutor_groups_map", {})
+
+        for i, r in enumerate(rows, start=2):
+            jsh = (r.get("jshshir") or "").strip()
+            full = (r.get("full_name") or "").strip()
+            role = (r.get("role") or "").strip().lower()
+            fac = (r.get("faculty_code") or "").strip()
+            phone = (r.get("phone") or "").strip()
+            position = (r.get("position") or "").strip()
+            groups_raw = (r.get("tutor_groups") or "").strip()
+
+            if not jshshir or not full or not role:
+                errors.append(f"{i}-qator: jshshir, full_name, role majburiy.")
+                continue
+
+            # TYUTOR uchun faculty_code majburiy
+            if role in ("dekanat", "tyutor") and not fac:
+                errors.append(f"{i}-qator: '{role}' uchun faculty_code majburiy.")
+                continue
+
+            staff_list.append({
+                "jshshir": jshshir,
+                "full_name": full,
+                "role": role,
+                "faculty_code": fac or None,
+                "phone": phone or None,
+                "position": position or None,
+            })
+
+            # 🔥 TYUTOR GURUHLARI
+            if role == "tyutor":
+                if groups_raw:
+                    group_list = [g.strip() for g in groups_raw.split(";") if g.strip()]
+                    tutor_groups_map[jsh] = group_list
+                else:
+                    tutor_groups_map[jsh] = []
+
+        if errors:
+            return await message.answer("\n".join(errors))
+
+        await state.update_data(import_staff=staff_list)
+        await state.update_data(tutor_groups_map=tutor_groups_map)
+
+        return await message.answer("🧑‍🏫 staff.csv qabul qilindi (tyutor guruhlari bilan).")
+
+    # ============================================================
+    # 3) TALABALAR
+    # ============================================================
+    elif filename == "students.csv":
+        students = data.get("import_students", [])
+        for i, r in enumerate(rows, start=2):
+            hemis = (r.get("hemis_login") or "").strip()
+            full = (r.get("full_name") or "").strip()
+            group = (r.get("group_number") or "").strip()
+            fac = (r.get("faculty_code") or "").strip()
+            phone = (r.get("phone") or "").strip()
+
+            if not hemis or not full or not group or not fac:
+                errors.append(f"{i}-qator: barcha ustunlar majburiy (telefon ixtiyoriy).")
+                continue
+
+            students.append({
+                "hemis_login": hemis,
+                "full_name": full,
+                "group_number": group,
+                "faculty_code": fac,
+                "phone": phone or None,
+            })
+
+        if errors:
+            return await message.answer("\n".join(errors))
+
+        await state.update_data(import_students=students)
+        return await message.answer("🎓 students.csv qabul qilindi.")
+
+    else:
+        return await message.answer("❌ Noto‘g‘ri fayl nomi.")
+
+    # ==========================================
+    # 🔥 3 ta CSV qabul qilinganda faqat 1 marta tugma chiqadi
+    # ==========================================
+    data = await state.get_data()
+
+    if (
+        data.get("import_faculties")
+        and data.get("import_staff")
+        and data.get("import_students")
+        and not data.get("import_ready_shown")
+    ):
+        await state.update_data(import_ready_shown=True)
+
+        await message.answer(
+            "✅ <b>3 ta CSV to‘liq qabul qilindi!</b>\n"
+            "Importni tasdiqlang.",
+            parse_mode="HTML",
+            reply_markup=get_import_confirm_kb(university_id)
+        )
+
+
+# ============================================================
+# 4) NO-MOS XABAR
+# ============================================================
+@router.message(OwnerStates.importing_csv_files, F.document.is_(None))
+async def wrong_import_type(message: Message, state: FSMContext):
+
+    data = await state.get_data()
+
+    if (
+        data.get("import_faculties")
+        and data.get("import_staff")
+        and data.get("import_students")
+    ):
+        return
+
+    await message.answer(
+        "ℹ️ Iltimos CSV fayllarni <b>hujjat</b> sifatida yuboring.",
+        parse_mode="HTML"
+    )
+
+
+# ============================================================
+# 5) IMPORTNI TASDIQLASH
+# ============================================================
+@router.callback_query(F.data.func(lambda d: d.startswith("uni_import_confirm:")))
+async def cb_import_confirm(
+    call: CallbackQuery,
+    state: FSMContext,
+    session: AsyncSession
+):
+    _, uni_id_str = call.data.split(":", 1)
+    university_id = int(uni_id_str)
+
+    data = await state.get_data()
+    facs = data.get("import_faculties")
+    staff_rows = data.get("import_staff")
+    students = data.get("import_students")
+
+    if not (facs and staff_rows and students):
+        await call.message.answer("❌ 3 ta CSV hali to‘liq yuklanmagan.")
+        await call.answer()
+        return
+
+    try:
+        fac_code_to_id: dict[str, int] = {}
+
+        # ======================================
+        # 1) FAKULTETLAR — mavjud bo‘lsa SKIP
+        # ======================================
+        for f in facs:
+            existing_faculty = await session.execute(
+                select(Faculty).where(
+                    Faculty.university_id == university_id,
+                    Faculty.faculty_code == f["faculty_code"]
+                )
+            )
+            existing_faculty = existing_faculty.scalar_one_or_none()
+
+            if existing_faculty:
+                logger.info(f"SKIP faculty: {f['faculty_code']} (already exists)")
+                fac_code_to_id[f["faculty_code"]] = existing_faculty.id
+                continue
+
+            faculty = Faculty(
+                university_id=university_id,
+                faculty_code=f["faculty_code"],
+                name=f["faculty_name"],
+                is_active=True,
+            )
+            session.add(faculty)
+            await session.flush()
+            logger.info(f"ADD faculty: {f['faculty_code']}")
+            fac_code_to_id[f["faculty_code"]] = faculty.id
+
+        # ======================================
+        # 2) STAFF — mavjud bo‘lsa SKIP
+        # + Tyutor guruhlarini biriktirish
+        # ======================================
+        for row in staff_rows:
+            role_enum = StaffRole(row["role"])
+
+            faculty_id = (
+                fac_code_to_id.get(row["faculty_code"])
+                if role_enum in (StaffRole.DEKANAT, StaffRole.TYUTOR)
+                else None
+            )
+
+            # Staff mavjudligini tekshirish
+            existing_staff = await session.execute(
+                select(Staff).where(
+                    Staff.jshshir == row["jshshir"],
+                    Staff.university_id == university_id
+                )
+            )
+            existing_staff = existing_staff.scalar_one_or_none()
+
+            if existing_staff:
+                logger.info(f"SKIP staff: {row['full_name']} (jshshir exists)")
+
+                # Agar tyutor bo‘lsa, guruhlarini ham tekshirib qo‘shib yuborish kerak
+                if role_enum == StaffRole.TYUTOR:
+                    groups_raw = row.get("groups", "")
+                    if groups_raw:
+                        group_list = [g.strip() for g in groups_raw.split(",") if g.strip()]
+
+                        for grp in group_list:
+                            tg = TutorGroup(
+                                tutor_id=existing_staff.id,
+                                group_number=grp
+                            )
+                            try:
+                                session.add(tg)
+                                await session.flush()
+                            except Exception:
+                                await session.rollback()
+                                continue
+
+                continue
+
+            # Staff yangi bo‘lsa — yaratiladi
+            staff = Staff(
+                full_name=row["full_name"],
+                jshshir=row["jshshir"],
+                role=role_enum,
+                phone=row.get("phone"),
+                position=row.get("position"),
+                university_id=university_id,
+                faculty_id=faculty_id,
+                is_active=True,
+            )
+            session.add(staff)
+            await session.flush()  # staff.id olish uchun
+
+            logger.info(f"ADD staff: {row['full_name']} ({row['jshshir']})")
+
+            # TYUTOR bo‘lsa, guruhlar biriktiriladi
+            if role_enum == StaffRole.TYUTOR:
+                groups_raw = row.get("groups", "")
+                if groups_raw:
+                    group_list = [g.strip() for g in groups_raw.split(",") if g.strip()]
+
+                    for grp in group_list:
+                        tg = TutorGroup(
+                            tutor_id=staff.id,
+                            group_number=grp
+                        )
+                        try:
+                            session.add(tg)
+                            await session.flush()
+                        except Exception:
+                            await session.rollback()
+                            continue
+
+        # ======================================
+        # 3) TALABALAR — mavjud bo‘lsa SKIP
+        # ======================================
+        for row in students:
+            faculty_id = fac_code_to_id.get(row["faculty_code"])
+
+            existing_student = await session.execute(
+                select(Student).where(
+                    Student.hemis_login == row["hemis_login"],
+                    Student.university_id == university_id
+                )
+            )
+            existing_student = existing_student.scalar_one_or_none()
+
+            if existing_student:
+                logger.info(f"SKIP student: {row['full_name']} (hemis exists)")
+                continue
+
+            student = Student(
+                full_name=row["full_name"],
+                hemis_login=row["hemis_login"],
+                group_number=row["group_number"],
+                phone=row.get("phone"),
+                university_id=university_id,
+                faculty_id=faculty_id,
+                is_active=True,
+            )
+            logger.info(f"ADD student: {row['full_name']} ({row['hemis_login']})")
+            session.add(student)
+
+        # ======================================
+        # COMMIT
+        # ======================================
+        await session.commit()
+
+        await state.set_state(OwnerStates.university_selected)
+
+        await call.message.edit_text(
+            "✅ Import muvaffaqiyatli yakunlandi.",
+            reply_markup=get_university_actions_kb(university_id),
+        )
+        await call.answer()
+
+    except Exception as e:
+        await session.rollback()
+        logger.exception("Import xatosi: %s", e)
+        await call.message.answer("❌ Importda ichki xatolik yuz berdi. Loglarni tekshiring.")
+        await call.answer()
+
+# ============================================================
+#  📥 SHABLON CSV FAYLLARNI YUKLAB OLISH HANDLER
+# ============================================================
+from aiogram.types import BufferedInputFile
+from pathlib import Path
+
+@router.callback_query(F.data.startswith("download_csv_templates:"))
+async def cb_download_csv_templates(call: CallbackQuery):
+    _, uni_id = call.data.split(":", 1)
+
+    # Shablonlar zip fayli
+    template_path = Path("/var/www/talabahamkorbot/uploads/templates.zip")
+
+    if not template_path.exists():
+        return await call.message.answer("❌ Shablon fayllar topilmadi.")
+
+    try:
+        await call.message.answer_document(
+            document=BufferedInputFile.from_file(template_path),
+            caption="📄 CSV shablonlar to‘plami"
+        )
+        await call.answer()
+    except Exception as e:
+        await call.message.answer("❌ Faylni yuborishda xatolik yuz berdi.")
+        print("DOWNLOAD ERROR:", e)
+
+
+from aiogram.types import FSInputFile
+
+@router.callback_query(F.data.startswith("download_csv_templates"))
+async def download_csv_templates(call: CallbackQuery):
+    path = "/var/www/talabahamkorbot/uploads/templates.zip"
+
+    try:
+        file = FSInputFile(path, filename="templates.zip")
+        await call.message.answer_document(
+            document=file,
+            caption="📥 CSV shablonlar to‘plami"
+        )
+        await call.answer()
+    except Exception as e:
+        await call.message.answer(f"❌ Faylni yuborib bo‘lmadi:\n{e}")
+        await call.answer()
+
+@router.callback_query(F.data == "owner_add_university")
+async def owner_add_university(call: CallbackQuery, state: FSMContext):
+    await state.set_state(OwnerStates.entering_uni_name)
+    await call.message.edit_text("🏫 Yangi universitet nomini kiriting:")
+    await call.answer()
+
+@router.message(OwnerStates.entering_uni_name)
+async def owner_add_uni_name(message: Message, state: FSMContext):
+    await state.update_data(university_name=message.text.strip())
+    await state.set_state(OwnerStates.entering_short_name)
+    await message.answer("✍️ Universitetning qisqa nomini kiriting (masalan: O‘zJOKU):")
+
+@router.message(OwnerStates.entering_short_name)
+async def owner_add_uni_short(message: Message, state: FSMContext):
+    await state.update_data(short_name=message.text.strip())
+    await state.set_state(OwnerStates.entering_new_uni_code)
+    await message.answer("🔑 Universitet uchun noyob kod kiriting (masalan: OZJOKU):")
+
+from sqlalchemy import select
+from database.models import University
+
+@router.message(OwnerStates.entering_new_uni_code)
+async def owner_add_uni_code(message: Message, state: FSMContext, session: AsyncSession):
+
+    code = message.text.strip().upper()
+    data = await state.get_data()
+
+    # Kod takrorlanmasligi kerak
+    exists = await session.scalar(select(University).where(University.uni_code == code))
+    if exists:
+        return await message.answer("❌ Bu kod allaqachon mavjud. Boshqa kod kiriting.")
+
+    uni = University(
+        name=data["university_name"],
+        short_name=data["short_name"],
+        uni_code=code,
+        is_active=True
+    )
+    session.add(uni)
+    await session.commit()
+
+    await state.clear()
+    
+    await message.answer(
+        f"✅ <b>{uni.name}</b> muvaffaqiyatli qo‘shildi!",
+        reply_markup=get_university_actions_kb(uni.id),
+        parse_mode="HTML"
+    )
+
+
+

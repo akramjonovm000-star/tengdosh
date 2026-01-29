@@ -108,6 +108,7 @@ class FeedbackListSchema(BaseModel):
     status: str
     assigned_role: Optional[str]
     created_at: datetime
+    is_anonymous: bool = False
     
     class Config:
         from_attributes = True

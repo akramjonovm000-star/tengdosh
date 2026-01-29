@@ -17,8 +17,18 @@ async def get_my_profile(
     """Get the currently logged-in student's profile."""
     # Ensure consistency with auth.py
     data = StudentProfileSchema.model_validate(student).model_dump()
-    # Explicitly ensure short_name/first_name is passed if stored
-    data['first_name'] = student.short_name
+    
+    # Parse first/last names from full_name if available
+    fn = (student.full_name or "").strip()
+    if fn and len(fn.split()) >= 2:
+        parts = fn.split()
+        data['last_name'] = parts[0].title()
+        data['first_name'] = parts[1].title()
+    else:
+        # Fallback
+        data['first_name'] = student.short_name or student.full_name
+        data['last_name'] = ""
+
     data['university_name'] = student.university_name
     
     data['university_name'] = student.university_name
