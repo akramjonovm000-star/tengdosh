@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import '../../../core/theme/app_theme.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../services/appeal_service.dart';
 import '../models/appeal_model.dart';
+import 'package:intl/intl.dart';
 
 class AppealsScreen extends StatefulWidget {
   const AppealsScreen({super.key});
@@ -62,7 +62,7 @@ class _AppealsScreenState extends State<AppealsScreen> with SingleTickerProvider
                 ? const Center(child: CircularProgressIndicator())
                 : RefreshIndicator(
                       onRefresh: _loadAppeals,
-                      child: CustomScrollView( // Using CustomScrollView to allow scrolling of the whole page if needed, or just Column inside generic ScrollView
+                      child: CustomScrollView(
                         slivers: [
                             SliverToBoxAdapter(
                                 child: Padding(
@@ -107,9 +107,7 @@ class _AppealsScreenState extends State<AppealsScreen> with SingleTickerProvider
     int pending = 0;
     int closed = 0;
 
-    for (var a in _getFilteredAppeals(ignoreStatus: true)) { // Filter by status should affect list, but header usually shows totals for current category
-      // Logic: Stats usually show totals for the selected CATEGORY, but ignoring the STATUS filter itself (so you can see distribution)
-      
+    for (var a in _getFilteredAppeals(ignoreStatus: true)) { 
       if (a.status == 'answered') answered++;
       else if (a.status == 'pending') pending++;
       else if (a.status == 'closed') closed++;
@@ -118,7 +116,7 @@ class _AppealsScreenState extends State<AppealsScreen> with SingleTickerProvider
     final stats = [
       {"label": "Javob berilgan", "count": answered, "color": Colors.green},
       {"label": "Kutilmoqda", "count": pending, "color": Colors.orange},
-      {"label": "Yopilgan", "count": closed, "color": Colors.red}, // Using Red for Closed to match "Rejected" style
+      {"label": "Yopilgan", "count": closed, "color": Colors.red},
     ];
 
     return Container(
@@ -313,7 +311,6 @@ class _AppealsScreenState extends State<AppealsScreen> with SingleTickerProvider
 
   List<Appeal> _getFilteredAppeals({bool ignoreStatus = false}) {
     return _appeals.where((a) {
-      // Filter by Category (Recipient)
       if (_selectedCategory != "Barchasi") {
          String role = a.assignedRole?.toLowerCase() ?? "";
          if (role != _selectedCategory.toLowerCase()) {
@@ -321,7 +318,6 @@ class _AppealsScreenState extends State<AppealsScreen> with SingleTickerProvider
          }
       }
       
-      // Filter by Status
       if (!ignoreStatus && _selectedStatus != "Barchasi") {
         if (_selectedStatus == "Javob berilgan") {
             if (a.status != "answered") return false;
@@ -382,7 +378,7 @@ class _AppealsScreenState extends State<AppealsScreen> with SingleTickerProvider
               elevation: 0,
             ),
             child: const Text(
-              "Murojaat yuborish", // Custom text
+              "Murojaat yuborish",
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
             ),
           ),
@@ -461,11 +457,10 @@ class AppealCard extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: Column(
           children: [
-            // Image Area (Placeholder for Appeal - sticking to UI request)
             Stack(
               children: [
                 Container(
-                  height: 180, // Slightly smaller than activity
+                  height: 180,
                   width: double.infinity,
                   color: Colors.grey[100],
                   child: Center(
@@ -476,7 +471,6 @@ class AppealCard extends StatelessWidget {
                       )
                   ),
                 ),
-                // Recipient Label
                 Positioned(
                   top: 12,
                   left: 12,
@@ -493,7 +487,6 @@ class AppealCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Anonymity Tag
                 if (appeal.isAnonymous)
                 Positioned(
                   top: 12,
@@ -575,9 +568,6 @@ class AppealCard extends StatelessWidget {
       }
   }
 }
-
-// Keeping the CreateAppealSheet and DetailScreen classes (previously defined) but ensuring they are available.
-// Since we are replacing the file content, I must include them here too, unchanged.
 
 class CreateAppealSheet extends StatefulWidget {
   final VoidCallback onAppealCreated;
