@@ -108,3 +108,41 @@ class AppealMessage {
     );
   }
 }
+
+class AppealStats {
+  final int answered;
+  final int pending;
+  final int closed;
+
+  AppealStats({
+    required this.answered,
+    required this.pending,
+    required this.closed,
+  });
+
+  factory AppealStats.fromJson(Map<String, dynamic> json) {
+    return AppealStats(
+      answered: json['answered'] ?? 0,
+      pending: json['pending'] ?? 0,
+      closed: json['closed'] ?? 0,
+    );
+  }
+}
+
+class AppealsResponse {
+  final List<Appeal> appeals;
+  final AppealStats stats;
+
+  AppealsResponse({
+    required this.appeals,
+    required this.stats,
+  });
+
+  factory AppealsResponse.fromJson(Map<String, dynamic> json) {
+    var list = json['appeals'] as List;
+    return AppealsResponse(
+      appeals: list.map((i) => Appeal.fromJson(i)).toList(),
+      stats: AppealStats.fromJson(json['stats']),
+    );
+  }
+}

@@ -600,7 +600,7 @@ class StudentFeedback(Base):
     student_id: Mapped[int] = mapped_column(Integer, ForeignKey("students.id", ondelete="CASCADE"))
     text: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(32), default="pending")
-    assigned_role: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    assigned_role: Mapped[str | None] = mapped_column(String(64), nullable=True)
     assigned_staff_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     target_hemis_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True, index=True) # ID of staff in Hemis (if not in DB)
     file_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -609,7 +609,7 @@ class StudentFeedback(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
     
     # AI Analysis Snapshot (Sync with bot)
-    ai_topic: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    ai_topic: Mapped[str | None] = mapped_column(String(255), nullable=True)
     ai_sentiment: Mapped[str | None] = mapped_column(String(32), nullable=True)
     ai_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     

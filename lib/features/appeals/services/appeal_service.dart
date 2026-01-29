@@ -20,9 +20,9 @@ class AppealService {
   }
 
   // Get List of My Appeals
-  Future<List<Appeal>> getMyAppeals() async {
+  Future<AppealsResponse?> getMyAppeals() async {
     final token = await _getToken();
-    if (token == null) return [];
+    if (token == null) return null;
 
     final url = Uri.parse("${ApiConstants.backendUrl}/student/feedback");
 
@@ -33,15 +33,15 @@ class AppealService {
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        return data.map((e) => Appeal.fromJson(e)).toList();
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        return AppealsResponse.fromJson(data);
       } else {
         print("Error fetching appeals: ${response.statusCode} - ${response.body}");
-        return [];
+        return null;
       }
     } catch (e) {
       print("Exception fetching appeals: $e");
-      return [];
+      return null;
     }
   }
 

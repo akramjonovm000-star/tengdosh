@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from datetime import datetime
 
 from api.dependencies import get_current_student, get_db
-from api.schemas import FeedbackListSchema
+from api.schemas import FeedbackListSchema, AppealListResponseSchema, AppealStatsSchema
 from database.models import Student, StudentFeedback, FeedbackReply, TgAccount, PendingUpload
 from bot import bot
 
@@ -62,7 +62,7 @@ async def debug_feedbacks(
         "sample_titles": [f.title for f in my_feedbacks[:3]] if hasattr(my_feedbacks[0] if my_feedbacks else None, 'title') else "ORMTitlesNotAvailable" # This checks if title is populated (it won't be in ORM, but we check if DB has data)
     }
 
-@router.get("", response_model=List[FeedbackListSchema])
+@router.get("", response_model=AppealListResponseSchema)
 async def get_my_feedback(
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
@@ -100,7 +100,23 @@ async def get_my_feedback(
         }
         response_list.append(item)
 
-    return response_list
+    
+    # 3. Calculate Stats
+    # We filter only root appeals for stats to be consistent with the list
+    # Mapping:
+    # - 'answered' -> answered
+    # - 'closed' -> closed
+    # - everything else (pending, assigned_*) -> pending
+    stats = AppealStatsSchema(
+        pending=len([f for f in results if f.status not in ['answered', 'closed', 'rejected']]),
+        answered=len([f for f in results if f.status == 'answered']),
+        closed=len([f for f in results if f.status == 'closed'])
+    )
+
+    return {
+        "appeals": response_list,
+        "stats": stats
+    }
 
 @router.get("/{id}", response_model=FeedbackDetailSchema)
 async def get_feedback_detail(

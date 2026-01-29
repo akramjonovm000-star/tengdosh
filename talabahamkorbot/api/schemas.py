@@ -114,6 +114,15 @@ class FeedbackListSchema(BaseModel):
     class Config:
         from_attributes = True
 
+class AppealStatsSchema(BaseModel):
+    answered: int = 0
+    pending: int = 0
+    closed: int = 0
+
+class AppealListResponseSchema(BaseModel):
+    appeals: list[FeedbackListSchema]
+    stats: AppealStatsSchema
+
 class FeedbackCreateSchema(BaseModel):
     text: str
     role: str # 'rahbariyat', 'dekanat', etc.

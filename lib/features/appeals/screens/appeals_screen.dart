@@ -15,6 +15,7 @@ class AppealsScreen extends StatefulWidget {
 class _AppealsScreenState extends State<AppealsScreen> with SingleTickerProviderStateMixin {
   final AppealService _appealService = AppealService();
   List<Appeal> _appeals = [];
+  AppealStats? _stats;
   bool _isLoading = true;
 
   String _selectedCategory = "Barchasi";
@@ -31,10 +32,13 @@ class _AppealsScreenState extends State<AppealsScreen> with SingleTickerProvider
 
   Future<void> _loadAppeals() async {
     setState(() => _isLoading = true);
-    final appeals = await _appealService.getMyAppeals();
+    final response = await _appealService.getMyAppeals();
     if (mounted) {
       setState(() {
-        _appeals = appeals;
+        if (response != null) {
+          _appeals = response.appeals;
+          _stats = response.stats;
+        }
         _isLoading = false;
       });
     }
@@ -104,15 +108,9 @@ class _AppealsScreenState extends State<AppealsScreen> with SingleTickerProvider
   }
 
   Widget _buildStatsHeader() {
-    int answered = 0;
-    int pending = 0;
-    int closed = 0;
-
-    for (var a in _getFilteredAppeals(ignoreStatus: true)) { 
-      if (a.status == 'answered') answered++;
-      else if (a.status == 'pending') pending++;
-      else if (a.status == 'closed') closed++;
-    }
+    int answered = _stats?.answered ?? 0;
+    int pending = _stats?.pending ?? 0;
+    int closed = _stats?.closed ?? 0;
 
     final stats = [
       {"label": "Javob berilgan", "count": answered, "color": Colors.green},

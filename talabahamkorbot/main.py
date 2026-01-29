@@ -135,7 +135,9 @@ async def bot_webhook(request: Request):
     if MODE == "WEBHOOK":
         try:
             body = await request.json()
-            # Diagnostic Log
+            # Diagnostic Log: Dump full body
+            logger.info(f"📥 FULL Webhook Body: {body}")
+            
             if "callback_query" in body:
                 logger.info(f"🔍 Webhook Callback: {body['callback_query'].get('data')}")
             elif "message" in body:
