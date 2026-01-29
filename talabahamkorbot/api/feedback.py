@@ -11,7 +11,7 @@ from api.schemas import FeedbackListSchema
 from database.models import Student, StudentFeedback, FeedbackReply, TgAccount, PendingUpload
 from bot import bot
 
-router = APIRouter(prefix="/student/feedback", tags=["Feedback"])
+router = APIRouter(tags=["Feedback"])
 
 from models.states import FeedbackStates
 from aiogram.fsm.storage.base import StorageKey

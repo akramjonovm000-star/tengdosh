@@ -27,11 +27,19 @@ async def get_grades(
     # 1. Determine Semester Code
     sem_code = semester
     if not sem_code:
-        me_data = await HemisService.get_me(student.hemis_token)
-        if me_data:
-            sem = me_data.get("semester", {})
-            if sem and isinstance(sem, dict):
-                 sem_code = str(sem.get("code") or sem.get("id"))
+        # 1.1 Try Semester List first (Most accurate)
+        semesters = await HemisService.get_semester_list(student.hemis_token)
+        if semesters:
+            latest = semesters[0]
+            sem_code = str(latest.get("code") or latest.get("id"))
+        else:
+            # 1.2 Fallback to Profile
+            me_data = await HemisService.get_me(student.hemis_token)
+            if me_data:
+                sem = me_data.get("semester", {})
+                if not sem: sem = me_data.get("currentSemester", {})
+                if sem and isinstance(sem, dict):
+                     sem_code = str(sem.get("code") or sem.get("id"))
 
     # 2. Get Subjects (Grades are embedded in subject list)
     subjects_data = await HemisService.get_student_subject_list(
@@ -125,11 +133,17 @@ async def get_schedule(
     # 1. Determine Semester Code
     sem_code = semester
     if not sem_code:
-        me_data = await HemisService.get_me(student.hemis_token)
-        if me_data:
-            sem = me_data.get("semester", {})
-            if sem and isinstance(sem, dict):
-                 sem_code = str(sem.get("code") or sem.get("id"))
+        semesters = await HemisService.get_semester_list(student.hemis_token)
+        if semesters:
+            latest = semesters[0]
+            sem_code = str(latest.get("code") or latest.get("id"))
+        else:
+            me_data = await HemisService.get_me(student.hemis_token)
+            if me_data:
+                sem = me_data.get("semester", {})
+                if not sem: sem = me_data.get("currentSemester", {})
+                if sem and isinstance(sem, dict):
+                     sem_code = str(sem.get("code") or sem.get("id"))
 
     # 2. Fetch Schedule
     schedule_data = await HemisService.get_student_schedule_cached(
@@ -204,11 +218,17 @@ async def get_subjects(
     # 1. Determine Semester Code
     sem_code = semester
     if not sem_code:
-        me_data = await HemisService.get_me(student.hemis_token)
-        if me_data:
-            sem = me_data.get("semester", {})
-            if sem and isinstance(sem, dict):
-                 sem_code = str(sem.get("code") or sem.get("id"))
+        semesters = await HemisService.get_semester_list(student.hemis_token)
+        if semesters:
+            latest = semesters[0]
+            sem_code = str(latest.get("code") or latest.get("id"))
+        else:
+            me_data = await HemisService.get_me(student.hemis_token)
+            if me_data:
+                sem = me_data.get("semester", {})
+                if not sem: sem = me_data.get("currentSemester", {})
+                if sem and isinstance(sem, dict):
+                     sem_code = str(sem.get("code") or sem.get("id"))
     
     # 2. Fetch data concurrently
     subjects_task = HemisService.get_student_subject_list(student.hemis_token, semester_code=sem_code, student_id=student.id)

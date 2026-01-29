@@ -99,5 +99,66 @@ class AppealService {
       print("Exception creating appeal: $e");
       return false;
     }
+    } catch (e) {
+      print("Exception creating appeal: $e");
+      return false;
+    }
+  }
+
+  // Init Upload (for Telegram file)
+  Future<Map<String, dynamic>> initUpload(String text, {required String role, bool isAnonymous = false}) async {
+    final token = await _getToken();
+    if (token == null) return {'success': false, 'message': 'Auth error'};
+
+    final url = Uri.parse("${ApiConstants.backendUrl}/student/feedback/init-upload");
+    final sessionId = DateTime.now().millisecondsSinceEpoch.toString();
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'session_id': sessionId,
+          'text': text,
+          'role': role,
+          'is_anonymous': isAnonymous,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        data['session_id'] = sessionId; // Ensure session_id is returned
+        return data; 
+      }
+      return {'success': false, 'message': 'Server error: ${response.statusCode}'};
+    } catch (e) {
+      return {'success': false, 'message': 'Connection error: $e'};
+    }
+  }
+
+  // Check Upload Status
+  Future<String> checkUploadStatus(String sessionId) async {
+    final token = await _getToken();
+    if (token == null) return 'error';
+
+    final url = Uri.parse("${ApiConstants.backendUrl}/student/feedback/upload-status/$sessionId");
+    
+    try {
+      final response = await http.get(
+        url,
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['status'] ?? 'pending';
+      }
+      return 'error';
+    } catch (e) {
+      return 'error';
+    }
   }
 }
