@@ -101,10 +101,25 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                     icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: Colors.blue),
                     style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 13),
                     borderRadius: BorderRadius.circular(12),
+                  child: DropdownButton<String>(
+                    value: _selectedSemesterId,
+                    isDense: true,
+                    icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: Colors.blue),
+                    style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 13),
+                    borderRadius: BorderRadius.circular(12),
+                    underline: const SizedBox(),
                     items: _semesters.map<DropdownMenuItem<String>>((s) {
+                      final bool isCurrent = s['current'] == true;
+                      final String label = isCurrent ? "Joriy" : (s['name'] ?? 'Semestr');
                       return DropdownMenuItem(
                         value: s['code']?.toString(),
-                        child: Text(s['name'] ?? 'Semestr'),
+                        child: Text(
+                          label,
+                          style: TextStyle(
+                            fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                            color: isCurrent ? Colors.blue : Colors.black87
+                          )
+                        ),
                       );
                     }).toList(),
                     onChanged: (val) {
