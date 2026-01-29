@@ -163,9 +163,7 @@ class DataService {
       print("Dashboard Sync Error: $e");
     }
 
-    } catch (e) {
-      print("Dashboard Sync Error: $e");
-    }
+
 
     // FALLBACK: Try to load from cache if API failed
     try {
