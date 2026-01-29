@@ -37,6 +37,31 @@ class FeedbackDetailSchema(BaseModel):
     is_anonymous: bool
     messages: List[MessageSchema]
 
+@router.get("/debug")
+async def debug_feedbacks(
+    student: Student = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    """Debug endpoint to check DB content"""
+    # Count My Feedbacks
+    start = datetime.utcnow()
+    stmt = select(StudentFeedback).where(StudentFeedback.student_id == student.id)
+    result = await db.execute(stmt)
+    my_feedbacks = result.scalars().all()
+    
+    # Count All Feedbacks (Global)
+    result_all = await db.execute(select(StudentFeedback))
+    all_feedbacks = result_all.scalars().all()
+    
+    return {
+        "student_id": student.id,
+        "student_name": student.full_name,
+        "my_feedbacks_count": len(my_feedbacks),
+        "total_feedbacks_in_db": len(all_feedbacks),
+        "server_time": start.strftime("%H:%M:%S"),
+        "sample_titles": [f.title for f in my_feedbacks[:3]] if hasattr(my_feedbacks[0] if my_feedbacks else None, 'title') else "ORMTitlesNotAvailable" # This checks if title is populated (it won't be in ORM, but we check if DB has data)
+    }
+
 @router.get("", response_model=List[FeedbackListSchema])
 async def get_my_feedback(
     student: Student = Depends(get_current_student),
