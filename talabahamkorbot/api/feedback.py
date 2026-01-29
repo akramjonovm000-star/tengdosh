@@ -205,7 +205,7 @@ async def check_feedback_upload_status(
     
     return {"status": "pending"}
 
-@router.post("/")
+@router.post("")
 async def create_feedback(
     text: str = Form(...),
     role: str = Form("dekanat"), 

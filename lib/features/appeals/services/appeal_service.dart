@@ -100,7 +100,11 @@ class AppealService {
         body: body,
       );
 
-      return response.statusCode == 200 || response.statusCode == 201;
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return true;
+      }
+      print("Appeal Create Error: ${response.statusCode} - ${response.body}");
+      return false;
     } catch (e) {
       print("Exception creating appeal: $e");
       return false;
