@@ -550,14 +550,20 @@ class DataService {
         return cached['list'];
       }
     }
-    return await _backgroundRefreshSubjects(studentId, semester: semester);
+    return await _backgroundRefreshSubjects(studentId, semester: semester, refresh: refresh);
   }
 
-  Future<List<dynamic>> _backgroundRefreshSubjects(int studentId, {String? semester}) async {
+  Future<List<dynamic>> _backgroundRefreshSubjects(int studentId, {String? semester, bool refresh = false}) async {
     try {
       String url = ApiConstants.subjects;
-      if (semester != null) {
-        url += "?semester=$semester";
+      
+      // Add Query Params
+      final params = <String>[];
+      if (semester != null) params.add("semester=$semester");
+      if (refresh) params.add("refresh=true");
+      
+      if (params.isNotEmpty) {
+        url += "?${params.join("&")}";
       }
 
       final response = await _get(url);

@@ -294,7 +294,7 @@ class HemisService:
             return 0, 0, 0, []
 
     @staticmethod
-    async def get_semester_list(token: str):
+    async def get_semester_list(token: str, force_refresh: bool = False):
         client = await HemisService.get_client()
         try:
             url = f"{HemisService.BASE_URL}/education/semesters"
@@ -345,9 +345,9 @@ class HemisService:
         except: return []
 
     @staticmethod
-    async def get_student_schedule_cached(token: str, semester_code: str = None, student_id: int = None):
+    async def get_student_schedule_cached(token: str, semester_code: str = None, student_id: int = None, force_refresh: bool = False):
         key = f"schedule_{semester_code}" if semester_code else "schedule_all"
-        if student_id:
+        if student_id and not force_refresh:
             try:
                 async with AsyncSessionLocal() as session:
                     cache = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))

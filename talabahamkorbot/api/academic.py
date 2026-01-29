@@ -203,6 +203,7 @@ async def get_schedule(
 @cache(expire=600)
 async def get_subjects(
     semester: str = None,
+    refresh: bool = False,
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_session)
 ):
@@ -231,9 +232,9 @@ async def get_subjects(
                      sem_code = str(sem.get("code") or sem.get("id"))
     
     # 2. Fetch data concurrently
-    subjects_task = HemisService.get_student_subject_list(student.hemis_token, semester_code=sem_code, student_id=student.id)
-    absence_task = HemisService.get_student_absence(student.hemis_token, semester_code=sem_code, student_id=student.id)
-    schedule_task = HemisService.get_student_schedule_cached(student.hemis_token, semester_code=sem_code, student_id=student.id)
+    subjects_task = HemisService.get_student_subject_list(student.hemis_token, semester_code=sem_code, student_id=student.id, force_refresh=refresh)
+    absence_task = HemisService.get_student_absence(student.hemis_token, semester_code=sem_code, student_id=student.id, force_refresh=refresh)
+    schedule_task = HemisService.get_student_schedule_cached(student.hemis_token, semester_code=sem_code, student_id=student.id, force_refresh=refresh)
     
     subjects_data, attendance_result, schedule_data = await asyncio.gather(
         subjects_task, absence_task, schedule_task
