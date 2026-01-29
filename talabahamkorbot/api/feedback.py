@@ -53,16 +53,29 @@ async def get_my_feedback(
     )
     results = feedbacks.all()
     
-    # Compute Title
+    response_list = []
+    
     for fb in results:
+        # 1. Compute Title
+        display_title = f"Murojaat #{fb.id}"
         if fb.text:
-             # Take first 30 chars
              clean_text = fb.text.replace("\n", " ").strip()
-             fb.title = clean_text[:30] + "..." if len(clean_text) > 30 else clean_text
-        else:
-             fb.title = f"Murojaat #{fb.id}"
+             if clean_text:
+                 display_title = clean_text[:30] + "..." if len(clean_text) > 30 else clean_text
+        
+        # 2. Build Dict (Safer than modifying ORM object)
+        item = {
+            "id": fb.id,
+            "text": fb.text,
+            "title": display_title,
+            "status": fb.status,
+            "assigned_role": fb.assigned_role,
+            "created_at": fb.created_at, # Pydantic will serialize this
+            "is_anonymous": fb.is_anonymous
+        }
+        response_list.append(item)
 
-    return results
+    return response_list
 
 @router.get("/{id}", response_model=FeedbackDetailSchema)
 async def get_feedback_detail(
