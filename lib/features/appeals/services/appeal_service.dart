@@ -33,8 +33,27 @@ class AppealService {
       );
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> data = jsonDecode(response.body);
-        return AppealsResponse.fromJson(data);
+        final List<dynamic> listData = jsonDecode(response.body);
+        final List<Appeal> appeals = listData.map((e) => Appeal.fromJson(e)).toList();
+        
+        // Fetch stats separately
+        AppealStats stats = AppealStats(answered: 0, pending: 0, closed: 0);
+        try {
+          final statsResponse = await http.get(
+            Uri.parse("${ApiConstants.backendUrl}/student/feedback/stats"),
+            headers: {
+              "Authorization": "Bearer $token",
+              "Accept": "application/json",
+            },
+          );
+          if (statsResponse.statusCode == 200) {
+            stats = AppealStats.fromJson(jsonDecode(statsResponse.body));
+          }
+        } catch (e) {
+          print("Error fetching feedback stats: $e");
+        }
+
+        return AppealsResponse(appeals: appeals, stats: stats);
       } else {
         print("Error fetching appeals: ${response.statusCode} - ${response.body}");
         return null;

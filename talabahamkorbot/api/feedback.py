@@ -62,7 +62,7 @@ async def debug_feedbacks(
         "sample_titles": [f.title for f in my_feedbacks[:3]] if hasattr(my_feedbacks[0] if my_feedbacks else None, 'title') else "ORMTitlesNotAvailable" # This checks if title is populated (it won't be in ORM, but we check if DB has data)
     }
 
-@router.get("", response_model=AppealListResponseSchema)
+@router.get("", response_model=List[FeedbackListSchema])
 async def get_my_feedback(
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
@@ -100,9 +100,23 @@ async def get_my_feedback(
         }
         response_list.append(item)
 
+    return response_list
+
+@router.get("/stats", response_model=AppealStatsSchema)
+async def get_feedback_stats(
+    student: Student = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get status statistics for the student's appeals."""
+    feedbacks = await db.scalars(
+        select(StudentFeedback)
+        .where(
+            StudentFeedback.student_id == student.id,
+            StudentFeedback.parent_id == None
+        )
+    )
+    results = feedbacks.all()
     
-    # 3. Calculate Stats
-    # We filter only root appeals for stats to be consistent with the list
     # Mapping:
     # - 'answered' -> answered
     # - 'closed' -> closed
@@ -112,11 +126,7 @@ async def get_my_feedback(
         answered=len([f for f in results if f.status == 'answered']),
         closed=len([f for f in results if f.status == 'closed'])
     )
-
-    return {
-        "appeals": response_list,
-        "stats": stats
-    }
+    return stats
 
 @router.get("/{id}", response_model=FeedbackDetailSchema)
 async def get_feedback_detail(

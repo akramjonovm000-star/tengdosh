@@ -151,7 +151,8 @@ async def bot_webhook(request: Request):
                 f.write(f"\n--- ERROR {datetime.now()} ---\n")
                 f.write(traceback.format_exc())
             logger.error(f"Webhook update processing failed: {e}")
-            raise e
+            # return {"ok": True} anyway to stop Telegram from retrying failed/old updates endlessly
+            return {"ok": True}
     return {"ok": True}
 
 from api import router as api_router
