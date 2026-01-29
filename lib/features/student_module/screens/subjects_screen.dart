@@ -101,7 +101,6 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                     icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: Colors.blue),
                     style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 13),
                     borderRadius: BorderRadius.circular(12),
-                  child: DropdownButton<String>(
                     value: _selectedSemesterId,
                     isDense: true,
                     icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: Colors.blue),
