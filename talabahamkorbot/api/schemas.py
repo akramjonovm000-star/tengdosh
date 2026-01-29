@@ -105,6 +105,7 @@ class ClubMembershipSchema(BaseModel):
 class FeedbackListSchema(BaseModel):
     id: int
     text: Optional[str]
+    title: Optional[str] = None # NEW: Computed title for UI
     status: str
     assigned_role: Optional[str]
     created_at: datetime

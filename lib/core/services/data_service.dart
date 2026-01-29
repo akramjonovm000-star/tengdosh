@@ -810,7 +810,7 @@ class DataService {
     String? sessionId,
   }) async {
     try {
-      final uri = Uri.parse("${ApiConstants.backendUrl}/student/feedback/");
+      final uri = Uri.parse("${ApiConstants.backendUrl}/student/feedback");
       var request = http.MultipartRequest('POST', uri);
       
       final token = await _authService.getToken();

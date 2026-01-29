@@ -608,6 +608,11 @@ class StudentFeedback(Base):
     is_anonymous: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
     
+    # AI Analysis Snapshot (Sync with bot)
+    ai_topic: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    ai_sentiment: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    ai_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    
     # Snapshot Data
     student_full_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     student_group: Mapped[str | None] = mapped_column(String(255), nullable=True)

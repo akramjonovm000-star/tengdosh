@@ -51,7 +51,18 @@ async def get_my_feedback(
         )
         .order_by(desc(StudentFeedback.id))
     )
-    return feedbacks.all()
+    results = feedbacks.all()
+    
+    # Compute Title
+    for fb in results:
+        if fb.text:
+             # Take first 30 chars
+             clean_text = fb.text.replace("\n", " ").strip()
+             fb.title = clean_text[:30] + "..." if len(clean_text) > 30 else clean_text
+        else:
+             fb.title = f"Murojaat #{fb.id}"
+
+    return results
 
 @router.get("/{id}", response_model=FeedbackDetailSchema)
 async def get_feedback_detail(
