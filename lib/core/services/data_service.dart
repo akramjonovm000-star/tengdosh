@@ -163,6 +163,18 @@ class DataService {
       print("Dashboard Sync Error: $e");
     }
 
+    } catch (e) {
+      print("Dashboard Sync Error: $e");
+    }
+
+    // FALLBACK: Try to load from cache if API failed
+    try {
+      final cached = await _dbService.getCache('dashboard', studentId);
+      if (cached != null) {
+         return Map<String, dynamic>.from(cached);
+      }
+    } catch (_) {}
+
     return {
       "gpa": 0.0,
       "missed_hours": 0,
