@@ -79,7 +79,7 @@ class AppealService {
     final token = await _getToken();
     if (token == null) return false;
 
-    final url = Uri.parse("${ApiConstants.backendUrl}/student/feedback/");
+    final url = Uri.parse("${ApiConstants.backendUrl}/student/feedback");
 
     try {
       final body = {

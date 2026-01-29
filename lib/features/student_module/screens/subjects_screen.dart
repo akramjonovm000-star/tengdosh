@@ -106,11 +106,9 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
   }
 
   Future<void> _loadSubjects({bool forceRefresh = false}) async {
-    // 1. Get Semesters if empty
-    if (_semesters.isEmpty) {
-      _semesters = await _dataService.getSemesters();
-      // Only set default if it's the very first load and we don't have "Joriy" concept
-      // But now we want Joriy (null) as default. So we don't force select first.
+    // 1. Get Semesters if empty or force refresh
+    if (_semesters.isEmpty || forceRefresh) {
+      _semesters = await _dataService.getSemesters(refresh: forceRefresh);
     }
     
     // 2. Get Subjects

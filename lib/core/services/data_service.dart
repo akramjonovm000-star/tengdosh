@@ -522,9 +522,13 @@ class DataService {
   
 
   // NEW: Get Semesters
-  Future<List<dynamic>> getSemesters() async {
+  Future<List<dynamic>> getSemesters({bool refresh = false}) async {
     try {
-      final response = await _get("${ApiConstants.academic}/semesters");
+      String url = "${ApiConstants.academic}/semesters";
+      if (refresh) {
+        url += "?refresh=true";
+      }
+      final response = await _get(url);
       if (response.statusCode == 200) {
         final body = json.decode(response.body);
         if (body['success'] == true) {
