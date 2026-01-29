@@ -239,15 +239,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
                             final parts = fullName.split(' ');
                             
-                            // If we have "Last First Middle" (Uzbek standard), take First (index 1)
-                            if (parts.length >= 2) {
-                               String first = parts[1];
-                               // If the first part is very short (Initials), maybe take the first part?
-                               // But usually it's "Rahimov J." or "Rahimov Javohir"
-                               if (first.length > 1) {
-                                 return first[0].toUpperCase() + first.substring(1).toLowerCase();
-                               }
-                               return parts[0]; // Fallback to Lastname
+                            // Student model normalizes name to "Firstname Lastname"
+                            // So we just take the first part.
+                            if (parts.isNotEmpty) {
+                               String first = parts[0];
+                               return first[0].toUpperCase() + first.substring(1).toLowerCase();
                             }
                             
                             return fullName;
