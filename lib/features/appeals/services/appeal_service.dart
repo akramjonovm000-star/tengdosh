@@ -1,14 +1,22 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/constants/api_constants.dart';
-import '../../../core/models/student.dart';
 import 'package:talabahamkor_mobile/features/appeals/models/appeal_model.dart';
+import '../../../core/services/auth_service.dart';
 
 class AppealService {
+  final AuthService _authService = AuthService();
+
   Future<String?> _getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('access_token');
+    return await _authService.getToken();
+  }
+  
+  Future<Map<String, String>> _getHeaders() async {
+    final token = await _getToken();
+    return {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    };
   }
 
   // Get List of My Appeals
@@ -21,17 +29,14 @@ class AppealService {
     try {
       final response = await http.get(
         url,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+        headers: await _getHeaders(),
       );
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         return data.map((e) => Appeal.fromJson(e)).toList();
       } else {
-        print("Error fetching appeals: ${response.body}");
+        print("Error fetching appeals: ${response.statusCode} - ${response.body}");
         return [];
       }
     } catch (e) {
@@ -50,10 +55,7 @@ class AppealService {
     try {
       final response = await http.get(
         url,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+        headers: await _getHeaders(),
       );
 
       if (response.statusCode == 200) {
@@ -122,10 +124,7 @@ class AppealService {
     try {
       final response = await http.post(
         url,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+        headers: await _getHeaders(),
         body: jsonEncode({
           'session_id': sessionId,
           'text': text,
@@ -155,7 +154,7 @@ class AppealService {
     try {
       final response = await http.get(
         url,
-        headers: {'Authorization': 'Bearer $token'},
+        headers: { 'Authorization': 'Bearer $token' },
       );
 
       if (response.statusCode == 200) {
