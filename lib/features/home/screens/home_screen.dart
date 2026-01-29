@@ -73,8 +73,15 @@ class _HomeScreenState extends State<HomeScreen> {
         _selectedSemesterId = first['code']?.toString() ?? first['id']?.toString();
       }
       
-      // Now fetch dashboard (Overall stats) - Force Refresh if requested
+      // Now fetch dashboard (Overall stats)
       _dashboard = await _dataService.getDashboardStats(refresh: refresh);
+      
+      // AUTO-FIX: If GPA is 0.0, it might be stale cache or previous semester issue.
+      // Force refresh silently if we haven't already.
+      if (!refresh && (_dashboard?['gpa'] == 0 || _dashboard?['gpa'] == 0.0)) {
+         print("Zero GPA detected, forcing dashboard refresh...");
+         _dashboard = await _dataService.getDashboardStats(refresh: true);
+      }
       
       if (mounted) {
         setState(() {
