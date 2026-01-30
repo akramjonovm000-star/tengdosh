@@ -104,23 +104,23 @@ class _SurveyTakingScreenState extends State<SurveyTakingScreen> {
             ),
             const SizedBox(height: 12),
             if (question.type == 'radio') ...[
-              ...question.answers.map((ans) => RadioListTile<String>(
-                    title: Text(ans.text),
-                    value: ans.text,
+              ...question.variants.map((variant) => RadioListTile<String>(
+                    title: Text(variant),
+                    value: variant,
                     groupValue: _userAnswers[question.id],
                     onChanged: (val) => _saveAnswer(question, val),
                   ))
             ] else if (question.type == 'checkbox') ...[
-              ...question.answers.map((ans) {
+              ...question.variants.map((variant) {
                 List<String> currentAnswers = List<String>.from(_userAnswers[question.id] ?? []);
                 return CheckboxListTile(
-                  title: Text(ans.text),
-                  value: currentAnswers.contains(ans.text),
+                  title: Text(variant),
+                  value: currentAnswers.contains(variant),
                   onChanged: (val) {
                     if (val == true) {
-                      currentAnswers.add(ans.text);
+                      currentAnswers.add(variant);
                     } else {
-                      currentAnswers.remove(ans.text);
+                      currentAnswers.remove(variant);
                     }
                     _saveAnswer(question, currentAnswers);
                   },

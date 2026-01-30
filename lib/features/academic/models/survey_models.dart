@@ -14,15 +14,16 @@ class Survey {
   });
 
   factory Survey.fromJson(Map<String, dynamic> json) {
+    // Correctly handle the nested quizRuleProjection structure from HEMIS
+    final projection = json['quizRuleProjection'] ?? {};
+    
     return Survey(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
+      id: projection['id'] ?? 0,
+      name: projection['theme'] ?? json['status'] ?? '',
       status: json['status'] ?? 'not_started',
-      startDate: json['start_date'] != null 
-          ? DateTime.fromMillisecondsSinceEpoch(json['start_date'] * 1000) 
-          : null,
-      endDate: json['end_date'] != null 
-          ? DateTime.fromMillisecondsSinceEpoch(json['end_date'] * 1000) 
+      startDate: null, // startDate not clearly found in the raw list response
+      endDate: projection['endTime'] != null 
+          ? DateTime.fromMillisecondsSinceEpoch(projection['endTime']) 
           : null,
     );
   }
@@ -67,40 +68,21 @@ class SurveyQuestion {
   final int id;
   final String text;
   final String type; // radio, checkbox, input
-  final List<SurveyAnswerOption> answers;
+  final List<String> variants;
 
   SurveyQuestion({
     required this.id,
     required this.text,
     required this.type,
-    required this.answers,
+    required this.variants,
   });
 
   factory SurveyQuestion.fromJson(Map<String, dynamic> json) {
     return SurveyQuestion(
       id: json['id'] ?? 0,
-      text: json['text'] ?? '',
-      type: json['type'] ?? 'radio',
-      answers: (json['answers'] as List? ?? [])
-          .map((e) => SurveyAnswerOption.fromJson(e))
-          .toList(),
-    );
-  }
-}
-
-class SurveyAnswerOption {
-  final int id;
-  final String text;
-
-  SurveyAnswerOption({
-    required this.id,
-    required this.text,
-  });
-
-  factory SurveyAnswerOption.fromJson(Map<String, dynamic> json) {
-    return SurveyAnswerOption(
-      id: json['id'] ?? 0,
-      text: json['text'] ?? '',
+      text: json['quiz'] ?? '',
+      type: json['buttonType'] ?? 'radio',
+      variants: List<String>.from(json['variants'] ?? []),
     );
   }
 }
@@ -121,14 +103,15 @@ class SurveyStartResponse {
   factory SurveyStartResponse.fromJson(Map<String, dynamic> json) {
     final data = json['data'] ?? {};
     final quizInfo = data['quiz_info'] ?? {};
+    final projection = quizInfo['quizRuleProjection'] ?? {};
     
     return SurveyStartResponse(
-      quizRuleId: data['quiz_rule_id'] ?? 0,
+      quizRuleId: projection['id'] ?? 0,
       questions: (data['questions'] as List? ?? [])
           .map((e) => SurveyQuestion.fromJson(e))
           .toList(),
-      title: quizInfo['title'] ?? '',
-      description: quizInfo['description'] ?? '',
+      title: projection['theme'] ?? '',
+      description: '',
     );
   }
 }

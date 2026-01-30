@@ -42,14 +42,13 @@ class _SurveyListScreenState extends State<SurveyListScreen> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 2,
       child: Scaffold(
         appBar: AppBar(
           title: const Text("So'rovnomalar"),
           bottom: const TabBar(
             tabs: [
-              Tab(text: "Kutilmoqda"),
-              Tab(text: "Jarayonda"),
+              Tab(text: "Faol"),
               Tab(text: "Yakunlangan"),
             ],
           ),
@@ -58,8 +57,10 @@ class _SurveyListScreenState extends State<SurveyListScreen> {
             ? const Center(child: CircularProgressIndicator())
             : TabBarView(
                 children: [
-                  _buildList(_surveyData?.notStarted ?? []),
-                  _buildList(_surveyData?.inProgress ?? []),
+                  _buildList([
+                    ...(_surveyData?.notStarted ?? []),
+                    ...(_surveyData?.inProgress ?? []),
+                  ]),
                   _buildList(_surveyData?.finished ?? []),
                 ],
               ),
