@@ -181,6 +181,8 @@ class AppealService {
         return data['status'] ?? 'pending';
       }
       return 'error';
+    } catch (e) {
+      return 'error';
     }
   }
 
