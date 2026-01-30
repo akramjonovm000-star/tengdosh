@@ -1023,14 +1023,10 @@ class _AppealDetailScreenState extends State<AppealDetailScreen> {
       }
   }
 
+  @override
   Widget build(BuildContext context) {
     if (_isLoading) {
         return const Scaffold(
-            backgroundColor: AppTheme.backgroundWhite,
-            body: Center(child: CircularProgressIndicator())
-        );
-    }
-
             backgroundColor: AppTheme.backgroundWhite,
             body: Center(child: CircularProgressIndicator())
         );
