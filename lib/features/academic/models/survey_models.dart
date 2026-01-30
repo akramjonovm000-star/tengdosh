@@ -52,18 +52,23 @@ class SurveyListResponse {
     final stats = data['stats'] ?? {};
     
     return SurveyListResponse(
-      notStarted: (data['not_started'] as List? ?? [])
-          .map((e) => Survey.fromJson(e))
-          .toList(),
-      inProgress: (data['in_progress'] as List? ?? [])
-          .map((e) => Survey.fromJson(e))
-          .toList(),
-      finished: (data['finished'] as List? ?? [])
-          .map((e) => Survey.fromJson(e))
-          .toList(),
+      notStarted: _parseSurveyList(data['not_started']),
+      inProgress: _parseSurveyList(data['in_progress']),
+      finished: _parseSurveyList(data['finished']),
       totalPending: stats['total_pending'] ?? 0,
       totalCompleted: stats['total_completed'] ?? 0,
     );
+  }
+
+  static List<Survey> _parseSurveyList(dynamic data) {
+    if (data == null) return [];
+    if (data is List) {
+      return data.map((e) => Survey.fromJson(e)).toList();
+    }
+    if (data is Map) {
+      return data.values.map((e) => Survey.fromJson(e)).toList();
+    }
+    return [];
   }
 }
 
@@ -87,9 +92,20 @@ class SurveyQuestion {
       id: json['id'] ?? 0,
       text: json['quiz'] ?? '',
       type: json['buttonType'] ?? 'radio',
-      variants: List<String>.from(json['variants'] ?? []),
-      answers: List<String>.from(json['answers'] ?? []),
+      variants: _parseStringList(json['variants']),
+      answers: _parseStringList(json['answers']),
     );
+  }
+
+  static List<String> _parseStringList(dynamic data) {
+    if (data == null) return [];
+    if (data is List) {
+      return data.map((e) => e.toString()).toList();
+    }
+    if (data is Map) {
+      return data.values.map((e) => e.toString()).toList();
+    }
+    return [];
   }
 }
 
@@ -113,11 +129,20 @@ class SurveyStartResponse {
     
     return SurveyStartResponse(
       quizRuleId: projection['id'] ?? 0,
-      questions: (data['questions'] as List? ?? [])
-          .map((e) => SurveyQuestion.fromJson(e))
-          .toList(),
+      questions: _parseQuestionList(data['questions']),
       title: projection['theme'] ?? '',
       description: '',
     );
+  }
+
+  static List<SurveyQuestion> _parseQuestionList(dynamic data) {
+    if (data == null) return [];
+    if (data is List) {
+      return data.map((e) => SurveyQuestion.fromJson(e)).toList();
+    }
+    if (data is Map) {
+      return data.values.map((e) => SurveyQuestion.fromJson(e)).toList();
+    }
+    return [];
   }
 }
