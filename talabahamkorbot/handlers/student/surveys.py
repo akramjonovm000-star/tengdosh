@@ -149,26 +149,24 @@ async def show_question(message: Message, state: FSMContext):
 
     kb_rows = []
     if q_type in ["radio", "checkbox"]:
-        for variant in variants:
-            # For simplicity in bot, checkbox will work like radio (select one and next)
-            # Or we could implement multi-select with a "Next" button. 
-            # To keep it simple and stable, we'll treat them as single choice for now.
-            kb_rows.append([InlineKeyboardButton(text=variant, callback_data=f"survey_ans_{idx}_{variant}")])
+        for v_idx, variant in enumerate(variants):
+            # Use index instead of text to avoid BUTTON_DATA_INVALID (callback data limit 64 chars)
+            kb_rows.append([InlineKeyboardButton(text=variant, callback_data=f"sv_ans_{idx}_{v_idx}")])
     elif q_type == "input":
         msg += "⌨️ <i>Iltimos, javobingizni matn shaklida yozib yuboring:</i>"
         # For input, we wait for message. But our state is 'taking'.
         # We'll need a way to distinguish message vs callback.
     
-    kb_rows.append([InlineKeyboardButton(text="⏭ O'tkazib yuborish", callback_data=f"survey_ans_{idx}_skip")])
+    kb_rows.append([InlineKeyboardButton(text="⏭ O'tkazib yuborish", callback_data=f"sv_ans_{idx}_skip")])
     kb_rows.append([InlineKeyboardButton(text="❌ To'xtatish", callback_data="student_surveys")])
 
     await message.edit_text(msg, reply_markup=InlineKeyboardMarkup(inline_keyboard=kb_rows), parse_mode="HTML")
 
-@router.callback_query(StudentSurveyStates.taking, F.data.startswith("survey_ans_"))
+@router.callback_query(StudentSurveyStates.taking, F.data.startswith("sv_ans_"))
 async def process_survey_answer(call: CallbackQuery, state: FSMContext):
     parts = call.data.split("_")
     idx = int(parts[2])
-    answer = "_".join(parts[3:])
+    v_selector = parts[3]
     
     data = await state.get_data()
     if idx != data.get("current_index"):
@@ -182,9 +180,16 @@ async def process_survey_answer(call: CallbackQuery, state: FSMContext):
 
     await call.answer()
     
-    if answer != "skip":
+    if v_selector != "skip":
+        # Get actual variant text from index
+        try:
+            v_idx = int(v_selector)
+            variants = _parse_list(q.get("variants"))
+            answer = variants[v_idx]
+        except (ValueError, IndexError):
+            answer = v_selector # fallback
+            
         # Submit to HEMIS
-        # Note: button_type in API is 'radio'/'checkbox'/'input'
         await HemisService.submit_survey_answer(token, q_id, q_type, answer)
 
     # Move to next
