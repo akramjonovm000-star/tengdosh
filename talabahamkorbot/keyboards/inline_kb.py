@@ -423,7 +423,9 @@ def get_student_academic_kb(back_callback: str = "go_student_home") -> InlineKey
                 InlineKeyboardButton(text="📅 Dars jadvali", callback_data="student_schedule"),
                 InlineKeyboardButton(text="📝 Fanlardan vazifalar", callback_data="student_tasks"),
             ],
-
+            [
+                InlineKeyboardButton(text="📋 So'rovnomalar", callback_data="student_surveys"),
+            ],
             [InlineKeyboardButton(text="⬅️ Ortga", callback_data=back_callback)],
         ]
     )

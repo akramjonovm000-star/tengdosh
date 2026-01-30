@@ -8,6 +8,7 @@ from .tyutor_contact import router as tyutor_contact_router
 from .navigation import router as navigation_router
 from .feedback import router as feedback_router
 from .academic import router as academic_router
+from .surveys import router as surveys_router
 
 router = Router()
 
@@ -19,3 +20,4 @@ router.include_router(tyutor_contact_router)
 router.include_router(navigation_router)
 router.include_router(feedback_router)
 router.include_router(academic_router)
+router.include_router(surveys_router)

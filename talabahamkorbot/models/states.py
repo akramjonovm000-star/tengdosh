@@ -331,3 +331,6 @@ class StudentProfileStates(StatesGroup):
 
 class StudentAcademicStates(StatesGroup):
     waiting_for_password = State()
+
+class StudentSurveyStates(StatesGroup):
+    taking = State()
