@@ -36,16 +36,16 @@ class SubscriptionMiddleware(BaseMiddleware):
             user = event.from_user
         elif isinstance(event, CallbackQuery):
             user = event.from_user
-            # IMMEDIATE FEEDBACK: Answer callback immediately to remove the clock icon
-            try:
-                await event.answer()
-            except:
-                pass
+            # We don't answer immediately to allow handlers to use alert/text
         else:
             return await handler(event, data)
 
         if not user or user.is_bot:
-            return await handler(event, data)
+            res = await handler(event, data)
+            if isinstance(event, CallbackQuery):
+                try: await event.answer()
+                except: pass
+            return res
 
         # Check Cache
         now = datetime.utcnow()

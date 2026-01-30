@@ -119,11 +119,10 @@ async def start_scheduler():
 #   BOT HANDLER (WEBHOOK)
 # ============================================================
 
-dp.update.middleware(DbSessionMiddleware())
-dp.message.middleware(ActivityMiddleware())
-dp.callback_query.middleware(ActivityMiddleware())
-dp.message.middleware(SubscriptionMiddleware())
-dp.callback_query.middleware(SubscriptionMiddleware())
+# Middlewares Order: DB -> Activity -> Subscription
+dp.update.outer_middleware(DbSessionMiddleware(AsyncSessionLocal))
+dp.update.middleware(ActivityMiddleware())
+dp.update.middleware(SubscriptionMiddleware())
 
 @app.get("/")
 async def root():

@@ -128,9 +128,11 @@ async def feedback_new(call: CallbackQuery, state: FSMContext):
 # ============================
 @router.callback_query(F.data == "student_feedback_list")
 async def feedback_list(call: CallbackQuery, session: AsyncSession):
+    logger.info(f"DEBUG: feedback_list triggered by {call.from_user.id}")
     await call.answer()
     student = await get_student(call, session)
     if not student:
+        logger.warning(f"DEBUG: student not found for {call.from_user.id}")
         return await call.answer("Talaba topilmadi", show_alert=True)
 
     # 50 ta eng oxirgi murojaatni olamiz
@@ -141,6 +143,7 @@ async def feedback_list(call: CallbackQuery, session: AsyncSession):
     
     result = await session.execute(stmt)
     feedbacks = result.scalars().all()
+    logger.info(f"DEBUG: found {len(feedbacks)} feedbacks for student {student.id}")
     
     if not feedbacks:
         await call.answer("Sizda murojaatlar yo'q", show_alert=True)
