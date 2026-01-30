@@ -23,12 +23,39 @@ class _SurveyTakingScreenState extends State<SurveyTakingScreen> {
     _startSurvey();
   }
 
+  final Map<int, TextEditingController> _controllers = {};
+
+  @override
+  void dispose() {
+    for (var controller in _controllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
   Future<void> _startSurvey() async {
     setState(() => _isLoading = true);
     try {
       final data = await _dataService.startSurvey(widget.surveyId);
       setState(() {
         _surveyData = data;
+        
+        // Pre-fill answers from HEMIS
+        for (var q in data.questions) {
+          if (q.answers.isNotEmpty) {
+            if (q.type == 'checkbox') {
+              _userAnswers[q.id] = List<String>.from(q.answers);
+            } else {
+              _userAnswers[q.id] = q.answers.first;
+              if (q.type == 'input') {
+                _controllers[q.id] = TextEditingController(text: q.answers.first);
+              }
+            }
+          } else if (q.type == 'input') {
+            _controllers[q.id] = TextEditingController();
+          }
+        }
+        
         _isLoading = false;
       });
     } catch (e) {
@@ -49,6 +76,12 @@ class _SurveyTakingScreenState extends State<SurveyTakingScreen> {
         body: const Center(child: CircularProgressIndicator()),
       );
     }
+
+    final bool isFinished = _surveyData?.title.isNotEmpty == true && 
+                             _surveyData?.questions.every((q) => q.answers.isNotEmpty) == true;
+    // Note: title usually contains the theme, status might be nested. 
+    // We'll rely on our Survey model logic in list screen to know if it's finished.
+    // However, here we just show "Yakunlash" or "Saqlash".
 
     return Scaffold(
       appBar: AppBar(
@@ -80,7 +113,7 @@ class _SurveyTakingScreenState extends State<SurveyTakingScreen> {
                 ),
                 child: _isSubmitting
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("Yakunlash", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    : Text(isFinished ? "Saqlash va qaytish" : "Yakunlash", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ),
             ),
           ),
@@ -128,6 +161,7 @@ class _SurveyTakingScreenState extends State<SurveyTakingScreen> {
               })
             ] else if (question.type == 'input') ...[
               TextField(
+                controller: _controllers[question.id],
                 onChanged: (val) => _saveAnswer(question, val),
                 decoration: const InputDecoration(
                   hintText: "Javobingizni kiriting...",

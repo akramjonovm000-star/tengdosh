@@ -16,17 +16,20 @@ class Survey {
   factory Survey.fromJson(Map<String, dynamic> json) {
     // Correctly handle the nested quizRuleProjection structure from HEMIS
     final projection = json['quizRuleProjection'] ?? {};
+    final rawStatus = json['status'] ?? '';
     
     return Survey(
       id: projection['id'] ?? 0,
-      name: projection['theme'] ?? json['status'] ?? '',
-      status: json['status'] ?? 'not_started',
-      startDate: null, // startDate not clearly found in the raw list response
+      name: projection['theme'] ?? rawStatus,
+      status: rawStatus,
+      startDate: null,
       endDate: projection['endTime'] != null 
           ? DateTime.fromMillisecondsSinceEpoch(projection['endTime']) 
           : null,
     );
   }
+
+  bool get isFinished => status == 'Yakunlangan' || status == 'finished';
 }
 
 class SurveyListResponse {
@@ -69,12 +72,14 @@ class SurveyQuestion {
   final String text;
   final String type; // radio, checkbox, input
   final List<String> variants;
+  final List<String> answers;
 
   SurveyQuestion({
     required this.id,
     required this.text,
     required this.type,
     required this.variants,
+    required this.answers,
   });
 
   factory SurveyQuestion.fromJson(Map<String, dynamic> json) {
@@ -83,6 +88,7 @@ class SurveyQuestion {
       text: json['quiz'] ?? '',
       type: json['buttonType'] ?? 'radio',
       variants: List<String>.from(json['variants'] ?? []),
+      answers: List<String>.from(json['answers'] ?? []),
     );
   }
 }

@@ -101,12 +101,19 @@ class _SurveyListScreenState extends State<SurveyListScreen> {
                 ],
               ),
             ),
-            trailing: survey.status != 'finished'
+            trailing: survey.isFinished
                 ? ElevatedButton(
                     onPressed: () => _startSurvey(survey),
-                    child: Text(survey.status == 'not_started' ? "Boshlash" : "Davom etish"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text("Ko'rish"),
                   )
-                : const Icon(Icons.check_circle, color: Colors.green),
+                : ElevatedButton(
+                    onPressed: () => _startSurvey(survey),
+                    child: Text(survey.status == 'Boshlanmagan' ? "Boshlash" : "Davom etish"),
+                  ),
           ),
         );
       },
