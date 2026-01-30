@@ -1,17 +1,19 @@
+
 import asyncio
-from database.db_connect import engine
-from database.models import Student
+from database.db_connect import AsyncSessionLocal
+from database.models import TgAccount
 from sqlalchemy import select
 
 async def check_role():
-    async with engine.connect() as conn:
-        print("Checking user 'Javohirxon'...")
-        # Search by name loosely or HEMIS ID if we had it exactly
-        result = await conn.execute(select(Student.full_name, Student.hemis_id, Student.hemis_role, Student.username)
-                                    .where(Student.full_name.ilike("%Javohirxon%")))
-        rows = result.fetchall()
-        for r in rows:
-            print(f"Name: {r.full_name}, Role: {r.hemis_role}, Username: {r.username}")
+    async with AsyncSessionLocal() as db:
+        acc = await db.scalar(select(TgAccount).where(TgAccount.telegram_id == 7476703866))
+        if acc:
+            print(f"Account ID: {acc.id}")
+            print(f"Role: {acc.current_role}")
+            print(f"Student ID: {acc.student_id}")
+            print(f"Staff ID: {acc.staff_id}")
+        else:
+            print("Account not found")
 
 if __name__ == "__main__":
     asyncio.run(check_role())

@@ -5,6 +5,7 @@ import 'attendance_screen.dart';
 import 'schedule_screen.dart';
 import 'grades_screen.dart';
 import 'subjects_screen.dart';
+import '../../academic/screens/survey_list_screen.dart';
 
 class AcademicScreen extends StatefulWidget {
   const AcademicScreen({super.key});
@@ -152,6 +153,7 @@ class _AcademicScreenState extends State<AcademicScreen> {
             _buildMenuItem(context, "O'zlashtirish", Icons.grade_rounded, Colors.purple),
             _buildMenuItem(context, "Imtihonlar", Icons.edit_document, Colors.redAccent),
             _buildMenuItem(context, "Reyting Daftarchasi", Icons.history_edu_rounded, Colors.teal),
+            _buildMenuItem(context, "So'rovnomalar", Icons.poll_rounded, Colors.indigo),
           ],
         ), // Column
       ), // SingleChildScrollView
@@ -204,6 +206,8 @@ class _AcademicScreenState extends State<AcademicScreen> {
                await Navigator.push(context, MaterialPageRoute(builder: (_) => const GradesScreen()));
             } else if (title == "Fanlar va resurslar") {
                await Navigator.push(context, MaterialPageRoute(builder: (_) => const SubjectsScreen()));
+            } else if (title == "So'rovnomalar") {
+               await Navigator.push(context, MaterialPageRoute(builder: (_) => const SurveyListScreen()));
             } else {
                ScaffoldMessenger.of(context).showSnackBar(
                  SnackBar(content: Text("$title bo'limi tez orada ishga tushadi")),

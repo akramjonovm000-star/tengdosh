@@ -9,8 +9,43 @@ from services.hemis_service import HemisService
 from api.schemas import HemisLoginRequest, StudentProfileSchema
 import logging
 
+from api.schemas import HemisLoginRequest, StudentProfileSchema
+import logging
+
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+async def _get_or_create_academic_context(db: AsyncSession, uni_name: str, fac_name: str = None):
+    """Maps names to IDs, creating records if they don't exist."""
+    from database.models import University, Faculty
+    if not uni_name:
+        return None, None
+        
+    # 1. University
+    uni = await db.scalar(select(University).where(University.name == uni_name))
+    if not uni:
+        # Check for similar names or use a default code
+        uni_code = uni_name.replace(" ", "_").upper()[:32]
+        uni = University(name=uni_name, uni_code=uni_code)
+        db.add(uni)
+        await db.flush()
+        logger.info(f"Created new University: {uni_name}")
+    
+    uni_id = uni.id
+    fac_id = None
+    
+    # 2. Faculty
+    if fac_name:
+        fac = await db.scalar(select(Faculty).where(Faculty.university_id == uni_id, Faculty.name == fac_name))
+        if not fac:
+            fac_code = "AUTO_" + fac_name.replace(" ", "_")[:59]
+            fac = Faculty(university_id=uni_id, faculty_code=fac_code, name=fac_name)
+            db.add(fac)
+            await db.flush()
+            logger.info(f"Created new Faculty: {fac_name} for University {uni_id}")
+        fac_id = fac.id
+        
+    return uni_id, fac_id
 
 @router.post("/hemis")
 @router.post("/hemis/")
@@ -152,6 +187,9 @@ async def login_via_hemis(
     st_status = get_name("studentStatus")
     image_url = me.get("image") or me.get("picture") or me.get("image_url")
 
+    # Mapping Names -> IDs for Community Filtering
+    uni_id, fac_id = await _get_or_create_academic_context(db, uni_name, fac_name)
+
     # Parse Role
     raw_type = me.get("type", "student")
     role_code = "student"
@@ -190,7 +228,10 @@ async def login_via_hemis(
             payment_form=pay_form,
             student_status=st_status,
             image_url=image_url,
-            short_name=short_name_hemis or first_name
+            short_name=short_name_hemis or first_name,
+            # Context IDs
+            university_id=uni_id,
+            faculty_id=fac_id
         )
         db.add(student)
     else:
@@ -216,6 +257,10 @@ async def login_via_hemis(
         if not (student.image_url and "static/uploads" in student.image_url):
             student.image_url = image_url
         student.short_name = short_name_hemis or first_name
+        
+        # Update IDs
+        student.university_id = uni_id
+        student.faculty_id = fac_id
         
     await db.commit()
     await db.refresh(student)
@@ -245,6 +290,8 @@ async def login_via_hemis(
             education_type=edu_type,
             payment_form=pay_form,
             student_status=st_status,
+            university_id=uni_id,
+            faculty_id=fac_id
         )
         db.add(new_user)
     else:
@@ -261,6 +308,9 @@ async def login_via_hemis(
         existing_user.group_number = group_num
         existing_user.level_name = level_name
         existing_user.semester_name = sem_name
+        # Update IDs
+        existing_user.university_id = uni_id
+        existing_user.faculty_id = fac_id
         # ... other fields if needed
     
     await db.commit()
@@ -362,6 +412,9 @@ async def hemis_callback(
     fac_name = me.get("faculty", {}).get("name") if isinstance(me.get("faculty"), dict) else me.get("faculty_name") or ""
     image_url = me.get("image") or me.get("picture") or me.get("image_url")
     
+    # Map IDs
+    uni_id, fac_id = await _get_or_create_academic_context(db, uni_name, fac_name)
+
     if not student:
         student = Student(
             full_name=full_name_db,
@@ -370,6 +423,8 @@ async def hemis_callback(
             hemis_token=token,
             university_name=uni_name,
             faculty_name=fac_name,
+            university_id=uni_id,
+            faculty_id=fac_id,
             short_name=first_name,
             image_url=image_url
         )
@@ -379,6 +434,8 @@ async def hemis_callback(
         student.full_name = full_name_db
         student.university_name = uni_name
         student.faculty_name = fac_name
+        student.university_id = uni_id
+        student.faculty_id = fac_id
         student.short_name = first_name
         if image_url: student.image_url = image_url
     

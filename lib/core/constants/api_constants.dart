@@ -42,5 +42,12 @@ class ApiConstants {
   static const String communityPosts = '$backendUrl/community/posts'; 
 
   // Subscription
+  // Subscription
   static const String subscription = '$backendUrl/subscription';
+
+  // Surveys
+  static const String surveys = '$backendUrl/student/survey';
+  static const String surveyStart = '$backendUrl/student/survey-start';
+  static const String surveyAnswer = '$backendUrl/student/survey-answer';
+  static const String surveyFinish = '$backendUrl/student/survey-finish';
 }

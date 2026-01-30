@@ -13,6 +13,7 @@ from .certificates import router as certificates_router
 from .academic import router as academic_router
 from .oauth import router as oauth_router
 from .files import router as files_router
+from .surveys import router as surveys_router
 
 router.include_router(auth_router, prefix="/auth", tags=["Auth"])
 router.include_router(oauth_router, tags=["OAuth"])
@@ -55,3 +56,4 @@ router.include_router(gpa_router, prefix="/gpa", tags=["GPA"])
 
 from .plans import router as plans_router
 router.include_router(plans_router, prefix="/plans", tags=["Plans"])
+router.include_router(surveys_router, prefix="/student", tags=["Surveys"])

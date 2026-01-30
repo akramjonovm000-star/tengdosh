@@ -534,6 +534,72 @@ class HemisService:
         result = []
         for t in teachers.values():
             t["subjects"] = list(t["subjects"])
+            t["subjects"].sort()
             result.append(t)
         return result
+
+    # --- Surveys (So'rovnomalar) ---
+    
+    @staticmethod
+    async def get_student_surveys(token: str):
+        """GET /v1/student/survey"""
+        client = await HemisService.get_client()
+        try:
+            url = f"{HemisService.BASE_URL}/student/survey"
+            response = await client.get(url, headers=HemisService.get_headers(token))
+            if response.status_code == 200:
+                return response.json()
+            return None
+        except Exception as e:
+            logger.error(f"Error fetching surveys: {e}")
+            return None
+
+    @staticmethod
+    async def start_student_survey(token: str, survey_id: int):
+        """POST /v1/student/survey-start"""
+        client = await HemisService.get_client()
+        try:
+            url = f"{HemisService.BASE_URL}/student/survey-start"
+            payload = {"id": survey_id, "lang": "UZ"}
+            response = await client.post(url, headers=HemisService.get_headers(token), json=payload)
+            if response.status_code == 200:
+                return response.json()
+            return None
+        except Exception as e:
+            logger.error(f"Error starting survey: {e}")
+            return None
+
+    @staticmethod
+    async def submit_survey_answer(token: str, question_id: int, button_type: str, answer: Any):
+        """POST /v1/student/survey-answer"""
+        client = await HemisService.get_client()
+        try:
+            url = f"{HemisService.BASE_URL}/student/survey-answer"
+            payload = {
+                "question_id": question_id,
+                "button_type": button_type,
+                "answer": answer
+            }
+            response = await client.post(url, headers=HemisService.get_headers(token), json=payload)
+            if response.status_code == 200:
+                return response.json()
+            return None
+        except Exception as e:
+            logger.error(f"Error submitting survey answer: {e}")
+            return None
+
+    @staticmethod
+    async def finish_student_survey(token: str, quiz_rule_id: int):
+        """POST /v1/student/survey-finish"""
+        client = await HemisService.get_client()
+        try:
+            url = f"{HemisService.BASE_URL}/student/survey-finish"
+            payload = {"quiz_rule_id": quiz_rule_id}
+            response = await client.post(url, headers=HemisService.get_headers(token), json=payload)
+            if response.status_code == 200:
+                return response.json()
+            return None
+        except Exception as e:
+            logger.error(f"Error finishing survey: {e}")
+            return None
 # Force update

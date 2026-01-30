@@ -9,6 +9,7 @@ import '../models/attendance.dart';
 import '../models/lesson.dart';
 import 'package:talabahamkor_mobile/features/social/models/social_activity.dart';
 import 'local_database_service.dart';
+import '../../features/academic/models/survey_models.dart';
 
 class DataService {
   final AuthService _authService = AuthService();
@@ -1162,6 +1163,55 @@ class DataService {
       print("DataService: Error updating badge: $e");
       return false;
     }
+  }
+
+  // --- Surveys (So'rovnomalar) ---
+
+  Future<SurveyListResponse> getSurveys() async {
+    final response = await _get(ApiConstants.surveys);
+    if (response.statusCode == 200) {
+      return SurveyListResponse.fromJson(json.decode(response.body));
+    }
+    throw Exception('Failed to load surveys');
+  }
+
+  Future<SurveyStartResponse> startSurvey(int surveyId) async {
+    final response = await _post(
+      ApiConstants.surveyStart,
+      body: {'survey_id': surveyId},
+    );
+    if (response.statusCode == 200) {
+      return SurveyStartResponse.fromJson(json.decode(response.body));
+    }
+    throw Exception('Failed to start survey');
+  }
+
+  Future<bool> submitSurveyAnswer(int questionId, String buttonType, dynamic answer) async {
+    final response = await _post(
+      ApiConstants.surveyAnswer,
+      body: {
+        'question_id': questionId,
+        'button_type': buttonType,
+        'answer': answer,
+      },
+    );
+    if (response.statusCode == 200) {
+      final body = json.decode(response.body);
+      return body['success'] == true;
+    }
+    return false;
+  }
+
+  Future<bool> finishSurvey(int quizRuleId) async {
+    final response = await _post(
+      ApiConstants.surveyFinish,
+      body: {'quiz_rule_id': quizRuleId},
+    );
+    if (response.statusCode == 200) {
+      final body = json.decode(response.body);
+      return body['success'] == true;
+    }
+    return false;
   }
 }
 

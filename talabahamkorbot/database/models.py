@@ -162,7 +162,14 @@ class User(Base):
     hemis_password: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     # Academic/Work Context
+    university_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("universities.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     university_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    faculty_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("faculties.id", ondelete="SET NULL"), nullable=True
+    )
     faculty_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     specialty_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     group_number: Mapped[str | None] = mapped_column(String(255), nullable=True)
