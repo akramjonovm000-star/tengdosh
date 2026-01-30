@@ -630,8 +630,8 @@ class StudentFeedback(Base):
 
     student: Mapped["Student"] = relationship("Student", back_populates="feedbacks")
     replies: Mapped[list["FeedbackReply"]] = relationship("FeedbackReply", back_populates="feedback")
-    children: Mapped[list["StudentFeedback"]] = relationship("StudentFeedback", back_populates="parent", remote_side=[id])
-    parent: Mapped["StudentFeedback"] = relationship("StudentFeedback", back_populates="children", remote_side=[parent_id])
+    children: Mapped[list["StudentFeedback"]] = relationship("StudentFeedback", back_populates="parent")
+    parent: Mapped["StudentFeedback"] = relationship("StudentFeedback", back_populates="children", remote_side=[id])
 
 
 class FeedbackReply(Base):

@@ -181,8 +181,50 @@ class AppealService {
         return data['status'] ?? 'pending';
       }
       return 'error';
+    }
+  }
+
+  // Send Reply
+  Future<bool> sendReply(int parentId, String text) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    final url = Uri.parse("${ApiConstants.backendUrl}/student/feedback/$parentId/reply");
+    
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: {'text': text},
+      );
+
+      return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
-      return 'error';
+      return false;
+    }
+  }
+
+  // Close Appeal
+  Future<bool> closeAppeal(int id) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    final url = Uri.parse("${ApiConstants.backendUrl}/student/feedback/$id/close");
+    
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
     }
   }
 }

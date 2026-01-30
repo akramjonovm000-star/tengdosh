@@ -4,6 +4,8 @@ import '../../../../core/theme/app_theme.dart';
 import '../services/appeal_service.dart';
 import '../models/appeal_model.dart';
 import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../../../core/constants/api_constants.dart';
 
 class AppealsScreen extends StatefulWidget {
   const AppealsScreen({super.key});
@@ -462,13 +464,26 @@ class AppealCard extends StatelessWidget {
                   height: 180,
                   width: double.infinity,
                   color: Colors.grey[100],
-                  child: Center(
-                      child: Icon(
-                          _getIconForRole(appeal.assignedRole), 
-                          size: 60, 
-                          color: Colors.grey[300]
+                  child: appeal.fileId != null
+                    ? CachedNetworkImage(
+                        imageUrl: "${ApiConstants.fileProxy}/${appeal.fileId}",
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                        errorWidget: (context, url, error) => Center(
+                          child: Icon(
+                              _getIconForRole(appeal.assignedRole), 
+                              size: 60, 
+                              color: Colors.grey[300]
+                          )
+                        ),
                       )
-                  ),
+                    : Center(
+                        child: Icon(
+                            _getIconForRole(appeal.assignedRole), 
+                            size: 60, 
+                            color: Colors.grey[300]
+                        )
+                    ),
                 ),
                 Positioned(
                   top: 12,
@@ -952,6 +967,8 @@ class _AppealDetailScreenState extends State<AppealDetailScreen> {
   AppealDetail? _detail;
   bool _isLoading = true;
   final AppealService _service = AppealService();
+  final TextEditingController _replyController = TextEditingController();
+  bool _isReplying = false;
 
   @override
   void initState() {
@@ -970,10 +987,50 @@ class _AppealDetailScreenState extends State<AppealDetailScreen> {
       }
   }
 
-  @override
+  Future<void> _closeAppeal() async {
+      setState(() => _isReplying = true);
+      final success = await _service.closeAppeal(widget.appealId);
+      
+      if (mounted) {
+          setState(() => _isReplying = false);
+          if (success) {
+              _loadDetail(); // Refresh
+          } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Xatolik yuz berdi"))
+              );
+          }
+      }
+  }
+
+  Future<void> _sendReply() async {
+      final text = _replyController.text.trim();
+      if (text.isEmpty) return;
+
+      setState(() => _isReplying = true);
+      final success = await _service.sendReply(widget.appealId, text);
+      
+      if (mounted) {
+          setState(() => _isReplying = false);
+          if (success) {
+              _replyController.clear();
+              _loadDetail(); // Refresh
+          } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Javob yuborishda xatolik yuz berdi"))
+              );
+          }
+      }
+  }
+
   Widget build(BuildContext context) {
     if (_isLoading) {
         return const Scaffold(
+            backgroundColor: AppTheme.backgroundWhite,
+            body: Center(child: CircularProgressIndicator())
+        );
+    }
+
             backgroundColor: AppTheme.backgroundWhite,
             body: Center(child: CircularProgressIndicator())
         );
@@ -1048,8 +1105,20 @@ class _AppealDetailScreenState extends State<AppealDetailScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        if (msg.fileId != null)
+                             Padding(
+                               padding: const EdgeInsets.only(bottom: 8.0),
+                               child: ClipRRect(
+                                 borderRadius: BorderRadius.circular(8),
+                                 child: CachedNetworkImage(
+                                   imageUrl: "${ApiConstants.fileProxy}/${msg.fileId}",
+                                   placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                                   errorWidget: (context, url, error) => const Icon(Icons.broken_image, color: Colors.grey),
+                                 ),
+                               ),
+                             ),
                         Text(
-                          msg.text ?? "[Fayl]", 
+                          msg.text ?? (msg.fileId != null ? "" : "[Fayl]"), 
                           style: TextStyle(color: isMe ? Colors.white : Colors.black87),
                         ),
                         if (msg.fileId != null)
@@ -1076,37 +1145,102 @@ class _AppealDetailScreenState extends State<AppealDetailScreen> {
               },
             ),
           ),
-          if (_detail!.status != 'closed')
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.white,
-            child: SafeArea(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: "Javob yozish...",
-                        filled: true,
-                        fillColor: Colors.grey[100],
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      ),
+          _buildBottomAction(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomAction() {
+    if (_detail == null) return const SizedBox.shrink();
+
+    // 1. Pending -> Waiting disabled button
+    if (_detail!.status == 'pending') {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        color: Colors.white,
+        child: SafeArea(
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(12),
+            ),
+            alignment: Alignment.center,
+            child: const Text(
+              "Javob kutilmoqda...",
+              style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // 2. Closed -> Text
+    if (_detail!.status == 'closed') {
+       return Container(
+        padding: const EdgeInsets.all(16),
+        color: Colors.white,
+        child: const SafeArea(
+          child: Center(
+            child: Text(
+              "Murojaat yopilgan",
+              style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // 3. Answered API Logic (or default if not pending/closed) -> Reply + Close
+    return Container(
+      padding: const EdgeInsets.all(16),
+      color: Colors.white,
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Close Button Option (Only if answered/has replies?) - User asked for Close OR Reply
+            // Let's show Reply Input primarily, and maybe a Close button above or beside?
+            // "Javob kelgan bo'lsa murojaatni yopish yoki qayta murojaat chiqishi mumkin"
+            Row(
+              children: [
+                if (_detail!.status != 'closed' && _detail!.status != 'pending') ...[
+                 IconButton(
+                    icon: const Icon(Icons.check_circle_outline, color: Colors.green),
+                    tooltip: "Murojaatni yopish",
+                    onPressed: _isReplying ? null : _closeAppeal,
+                 ),
+                 const SizedBox(width: 8),
+                ],
+                Expanded(
+                  child: TextField(
+                    controller: _replyController,
+                    enabled: !_isReplying,
+                    decoration: InputDecoration(
+                      hintText: "Javob yozish...",
+                      filled: true,
+                      fillColor: Colors.grey[100],
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  CircleAvatar(
-                    backgroundColor: AppTheme.primaryBlue,
-                    child: IconButton(
-                      icon: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
-                      onPressed: () {},
-                    ),
-                  )
-                ],
-              ),
+                ),
+                const SizedBox(width: 8),
+                CircleAvatar(
+                  backgroundColor: AppTheme.primaryBlue,
+                  child: _isReplying 
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : IconButton(
+                        icon: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                        onPressed: _sendReply,
+                      ),
+                )
+              ],
             ),
-          )
-        ],
+          ],
+        ),
       ),
     );
   }

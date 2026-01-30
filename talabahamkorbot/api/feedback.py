@@ -96,7 +96,8 @@ async def get_my_feedback(
             "status": fb.status,
             "assigned_role": fb.assigned_role,
             "created_at": fb.created_at, # Pydantic will serialize this
-            "is_anonymous": fb.is_anonymous
+            "is_anonymous": fb.is_anonymous,
+            "file_id": fb.file_id
         }
         response_list.append(item)
 
@@ -134,6 +135,9 @@ async def get_feedback_detail(
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
 ):
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"DEBUG API: get_feedback_detail(id={id}, student_id={student.id})")
     """
     Get detailed conversation thread.
     Includes:
@@ -151,7 +155,10 @@ async def get_feedback_detail(
     appeal = await db.scalar(stmt)
     
     if not appeal:
+        logger.warning(f"DEBUG API: Appeal {id} NOT FOUND for student {student.id}")
         raise HTTPException(status_code=404, detail="Appeal not found")
+    
+    logger.info(f"DEBUG API: Found appeal {appeal.id}, status={appeal.status}")
 
     messages = []
     
@@ -160,37 +167,40 @@ async def get_feedback_detail(
         "id": appeal.id,
         "sender": "me",
         "text": appeal.text,
-        "time": appeal.created_at.strftime("%H:%M"),
-        "timestamp": appeal.created_at,
+        "time": (appeal.created_at.strftime("%H:%M") if appeal.created_at else "--:--"),
+        "timestamp": appeal.created_at or datetime.utcnow(),
         "file_id": appeal.file_id
     })
     
     # 2. Staff Replies
-    for reply in appeal.replies:
-        messages.append({
-            "id": reply.id,
-            "sender": "staff",
-            "text": reply.text or "[Fayl]",
-            "time": reply.created_at.strftime("%H:%M"),
-            "timestamp": reply.created_at,
-            "file_id": reply.file_id
-        })
+    try:
+        replies = appeal.replies or []
+        for reply in replies:
+            messages.append({
+                "id": reply.id,
+                "sender": "staff",
+                "text": reply.text or "[Fayl]",
+                "time": (reply.created_at.strftime("%H:%M") if reply.created_at else "--:--"),
+                "timestamp": reply.created_at or datetime.utcnow(),
+                "file_id": reply.file_id
+            })
+    except Exception as e:
+        logger.error(f"Error processing replies for appeal {appeal.id}: {e}")
         
-    # 3. Student Follow-ups (Children) - Recursive logic might be needed for deep nesting, 
-    # but initially assuming 1 level of depth or just linear list.
-    # For MVP, let's just show direct children.
-    # PRO-TIP: We should fetch all descendants if needed, but 'children' gives direct ones.
-    # If the bot structure flat-links replies to root, this works.
-    
-    for child in appeal.children:
-         messages.append({
-            "id": child.id,
-            "sender": "me",
-            "text": child.text,
-            "time": child.created_at.strftime("%H:%M"),
-            "timestamp": child.created_at,
-            "file_id": child.file_id
-        })
+    # 3. Student Follow-ups (Children)
+    try:
+        children = appeal.children or []
+        for child in children:
+             messages.append({
+                "id": child.id,
+                "sender": "me",
+                "text": child.text,
+                "time": (child.created_at.strftime("%H:%M") if child.created_at else "--:--"),
+                "timestamp": child.created_at or datetime.utcnow(),
+                "file_id": child.file_id
+            })
+    except Exception as e:
+        logger.error(f"Error processing children for appeal {appeal.id}: {e}")
 
     # Sort by time
     messages.sort(key=lambda x: x['timestamp'])
@@ -351,3 +361,23 @@ async def reply_feedback(
     await db.commit()
     
     return {"status": "success", "id": reply.id}
+
+@router.post("/{id}/close")
+async def close_feedback(
+    id: int,
+    student: Student = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Close a feedback thread.
+    """
+    stmt = select(StudentFeedback).where(StudentFeedback.id == id, StudentFeedback.student_id == student.id)
+    appeal = await db.scalar(stmt)
+    
+    if not appeal:
+        raise HTTPException(status_code=404, detail="Appeal not found")
+        
+    appeal.status = "closed"
+    await db.commit()
+    
+    return {"status": "success", "message": "Appeal closed"}

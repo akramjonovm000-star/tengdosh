@@ -7,7 +7,7 @@ class ApiConstants {
 
   // Backend API (Talaba Hamkor)
   static const String backendUrl = 'https://tengdosh.uzjoku.uz/api/v1';
-  // static const String backendUrl = 'http://10.0.2.2:8000/api/v1'; // Localhost for Emulator
+  static const String fileProxy = '$backendUrl/files';
   
   // Auth (Back to Backend Proxy)
   static const String authLogin = '$backendUrl/auth/hemis';

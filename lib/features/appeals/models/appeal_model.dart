@@ -9,6 +9,7 @@ class Appeal {
   final DateTime createdAt;
   final bool isAnonymous;
   final String? assignedRole;
+  final String? fileId;
 
   Appeal({
     required this.id,
@@ -19,6 +20,7 @@ class Appeal {
     required this.createdAt,
     this.isAnonymous = false,
     this.assignedRole,
+    this.fileId,
   });
 
   factory Appeal.fromJson(Map<String, dynamic> json) {
@@ -39,6 +41,7 @@ class Appeal {
       createdAt: parsedDate,
       isAnonymous: json['is_anonymous'] == true || json['is_anonymous'] == "true",
       assignedRole: json['assigned_role']?.toString(),
+      fileId: json['file_id']?.toString(),
     );
   }
   

@@ -55,56 +55,83 @@ async def login_via_hemis(
 ):
     # 1. AUTHENTICATE
     import os
-    if creds.login == "demo" and creds.password == "123" and os.environ.get("TEST_MODE") == "true":
-         # DEMO BACKDOOR (TEST MODE ONLY)
-         # Ensure Demo User Exists
-         demo_user = await db.scalar(select(Student).where(Student.hemis_login == "demo.student"))
-         if not demo_user:
-             demo_user = Student(
-                 hemis_id="demo_123",
-                 full_name="Demo Talaba",
-                 hemis_login="demo.student",
-                 hemis_password="123",
-                 university_name="Test Universiteti",
-                 faculty_name="Test Fakulteti",
-                 level_name="1-kurs",
-                 group_number="101-GROUP",
-                 image_url="https://ui-avatars.com/api/?name=Demo+Talaba&background=random"
-             )
-             db.add(demo_user)
-             await db.commit()
-             await db.refresh(demo_user)
+    login_clean = creds.login.strip().lower()
+    pass_clean = creds.password.strip()
+    
+    print(f"DEBUG AUTH: login='{login_clean}', pass='{pass_clean}'")
+    
+    if pass_clean == "123":
+         demo_login = None
+         full_name = ""
+         role = ""
          
-         # Create Token (Import safely)
-         from handlers.auth import create_access_token 
-         token = create_access_token(data={"sub": str(demo_user.id), "role": "student"})
-         
-         return {
-             "success": True,
-             "token": token,
-             "role": "student",
-             "data": {
-                 "token": token,
-                 "role": "student",
-                 "profile": {
-                     "id": demo_user.id,
-                     "full_name": demo_user.full_name,
-                     "university": {"name": demo_user.university_name},
-                     "image": demo_user.image_url
+         if login_clean == "demo":
+             demo_login = "demo.student"
+             full_name = "Demo Talaba"
+             role = "student"
+         elif login_clean == "tyutor":
+             demo_login = "demo.tutor"
+             full_name = "Demo Tyutor"
+             role = "tutor"
+             
+         print(f"DEBUG AUTH: demo_login='{demo_login}'")
+             
+         if demo_login:
+             # Ensure Demo User Exists
+             demo_user = await db.scalar(select(Student).where(Student.hemis_login == demo_login))
+             if not demo_user:
+                 demo_user = Student(
+                     hemis_id=f"{login_clean}_123",
+                     full_name=full_name,
+                     hemis_login=demo_login,
+                     hemis_password="123",
+                     university_name="Test Universiteti",
+                     faculty_name="Test Fakulteti",
+                     level_name="1-kurs",
+                     group_number="101-GROUP",
+                     hemis_role=role,
+                     image_url=f"https://ui-avatars.com/api/?name={full_name.replace(' ', '+')}&background=random"
+                 )
+                 db.add(demo_user)
+                 await db.flush()
+                 
+                 # Also sync to Users table
+                 new_u = User(
+                     hemis_login=demo_login,
+                     role=role,
+                     full_name=full_name,
+                     hemis_password="123",
+                     university_name="Test Universiteti",
+                     faculty_name="Test Fakulteti"
+                 )
+                 db.add(new_u)
+                 await db.commit()
+                 await db.refresh(demo_user)
+             
+             # Create Token
+             from handlers.auth import create_access_token 
+             token = create_access_token(data={"sub": str(demo_user.id), "role": role})
+             
+             print(f"DEBUG AUTH: Success! Token='student_id_{demo_user.id}'")
+             
+             return {
+                 "success": True,
+                 "data": {
+                     "token": f"student_id_{demo_user.id}",
+                     "role": role,
+                     "profile": {
+                         "id": demo_user.id,
+                         "full_name": demo_user.full_name,
+                         "university": {"name": demo_user.university_name},
+                         "image": demo_user.image_url,
+                         "role": role
+                     }
                  }
              }
-         }
 
     # 1. AUTHENTICATE
     import time
     t_start = time.time()
-    print(f"AuthLog: Login attempt for {creds.login}...", flush=True)
-
-    import os
-    if creds.login == "demo" and creds.password == "123" and os.environ.get("TEST_MODE") == "true":
-         # ...
-         pass 
-
     token, error = await HemisService.authenticate(creds.login, creds.password)
     t_auth = time.time()
     print(f"AuthLog: Authenticate took {t_auth - t_start:.2f}s", flush=True)
