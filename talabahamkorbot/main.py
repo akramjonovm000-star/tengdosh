@@ -120,7 +120,7 @@ async def start_scheduler():
 # ============================================================
 
 # Middlewares Order: DB -> Activity -> Subscription
-dp.update.outer_middleware(DbSessionMiddleware(AsyncSessionLocal))
+dp.update.outer_middleware(DbSessionMiddleware())
 dp.update.middleware(ActivityMiddleware())
 dp.update.middleware(SubscriptionMiddleware())
 
