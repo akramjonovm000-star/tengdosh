@@ -71,10 +71,9 @@ async def process_academic_password(message: Message, state: FSMContext, session
             await show_schedule(message, session, state)
         elif pending_action == "student_tasks":
             await show_tasks(message, session, state)
-        else:
             # Fallback
-            from keyboards.inline_kb import get_student_academic_kb
-            await message.answer("Bosh menyuga qaytishingiz mumkin.", reply_markup=get_student_academic_kb())
+            from handlers.student.navigation import show_student_main_menu
+            await show_student_main_menu(message, session, state, text="Bosh menyuga qaytishingiz mumkin.")
             
     else:
         # Add Back Button
@@ -1482,20 +1481,43 @@ async def show_schedule(call: Union[CallbackQuery, Message], session: AsyncSessi
     except: pass
 
     today = datetime.now()
-    start_week = today - timedelta(days=today.weekday()) 
-    end_week = start_week + timedelta(days=6) 
+    weekday = today.weekday()
+    
+    # User request: On Sunday (weekday 6), show NEXT week. 
+    # Otherwise show CURRENT week.
+    if weekday == 6:
+        # Advance to next Monday
+        start_week = today + timedelta(days=1)
+    else:
+        # Go back to current Monday
+        start_week = today - timedelta(days=weekday)
+    
+    # Ensure start_week is at 00:00:00
+    start_week = start_week.replace(hour=0, minute=0, second=0, microsecond=0)
+    end_week = start_week + timedelta(days=6, hours=23, minutes=59, seconds=59)
     
     s_date = start_week.strftime("%Y-%m-%d")
     e_date = end_week.strftime("%Y-%m-%d")
 
     # Fetch
     try:
-        schedule_data = await HemisService.get_student_schedule(token, week_start=s_date, week_end=e_date)
-    except:
-        schedule_data = [] # Handle error safely
+        raw_schedule = await HemisService.get_student_schedule(token, week_start=s_date, week_end=e_date)
+        # Strict Filtering: Ensure lessons strictly fall within the 7-day range
+        # (HEMIS API sometimes returns data outside the requested range)
+        start_ts = start_week.timestamp()
+        end_ts = end_week.timestamp()
+        
+        # Rebuild the list with strict timestamp filtering
+        schedule_data = [
+            item for item in raw_schedule 
+            if item.get("lesson_date") and start_ts <= item.get("lesson_date") <= end_ts
+        ]
+    except Exception as e:
+        logger.error(f"Schedule fetch error: {e}")
+        schedule_data = []
     
     if not schedule_data:
-         text = "📅 <b>Dars jadvali</b>\n\nBu hafta uchun darslar topilmadi."
+         text = f"📅 <b>Dars jadvali</b>\n\n({s_date} — {e_date})\n\nUshbu hafta uchun darslar topilmadi."
          try:
              if isinstance(call, CallbackQuery):
                  await call.message.edit_text(text, reply_markup=get_student_academic_kb(), parse_mode="HTML")
@@ -1549,7 +1571,7 @@ async def show_schedule(call: Union[CallbackQuery, Message], session: AsyncSessi
         
         grouped[iso_date].append((time_s, line))
 
-    text = f"📅 <b>Dars Jadvali ({s_date} - {e_date})</b>\n\n"
+    text = f"📅 <b>Dars Jadvali</b>\n({s_date} — {e_date})\n\n"
     
     for iso_date in sorted(grouped.keys()):
         lessons_list = grouped[iso_date]
@@ -1590,20 +1612,12 @@ async def show_schedule(call: Union[CallbackQuery, Message], session: AsyncSessi
 # ⬅️ ORTGA
 # ============================================================
 @router.callback_query(F.data == "go_student_home")
-async def go_home(call: CallbackQuery, session: AsyncSession):
-    account = await session.scalar(select(TgAccount).where(TgAccount.telegram_id == call.from_user.id).options(selectinload(TgAccount.student)))
-    from database.models import Club
-    led_clubs = []
-    if account and account.staff_id:
-        led_clubs = (await session.execute(select(Club).where(Club.leader_id == account.staff_id))).scalars().all()
-        
-    msg_text = "🎓 <b>Talaba menyusi</b>\nQuyidagi bo‘limlardan birini tanlang:"
-    kb = get_student_main_menu_kb(led_clubs=led_clubs)
-    try:
-        await call.message.edit_text(msg_text, reply_markup=kb, parse_mode="HTML")
-    except Exception:
-        await call.message.delete()
-        await call.message.answer(msg_text, reply_markup=kb, parse_mode="HTML")
+async def go_home(call: CallbackQuery, session: AsyncSession, state: FSMContext):
+    # This handler is a duplicate of navigation.py, but we'll make it consistent
+    # Or we could just remove it if navigation_router is registered before academic_router
+    from handlers.student.navigation import show_student_main_menu
+    await show_student_main_menu(call, session, state)
+    await call.answer()
 
 
 

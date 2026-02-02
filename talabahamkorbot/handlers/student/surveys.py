@@ -72,9 +72,7 @@ async def show_surveys_list(call: CallbackQuery, session: AsyncSession):
         for i, s in enumerate(finished, 1):
             proj = s.get("quizRuleProjection", {})
             title = proj.get("theme") or s.get("status") or "Nomsiz so'rovnoma"
-            sid = proj.get("id") or s.get("id")
             msg += f"{i}. {html.escape(title)}\n\n"
-            kb_rows.append([InlineKeyboardButton(text=f"👁 Ko'rish: {i}", callback_data=f"survey_start_{sid}")])
 
     kb_rows.append([InlineKeyboardButton(text="⬅️ Ortga", callback_data="student_academic_menu")])
     
@@ -111,7 +109,8 @@ async def start_survey_handler(call: CallbackQuery, session: AsyncSession, state
         token=token,
         quiz_rule_id=quiz_rule_id,
         questions=questions,
-        current_index=0
+        current_index=0,
+        last_msg_id=call.message.message_id
     )
 
     await show_question(call.message, state)
@@ -149,18 +148,57 @@ async def show_question(message: Message, state: FSMContext):
 
     kb_rows = []
     if q_type in ["radio", "checkbox"]:
-        for v_idx, variant in enumerate(variants):
-            # Use index instead of text to avoid BUTTON_DATA_INVALID (callback data limit 64 chars)
-            kb_rows.append([InlineKeyboardButton(text=variant, callback_data=f"sv_ans_{idx}_{v_idx}")])
+        # Check if any variant is too long for a button
+        use_numbered_list = any(len(v) > 34 for v in variants)
+        
+        if use_numbered_list:
+            # 1. Add variants to message text
+            msg += "<b>Variantlar:</b>\n\n"
+            for v_idx, variant in enumerate(variants, 1):
+                msg += f"{v_idx}. {html.escape(variant)}\n\n"
+            
+            # 2. Create numbered buttons in rows of 5
+            temp_row = []
+            for v_idx, _ in enumerate(variants):
+                temp_row.append(InlineKeyboardButton(text=str(v_idx + 1), callback_data=f"sv_ans_{idx}_{v_idx}"))
+                if len(temp_row) == 5:
+                    kb_rows.append(temp_row)
+                    temp_row = []
+            if temp_row:
+                kb_rows.append(temp_row)
+        else:
+            # Short answers: One per row
+            for v_idx, variant in enumerate(variants):
+                kb_rows.append([InlineKeyboardButton(text=variant, callback_data=f"sv_ans_{idx}_{v_idx}")])
+                
     elif q_type == "input":
         msg += "⌨️ <i>Iltimos, javobingizni matn shaklida yozib yuboring:</i>"
-        # For input, we wait for message. But our state is 'taking'.
-        # We'll need a way to distinguish message vs callback.
     
     kb_rows.append([InlineKeyboardButton(text="⏭ O'tkazib yuborish", callback_data=f"sv_ans_{idx}_skip")])
     kb_rows.append([InlineKeyboardButton(text="❌ To'xtatish", callback_data="student_surveys")])
 
-    await message.edit_text(msg, reply_markup=InlineKeyboardMarkup(inline_keyboard=kb_rows), parse_mode="HTML")
+    # Try to edit last message, if fails (or if we want to move forward from a new message), send new
+    try:
+        if message.message_id == data.get("last_msg_id"):
+            await message.edit_text(msg, reply_markup=InlineKeyboardMarkup(inline_keyboard=kb_rows), parse_mode="HTML")
+        else:
+            # If we are being called from a text message handler, we might want to edit the LAST bot message
+            try:
+                await message.bot.edit_message_text(
+                    chat_id=message.chat.id,
+                    message_id=data.get("last_msg_id"),
+                    text=msg,
+                    reply_markup=InlineKeyboardMarkup(inline_keyboard=kb_rows),
+                    parse_mode="HTML"
+                )
+            except:
+                # Fallback: send new message
+                new_msg = await message.answer(msg, reply_markup=InlineKeyboardMarkup(inline_keyboard=kb_rows), parse_mode="HTML")
+                await state.update_data(last_msg_id=new_msg.message_id)
+    except Exception as e:
+        logger.error(f"Error in show_question: {e}")
+        new_msg = await message.answer(msg, reply_markup=InlineKeyboardMarkup(inline_keyboard=kb_rows), parse_mode="HTML")
+        await state.update_data(last_msg_id=new_msg.message_id)
 
 @router.callback_query(StudentSurveyStates.taking, F.data.startswith("sv_ans_"))
 async def process_survey_answer(call: CallbackQuery, state: FSMContext):
@@ -214,18 +252,15 @@ async def process_survey_text_answer(message: Message, state: FSMContext):
     
     await HemisService.submit_survey_answer(token, q_id, "input", answer)
     
+    # Move to next
+    await state.update_data(current_index=idx + 1)
+    
     # Delete user message to keep chat clean
     try:
         await message.delete()
     except: pass
 
-    # Move to next
-    await state.update_data(current_index=idx + 1)
-    
-    # We need to find the original message to edit. 
-    # Usually we can't easily find it unless we stored bot_message_id.
-    # Let's just send a new one and try to delete old if we have it?
-    # For now, just send new.
+    # Show next question
     await show_question(message, state)
 
 @router.callback_query(StudentSurveyStates.taking, F.data == "survey_finish_confirm")

@@ -1,6 +1,7 @@
 from aiogram import Router, F
 from aiogram.filters import CommandStart, CommandObject
 from aiogram.types import Message
+from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from database.models import Student, Staff, TgAccount
@@ -10,7 +11,7 @@ router = Router()
 logger = logging.getLogger(__name__)
 
 @router.message(CommandStart(deep_link=True))
-async def cmd_start_deep_link(message: Message, command: CommandObject, session: AsyncSession):
+async def cmd_start_deep_link(message: Message, command: CommandObject, session: AsyncSession, state: FSMContext):
     """
     Handles Deep Links:
     1. Authorization Code (Legacy): auth_{uuid}
@@ -73,10 +74,14 @@ async def cmd_start_deep_link(message: Message, command: CommandObject, session:
                     tg_account.staff_id = None # Switch logic: can't be both? Or can? prioritize student
                     await session.commit()
                     
-                    await message.answer(f"👋 Salom, <b>{student.full_name}</b>!\n\n✅ Sizning Telegram profilingiz HEMIS akkauntingizga muvaffaqiyatli ulandi.")
+                    from handlers.student.navigation import show_student_main_menu
+                    from aiogram.fsm.context import FSMContext
+                    # We need state, but this handler doesn't have it in signature. 
+                    # Actually, we can add it or just pass None if show_student_main_menu handles it.
+                    # show_student_main_menu needs state.
                     
-                    # Optional: Add Menu
-                    # await message.answer("Quyidagi menyudan foydalanishingiz mumkin:", reply_markup=main_menu)
+                    # Update signature to include state
+                    await show_student_main_menu(message, session, state, text=f"👋 Salom, <b>{student.full_name}</b>!\n\n✅ Sizning Telegram profilingiz HEMIS akkauntingizga muvaffaqiyatli ulandi.\n\nQuyidagilardan birini tanlang:")
                 else:
                     await message.answer("❌ Talaba tizimda topilmadi.")
                     

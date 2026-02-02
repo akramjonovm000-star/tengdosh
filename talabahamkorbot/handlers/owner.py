@@ -176,6 +176,24 @@ async def owner_enter_uni_code(
         parse_mode="HTML",
     )
 
+@router.callback_query(F.data.startswith("owner_view_uni:"))
+async def cb_owner_view_university(call: CallbackQuery, state: FSMContext, session: AsyncSession):
+    university_id = int(call.data.split(":")[1])
+    uni = await session.get(University, university_id)
+    if not uni:
+        return await call.answer("❌ OTM topilmadi.", show_alert=True)
+        
+    await state.update_data(university_id=uni.id, uni_code=uni.uni_code)
+    await state.set_state(OwnerStates.university_selected)
+
+    await call.message.edit_text(
+        f"✅ <b>{uni.name}</b>\n\n"
+        "Quyidagi bo‘limlardan birini tanlang:",
+        reply_markup=get_university_actions_kb(uni.id),
+        parse_mode="HTML",
+    )
+    await call.answer()
+
 
     
 # =============================================================

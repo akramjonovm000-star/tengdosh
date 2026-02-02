@@ -395,6 +395,8 @@ class Student(Base):
     username: Mapped[str | None] = mapped_column(String(50), unique=True, nullable=True)
     hemis_role: Mapped[str | None] = mapped_column(String(50), nullable=True) # HEMIS role code (e.g. 'student', 'teacher')
     
+    is_election_admin: Mapped[bool] = mapped_column(Boolean, default=False)
+    
     # --- AI Context ---
     ai_context: Mapped[str | None] = mapped_column(Text, nullable=True) # Summarized info for AI
     last_context_update: Mapped[datetime | None] = mapped_column(DateTime(), nullable=True)
@@ -481,7 +483,7 @@ class TgAccount(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    telegram_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    telegram_id: Mapped[int] = mapped_column(BigInteger, nullable=False, index=True)
 
     staff_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("staff.id", ondelete="SET NULL"), nullable=True
@@ -512,7 +514,7 @@ class UserActivity(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     student_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False
+        Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True
     )
 
     category: Mapped[str] = mapped_column(String(64), nullable=False)
@@ -604,7 +606,7 @@ class StudentFeedback(Base):
     __tablename__ = "student_feedback"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    student_id: Mapped[int] = mapped_column(Integer, ForeignKey("students.id", ondelete="CASCADE"))
+    student_id: Mapped[int] = mapped_column(Integer, ForeignKey("students.id", ondelete="CASCADE"), index=True)
     text: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(32), default="pending")
     assigned_role: Mapped[str | None] = mapped_column(String(64), nullable=True)
@@ -614,6 +616,7 @@ class StudentFeedback(Base):
     file_type: Mapped[str | None] = mapped_column(String(32), nullable=True)
     is_anonymous: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # AI Analysis Snapshot (Sync with bot)
     ai_topic: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -1197,4 +1200,62 @@ class SubscriptionPurchase(Base):
 
     student: Mapped["Student"] = relationship("Student")
     plan: Mapped["SubscriptionPlan"] = relationship("SubscriptionPlan")
+
+
+# ============================================================
+# ELECTION MODELS
+# ============================================================
+
+class Election(Base):
+    __tablename__ = "elections"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    university_id: Mapped[int] = mapped_column(Integer, ForeignKey("universities.id", ondelete="CASCADE"), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="draft") # draft, active, finished
+    deadline: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
+
+    university: Mapped["University"] = relationship("University")
+    candidates: Mapped[list["ElectionCandidate"]] = relationship("ElectionCandidate", back_populates="election", cascade="all, delete-orphan")
+    votes: Mapped[list["ElectionVote"]] = relationship("ElectionVote", back_populates="election", cascade="all, delete-orphan")
+
+class ElectionCandidate(Base):
+    __tablename__ = "election_candidates"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    election_id: Mapped[int] = mapped_column(Integer, ForeignKey("elections.id", ondelete="CASCADE"), nullable=False, index=True)
+    student_id: Mapped[int] = mapped_column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
+    faculty_id: Mapped[int] = mapped_column(Integer, ForeignKey("faculties.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    campaign_text: Mapped[str] = mapped_column(Text, nullable=True) # Saylovoldi dasturi
+    photo_id: Mapped[str | None] = mapped_column(String(255), nullable=True) # Nomzod rasmi
+    order: Mapped[int] = mapped_column(Integer, default=0) # Tartib raqami
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
+
+    election: Mapped["Election"] = relationship("Election", back_populates="candidates")
+    student: Mapped["Student"] = relationship("Student")
+    faculty: Mapped["Faculty"] = relationship("Faculty")
+    votes: Mapped[list["ElectionVote"]] = relationship("ElectionVote", back_populates="candidate", cascade="all, delete-orphan")
+
+class ElectionVote(Base):
+    __tablename__ = "election_votes"
+    __table_args__ = (
+        UniqueConstraint("election_id", "voter_id", name="uq_election_voter"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    election_id: Mapped[int] = mapped_column(Integer, ForeignKey("elections.id", ondelete="CASCADE"), nullable=False, index=True)
+    voter_id: Mapped[int] = mapped_column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
+    candidate_id: Mapped[int] = mapped_column(Integer, ForeignKey("election_candidates.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
+
+    election: Mapped["Election"] = relationship("Election", back_populates="votes")
+    voter: Mapped["Student"] = relationship("Student")
+    candidate: Mapped["ElectionCandidate"] = relationship("ElectionCandidate", back_populates="votes")
 

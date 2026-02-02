@@ -73,6 +73,10 @@ async def login_via_hemis(
              demo_login = "demo.tutor"
              full_name = "Demo Tyutor"
              role = "tutor"
+         elif login_clean == "tyutor_demo":
+             demo_login = "demo.tutor_new"
+             full_name = "Yangi Demo Tyutor"
+             role = "tutor"
              
          print(f"DEBUG AUTH: demo_login='{demo_login}'")
              
@@ -107,10 +111,6 @@ async def login_via_hemis(
                  db.add(new_u)
                  await db.commit()
                  await db.refresh(demo_user)
-             
-             # Create Token
-             from handlers.auth import create_access_token 
-             token = create_access_token(data={"sub": str(demo_user.id), "role": role})
              
              print(f"DEBUG AUTH: Success! Token='student_id_{demo_user.id}'")
              

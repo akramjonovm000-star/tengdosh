@@ -391,10 +391,6 @@ async def create_comment(
     if notification_recipient_id and notification_recipient_id != student.id:
         # Avoid duplicate notifications? For now, every reply sends one.
         # Clean User Name for message
-        sender_name = format_name(student.full_name) # Ensure format_name is available or use student.short_name
-        
-        db.add(notify)
-        
         # [NEW] Push Notification
         # Fetch recipient object for token
         recipient = await db.get(Student, notification_recipient_id)
@@ -446,6 +442,7 @@ async def get_comments(
     query = select(ChoyxonaComment).options(
         selectinload(ChoyxonaComment.student),
         selectinload(ChoyxonaComment.parent_comment).selectinload(ChoyxonaComment.student),
+        selectinload(ChoyxonaComment.reply_to_user),
         selectinload(ChoyxonaComment.likes),
         selectinload(ChoyxonaComment.post)
     ).where(ChoyxonaComment.post_id == post_id)
@@ -609,12 +606,12 @@ def _map_comment(comment: "ChoyxonaComment", author: Student, current_user_id: i
     
     if comment.reply_to_user:
         # Priority 1: Specific User we replied to (New Logic)
-        reply_user = f"@{comment.reply_to_user.username}" if comment.reply_to_user.username else format_name(comment.reply_to_user.full_name)
+        reply_user = f"@{comment.reply_to_user.username}" if comment.reply_to_user.username else format_name(comment.reply_to_user)
         if comment.parent_comment:
              reply_content = comment.parent_comment.content
     elif comment.parent_comment:
         # Priority 2: Fallback (Old Logic)
-        reply_user = format_name(comment.parent_comment.student.full_name) if comment.parent_comment.student else "Noma'lum"
+        reply_user = format_name(comment.parent_comment.student) if comment.parent_comment.student else "Noma'lum"
         reply_content = comment.parent_comment.content
 
     # Determine if liked by me
@@ -638,7 +635,7 @@ def _map_comment(comment: "ChoyxonaComment", author: Student, current_user_id: i
         post_id=comment.post_id,
         content=comment.content,
         author_id=author.id if author else 0, # NEW
-        author_name=format_name(author.full_name) if author else "Noma'lum",
+        author_name=format_name(author) if author else "Noma'lum",
         author_username=author.username if author else None,
         # DEBUG USERNAME
         # print(f"DEBUG COMMENT {comment.id}: Author={author.full_name if author else 'None'}, Username={author.username if author else 'None'}"), 

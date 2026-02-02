@@ -748,10 +748,8 @@ async def save_activity(call: CallbackQuery, state: FSMContext, session: AsyncSe
     await session.commit()
     await state.clear()
 
-    await call.message.edit_text(
-        "✅ Faollik muvaffaqiyatli qo‘shildi!",
-        reply_markup=get_student_main_menu_kb()
-    )
+    from handlers.student.navigation import show_student_main_menu
+    await show_student_main_menu(call, session, state, text="✅ Faollik muvaffaqiyatli qo‘shildi!")
     await call.answer()
 
 
@@ -763,10 +761,8 @@ async def save_activity(call: CallbackQuery, state: FSMContext, session: AsyncSe
 async def cancel_activity(call: CallbackQuery, state: FSMContext):
 
     await state.clear()
-    await call.message.edit_text(
-        "❌ Faollik qo‘shish bekor qilindi.",
-        reply_markup=get_student_main_menu_kb()
-    )
+    from handlers.student.navigation import show_student_main_menu
+    await show_student_main_menu(call, session, state, text="❌ Faollik qo‘shish bekor qilindi.")
     await call.answer()
 
 # ============================================================

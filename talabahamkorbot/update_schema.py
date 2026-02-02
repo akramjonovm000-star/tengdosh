@@ -7,6 +7,10 @@ async def main():
     async with engine.connect() as conn:
         await conn.execute(text("ALTER TABLE student_feedback ALTER COLUMN ai_topic TYPE VARCHAR(255)"))
         await conn.execute(text("ALTER TABLE student_feedback ALTER COLUMN assigned_role TYPE VARCHAR(64)"))
+        try:
+            await conn.execute(text("ALTER TABLE student_feedback ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"))
+        except:
+            pass
         await conn.commit()
     print("✅ Schema updated")
 

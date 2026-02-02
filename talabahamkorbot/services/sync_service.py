@@ -92,6 +92,18 @@ async def sync_student_data(session: AsyncSession, student_id: int):
     if group:
         student.group_number = group.get("name")
 
+    # Update Full Name (Robust extraction)
+    first_name = me_data.get("first_name") or me_data.get("firstname") or me_data.get("firstName") or ""
+    last_name = me_data.get("second_name") or me_data.get("lastname") or me_data.get("surname") or me_data.get("lastName") or ""
+    patronymic = me_data.get("third_name") or me_data.get("fathername") or me_data.get("patronymic") or me_data.get("secondName") or ""
+    
+    full_name = me_data.get("full_name") or me_data.get("fullName")
+    if not full_name:
+        full_name = f"{first_name} {last_name} {patronymic}".strip()
+    
+    if full_name and student.full_name != full_name:
+        student.full_name = full_name
+
     # 3. Update Attendance (Missed Hours)
     # Get current semester code for accurate data
     sem_code = None

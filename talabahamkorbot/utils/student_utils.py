@@ -110,3 +110,33 @@ def get_premium_label(student: Student) -> str:
     if student.is_premium:
         return "💎 PREMIUM"
     return "💡 Oddiy"
+
+async def get_election_info(student: Student, session: AsyncSession) -> tuple[bool, bool]:
+    """
+    Returns (is_election_admin, has_active_election) for a given student.
+    """
+    if not student:
+        return False, False
+        
+    is_election_admin = student.is_election_admin
+    has_active_election = False
+    
+    # Check for active election
+    # Optimization: We only check if the student belongs to a university
+    if student.university_id:
+        from database.models import Election
+        from sqlalchemy import and_
+        
+        active_election = await session.scalar(
+            select(Election).where(
+                and_(
+                    Election.university_id == student.university_id,
+                    Election.status == "active"
+                )
+            ).order_by(Election.created_at.desc())
+        )
+        if active_election:
+            if not active_election.deadline or active_election.deadline > datetime.utcnow():
+                has_active_election = True
+                
+    return is_election_admin, has_active_election

@@ -81,22 +81,10 @@ async def feedback_menu(call: CallbackQuery, state: FSMContext):
 
 
 @router.callback_query(F.data == "student_menu")
-async def back_to_main_menu(call: CallbackQuery, state: FSMContext):
+async def back_to_main_menu(call: CallbackQuery, state: FSMContext, session: AsyncSession):
     await call.answer()
-    await state.clear()
-    try:
-        await call.message.edit_text(
-            "🏠 <b>Bosh sahifa</b>",
-            parse_mode="HTML",
-            reply_markup=get_student_main_menu_kb()
-        )
-    except Exception:
-        await call.message.delete()
-        await call.message.answer(
-            "🏠 <b>Bosh sahifa</b>",
-            parse_mode="HTML",
-            reply_markup=get_student_main_menu_kb()
-        )
+    from handlers.student.navigation import show_student_main_menu
+    await show_student_main_menu(call, session, state, text="🏠 <b>Bosh sahifa</b>")
 
 
 # ============================
@@ -139,7 +127,7 @@ async def feedback_list(call: CallbackQuery, session: AsyncSession):
     stmt = select(StudentFeedback).where(
         StudentFeedback.student_id == student.id,
         StudentFeedback.parent_id == None  # Faqat root (asosiy) murojaatlarni
-    ).order_by(StudentFeedback.created_at.desc()).limit(50)
+    ).order_by(StudentFeedback.updated_at.desc()).limit(50)
     
     result = await session.execute(stmt)
     feedbacks = result.scalars().all()
@@ -239,13 +227,55 @@ async def feedback_view(call: CallbackQuery, session: AsyncSession):
 
     # Edit message (agar oldingi xabar rasm bo'lsa, edit_caption ishlaydi, text bo'lsa edit_text)
     # Universal yechim: Eski xabarni o'chirib yangisini yozish (clean UI)
-    await call.message.delete()
-    
-    await call.message.answer(
-        final_text,
-        parse_mode="HTML",
-        reply_markup=get_student_feedback_detail_kb(feedback_id, is_closed)
-    )
+    # Agar murojaatda file bo'lsa, media xabar yuboramiz
+    if fb.file_id:
+        try:
+            await call.message.delete()
+        except:
+            pass
+            
+        try:
+            if fb.file_type == "photo":
+                await call.message.answer_photo(
+                    fb.file_id,
+                    caption=final_text[:1024], # Caption limit
+                    parse_mode="HTML",
+                    reply_markup=get_student_feedback_detail_kb(feedback_id, is_closed)
+                )
+            elif fb.file_type == "document":
+                await call.message.answer_document(
+                    fb.file_id,
+                    caption=final_text[:1024],
+                    parse_mode="HTML",
+                    reply_markup=get_student_feedback_detail_kb(feedback_id, is_closed)
+                )
+            else:
+                await call.message.answer(
+                    final_text,
+                    parse_mode="HTML",
+                    reply_markup=get_student_feedback_detail_kb(feedback_id, is_closed)
+                )
+        except Exception as e:
+            logger.error(f"Error sending feedback media: {e}")
+            await call.message.answer(
+                final_text,
+                parse_mode="HTML",
+                reply_markup=get_student_feedback_detail_kb(feedback_id, is_closed)
+            )
+    else:
+        try:
+            await call.message.edit_text(
+                final_text,
+                parse_mode="HTML",
+                reply_markup=get_student_feedback_detail_kb(feedback_id, is_closed)
+            )
+        except Exception:
+            await call.message.delete()
+            await call.message.answer(
+                final_text,
+                parse_mode="HTML",
+                reply_markup=get_student_feedback_detail_kb(feedback_id, is_closed)
+            )
 
 
 
@@ -533,8 +563,8 @@ async def feedback_receive(message: Message, state: FSMContext, session: AsyncSe
             await state.update_data(feedback_text=message.text)
             await message.answer(
                 f"✅ <b>Matn qabul qilindi.</b>\n\n"
-                "Murojaatingizga <b>Rasm yoki PDF</b> yuklashingiz mumkin (ixtiyoriy).\n"
-                "Yoki murojaatni yozib bo'lgan bo'lsangiz, <b>'Yuborish'</b> tugmasini bosing.",
+                "Endi murojaatingizga <b>Rasm yoki PDF</b> yuklashingiz mumkin (ixtiyoriy).\n"
+                "Agar fayl yuklashni xohlamasangiz, <b>'Yuborish'</b> tugmasini bosing.",
                 reply_markup=get_feedback_confirm_kb(),
                 parse_mode="HTML"
             )
@@ -545,13 +575,13 @@ async def feedback_receive(message: Message, state: FSMContext, session: AsyncSe
             file_id = message.photo[-1].file_id
             logger.info(f"feedback_receive: photo received, file_id={file_id}")
             await state.update_data(file_id=file_id, file_type="photo")
-            if message.caption:
+            if message.caption and not data.get("feedback_text"):
                 logger.info(f"feedback_receive: photo caption: {message.caption[:50]}...")
                 await state.update_data(feedback_text=message.caption)
                 
             await message.answer(
-                "🖼 <b>Rasm yuklandi.</b>\n\n"
-                "Murojaatni yuborish uchun <b>'Yuborish'</b> tugmasini bosing.",
+                "🖼 <b>Rasm qabul qilindi.</b>\n\n"
+                "Murojaatni yuborish uchun <b>'Yuborish'</b> tugmasini bosing yoki matn yuborib uni o'zgartirishingiz mumkin.",
                 reply_markup=get_feedback_confirm_kb(),
                 parse_mode="HTML"
             )
@@ -562,13 +592,13 @@ async def feedback_receive(message: Message, state: FSMContext, session: AsyncSe
             file_id = message.document.file_id
             logger.info(f"feedback_receive: document received, file_id={file_id}")
             await state.update_data(file_id=file_id, file_type="document")
-            if message.caption:
+            if message.caption and not data.get("feedback_text"):
                 logger.info(f"feedback_receive: doc caption: {message.caption[:50]}...")
                 await state.update_data(feedback_text=message.caption)
                 
             await message.answer(
-                "📄 <b>Hujjat (PDF) yuklandi.</b>\n\n"
-                "Murojaatni yuborish uchun <b>'Yuborish'</b> tugmasini bosing.",
+                "📄 <b>Hujjat (PDF/Fayl) qabul qilindi.</b>\n\n"
+                "Murojaatni yuborish uchun <b>'Yuborish'</b> tugmasini bosing yoki matn yuborib uni o'zgartirishingiz mumkin.",
                 reply_markup=get_feedback_confirm_kb(),
                 parse_mode="HTML"
             )
@@ -784,106 +814,75 @@ async def feedback_reappeal_receive(message: Message, state: FSMContext, session
 
     original_feedback = await session.get(StudentFeedback, original_feedback_id)
     
-    if not original_feedback or not original_feedback.assigned_staff_id:
-        await message.answer("❌ Murojaat yoki mas'ul xodim topilmadi.")
+    if not original_feedback:
+        await message.answer("❌ Murojaat topilmadi.")
         await state.clear()
         return
 
-    # Xodimning Telegram ID sini topish
     staff_tg = await session.scalar(
         select(TgAccount).where(TgAccount.staff_id == original_feedback.assigned_staff_id)
     )
 
+    target_tg_id = None
     if staff_tg:
         target_tg_id = staff_tg.telegram_id
     else:
         # FALLBACK: Agar aniq xodim topilmasa, o'sha roldagi boshqa xodimni qidiramiz
         fallback_stmt = select(TgAccount).join(Staff).where(Staff.role == original_feedback.assigned_role)
         
-        # Agar Dekanat bo'lsa, fakultet bo'yicha
         if original_feedback.assigned_role == StaffRole.DEKANAT.value:
-            # Studentni load qilib olish kerak (agar hali olinmagan bo'lsa)
             student_chk = await session.get(Student, original_feedback.student_id)
             if student_chk and student_chk.faculty_id:
                 fallback_stmt = fallback_stmt.where(Staff.faculty_id == student_chk.faculty_id)
         
-        # Agar Tyutor bo'lsa, guruh bo'yicha (murakkabroq, hozircha shunchaki log qilib qo'yamiz)
-        # Tyutor o'zgargan bo'lsa, baribir yangi tyutorga borishi kerak.
-        
         target_tg = await session.scalar(fallback_stmt)
         if target_tg:
             target_tg_id = target_tg.telegram_id
-            # Feedbackni ham yangi xodimga assign qilib qo'yamiz
             original_feedback.assigned_staff_id = target_tg.staff_id
             await session.commit()
-        else:
-             await message.answer("❌ Mas'ul xodim topilmadi (Fallback failed).")
-             return
 
     try:
         student = await get_student(message, session)
-        
-        # Parent ID ni aniqlash (Zanjir hosil qilish)
-        # Agar originalning o'zi child bo'lsa, uning parentini olamiz.
-        # Agar original root bo'lsa, uning o'zi parent bo'ladi.
         real_parent_id = original_feedback.parent_id if original_feedback.parent_id else original_feedback.id
 
-        # Yangi feedback yaratish (History uchun)
+        # Yangi feedback yaratish
         new_feedback = StudentFeedback(
             student_id=student.id,
             text=message.text or "Media fayl",
             file_id=message.photo[-1].file_id if message.photo else (message.document.file_id if message.document else None),
-            file_type="photo" if message.photo else (
-                       "video" if message.video else (
-                       "document" if message.document else None)),
+            file_type="photo" if message.photo else ("video" if message.video else ("document" if message.document else None)),
             status="reappeal",
-            assigned_staff_id=original_feedback.assigned_staff_id, # Updated potentially by fallback
+            assigned_staff_id=original_feedback.assigned_staff_id,
             assigned_role=original_feedback.assigned_role,
-            is_anonymous=original_feedback.is_anonymous, # Avvalgi anonimlikni saqlash
+            is_anonymous=original_feedback.is_anonymous,
             parent_id=real_parent_id 
         )
         session.add(new_feedback)
+        
+        # Asosiy murojaat statusini ham yangilaymiz (Ro'yxatda reappeal sifatida ko'rinishi uchun)
+        root_feedback = await session.get(StudentFeedback, real_parent_id)
+        if root_feedback:
+            root_feedback.status = "reappeal"
+            root_feedback.updated_at = datetime.now()
+            
         await session.commit()
 
-        # Xodimga yuborish (To'liq tarix bilan)
-        history_text = await get_feedback_thread_text(new_feedback.id, session)
-        
-        row_kb = get_rahb_appeal_actions_kb(new_feedback.id) # Reusable variable
+        # Xodimga yuborish (Faqat agar target_tg_id bo'lsa)
+        if target_tg_id:
+            history_text = await get_feedback_thread_text(new_feedback.id, session)
+            row_kb = get_rahb_appeal_actions_kb(new_feedback.id)
 
-        # Agar fayl bo'lsa
-        if new_feedback.file_id:
-            if new_feedback.file_type == "photo":
-                await message.bot.send_photo(
-                    target_tg_id, 
-                    new_feedback.file_id, 
-                    caption=history_text, 
-                    parse_mode="HTML",
-                    reply_markup=row_kb
-                )
-            elif new_feedback.file_type == "document":
-                await message.bot.send_document(
-                    target_tg_id, 
-                    new_feedback.file_id, 
-                    caption=history_text, 
-                    parse_mode="HTML",
-                    reply_markup=row_kb
-                )
+            if new_feedback.file_id:
+                if new_feedback.file_type == "photo":
+                    await message.bot.send_photo(target_tg_id, new_feedback.file_id, caption=history_text, parse_mode="HTML", reply_markup=row_kb)
+                elif new_feedback.file_type == "document":
+                    await message.bot.send_document(target_tg_id, new_feedback.file_id, caption=history_text, parse_mode="HTML", reply_markup=row_kb)
+                else:
+                    await message.bot.send_message(target_tg_id, history_text, parse_mode="HTML", reply_markup=row_kb)
             else:
-                await message.bot.send_message(
-                    target_tg_id, 
-                    history_text, 
-                    parse_mode="HTML",
-                    reply_markup=row_kb
-                )
-        else:
-            await message.bot.send_message(
-                target_tg_id, 
-                history_text, 
-                parse_mode="HTML",
-                reply_markup=row_kb
-            )
+                await message.bot.send_message(target_tg_id, history_text, parse_mode="HTML", reply_markup=row_kb)
 
-        await message.answer("✅ Xabar xodimga yuborildi.")
+        await message.answer("✅ Murojaatingiz qabul qilindi va mutaxassisga yo'naltirildi.")
         await state.clear()
 
     except Exception as e:

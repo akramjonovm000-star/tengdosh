@@ -103,6 +103,12 @@ def get_owner_main_menu_inline_kb() -> InlineKeyboardMarkup:
             ],
             [
                 InlineKeyboardButton(
+                    text="🗳 Saylovlarni boshqarish",
+                    callback_data="admin_election_menu:global",
+                )
+            ],
+            [
+                InlineKeyboardButton(
                     text="⚙️ Bot sozlamalari",
                     callback_data="owner_settings",
                 )
@@ -340,17 +346,12 @@ def get_retry_channel_forward_kb() -> InlineKeyboardMarkup:
 # TALABA ASOSIY MENYUSI
 # ============================================================
 
-def get_student_main_menu_kb(led_clubs: list = None) -> InlineKeyboardMarkup:
-    # led_clubs: list of Club objects led by this student
-    
+def get_student_main_menu_kb(led_clubs: list = None, is_election_admin: bool = False, has_active_election: bool = False) -> InlineKeyboardMarkup:
+    """ Talaba asosiy menyusi """
     rows = [
-        [
-            InlineKeyboardButton(text="👤 Profilim", callback_data="student_profile"),
-        ],
+        [InlineKeyboardButton(text="👤 Profilim", callback_data="student_profile")],
         [InlineKeyboardButton(text="🏛 Akademik bo'lim", callback_data="student_academic_menu")],
-        [
-            InlineKeyboardButton(text="🤖 AI Yordamchi", callback_data="ai_assistant_main"),
-        ],
+        [InlineKeyboardButton(text="🤖 AI Yordamchi", callback_data="ai_assistant_main")],
         [
             InlineKeyboardButton(text="📊 Faolliklarim", callback_data="student_activities"),
             InlineKeyboardButton(text="📄 Hujjatlar", callback_data="student_documents"),
@@ -360,12 +361,16 @@ def get_student_main_menu_kb(led_clubs: list = None) -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="🎭 Klublar", callback_data="student_clubs_market"),
         ],
         [
-            # InlineKeyboardButton(text="💎 Premium Obuna", callback_data="student_premium_menu"), # Disabled by request
             InlineKeyboardButton(text="📨 Murojaatlar", callback_data="student_feedback_menu")
         ],
     ]
     
-    # If Student leads any clubs, add manage buttons at bottom
+    if has_active_election:
+        rows.insert(-1, [InlineKeyboardButton(text="🗳 Saylov", callback_data="student_election")])
+    
+    if is_election_admin:
+        rows.append([InlineKeyboardButton(text="⚙️ Saylovni boshqarish", callback_data="admin_election_menu")])
+
     if led_clubs:
         for c in led_clubs:
             rows.append([InlineKeyboardButton(text=f"📢 {c.name} (Boshqarish)", callback_data=f"leader_manage:{c.id}")])
@@ -373,17 +378,9 @@ def get_student_main_menu_kb(led_clubs: list = None) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def get_student_profile_menu_kb(led_clubs: list = None) -> InlineKeyboardMarkup:
-    """
-    Profilim menusi (xuddi asosiy menyu kabi, lekin callbacklar :from_profile bilan tugaydi)
-    """
+def get_student_profile_menu_kb(is_election_admin: bool = False, has_active_election: bool = False) -> InlineKeyboardMarkup:
+    """ Profilim menusi """
     rows = [
-        # Profilim o'zi bu yerda kerak emas, chunki biz zatan profildamiz.
-        # Lekin UI bir xil turishi uchun "Profilim" o'rniga "Bosh menyu" ga qaytish tugmasi bo'lishi mumkin.
-        # Yoki shunchaki Profilim buttoni olib tashlanadi.
-        # User so'rovi: Profilim -> Hujjatlar -> Ortga -> Profilim
-        # Demak bu yerdagi Hujjatlar tugmasi documents:profile ga o'tishi kerak.
-        
         [InlineKeyboardButton(text="🏛 Akademik bo'lim", callback_data="student_academic_menu:profile")],
         [
             InlineKeyboardButton(text="📊 Faolliklarim", callback_data="student_activities:profile"),
@@ -393,15 +390,18 @@ def get_student_profile_menu_kb(led_clubs: list = None) -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="🎓 Sertifikatlar", callback_data="student_certificates:profile"),
             InlineKeyboardButton(text="🎭 Klublar", callback_data="student_clubs_market:profile"),
         ],
-        [InlineKeyboardButton(text="📨 Murojaatlar", callback_data="student_feedback_menu:profile")],
-        
+        [
+            InlineKeyboardButton(text="📨 Murojaatlar", callback_data="student_feedback_menu:profile")
+        ],
         [InlineKeyboardButton(text="🏠 Bosh menyu", callback_data="go_student_home")]
     ]
     
-    if led_clubs:
-        for c in led_clubs:
-            rows.append([InlineKeyboardButton(text=f"📢 {c.name} (Boshqarish)", callback_data=f"leader_manage:{c.id}")])
-            
+    if has_active_election:
+        rows.insert(-2, [InlineKeyboardButton(text="🗳 Saylov", callback_data="student_election:profile")])
+    
+    if is_election_admin:
+        rows.insert(-1, [InlineKeyboardButton(text="⚙️ Saylovni boshqarish", callback_data="admin_election_menu")])
+        
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
@@ -1316,15 +1316,7 @@ def get_student_feedback_list_kb(feedbacks: list) -> InlineKeyboardMarkup:
 
     for fb in feedbacks:
         # Statusga qarab emoji
-        if fb.status == "answered":
-            emoji = "✅"
-        elif fb.status == "closed":
-            emoji = "🔒"
-        elif fb.status == "rejected":
-            emoji = "❌"
-        else:
-            # pending, assigned_*, etc. -> Kutilmoqda
-            emoji = "⏳"
+        emoji = status_emoji.get(fb.status, "⏳")
 
         # Recipient Role Mapping
         role_map = {
@@ -1503,3 +1495,48 @@ def get_yetakchi_main_menu_kb() -> InlineKeyboardMarkup:
             [InlineKeyboardButton(text="📢 E'lon yuborish", callback_data="yetakchi_broadcast_menu")],
         ]
     )
+
+
+# ============================================================
+# ELECTION KEYBOARDS
+# ============================================================
+
+def get_election_candidates_kb(candidates: list, back_callback: str = "go_student_home") -> InlineKeyboardMarkup:
+    """
+    Saylov nomzodlari ro'yxati.
+    candidates: list of ElectionCandidate objects
+    """
+    is_profile = back_callback == "student_profile"
+    state_suffix = ":profile" if is_profile else ":main"
+    
+    rows = []
+    for cand in candidates:
+        rows.append([
+            InlineKeyboardButton(
+                text=f"👤 {cand.student.full_name}",
+                callback_data=f"election_cand:{cand.id}{state_suffix}"
+            )
+        ])
+    
+    rows.append([InlineKeyboardButton(text="⬅️ Ortga", callback_data=back_callback)])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def get_candidate_detail_kb(candidate_id: int, can_vote: bool = True, back_callback: str = "student_election") -> InlineKeyboardMarkup:
+    """
+    Nomzod sahifasidagi tugmalar.
+    """
+    is_profile = back_callback.endswith(":profile")
+    state_suffix = ":profile" if is_profile else ":main"
+    
+    rows = []
+    if can_vote:
+        rows.append([
+            InlineKeyboardButton(
+                text="🗳 Ovoz berish",
+                callback_data=f"election_vote:{candidate_id}{state_suffix}"
+            )
+        ])
+    
+    rows.append([InlineKeyboardButton(text="⬅️ Ortga", callback_data=back_callback)])
+    return InlineKeyboardMarkup(inline_keyboard=rows)

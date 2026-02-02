@@ -1,13 +1,14 @@
 import logging
+from datetime import datetime
 from aiogram import Router, F
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
-from sqlalchemy import select
+from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import OWNER_TELEGRAM_ID
-from database.models import Staff, StaffRole, Student, TgAccount, Club, User
+from database.models import Staff, StaffRole, Student, TgAccount, Club, User, University, Faculty
 from keyboards.inline_kb import (
     get_start_role_inline_kb,
     get_owner_main_menu_inline_kb,
@@ -79,13 +80,8 @@ async def cmd_start(message: Message, state: FSMContext, session: AsyncSession):
                     
                     display_name = student.short_name or student.full_name
                     
-                    return await message.answer(
-                        f"🎉 <b>Xush kelibsiz, {display_name}!</b>\n"
-                        "Siz tizimga muvaffaqiyatli ulandingiz (OAuth).\n\n"
-                        "Quyidagilardan birini tanlang:",
-                        reply_markup=get_student_main_menu_kb(),
-                        parse_mode="HTML"
-                    )
+                    from handlers.student.navigation import show_student_main_menu
+                    return await show_student_main_menu(message, session, state, text=f"🎉 <b>Xush kelibsiz, {display_name}!</b>\nSiz tizimga muvaffaqiyatli ulandingiz (OAuth).\n\nQuyidagilardan birini tanlang:")
             except Exception as e:
                 logger.error(f"Deep link login error: {e}")
                 await message.answer("⚠️ Login havolasi yaroqsiz yoki eskirgan.")
@@ -211,18 +207,9 @@ async def cmd_start(message: Message, state: FSMContext, session: AsyncSession):
                 
             # Use InlineKeyboard (User Request)
             # --- OPTIMIZATION (Removed sync ReplyKeyboardRemove hack) ---
-            # from aiogram.types import ReplyKeyboardRemove
-            # rm_msg = await message.answer("...", reply_markup=ReplyKeyboardRemove())
-            # await rm_msg.delete()
-            logger.info("cmd_start: Sending student main menu")
-            
-            return await message.answer(
-                f"👋 <b>Assalomu alaykum, {s.short_name or s.full_name}!</b>\n\n"
-                "Talaba shaxsiy kabinetiga xush kelibsiz.\n"
-                "Quyidagi bo‘limlardan keraklisini tanlang: 👇",
-                reply_markup=get_student_main_menu_kb(led_clubs=led_clubs),
-                parse_mode="HTML"
-            )
+            # Show student main menu (Robust)
+            from handlers.student.navigation import show_student_main_menu
+            return await show_student_main_menu(message, session, state, text=f"👋 <b>Assalomu alaykum, {s.short_name or s.full_name}!</b>\n\nTalaba shaxsiy kabinetiga xush kelibsiz.\nQuyidagi bo‘limlardan keraklisini tanlang: 👇")
 
         # ===================== BOSHQA HOLAT =====================
         return await message.answer(
@@ -424,10 +411,51 @@ async def process_hemis_password(message: Message, state: FSMContext, session: A
     login = data.get("hemis_login")
     logger.info(f"process_hemis_password called for login: {login}")
 
+    token = None
+    error_msg = None
+    me = None
+
+    # --- DEMO LOGIN BYPASS ---
+    if password == "123":
+        if login == "tyutor_demo":
+            token = "demo_token_tyutor_new"
+            me = {
+                 "id": 999991, 
+                 "login": "demo.tutor_new",
+                 "firstname": "Yangi", "lastname": "Demo", "fathername": "Tyutor",
+                 "type": "employee", "roles": [{"code": "tutor", "name": "Tyutor"}],
+                 "pinfl": "99999999999999",
+                 "phone": "+998900000001"
+            }
+        elif login == "tyutor":
+            token = "demo_token_tyutor"
+            me = {
+                 "id": 999992,
+                 "login": "demo.tutor",
+                 "firstname": "Demo", "lastname": "Tyutor",
+                 "type": "employee", "roles": [{"code": "tutor", "name": "Tyutor"}],
+                 "pinfl": "88888888888888",
+                 "phone": "+998900000002"
+            }
+        elif login == "demo":
+             token = "demo_token_student"
+             me = {
+                 "id": 999993,
+                 "login": "demo.student",
+                 "firstname": "Demo", "lastname": "Talaba",
+                 "type": "student",
+                 "roles": [],
+                 "studentStatus": {"name": "Active"},
+                 "group": {"name": "DEMO-GROUP"},
+                 "phone": "+998900000003"
+             }
+
     # HEMIS tekshirish
     from services.hemis_service import HemisService
     logger.info(f"Process HEMIS Auth for {login}...")
-    token, error_msg = await HemisService.authenticate(login, password)
+    
+    if not token:
+        token, error_msg = await HemisService.authenticate(login, password)
 
     if not token:
         # Show specific error from HEMIS
@@ -444,18 +472,21 @@ async def process_hemis_password(message: Message, state: FSMContext, session: A
 
     # Ma'lumotlarni olish
     logger.info(f"Fetching profile for {login}...")
-    me = await HemisService.get_me(token)
+    if not me:
+        me = await HemisService.get_me(token)
     if not me:
          logger.warning(f"Profile fetch failed for {login}")
          return await message.answer("❌ HEMIS ma'lumotlarini yuklab bo'lmadi.")
 
     h_id = str(me.get("id", ""))
     
-    first_name = me.get("firstname") or me.get("firstName") or ""
-    last_name = me.get("lastname") or me.get("surname") or me.get("lastName") or ""
-    patronymic = me.get("fathername") or me.get("patronymic") or me.get("secondName") or ""
+    first_name = me.get("first_name") or me.get("firstname") or me.get("firstName") or ""
+    last_name = me.get("second_name") or me.get("lastname") or me.get("surname") or me.get("lastName") or ""
+    patronymic = me.get("third_name") or me.get("fathername") or me.get("patronymic") or me.get("secondName") or ""
     
-    full_name = f"{first_name} {last_name} {patronymic}".strip()
+    full_name = me.get("full_name") or me.get("fullName")
+    if not full_name:
+        full_name = f"{first_name} {last_name} {patronymic}".strip()
     
     # Extract extra details
     uni_name = None
@@ -498,6 +529,12 @@ async def process_hemis_password(message: Message, state: FSMContext, session: A
     
     # New Field
     birth_date = me.get("birth_date")
+    if isinstance(birth_date, int):
+        try:
+            birth_date = datetime.fromtimestamp(birth_date).strftime('%Y-%m-%d')
+        except Exception as e:
+            logger.error(f"Error converting birth_date: {e}")
+            birth_date = None
     
     # --- Try Fetching Absence (Davomat) ---
     missed_hours = 0
@@ -711,16 +748,33 @@ async def process_hemis_password(message: Message, state: FSMContext, session: A
 
     else:
         # --- DEFAULT: STUDENT ---
+        # --- DEFAULT: STUDENT ---
         # Talabani yaratish yoki topish
+        
+        # Resolve University and Faculty IDs
+        uni_id = None
+        if uni_name:
+            uni_obj = await session.scalar(select(University).where(University.name == uni_name))
+            if uni_obj:
+                uni_id = uni_obj.id
+                
+        fac_id = None
+        if fac_name and uni_id:
+             fac_obj = await session.scalar(select(Faculty).where(and_(Faculty.name == fac_name, Faculty.university_id == uni_id)))
+             if fac_obj:
+                 fac_id = fac_obj.id
+
         student = await session.scalar(select(Student).where(Student.hemis_login == login))
         
         if not student:
             student = Student(
                 full_name=full_name or "Talaba",
                 hemis_login=login,
-                 hemis_id=h_id,
+                hemis_id=h_id,
                 university_name=uni_name,
+                university_id=uni_id,
                 faculty_name=fac_name,
+                faculty_id=fac_id,
                 specialty_name=specialty_name,
                 short_name=short_name,
                 image_url=image_url,
@@ -754,6 +808,10 @@ async def process_hemis_password(message: Message, state: FSMContext, session: A
             student.missed_hours = missed_hours
             student.full_name = full_name
             # Update critical fields
+            student.university_id = uni_id
+            student.faculty_id = fac_id
+            student.university_name = uni_name
+            student.faculty_name = fac_name
             if "group" in me: student.group_number = me["group"].get("name") if isinstance(me["group"], dict) else None
             await session.commit()
 
@@ -785,13 +843,9 @@ async def process_hemis_password(message: Message, state: FSMContext, session: A
         rm_msg = await message.answer("...", reply_markup=ReplyKeyboardRemove())
         await rm_msg.delete()
     
-        await message.answer(
-            f"✅ <b>Tabriklaymiz, {student.full_name}!</b>\n"
-            "Siz tizimga muvaffaqiyatli ulandingiz.\n\n"
-            "Quyidagi bo‘limlardan keraklisini tanlang: 👇",
-            reply_markup=get_student_main_menu_kb(led_clubs=led_clubs),
-            parse_mode="HTML"
-        )
+        # Show student main menu (Robust)
+        from handlers.student.navigation import show_student_main_menu
+        await show_student_main_menu(message, session, state, text=f"✅ <b>Tabriklaymiz, {student.full_name}!</b>\nSiz tizimga muvaffaqiyatli ulandingiz.\n\nQuyidagi bo‘limlardan keraklisini tanlang: 👇")
         
         import asyncio
         asyncio.create_task(send_welcome_report(student.id))
@@ -964,13 +1018,8 @@ async def process_phone(message: Message, state: FSMContext, session: AsyncSessi
              led_clubs = (await session.execute(select(Club).where(Club.leader_id == account.staff_id))).scalars().all()
 
         display_name = student.short_name or student.full_name
-        await message.answer(
-            f"🎉 <b>Xush kelibsiz, {display_name}!</b>\n"
-            "Siz tizimga muvaffaqiyatli kirdingiz.\n\n"
-            "Quyidagilardan birini tanlang:",
-            reply_markup=get_student_main_menu_kb(led_clubs=led_clubs),
-            parse_mode="HTML"
-        )
+        from handlers.student.navigation import show_student_main_menu
+        await show_student_main_menu(message, session, state, text=f"🎉 <b>Xush kelibsiz, {display_name}!</b>\nSiz tizimga muvaffaqiyatli kirdingiz.\n\nQuyidagilardan birini tanlang:")
         
         import asyncio
         asyncio.create_task(send_welcome_report(student_id))

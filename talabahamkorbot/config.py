@@ -42,7 +42,7 @@ WEBHOOK_BASE_PATH = "/webhook/bot"
 WEBHOOK_URL = os.environ.get("WEBHOOK_URL", f"https://{DOMAIN}{WEBHOOK_BASE_PATH}")
 
 # ⚙️ --- Boshqa sozlamalar --- ⚙️
-LOG_LEVEL = "DEBUG"
+LOG_LEVEL = "INFO"
 
 # 🔐 --- HEMIS OAuth Settings --- 🔐
 HEMIS_CLIENT_ID = os.environ.get("HEMIS_CLIENT_ID", "5")

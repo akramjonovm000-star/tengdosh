@@ -66,10 +66,10 @@ async def get_feedback_thread_text(feedback_id: int, session: AsyncSession) -> s
             
             if fb.id == root_id:
                 # Asosiy murojaat (Headerda bari bor, shuning uchun qisqa)
-                content = f"<b>{sender}:</b>\n{fb.text or '[Media fayl]'}"
+                content = f"<b>{sender}:</b>\n{fb.text or '📎 [Fayl biriktirilgan]'}"
             else:
                 prefix = "QAYTA MUROJAAT"
-                content = f"--- {dt_str} | {prefix} (ID: {fb.id}) ---\n<b>{sender}:</b>\n{fb.text or '[Media fayl]'}"
+                content = f"--- {dt_str} | {prefix} (ID: {fb.id}) ---\n<b>{sender}:</b>\n{fb.text or '📎 [Fayl biriktirilgan]'}"
             
             text_parts.append(content)
             
@@ -86,7 +86,7 @@ async def get_feedback_thread_text(feedback_id: int, session: AsyncSession) -> s
                 role_display = "Xodim"
                 name = "(Topilmadi)"
             
-            content = f"--- {dt_str} | JAVOB ---\n<b>👮‍♂️ {role_display} {name}:</b>\n{rep.text}"
+            content = f"--- {dt_str} | JAVOB ---\n<b>👮‍♂️ {role_display} {name}:</b>\n{rep.text or '📎 [Fayl biriktirilgan]'}"
             text_parts.append(content)
 
     return "\n\n".join(text_parts)

@@ -7,6 +7,7 @@ from database.db_connect import AsyncSessionLocal
 from database.models import StudentCache
 
 
+
 logger = logging.getLogger(__name__)
 
 class HemisService:

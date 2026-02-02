@@ -1,7 +1,8 @@
+from datetime import datetime
 from aiogram import Router, F
 from aiogram.types import CallbackQuery, Message, URLInputFile
 from aiogram.fsm.context import FSMContext
-from sqlalchemy import select, func
+from sqlalchemy import select, func, and_
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,7 +15,8 @@ from database.models import (
     UserActivity,
     UserDocument,
     UserCertificate,
-    StudentFeedback
+    StudentFeedback,
+    Election
 )
 from keyboards.inline_kb import get_student_profile_menu_kb, get_student_main_menu_kb
 from utils.student_utils import get_student_by_tg
@@ -111,20 +113,33 @@ async def send_profile_view(target, student: Student, session: AsyncSession, is_
     """
     caption = await get_student_profile_caption(student, session)
     
-    # Decide method depending on target type and is_edit preference
+    # Check for active election
+    has_active_election = False
+    active_election = await session.scalar(
+        select(Election).where(
+            and_(
+                Election.university_id == student.university_id,
+                Election.status == "active"
+            )
+        ).order_by(Election.created_at.desc())
+    )
+    if active_election:
+        if not active_election.deadline or active_election.deadline > datetime.utcnow():
+            has_active_election = True
+
     msg_target = target.message if isinstance(target, CallbackQuery) else target
+    kb = get_student_profile_menu_kb(is_election_admin=student.is_election_admin, has_active_election=has_active_election)
     
     try:
         if student.image_url:
             # Photo logic
             if is_edit and isinstance(target, CallbackQuery):
                  # Try to delete old and send new photo (Text->Photo replacement not supported by edit)
-                 # Or if previous was photo, edit_media could work but we use answer_photo for simplicity
                  await msg_target.delete()
                  await msg_target.answer_photo(
                     photo=URLInputFile(student.image_url, filename="profile.jpg"),
                     caption=caption,
-                    reply_markup=get_student_profile_menu_kb(),
+                    reply_markup=kb,
                     parse_mode="HTML"
                  )
             else:
@@ -132,19 +147,19 @@ async def send_profile_view(target, student: Student, session: AsyncSession, is_
                  await msg_target.answer_photo(
                     photo=URLInputFile(student.image_url, filename="profile.jpg"),
                     caption=caption,
-                    reply_markup=get_student_profile_menu_kb(),
+                    reply_markup=kb,
                     parse_mode="HTML"
                  )
         else:
             # Text logic
             if is_edit and isinstance(target, CallbackQuery):
-                 await msg_target.edit_text(caption, reply_markup=get_student_profile_menu_kb(), parse_mode="HTML")
+                 await msg_target.edit_text(caption, reply_markup=kb, parse_mode="HTML")
             else:
-                 await msg_target.answer(caption, reply_markup=get_student_profile_menu_kb(), parse_mode="HTML")
+                 await msg_target.answer(caption, reply_markup=kb, parse_mode="HTML")
     except Exception as e:
         # Fallback
         try:
-             await msg_target.answer(caption, reply_markup=get_student_profile_menu_kb(), parse_mode="HTML")
+             await msg_target.answer(caption, reply_markup=kb, parse_mode="HTML")
         except: pass
 
 

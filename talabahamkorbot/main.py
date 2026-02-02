@@ -80,6 +80,7 @@ app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["127.0.0.1"]) # NEW: S
 from services.context_builder import run_daily_context_update
 from services.grade_checker import run_check_new_grades
 from services.sync_service import run_sync_all_students
+from services.election_service import ElectionService
 
 @app.on_event("startup")
 async def start_scheduler():
@@ -107,9 +108,11 @@ async def start_scheduler():
     
     # 2. Daily Reminders (Specific Times: 08:20, 09:50, 11:40, 13:20, 14:50, 16:20)
     reminder_times = ["08:20", "09:50", "11:40", "13:20", "14:50", "16:20"]
-    # for rt in reminder_times:
     #     h, m = map(int, rt.split(":"))
     #     scheduler.add_job(run_lesson_reminders, 'cron', hour=h, minute=m)
+    
+    # [NEW] Election Deadline Checker (Every 30 mins)
+    scheduler.add_job(ElectionService.check_deadlines, 'interval', minutes=30)
         
     scheduler.start()
     logger.info("⏰ Background Task Scheduler Started (Celery + Fixed Reminders)")
@@ -134,13 +137,13 @@ async def bot_webhook(request: Request):
     if MODE == "WEBHOOK":
         try:
             body = await request.json()
-            # Diagnostic Log: Dump full body
-            logger.info(f"📥 FULL Webhook Body: {body}")
             
             if "callback_query" in body:
-                logger.info(f"🔍 Webhook Callback: {body['callback_query'].get('data')}")
+                logger.info(f"🔍 Callback: {body['callback_query'].get('data')}")
             elif "message" in body:
-                logger.info(f"🔍 Webhook Message: {body['message'].get('text')}")
+                msg_text = body['message'].get('text')
+                if msg_text:
+                    logger.info(f"🔍 Message: {msg_text[:50]}")
                 
             update = Update.model_validate(body, context={"bot": bot})
             await dp.feed_update(bot, update)

@@ -46,7 +46,7 @@ async def view_tyutor_info(call: CallbackQuery, session: AsyncSession):
         await call.message.edit_text(
             text, parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="⬅️ Ortga", callback_data="go_home")]
+                [InlineKeyboardButton(text="⬅️ Ortga", callback_data="go_student_home")]
             ])
         )
         return
