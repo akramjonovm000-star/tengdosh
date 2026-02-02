@@ -595,8 +595,9 @@ class CreateAppealSheet extends StatefulWidget {
 class _CreateAppealSheetState extends State<CreateAppealSheet> {
   // Page 1: Selection
   // Page 2: Form
-  int _step = 1;
+  int _step = 1; // 1: Main, 1.5: Sub, 2: Form
   String? _selectedRecipient;
+  String? _selectedSubRecipient;
   
   bool _isAnonymous = false;
   bool _isFileEnabled = false;
@@ -627,15 +628,38 @@ class _CreateAppealSheetState extends State<CreateAppealSheet> {
     super.dispose();
   }
 
-  String _mapRoleToKey(String display) {
-      return display.toLowerCase();
-  }
-
   void _onRecipientSelected(String recipient) {
       setState(() {
           _selectedRecipient = recipient;
+          if (recipient == "Rahbariyat" || recipient == "Dekanat") {
+              _step = 15; // Represents 1.5 in int logic for simplicity or just use 3 steps
+          } else {
+              _selectedSubRecipient = null;
+              _step = 2;
+          }
+      });
+  }
+
+  void _onSubRecipientSelected(String subRecipient) {
+      setState(() {
+          _selectedSubRecipient = subRecipient;
           _step = 2;
       });
+  }
+
+  String _mapRoleToKey(String display, String? subDisplay) {
+      if (display == "Rahbariyat") {
+          if (subDisplay == "Rektor") return "rektor";
+          if (subDisplay == "O'quv ishlari prorektori") return "prorektor";
+          if (subDisplay == "Yoshlar ishlari prorektori") return "yoshlar_prorektor";
+          return "rahbariyat";
+      }
+      if (display == "Dekanat") {
+          if (subDisplay == "Dekan") return "dekan";
+          if (subDisplay == "Dekan o'rinbosari") return "dekan_orinbosari";
+          return "dekanat";
+      }
+      return display.toLowerCase();
   }
 
   Future<void> _submit() async {
@@ -650,7 +674,7 @@ class _CreateAppealSheetState extends State<CreateAppealSheet> {
       if (!_isFileEnabled) {
           final success = await _service.createAppeal(
               text: _textController.text,
-              role: _mapRoleToKey(_selectedRecipient!),
+              role: _mapRoleToKey(_selectedRecipient!, _selectedSubRecipient),
               isAnonymous: _isAnonymous
           );
           _handleResult(success);
@@ -666,7 +690,7 @@ class _CreateAppealSheetState extends State<CreateAppealSheet> {
       setState(() => _isUploading = true);
       final res = await _service.initUpload(
           _textController.text,
-          role: _mapRoleToKey(_selectedRecipient!),
+          role: _mapRoleToKey(_selectedRecipient!, _selectedSubRecipient),
           isAnonymous: _isAnonymous
       );
 
@@ -726,7 +750,7 @@ class _CreateAppealSheetState extends State<CreateAppealSheet> {
   Future<void> _finalizeAfterUpload() async {
       final success = await _service.createAppeal(
           text: _textController.text,
-          role: _mapRoleToKey(_selectedRecipient!),
+          role: _mapRoleToKey(_selectedRecipient!, _selectedSubRecipient),
           isAnonymous: _isAnonymous,
           sessionId: _sessionId
       );
@@ -753,6 +777,7 @@ class _CreateAppealSheetState extends State<CreateAppealSheet> {
   @override
   Widget build(BuildContext context) {
     if (_step == 1) return _buildStepOne();
+    if (_step == 15) return _buildStepOneSub();
     return _buildStepTwo();
   }
 
@@ -815,6 +840,68 @@ class _CreateAppealSheetState extends State<CreateAppealSheet> {
       );
   }
 
+  Widget _buildStepOneSub() {
+      List<String> subOptions = [];
+      if (_selectedRecipient == "Rahbariyat") {
+          subOptions = ["Rektor", "O'quv ishlari prorektori", "Yoshlar ishlari prorektori"];
+      } else if (_selectedRecipient == "Dekanat") {
+          subOptions = ["Dekan", "Dekan o'rinbosari"];
+      }
+
+      return Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+                Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)))),
+                const SizedBox(height: 24),
+                Row(
+                    children: [
+                        IconButton(
+                            icon: const Icon(Icons.arrow_back),
+                            onPressed: () => setState(() => _step = 1),
+                        ),
+                        const SizedBox(width: 8),
+                        Text("$_selectedRecipient", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    ],
+                ),
+                const SizedBox(height: 8),
+                const Text("Mas'ul shaxsni tanlang", style: TextStyle(color: Colors.grey)),
+                const SizedBox(height: 24),
+                Expanded(
+                    child: ListView.builder(
+                        itemCount: subOptions.length,
+                        itemBuilder: (ctx, i) {
+                            final opt = subOptions[i];
+                            return Card(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                elevation: 0,
+                                color: Colors.grey[50],
+                                child: ListTile(
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                                    leading: const CircleAvatar(
+                                        backgroundColor: Colors.white,
+                                        child: Icon(Icons.person_outline, color: AppTheme.primaryBlue),
+                                    ),
+                                    title: Text(opt, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                    trailing: const Icon(Icons.chevron_right),
+                                    onTap: () => _onSubRecipientSelected(opt),
+                                ),
+                            );
+                        }
+                    )
+                )
+            ],
+        ),
+      );
+  }
+
   Widget _buildStepTwo() {
       // Find color/icon for selected
       final selectedMeta = _recipients.firstWhere(
@@ -847,7 +934,15 @@ class _CreateAppealSheetState extends State<CreateAppealSheet> {
                             color: Colors.transparent,
                             child: IconButton(
                                 icon: const Icon(Icons.arrow_back),
-                                onPressed: () => setState(() => _step = 1),
+                                onPressed: () {
+                                    setState(() {
+                                        if (_selectedSubRecipient != null) {
+                                            _step = 15;
+                                        } else {
+                                            _step = 1;
+                                        }
+                                    });
+                                },
                                 padding: EdgeInsets.zero,
                                 constraints: const BoxConstraints(),
                             ),
@@ -861,9 +956,9 @@ class _CreateAppealSheetState extends State<CreateAppealSheet> {
                             ),
                             child: Row(
                                 children: [
-                                    Icon(Icons.person, size: 18, color: selectedMeta['color']), // Or use actual icon
+                                    Icon(selectedMeta['icon'], size: 18, color: selectedMeta['color']), 
                                     const SizedBox(width: 8),
-                                    Text(_selectedRecipient!, style: TextStyle(color: selectedMeta['color'], fontWeight: FontWeight.bold))
+                                    Text(_selectedSubRecipient ?? _selectedRecipient!, style: TextStyle(color: selectedMeta['color'], fontWeight: FontWeight.bold))
                                 ],
                             ),
                         )
