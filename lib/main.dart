@@ -75,7 +75,8 @@ class _TalabaHamkorAppState extends State<TalabaHamkorApp> {
 
   void _handleDeepLink(Uri uri) {
     debugPrint("Deep Link Received: $uri");
-    if (uri.scheme == 'talabahamkor' && uri.host == 'auth') {
+    // Supports both talabahamkor://login (Standard) and talabahamkor://auth (Legacy)
+    if (uri.scheme == 'talabahamkor' && (uri.host == 'login' || uri.host == 'auth')) {
       final token = uri.queryParameters['token'];
       if (token != null) {
         if (mounted) {
