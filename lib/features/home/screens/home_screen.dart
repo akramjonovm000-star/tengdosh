@@ -396,30 +396,12 @@ class _HomeScreenState extends State<HomeScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.15),
-                                  borderRadius: BorderRadius.circular(8)
-                                ),
-                                child: Text(
-                                  "O'zlashtirish", 
-                                  style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 12, fontWeight: FontWeight.w500)
-                                ),
-                              ),
                               const SizedBox(height: 8),
                               Text(
                                 (_dashboard?['gpa'] ?? 0.0) >= 4.5 ? "A'lo natija! 🏆" : 
                                 (_dashboard?['gpa'] ?? 0.0) >= 4.0 ? "Yaxshi natija! 👏" :
                                 (_dashboard?['gpa'] ?? 0.0) >= 3.0 ? "Yomon emas 👍" : "Harakat qiling 💪",
                                 style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                "${(_profile?['group_number'] ?? 'Guruh').toString().split(' ').first}",
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 13)
                               ),
                             ],
                           ),
