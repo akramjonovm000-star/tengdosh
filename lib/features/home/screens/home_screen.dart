@@ -226,54 +226,60 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          "Salom, ${() {
-                            if (student == null) return "Talaba";
-                            
-                            final fullName = student.fullName;
-                            if (fullName == "Talaba") return "Talaba";
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              "Salom 👋, ${() {
+                                if (student == null) return "Talaba";
+                                
+                                final fullName = student.fullName;
+                                if (fullName == "Talaba") return "Talaba";
 
-                            final parts = fullName.split(' ');
-                            
-                            // Student model normalizes name to "Firstname Lastname"
-                            // So we just take the first part.
-                            if (parts.isNotEmpty) {
-                               String first = parts[0];
-                               return first[0].toUpperCase() + first.substring(1).toLowerCase();
-                            }
-                            
-                            return fullName;
-                          }()}!",
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                        if (student?.isPremium == true) ...[
-                          const SizedBox(width: 6),
-                          GestureDetector(
-                            onTap: () {
-                               Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionScreen()));
-                            },
-                            child: student?.customBadge != null
-                                ? Text(student!.customBadge!, style: const TextStyle(fontSize: 20))
-                                : const Icon(Icons.verified, color: Colors.blue, size: 20),
+                                final parts = fullName.split(' ');
+                                
+                                // Student model normalizes name to "Firstname Lastname"
+                                // So we just take the first part.
+                                if (parts.isNotEmpty) {
+                                   String first = parts[0];
+                                   return first[0].toUpperCase() + first.substring(1).toLowerCase();
+                                }
+                                
+                                return fullName;
+                              }()}!",
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
                           ),
-                        ]
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppTheme.accentGreen, shape: BoxShape.circle)),
-                        const SizedBox(width: 6),
-                        Text("Online", style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-                      ],
-                    ),
-                  ],
+                          if (student?.isPremium == true) ...[
+                            const SizedBox(width: 6),
+                            GestureDetector(
+                              onTap: () {
+                                 Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionScreen()));
+                              },
+                              child: student?.customBadge != null
+                                  ? Text(student!.customBadge!, style: const TextStyle(fontSize: 20))
+                                  : const Icon(Icons.verified, color: Colors.blue, size: 20),
+                            ),
+                          ]
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppTheme.accentGreen, shape: BoxShape.circle)),
+                          const SizedBox(width: 6),
+                          Text("Online", style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-                const Spacer(),
+                // Removed Spacer() as Expanded above takes all space
                 Consumer<NotificationProvider>(
                   builder: (context, notificationProvider, _) => Stack(
                     children: [
