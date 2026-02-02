@@ -55,12 +55,7 @@ class _AppealsScreenState extends State<AppealsScreen> with SingleTickerProvider
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadAppeals,
-          )
-        ],
+
       ),
       body: Column(
         children: [
