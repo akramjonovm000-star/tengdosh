@@ -160,6 +160,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   elevation: 0,
                   onTap: (index) {
                     final isPremium = auth.currentUser?.isPremium ?? false;
+                    
+                    // Guard Market (1)
+                    if (index == 1) {
+                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Bozor bo'limi tez kunda ishga tushadi"),
+                          duration: Duration(seconds: 2),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                      return;
+                    }
+
                     // Guard AI (2)
                     if (index == 2 && !isPremium) {
                       _showPremiumDialog();

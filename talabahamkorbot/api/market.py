@@ -51,45 +51,30 @@ async def get_market_items(
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_session)
 ):
-    stmt = select(MarketItem).options(joinedload(MarketItem.student)).where(MarketItem.is_active == True)
+    # MAINTENANCE MODE - Return fake item as banner
+    from datetime import datetime
     
-    # Sorting Logic
-    if sort == "popular":
-        stmt = stmt.order_by(desc(MarketItem.views_count), desc(MarketItem.created_at))
-    elif sort == "oldest":
-        stmt = stmt.order_by(MarketItem.created_at)
-    else: # newest
-        stmt = stmt.order_by(desc(MarketItem.created_at))
+    dummy_item = MarketItemResponse(
+        id=0,
+        title="🚀 TEZ KUNDA!",
+        description="Bozor bo'limi tez kunlarda ishga tushadi! Biz siz uchun ajoyib imkoniyatlarni tayyorlamoqdamiz.",
+        price="---",
+        category="Boshqa",
+        image_url=None,
+        views_count=0,
+        created_at=datetime.now(),
+        is_my=False,
+        student_name="Tengdosh Jamoasi",
+        contact_phone=None,
+        telegram_username="talabahamkor"
+    )
     
-    if cat:
-        stmt = stmt.where(MarketItem.category == cat.value)
-    
-    if search:
-        stmt = stmt.where(MarketItem.title.ilike(f"%{search}%"))
-        
-    stmt = stmt.limit(limit).offset(offset)
-    
-    result = await db.execute(stmt)
-    items = result.scalars().all()
-    
-    resp_list = []
-    for item in items:
-        resp_list.append(MarketItemResponse(
-            id=item.id,
-            title=item.title,
-            description=item.description,
-            price=item.price,
-            category=item.category,
-            image_url=item.image_url,
-            views_count=item.views_count,
-            created_at=item.created_at,
-            is_my=(item.student_id == student.id),
-            student_name=item.student.full_name, # Accessing relationship safe now
-            contact_phone=item.contact_phone or item.student.phone,
-            telegram_username=item.telegram_username
-        ))
-        
-    return resp_list
+    return [dummy_item]
+
+    # Legacy Logic Halted
+    # stmt = select(MarketItem).options(joinedload(MarketItem.student)).where(MarketItem.is_active == True)
+    # ... (rest hidden) ...
+    # return resp_list
 
 @router.post("", response_model=MarketItemResponse)
 async def create_market_item(
@@ -97,35 +82,12 @@ async def create_market_item(
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_session)
 ):
-    new_item = MarketItem(
-        student_id=student.id,
-        title=req.title,
-        description=req.description,
-        price=req.price,
-        category=req.category.value,
-        image_url=req.image_url,
-        contact_phone=req.contact_phone,
-        telegram_username=req.telegram_username,
-        is_active=True
+    raise HTTPException(
+        status_code=503, 
+        detail="Bozor bo'limi tez kunlarda ishga tushadi! Hozircha e'lon qo'shish imkoni mavjud emas."
     )
-    db.add(new_item)
-    await db.commit()
-    await db.refresh(new_item)
     
-    return MarketItemResponse(
-        id=new_item.id,
-        title=new_item.title,
-        description=new_item.description,
-        price=new_item.price,
-        category=new_item.category,
-        image_url=new_item.image_url,
-        views_count=0,
-        created_at=new_item.created_at,
-        is_my=True,
-        student_name=student.full_name,
-        contact_phone=new_item.contact_phone,
-        telegram_username=new_item.telegram_username
-    )
+    # new_item = MarketItem(...)
 
 @router.delete("/{item_id}")
 async def delete_market_item(

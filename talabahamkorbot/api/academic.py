@@ -7,6 +7,7 @@ from database.db_connect import get_session
 from api.dependencies import get_current_student
 from database.models import Student, TgAccount
 import asyncio
+from datetime import datetime
 
 router = APIRouter()
 
@@ -120,8 +121,38 @@ async def get_semesters(
     elif current_code:
         all_sems[current_code]["current"] = True
 
-    # 3. Sort Descending
-    final_list = sorted(all_sems.values(), key=lambda x: int(x['code']), reverse=True)
+    # 3. Sort and Filter
+    # We show ALL past semesters + Current (labelled "Joriy")
+    # We ignore future semesters
+    final_list = []
+    
+    # Sort all found semesters descending by code
+    sorted_codes = sorted(all_sems.keys(), key=lambda x: int(x), reverse=True)
+    
+    for code in sorted_codes:
+        # Skip future semesters if we know the current one
+        # ALSO Skip current semester because Frontend adds "Joriy" button automatically
+        if current_code and int(code) >= int(current_code):
+            continue
+            
+        item = all_sems[code].copy()
+        
+        # Calculate pretty number (e.g., 11 -> 1, 12 -> 2)
+        try:
+            num = int(code)
+            if num > 10: num -= 10
+        except:
+            num = code
+
+        if current_code and code == current_code:
+            item["name"] = "Joriy"
+            item["current"] = True
+        else:
+            item["name"] = f"{num}-semestr"
+            item["current"] = False
+            
+        final_list.append(item)
+
     return {"success": True, "data": final_list}
 
 @router.get("/subjects")
@@ -213,6 +244,30 @@ async def get_schedule(
 
     if not schedule_data: return {"success": True, "data": []}
 
+    # Filter to Current Week (Monday - Sunday)
+    try:
+        from datetime import timedelta
+        now = datetime.now()
+        # Find Monday (0)
+        start_of_week = now - timedelta(days=now.weekday())
+        start_of_week = start_of_week.replace(hour=0, minute=0, second=0, microsecond=0)
+        # Find Sunday (6)
+        end_of_week = start_of_week + timedelta(days=6)
+        end_of_week = end_of_week.replace(hour=23, minute=59, second=59, microsecond=999999)
+        
+        start_ts = start_of_week.timestamp()
+        end_ts = end_of_week.timestamp()
+        
+        filtered_data = []
+        for item in schedule_data:
+            l_date = item.get("lesson_date")
+            if l_date and start_ts <= l_date <= end_ts:
+                filtered_data.append(item)
+        
+        schedule_data = filtered_data
+    except Exception as e:
+        logger.error(f"Schedule filter error: {e}")
+
     lessons_by_group = {}
     for item in schedule_data:
         s_id, t_type = str(item.get("subject", {}).get("id") or ""), str(item.get("trainingType", {}).get("code") or "")
@@ -251,23 +306,27 @@ async def get_attendance(
 
     sem_code = await resolve_semester(student, semester, refresh=refresh)
     
-    _, _, _, data = await HemisService.get_student_absence(
-        student.hemis_token, semester_code=sem_code, student_id=student.id, force_refresh=refresh
-    )
-    
-    parsed = []
-    for item in (data or []):
-        hours = item.get("absent_on", 0) + item.get("absent_off", 0)
-        if hours == 0: hours = item.get("hour", 2)
-        parsed.append({
-            "subject": item.get("subject", {}).get("name", "Fan"),
-            "date": datetime.fromtimestamp(item.get("lesson_date")).strftime("%Y-%m-%d") if item.get("lesson_date") else "",
-            "theme": item.get("trainingType", {}).get("name", ""), "hours": hours, "is_excused": item.get("explicable", False)
-        })
+    try:
+        _, _, _, data = await HemisService.get_student_absence(
+            student.hemis_token, semester_code=sem_code, student_id=student.id, force_refresh=refresh
+        )
+        
+        parsed = []
+        for item in (data or []):
+            hours = item.get("absent_on", 0) + item.get("absent_off", 0)
+            if hours == 0: hours = item.get("hour", 2)
+            parsed.append({
+                "subject": item.get("subject", {}).get("name", "Fan"),
+                "date": datetime.fromtimestamp(item.get("lesson_date")).strftime("%Y-%m-%d") if item.get("lesson_date") else "",
+                "theme": item.get("trainingType", {}).get("name", ""), "hours": hours, "is_excused": item.get("explicable", False)
+            })
 
-    total = sum(p['hours'] for p in parsed)
-    excused = sum(p['hours'] for p in parsed if p['is_excused'])
-    return {"success": True, "data": {"total": total, "excused": excused, "unexcused": total - excused, "items": parsed}}
+        total = sum(p['hours'] for p in parsed)
+        excused = sum(p['hours'] for p in parsed if p['is_excused'])
+        return {"success": True, "data": {"total": total, "excused": excused, "unexcused": total - excused, "items": parsed}}
+    except Exception as e:
+        logger.error(f"Attendance error for student {student.id}: {e}")
+        return {"success": True, "data": {"total": 0, "excused": 0, "unexcused": 0, "items": []}}
 
 @router.get("/resources/{subject_id}")
 async def get_resources(subject_id: str, student: Student = Depends(get_current_student)):

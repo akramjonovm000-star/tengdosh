@@ -20,6 +20,7 @@ router = Router()
 logger = logging.getLogger(__name__)
 
 class AdminElectionStates(StatesGroup):
+    waiting_for_university = State()
     waiting_for_title = State()
     waiting_for_description = State()
     waiting_for_deadline = State()
@@ -179,12 +180,24 @@ async def admin_election_menu(call: CallbackQuery, state: FSMContext, session: A
 
 @router.callback_query(F.data == "admin_create_election")
 async def admin_create_election(call: CallbackQuery, state: FSMContext, session: AsyncSession):
-    await state.set_state(AdminElectionStates.waiting_for_title)
+    await state.set_state(AdminElectionStates.waiting_for_university)
+    
+    universities = await session.scalars(select(University))
     kb = InlineKeyboardBuilder()
-    data = await state.get_data()
-    university_id = data.get('university_id')
-    back_cb = f"admin_election_menu:{university_id}" if university_id else "admin_election_menu"
-    kb.row(InlineKeyboardButton(text="❌ Bekor qilish", callback_data=back_cb))
+    for uni in universities:
+        kb.row(InlineKeyboardButton(text=uni.name, callback_data=f"sel_uni_for_elec:{uni.id}"))
+    
+    kb.row(InlineKeyboardButton(text="❌ Bekor qilish", callback_data="admin_election_menu"))
+    await admin_edit_msg(call, "🏢 Qaysi universitet uchun saylov yaratmoqchisiz? Universitetni tanlang:", kb.as_markup())
+
+@router.callback_query(AdminElectionStates.waiting_for_university, F.data.startswith("sel_uni_for_elec:"))
+async def process_election_university(call: CallbackQuery, state: FSMContext):
+    uni_id = int(call.data.split(":")[1])
+    await state.update_data(university_id=uni_id)
+    await state.set_state(AdminElectionStates.waiting_for_title)
+    
+    kb = InlineKeyboardBuilder()
+    kb.row(InlineKeyboardButton(text="❌ Bekor qilish", callback_data="admin_election_menu"))
     await admin_edit_msg(call, "📌 Saylov nomini kiriting (masalan: <i>Fakultet Sardori 2026</i>):", kb.as_markup())
 
 @router.message(AdminElectionStates.waiting_for_title)
@@ -204,13 +217,11 @@ async def process_election_deadline(message: Message, state: FSMContext, session
     try:
         deadline = datetime.strptime(message.text, "%Y-%m-%d %H:%M")
         data = await state.get_data()
+        university_id = data.get('university_id')
         
         if not university_id or university_id == "global":
             # If global, owner must select a university or we can ask for code
-            # For now, let's keep it simple: if global, they cannot just "create" without context.
-            # But they might have set university_id during creation flow.
-            # Let's check if they are Owner and university_id is missing
-            if not university_id:
+            if not university_id or university_id == "global":
                 from utils.student_utils import get_student_by_tg
                 student = await get_student_by_tg(message.from_user.id, session)
                 university_id = student.university_id if student else None
@@ -228,10 +239,13 @@ async def process_election_deadline(message: Message, state: FSMContext, session
         session.add(election)
         await session.commit()
         
-        await message.answer(f"✅ Saylov muvaffaqiyatli yaratildi! (Status: Draft)\n\nID: {election.id}\nNomi: {election.title}", reply_markup=get_admin_election_menu_kb(university_id=data.get('university_id')))
+        await message.answer(f"✅ Saylov muvaffaqiyatli yaratildi! (Status: Draft)\n\nID: {election.id}\nNomi: {election.title}", reply_markup=get_admin_election_menu_kb(university_id=university_id))
         await state.set_state(None) # Clear state but keep data (university_id) for further use
     except ValueError:
         await message.answer("❌ Noto'g'ri format. Iltimos, qaytadan kiriting (YYYY-MM-DD HH:MM):")
+    except Exception as e:
+        logger.error(f"Error in process_election_deadline: {e}")
+        await message.answer(f"❌ Xatolik yuz berdi: {str(e)}")
 
 @router.callback_query(F.data == "admin_manage_elections")
 async def admin_list_elections(call: CallbackQuery, state: FSMContext, session: AsyncSession):

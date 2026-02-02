@@ -127,6 +127,10 @@ def _map_student_profile(student: Student) -> dict:
     if not data.get('image_url'):
         data['image_url'] = student.image_url
         
+    # Format Name (Clean up parentheses and reorder)
+    from utils.student_utils import format_name
+    data['full_name'] = format_name(student.full_name)
+        
     return data
 
 @router.get("/followers-list/{target_id}")

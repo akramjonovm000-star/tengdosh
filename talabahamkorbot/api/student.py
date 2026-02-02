@@ -35,15 +35,22 @@ async def get_my_profile(
     data['role'] = student.hemis_role or "student" # Populate role for Mobile UI
     
     # Force 'image' key for frontend compatibility
-    data['image'] = student.image_url 
+    # Ensure HTTPS
+    raw_image = student.image_url
+    if raw_image and raw_image.startswith("http://"):
+        raw_image = raw_image.replace("http://", "https://")
+        
+    data['image'] = raw_image 
     if not data.get('image_url'):
-        data['image_url'] = student.image_url
+        data['image_url'] = raw_image
 
     # Check Telegram Registration
     tg_acc = await db.scalar(select(TgAccount).where(TgAccount.student_id == student.id))
     data['is_registered_bot'] = True if tg_acc else False
     
     return data
+
+
 
 from fastapi import UploadFile, File, Request
 import shutil
@@ -105,17 +112,10 @@ async def upload_profile_image(
         logger.info(f"DEBUG: File saved. Size: {size} bytes")
             
         # Build URL - Better protocol handling
-        base_url = str(request.base_url).rstrip("/")
-        if base_url.endswith("/api/v1"):
-            base_url = base_url[:-7] # Remove /api/v1
+        from config import DOMAIN
         
-        # Check scheme from X-Forwarded-Proto if proxy middleware didn't catch it
-        scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
-        if "://" in base_url:
-            current_scheme = base_url.split("://")[0]
-            base_url = base_url.replace(f"{current_scheme}://", f"{scheme}://")
-
-        full_url = f"{base_url}/{file_path}"
+        # Use https for images to ensure visibility on mobile (Mixed Content)
+        full_url = f"https://{DOMAIN}/{file_path}"
         logger.info(f"DEBUG: Generated URL: {full_url}")
         
         # Update DB
@@ -133,7 +133,7 @@ async def upload_profile_image(
 
 from api.schemas import UsernameUpdateSchema
 import re
-from fastapi import HTTPException
+from fastapi import HTTPException, Header
 
 @router.post("/username")
 async def set_username(
@@ -202,6 +202,7 @@ async def set_username(
 @router.get("/check-username")
 async def check_username_availability(
     username: str,
+    authorization: str = Header(None),
     db: AsyncSession = Depends(get_db)
 ):
     """Check if username is available (True if available)"""
@@ -212,6 +213,26 @@ async def check_username_availability(
     from database.models import TakenUsername
     existing = await db.scalar(select(TakenUsername).where(TakenUsername.username == username))
     
+    if existing and authorization:
+        # If taken, check if it's ME
+        try:
+            token = authorization.replace("Bearer ", "")
+            student_id = None
+            if token.startswith("student_id_"):
+                # DEV/TEST Token
+                student_id = int(token.replace("student_id_", ""))
+            elif token.startswith("jwt_token_for_"):
+                # TG Token
+                tid = int(token.replace("jwt_token_for_", ""))
+                tg_acc = await db.scalar(select(TgAccount).where(TgAccount.telegram_id == tid))
+                if tg_acc:
+                    student_id = tg_acc.student_id
+            
+            if student_id and existing.student_id == student_id:
+                return {"available": True}
+        except:
+             pass
+    
     return {"available": existing is None}
 
 from sqlalchemy import or_
@@ -219,7 +240,8 @@ from fastapi_cache.decorator import cache
 from pydantic import BaseModel
 
 @router.get("/search")
-@cache(expire=300) # [NEW] Cache for 5 mins
+# Cache reduced to 1 second to fetch fresh avatar/name updates immediately
+@cache(expire=1)
 async def search_students(
     query: str,
     db: AsyncSession = Depends(get_db)
@@ -253,7 +275,17 @@ async def search_students(
         data = StudentProfileSchema.model_validate(s).model_dump()
         # Override name with friendly format
         data['full_name'] = format_name(s.full_name)
-        data['image'] = s.image_url # Ensure image key needed by mobile
+        
+        # Ensure HTTPS for images
+        raw_image = s.image_url
+        if raw_image and raw_image.startswith("http://"):
+            raw_image = raw_image.replace("http://", "https://")
+            
+        data['image'] = raw_image 
+        if not data.get('image_url'):
+            data['image_url'] = raw_image
+        data['avatar'] = raw_image # Alias for frontend compatibility
+        
         # ensure role passed
         data['role'] = s.hemis_role or "student"
         encoded.append(data)
@@ -278,3 +310,43 @@ async def update_badge(
     await db.commit()
     
     return {"success": True, "badge": data.emoji}
+
+@router.get("/{student_id}")
+async def get_student_public_profile(
+    student_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get public profile of another student by ID.
+    Used when viewing someone else's profile.
+    """
+    s = await db.get(Student, student_id)
+    if not s:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Student not found")
+        
+    # Validation logic similar to /me but limited
+    data = StudentProfileSchema.model_validate(s).model_dump()
+    
+    # Format Name 
+    from utils.student_utils import format_name
+    data['full_name'] = format_name(s.full_name)
+    
+    # Image logic (Force HTTPS)
+    raw_image = s.image_url
+    if raw_image and raw_image.startswith("http://"):
+        raw_image = raw_image.replace("http://", "https://")
+        
+    data['image'] = raw_image 
+    if not data.get('image_url'):
+        data['image_url'] = raw_image
+    data['avatar'] = raw_image # Alias for frontend compatibility
+
+    # Calculate Role
+    data['role'] = s.hemis_role or "student"
+    
+    # Check registration (for badge/status if needed)
+    tg_acc = await db.scalar(select(TgAccount).where(TgAccount.student_id == s.id))
+    data['is_registered_bot'] = True if tg_acc else False
+    
+    return data
