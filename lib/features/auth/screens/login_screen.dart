@@ -152,6 +152,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 32),
 
                   // Hemis Login Button
+                  // Hemis Login Button - DISABLED by User Request 2026-02-02
+                  /*
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24.0),
                     child: OutlinedButton.icon(
@@ -165,6 +167,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
+                  */
                   const SizedBox(height: 16),
                   
                   Text(

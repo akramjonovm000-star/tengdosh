@@ -17,14 +17,23 @@ authlog_router = APIRouter(tags=["AuthLog"])
 logger = logging.getLogger(__name__)
 
 @router.get("/login")
-async def oauth_login(source: str = "mobile"):
+async def oauth_login(
+    source: str = "mobile", 
+    code: Optional[str] = None, 
+    error: Optional[str] = None,
+    state: Optional[str] = None,
+    db: AsyncSession = Depends(get_session)
+):
     """
-    Redirects user to HEMIS OAuth Authorization Page
-    source: 'mobile' (default) or 'bot'
+    Redirects user to HEMIS OAuth Authorization Page.
+    ALSO handles Callback if User mistakenly set Redirect URI to this endpoint.
     """
+    # LOOP PREVENTION: If code is present, treat as callback!
+    if code or error:
+        logger.warning("OAuth Login endpoint received 'code' - Handling as callback (User Config Error Fixed)")
+        return await authlog_callback(code=code, error=error, state=state or source, db=db)
+
     # Use 'state' parameter to pass source
-    # Use 'state' parameter to pass source
-    # state = source
     redirect_url = HemisService.generate_auth_url(state=source)
     return RedirectResponse(redirect_url)
 
@@ -47,9 +56,14 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
     t0 = time.time()
     logger.info(f"AuthLog: Exchanging code {code[:5]}...")
     
-    token_data = await HemisService.exchange_code(code)
+    logger.info(f"AuthLog: Exchanging code {code[:5]}...")
+    
+    token_data, error_msg = await HemisService.exchange_code(code)
     t1 = time.time()
     logger.info(f"AuthLog: Token Exchange took {t1 - t0:.2f}s")
+
+    if error_msg:
+         return HTMLResponse(content=f"<h1>Login Xatoligi: {error_msg}</h1>", status_code=400)
 
     if not token_data:
         return HTMLResponse(content="<h1>Login Xatoligi: Token olinmadi</h1>", status_code=400)

@@ -17,12 +17,12 @@ def get_start_role_inline_kb(tg_id: int = None) -> InlineKeyboardMarkup:
         
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="🌐 HEMIS orqali kirish (Tavsiya etiladi)",
-                    url=oauth_url
-                )
-            ],
+            # [
+            #     InlineKeyboardButton(
+            #         text="🌐 HEMIS orqali kirish (Tavsiya etiladi)",
+            #         url=oauth_url
+            #     )
+            # ],
             [
                 InlineKeyboardButton(
                     text="👤 Login bilan kirish",

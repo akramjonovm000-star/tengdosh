@@ -160,18 +160,30 @@ class HemisService:
         client = await HemisService.get_client()
         from config import HEMIS_CLIENT_ID, HEMIS_CLIENT_SECRET, HEMIS_REDIRECT_URL, HEMIS_TOKEN_URL
         try:
+            # Revert to Body credentials, but FORCE Content-Type
             data = {
-                "client_id": HEMIS_CLIENT_ID,
-                "client_secret": HEMIS_CLIENT_SECRET,
-                "redirect_uri": HEMIS_REDIRECT_URL,
                 "grant_type": "authorization_code",
-                "code": code
+                "code": code,
+                "redirect_uri": HEMIS_REDIRECT_URL,
+                "client_id": HEMIS_CLIENT_ID,
+                "client_secret": HEMIS_CLIENT_SECRET
             }
-            response = await client.post(HEMIS_TOKEN_URL, data=data)
+            
+            headers = {
+                "Content-Type": "application/x-www-form-urlencoded"
+            }
+            
+            logger.info(f"Token Exchange (Body+Form): redirect_uri={HEMIS_REDIRECT_URL}, code={code[:5]}...")
+            
+            response = await client.post(HEMIS_TOKEN_URL, data=data, headers=headers)
+            
             if response.status_code == 200:
                 return response.json(), None
-            return None, f"Token exchange failed: {response.status_code}"
+            
+            logger.error(f"Token Exchange Failed: {response.status_code} - {response.text}")
+            return None, f"Token exchange failed: {response.status_code} Body: {response.text}"
         except Exception as e:
+            logger.error(f"Token Exchange Exception: {e}")
             return None, str(e)
 
     @staticmethod
