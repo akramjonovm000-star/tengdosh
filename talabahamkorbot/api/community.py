@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 from sqlalchemy.orm import selectinload
+from datetime import datetime
 from typing import List
 
 from database.db_connect import AsyncSessionLocal
@@ -11,6 +12,9 @@ from utils.student_utils import format_name
 from api.dependencies import get_current_student, get_db
 from api.schemas import PostCreateSchema, PostResponseSchema, CommentCreateSchema, CommentResponseSchema
 from services.notification_service import NotificationService
+
+import logging
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -431,47 +435,36 @@ async def get_comments(
     """
     Get comments for a post.
     """
-    from database.models import ChoyxonaComment
-    
-    post = await db.get(ChoyxonaPost, post_id)
-    if not post:
-        raise HTTPException(status_code=404, detail="Post topilmadi")
+    try:
+        from database.models import ChoyxonaComment
+        
+        post = await db.get(ChoyxonaPost, post_id)
+        if not post:
+            raise HTTPException(status_code=404, detail="Post topilmadi")
 
-    # Eager load student, parent, likes, and post (for owner check)
-    # Eager load student, parent, likes, and post (for owner check)
-    query = select(ChoyxonaComment).options(
-        selectinload(ChoyxonaComment.student),
-        selectinload(ChoyxonaComment.parent_comment).selectinload(ChoyxonaComment.student),
-        selectinload(ChoyxonaComment.reply_to_user),
-        selectinload(ChoyxonaComment.likes),
-        selectinload(ChoyxonaComment.post)
-    ).where(ChoyxonaComment.post_id == post_id)
-    
-    result = await db.execute(query)
-    all_comments = result.scalars().all()
-    
-    
-    # Logic Change (2026-01-23):
-    # Previous logic only handled 1 level of replies (Parent -> Reply). 
-    # Any Level 2 reply (Reply to Reply) was being dropped because it wasn't in replies_map[RootID].
-    # 
-    # Since Frontend now handles recursive grouping ("findRootId"), we can simply return ALL comments.
-    # We should sort them logically (Created Date) so frontend processes them in order.
-    
-    # Sort all by created_at (ascending) so threads build naturally?
-    # Or just returning them flat is enough.
-    
-    # Sort by Likes (Desc) then Created Date (Asc)
-    # Most popular first, then oldest to newest for equal likes
-    all_comments.sort(key=lambda x: (-x.likes_count, x.created_at))
-    
-    # We can still prioritize Roots if we want stable initial load??
-    # Actually, sorting by date is safest. But maybe Roots by Likes first?
-    # No, simple is better. Return all.
-    
-    final_list = all_comments
-    print(f"DEBUG: Returning {len(final_list)} comments for post {post_id}")
-    return [_map_comment(c, c.student, student.id) for c in final_list]
+        # Eager load student, parent, likes, and post (for owner check)
+        query = select(ChoyxonaComment).options(
+            selectinload(ChoyxonaComment.student),
+            selectinload(ChoyxonaComment.parent_comment).selectinload(ChoyxonaComment.student),
+            selectinload(ChoyxonaComment.reply_to_user),
+            selectinload(ChoyxonaComment.likes),
+            selectinload(ChoyxonaComment.post)
+        ).where(ChoyxonaComment.post_id == post_id)
+        
+        result = await db.execute(query)
+        all_comments = result.scalars().all()
+        
+        # Sort by Likes (Desc) then Created Date (Asc)
+        all_comments.sort(key=lambda x: (-(x.likes_count or 0), x.created_at))
+        
+        return [_map_comment(c, c.student, student.id) for c in all_comments]
+    except Exception as e:
+        import traceback
+        with open("api_debug.log", "a") as f:
+            f.write(f"\n--- ERROR {datetime.now()} in get_comments({post_id}) ---\n")
+            f.write(traceback.format_exc())
+            f.write("-" * 40 + "\n")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/comments/{comment_id}/like")
 async def toggle_comment_like(
@@ -599,34 +592,27 @@ async def edit_comment(
 
 
 def _map_comment(comment: "ChoyxonaComment", author: Student, current_user_id: int):
+    """
+    Map ChoyxonaComment model to CommentResponseSchema.
+    """
     from api.schemas import CommentResponseSchema
     
+    # Check if liked by current student
+    is_liked = False
+    if comment.likes:
+        is_liked = any(l.student_id == current_user_id for l in comment.likes)
+
+    # Reply info
     reply_user = None
     reply_content = None
+    if comment.parent_comment:
+        reply_user = f"@{comment.parent_comment.student.username}" if comment.parent_comment.student and comment.parent_comment.student.username else (format_name(comment.parent_comment.student) if comment.parent_comment.student else "Noma'lum")
+        reply_content = comment.parent_comment.content[:50] + "..." if len(comment.parent_comment.content) > 50 else comment.parent_comment.content
+    elif comment.reply_to_user:
+         reply_user = f"@{comment.reply_to_user.username}" if comment.reply_to_user.username else format_name(comment.reply_to_user)
     
-    if comment.reply_to_user:
-        # Priority 1: Specific User we replied to (New Logic)
-        reply_user = f"@{comment.reply_to_user.username}" if comment.reply_to_user.username else format_name(comment.reply_to_user)
-        if comment.parent_comment:
-             reply_content = comment.parent_comment.content
-    elif comment.parent_comment:
-        # Priority 2: Fallback (Old Logic)
-        reply_user = format_name(comment.parent_comment.student) if comment.parent_comment.student else "Noma'lum"
-        reply_content = comment.parent_comment.content
-
-    # Determine if liked by me
-    # If loaded eagerly:
-    is_liked = any(l.student_id == current_user_id for l in comment.likes) if comment.likes else False
-    
-    # Identify Author role or "Author Like"
-    # Logic: is_liked_by_author = True if the POST OWNER liked this comment.
-    # To do this, we need post_owner_id. Comment->Post->Student.
-    # We should eager load Post to check this.
-    # Identify Author role or "Author Like"
-    # Logic: is_liked_by_author = True if the POST OWNER liked this comment.
+    # Check if post author (for hearted status)
     is_liked_by_author = False
-    
-    # Safely check if post exists and if we have likes on the comment
     if comment.post and comment.likes:
          is_liked_by_author = any(l.student_id == comment.post.student_id for l in comment.likes)
 
@@ -634,26 +620,21 @@ def _map_comment(comment: "ChoyxonaComment", author: Student, current_user_id: i
         id=comment.id,
         post_id=comment.post_id,
         content=comment.content,
-        author_id=author.id if author else 0, # NEW
+        author_id=author.id if author else 0,
         author_name=format_name(author) if author else "Noma'lum",
         author_username=author.username if author else None,
-        # DEBUG USERNAME
-        # print(f"DEBUG COMMENT {comment.id}: Author={author.full_name if author else 'None'}, Username={author.username if author else 'None'}"), 
-        author_avatar=author.image_url,
-        author_image=author.image_url, # FALLBACK
-        image=author.image_url,        # FALLBACK
+        author_avatar=author.image_url if author else None,
+        author_image=author.image_url if author else None,
+        image=author.image_url if author else None,
         author_role=(author.hemis_role or "student") if author else "student",
-        author_is_premium=author.is_premium if author else False, # NEW
-        author_custom_badge=author.custom_badge if author else None, # NEW
+        author_is_premium=author.is_premium if author else False,
+        author_custom_badge=author.custom_badge if author else None,
         created_at=comment.created_at,
-        
-        likes_count=comment.likes_count,
+        likes_count=comment.likes_count or 0,
         is_liked=is_liked,
         is_liked_by_author=is_liked_by_author,
-        
         is_mine=(comment.student_id == current_user_id),
-        
-        reply_to_comment_id=comment.reply_to_comment_id, # NEW
+        reply_to_comment_id=comment.reply_to_comment_id,
         reply_to_username=reply_user,
         reply_to_content=reply_content
     )

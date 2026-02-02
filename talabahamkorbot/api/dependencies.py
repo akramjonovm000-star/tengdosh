@@ -47,36 +47,46 @@ async def get_current_student(
     token_data: dict = Depends(get_current_user_token_data),
     db: AsyncSession = Depends(get_db)
 ):
-    if token_data["type"] == "telegram":
-        # Lookup via TgAccount
-        tg_acc = await db.scalar(select(TgAccount).where(TgAccount.telegram_id == token_data["id"]))
-        if not tg_acc or not tg_acc.student_id:
-            raise HTTPException(status_code=404, detail="Student not found (TG)")
-        student = await db.get(Student, tg_acc.student_id)
-    else:
-        # Direct Student ID
-        student = await db.get(Student, token_data["id"])
+    try:
+        if token_data["type"] == "telegram":
+            # Lookup via TgAccount
+            tg_acc = await db.scalar(select(TgAccount).where(TgAccount.telegram_id == token_data["id"]))
+            if not tg_acc or not tg_acc.student_id:
+                raise HTTPException(status_code=404, detail="Student not found (TG)")
+            student = await db.get(Student, tg_acc.student_id)
+        else:
+            # Direct Student ID
+            student = await db.get(Student, token_data["id"])
 
-    if not student:
-        raise HTTPException(status_code=404, detail="Student profile not found")
-        
-    # --- AUTO-EXPIRATION CHECK ---
-    from datetime import datetime
-    if student.is_premium and student.premium_expiry:
-        if student.premium_expiry < datetime.utcnow():
-            student.is_premium = False
+        if not student:
+            raise HTTPException(status_code=404, detail="Student profile not found")
             
-            from database.models import StudentNotification
-            notif = StudentNotification(
-                student_id=student.id,
-                title="⚠️ Premium muddati tugadi",
-                body="Sizning Premium obunangiz muddati tugadi. Imkoniyatlarni qayta tiklash uchun hisobingizni to'ldiring.",
-                type="alert"
-            )
-            db.add(notif)
-            await db.commit()
-            
-    return student
+        # --- AUTO-EXPIRATION CHECK ---
+        from datetime import datetime
+        if student.is_premium and student.premium_expiry:
+            if student.premium_expiry < datetime.utcnow():
+                student.is_premium = False
+                
+                from database.models import StudentNotification
+                notif = StudentNotification(
+                    student_id=student.id,
+                    title="⚠️ Premium muddati tugadi",
+                    body="Sizning Premium obunangiz muddati tugadi. Imkoniyatlarni qayta tiklash uchun hisobingizni to'ldiring.",
+                    type="alert"
+                )
+                db.add(notif)
+                await db.commit()
+                
+        return student
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error in get_current_student: {e}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(e))
 
 async def get_premium_student(student: Student = Depends(get_current_student)):
     """
