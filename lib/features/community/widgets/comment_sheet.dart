@@ -202,36 +202,31 @@ class _CommentSheetState extends State<CommentSheet> {
   // --- Nesting Logic Helpers ---
   Map<String, List<Comment>> _getRepliesMap() {
     final Map<String, List<Comment>> map = {};
-    
-    // Helper to find root ID
-    // Since we don't have the full tree structure in memory explicitly linked,
-    // we iterate up using replyToCommentId.
-    // Optimization: Create a Id -> Comment lookup first.
     final Map<String, Comment> lookup = { for (var c in _comments) c.id : c };
 
-    String? findRootId(String startId) {
+    String findTopParentId(String startId) {
       String currentId = startId;
       int depth = 0;
-      while (depth < 100) { // Safety break - increased to support deep threads
+      while (depth < 100) {
         final current = lookup[currentId];
-        if (current == null) return null; // Parent not found in list (maybe deleted or pagination)
+        if (current == null) return currentId;
         
-        if (current.replyToCommentId == null || current.replyToCommentId == "0" || current.replyToCommentId == "null") {
-          return current.id; // Found root
+        final parentId = current.replyToCommentId;
+        if (parentId == null || parentId == "0" || parentId == "null" || !lookup.containsKey(parentId)) {
+          return current.id; 
         }
-        currentId = current.replyToCommentId!;
+        currentId = parentId;
         depth++;
       }
-      return null;
+      return currentId;
     }
 
     for (var c in _comments) {
-      if (c.replyToCommentId != null && c.replyToCommentId != "0" && c.replyToCommentId != "null") {
-         // This is a reply (either level 1 or level 2+)
-         // Find its ultimate root to group under
-         final rootId = findRootId(c.id);
-         if (rootId != null && rootId != c.id) {
-           map.putIfAbsent(rootId, () => []).add(c);
+      final isExplicitRoot = c.replyToCommentId == null || c.replyToCommentId == "0" || c.replyToCommentId == "null";
+      if (!isExplicitRoot) {
+         final topId = findTopParentId(c.id);
+         if (topId != c.id) {
+           map.putIfAbsent(topId, () => []).add(c);
          }
       }
     }
@@ -248,8 +243,7 @@ class _CommentSheetState extends State<CommentSheet> {
       if (isExplicitRoot) return true;
       
       // Safety: If parent is missing from the list, treat as root (Orphan)
-      // This prevents "invisible comments" bug.
-      if (c.replyToCommentId != null && !lookup.containsKey(c.replyToCommentId)) {
+      if (!lookup.containsKey(c.replyToCommentId)) {
         return true;
       }
       return false;

@@ -207,26 +207,35 @@ class Comment {
   });
 
   factory Comment.fromJson(Map<String, dynamic> json) {
+    DateTime parseDate(dynamic dateStr) {
+      if (dateStr == null) return DateTime.now();
+      try {
+        return DateTime.parse(dateStr.toString());
+      } catch (e) {
+        return DateTime.now();
+      }
+    }
+
     return Comment(
-      id: json['id'].toString(),
+      id: json['id']?.toString() ?? "0",
       postId: json['post_id']?.toString() ?? "0",
-      content: json['content'],
-      authorId: json['author_id'].toString(),
-      authorName: json['author_name'],
-      authorUsername: json['author_username'] ?? "",
-      authorAvatar: json['author_avatar'] ?? "",
-      authorRole: "Talaba",
-      createdAt: DateTime.parse(json['created_at']),
+      content: json['content']?.toString() ?? "",
+      authorId: json['author_id']?.toString() ?? "0",
+      authorName: json['author_name']?.toString() ?? "Noma'lum",
+      authorUsername: json['author_username']?.toString() ?? "",
+      authorAvatar: json['author_avatar']?.toString() ?? "",
+      authorRole: json['author_role']?.toString() ?? "Talaba",
+      createdAt: parseDate(json['created_at']),
       timeAgo: "Hozirgina", 
-      likes: json['likes_count'] ?? 0,
+      likes: json['likes_count'] is int ? json['likes_count'] : int.tryParse(json['likes_count']?.toString() ?? "0") ?? 0,
       isLiked: json['is_liked'] ?? false,
       isMine: json['is_mine'] ?? false,
       isLikedByAuthor: json['is_liked_by_author'] ?? false,
-      replyToUserName: json['reply_to_username'], 
-      replyToContent: json['reply_to_content'], // Assumed this was missing
+      replyToUserName: json['reply_to_username']?.toString(), 
+      replyToContent: json['reply_to_content']?.toString(), 
       replyToCommentId: json['reply_to_comment_id']?.toString(), // NEW
       authorIsPremium: json['author_is_premium'] ?? false, // NEW
-      authorCustomBadge: json['author_custom_badge'], // NEW
+      authorCustomBadge: json['author_custom_badge']?.toString(), // NEW
     );
   }
 
