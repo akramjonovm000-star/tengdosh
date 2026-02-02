@@ -234,7 +234,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           Flexible(
                             child: Text(
-                              "Salom 👋, ${() {
+                              "Salom, ${() {
                                 if (student == null) return "Talaba";
                                 
                                 final fullName = student.fullName;
@@ -304,11 +304,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                     ],
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
-                  onPressed: _logout,
-                  tooltip: "Chiqish",
                 ),
               ],
             ),
