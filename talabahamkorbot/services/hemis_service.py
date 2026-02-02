@@ -119,10 +119,15 @@ class HemisService:
 
         try:
             # We don't overwrite headers, just use defaults + json content type is automatic with json=
+            # LOGGING ADDED FOR DEBUGGING
+            logger.info(f"Authenticating User: {safe_login}...")
+            
             response = await client.post(
                 url,
                 json=json_payload
             )
+            
+            logger.info(f"Auth Response: {response.status_code}")
             
             if response.status_code == 200:
                 data = response.json()
@@ -134,14 +139,17 @@ class HemisService:
             elif response.status_code == 401:
                     try:
                         data = response.json()
+                        logger.warning(f"Auth Failed 401: {data}")
                         return None, data.get("error", "Login yoki parol noto'g'ri")
                     except:
                         return None, "Login yoki parol noto'g'ri"
             elif response.status_code == 404:
                     return None, "Bunday foydalanuvchi topilmadi"
             else:
+                    logger.error(f"Auth Server Error: {response.status_code} - {response.text}")
                     return None, f"Server xatosi: {response.status_code}"
         except Exception as e:
+            logger.error(f"Auth Network Exception: {e}")
             return None, f"Tarmoq xatosi: {str(e)[:50]}"
 
     @staticmethod

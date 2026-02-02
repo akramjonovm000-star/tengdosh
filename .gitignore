@@ -47,3 +47,4 @@ talabahamkorbot/nohup.out
 talabahamkorbot/*.log
 talabahamkorbot/*.sql
 talabahamkorbot/*.zip
+talabahamkorbot/.env
