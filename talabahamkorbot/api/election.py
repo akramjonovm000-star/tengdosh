@@ -51,7 +51,7 @@ async def get_election_details(
     for cand in election.candidates:
         candidate_schemas.append(ElectionCandidateSchema(
             id=cand.id,
-            full_name=cand.student.fullName,
+            full_name=cand.student.full_name,
             faculty_name=cand.faculty.name,
             campaign_text=cand.campaign_text,
             image_url=cand.photo_id, # In bot this might be file_id, for app we might need URL later
