@@ -59,3 +59,4 @@ from .plans import router as plans_router
 router.include_router(plans_router, prefix="/plans", tags=["Plans"])
 router.include_router(student_router, prefix="/student", tags=["Student"])
 router.include_router(election_router, prefix="/election", tags=["Election"])
+router.include_router(surveys_router, prefix="/student", tags=["Surveys"])

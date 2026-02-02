@@ -127,9 +127,10 @@ dp.update.outer_middleware(DbSessionMiddleware())
 dp.update.middleware(ActivityMiddleware())
 dp.update.middleware(SubscriptionMiddleware())
 
-@app.get("/")
-async def root():
-    return {"status": "active", "service": "TalabaHamkor API", "version": "1.0.0"}
+# Root is now handled in api/oauth.py to support Hemis Callback
+# @app.get("/")
+# async def root():
+#    return {"status": "active", "service": "TalabaHamkor API", "version": "1.0.0"}
 
 @app.post("/webhook/bot")
 async def bot_webhook(request: Request):
