@@ -413,6 +413,53 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 24),
+            
+            // 2.5 Active Election Banner (Conditional)
+            if (_dashboard?['has_active_election'] == true)
+              Container(
+                margin: const EdgeInsets.only(bottom: 24),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.amber[50],
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.amber[200]!),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.how_to_vote_rounded, color: Colors.amber, size: 32),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "Faol saylov!",
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                          Text(
+                            "O'zingiz tanlagan nomzodga ovoz bering",
+                            style: TextStyle(color: Colors.grey[700], fontSize: 13),
+                          ),
+                        ],
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                         // TODO: Navigator.push to ElectionScreen
+                         _showMock("Saylov");
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryBlue,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        elevation: 0,
+                      ),
+                      child: const Text("Ovoz berish"),
+                    )
+                  ],
+                ),
+              ),
 
             // 3. Module Grid (Dashboard)
             const Text(

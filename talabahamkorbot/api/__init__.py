@@ -14,14 +14,15 @@ from .academic import router as academic_router
 from .oauth import router as oauth_router
 from .files import router as files_router
 from .surveys import router as surveys_router
+from .election import router as election_router
 
 router.include_router(auth_router, prefix="/auth", tags=["Auth"])
 router.include_router(oauth_router, tags=["OAuth"])
-router.include_router(student_router, prefix="/student", tags=["Student"])
 router.include_router(dashboard_router, prefix="/student/dashboard", tags=["Dashboard"])
 router.include_router(activities_router, prefix="/student/activities", tags=["Activities"])
 router.include_router(clubs_router, prefix="/student/clubs", tags=["Clubs"])
 router.include_router(feedback_router, prefix="/student/feedback", tags=["Feedback"])
+
 
 # Certificates and Documents routers ALREADY have prefixes in their files
 router.include_router(documents_router, tags=["Documents"])
@@ -56,4 +57,5 @@ router.include_router(gpa_router, prefix="/gpa", tags=["GPA"])
 
 from .plans import router as plans_router
 router.include_router(plans_router, prefix="/plans", tags=["Plans"])
-router.include_router(surveys_router, prefix="/student", tags=["Surveys"])
+router.include_router(student_router, prefix="/student", tags=["Student"])
+router.include_router(election_router, prefix="/election", tags=["Election"])

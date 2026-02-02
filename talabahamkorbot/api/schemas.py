@@ -84,6 +84,10 @@ class StudentDashboardSchema(BaseModel):
     activities_count: int
     clubs_count: int
     activities_approved_count: int
+    
+    # Election Info
+    has_active_election: bool = False
+    active_election_id: Optional[int] = None
 
 class ClubSchema(BaseModel):
     id: int
@@ -240,4 +244,36 @@ class GPAResultSchema(BaseModel):
     total_credits: float
     total_points: float
     subjects: list[GPASubjectResultSchema]
+
+
+# ============================================================
+# ELECTION SCHEMAS
+# ============================================================
+
+class ElectionCandidateSchema(BaseModel):
+    id: int
+    full_name: str
+    faculty_name: str
+    campaign_text: Optional[str]
+    image_url: Optional[str]
+    order: int
+    vote_count: Optional[int] = None # Show only if finished or for admin
+
+    class Config:
+        from_attributes = True
+
+class ElectionDetailSchema(BaseModel):
+    id: int
+    title: str
+    description: Optional[str]
+    deadline: Optional[datetime]
+    has_voted: bool = False
+    voted_candidate_id: Optional[int] = None
+    candidates: list[ElectionCandidateSchema]
+
+    class Config:
+        from_attributes = True
+
+class ElectionVoteRequestSchema(BaseModel):
+    candidate_id: int
 

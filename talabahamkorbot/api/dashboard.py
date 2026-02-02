@@ -4,12 +4,15 @@ from sqlalchemy import select, func
 
 from api.dependencies import get_current_student, get_db
 from api.schemas import StudentDashboardSchema
-from database.models import Student, UserActivity, ClubMembership
+from database.models import Student, UserActivity, ClubMembership, Election
 
 router = APIRouter()
 
 from typing import Optional
 from services.sync_service import sync_student_data
+from utils.student_utils import get_election_info
+from sqlalchemy import and_
+from datetime import datetime
 
 @router.get("/", response_model=StudentDashboardSchema)
 async def get_dashboard_stats(
@@ -61,6 +64,21 @@ async def get_dashboard_stats(
     # Optional: If data is 0 or very old, user can trigger refresh via mobile app pull-to-refresh
     # For now, we trust the background sync.
     
+    # 5. Election Info
+    _, has_active_election = await get_election_info(student, db)
+    active_election_id = None
+    if has_active_election:
+        active_election = await db.scalar(
+            select(Election).where(
+                and_(
+                    Election.university_id == student.university_id,
+                    Election.status == "active"
+                )
+            ).order_by(Election.created_at.desc())
+        )
+        if active_election:
+            active_election_id = active_election.id
+
     return StudentDashboardSchema(
         gpa=gpa,
         missed_hours=missed_total,
@@ -68,5 +86,7 @@ async def get_dashboard_stats(
         missed_hours_unexcused=missed_unexcused,
         activities_count=activities_count,
         clubs_count=clubs_count,
-        activities_approved_count=approved_count
+        activities_approved_count=approved_count,
+        has_active_election=has_active_election,
+        active_election_id=active_election_id
     )
