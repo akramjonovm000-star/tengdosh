@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'dart:async';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/services/data_service.dart';
@@ -252,8 +251,8 @@ class _ElectionScreenState extends State<ElectionScreen> {
           ),
         ),
         const SliverPadding(padding: EdgeInsets.only(bottom: 24)),
-       slivers_v2... (omitted for brevity)
-    ]);
+      ],
+    );
   }
 
   Widget _buildHeader() {
