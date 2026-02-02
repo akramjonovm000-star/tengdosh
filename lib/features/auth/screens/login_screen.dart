@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/theme/app_theme.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -30,6 +31,21 @@ class _LoginScreenState extends State<LoginScreen> {
         SnackBar(content: Text(error), backgroundColor: Colors.red),
       );
     }
+  }
+
+  Future<void> _launchHemisLogin() async {
+     const url = 'https://tengdosh.uzjoku.uz/api/v1/oauth/login?source=mobile';
+     final uri = Uri.parse(url);
+     
+     if (await canLaunchUrl(uri)) {
+       await launchUrl(uri, mode: LaunchMode.externalApplication);
+     } else {
+       if (mounted) {
+         ScaffoldMessenger.of(context).showSnackBar(
+           const SnackBar(content: Text("Brauzerni ochib bo'lmadi"), backgroundColor: Colors.red),
+         );
+       }
+     }
   }
 
   @override
@@ -134,6 +150,23 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   
                   const SizedBox(height: 32),
+
+                  // Hemis Login Button
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: OutlinedButton.icon(
+                      onPressed: _launchHemisLogin,
+                      icon: const Icon(Icons.school_rounded, color: AppTheme.primaryBlue),
+                      label: const Text("Hemis orqali kirish", style: TextStyle(color: AppTheme.primaryBlue, fontSize: 16)),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: const BorderSide(color: AppTheme.primaryBlue),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
                   Text(
                     "Agarda login yoki parolni unutgan bo'lsangiz, talabalar bo'limiga murojaat qiling.",
                     textAlign: TextAlign.center,
