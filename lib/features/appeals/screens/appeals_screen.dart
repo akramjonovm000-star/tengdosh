@@ -23,7 +23,7 @@ class _AppealsScreenState extends State<AppealsScreen> with SingleTickerProvider
   String _selectedCategory = "Barchasi";
   String _selectedStatus = "Barchasi";
 
-  final List<String> _categories = ["Barchasi", "Rahbariyat", "Dekanat", "Tyutor", "Psixolog", "Buxgalteriya", "Boshqa"];
+  final List<String> _categories = ["Barchasi", "Rahbariyat", "Dekanat", "Tyutor", "Psixolog", "Kutubxona", "Inspektor"];
   final List<String> _statuses = ["Barchasi", "Javob berilgan", "Kutilmoqda", "Yopilgan"];
 
   @override
@@ -575,9 +575,10 @@ class AppealCard extends StatelessWidget {
       switch(role.toLowerCase()) {
           case 'dekanat': return Icons.school;
           case 'tyutor': return Icons.supervisor_account;
-          case 'buxgalteriya': return Icons.account_balance_wallet;
           case 'psixolog': return Icons.psychology;
           case 'rahbariyat': return Icons.account_balance;
+          case 'kutubxona': return Icons.local_library;
+          case 'inspektor': return Icons.search;
           default: return Icons.chat_bubble_outline;
       }
   }
@@ -609,14 +610,14 @@ class _CreateAppealSheetState extends State<CreateAppealSheet> {
   final TextEditingController _textController = TextEditingController();
   final AppealService _service = AppealService();
 
-  // Roles with Icons
+  // Roles with Icons (Strict 6 Categories)
   final List<Map<String, dynamic>> _recipients = [
     {"label": "Rahbariyat", "icon": Icons.account_balance, "color": Colors.blue[800]},
     {"label": "Dekanat", "icon": Icons.school, "color": Colors.indigo},
     {"label": "Tyutor", "icon": Icons.supervisor_account, "color": Colors.green},
     {"label": "Psixolog", "icon": Icons.psychology, "color": Colors.purple},
-    {"label": "Buxgalteriya", "icon": Icons.account_balance_wallet, "color": Colors.orange},
     {"label": "Kutubxona", "icon": Icons.local_library, "color": Colors.teal},
+    {"label": "Inspektor", "icon": Icons.search, "color": Colors.amber[800]},
   ];
 
   @override

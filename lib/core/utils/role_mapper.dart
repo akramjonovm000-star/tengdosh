@@ -10,7 +10,7 @@ class RoleMapper {
     "user": "Talaba",
     "student": "Talaba",
     "science": "Ilmiy bo'lim",
-    "inspector": "Inspeksiya",
+    "inspector": "Inspektor",
     "staff": "Kadrlar bo'limi",
     "department": "Kafedra mudiri",
     "minadmin": "Kichik Admin",

@@ -1318,26 +1318,25 @@ def get_student_feedback_list_kb(feedbacks: list) -> InlineKeyboardMarkup:
         # Statusga qarab emoji
         emoji = status_emoji.get(fb.status, "⏳")
 
-        # Recipient Role Mapping
+        # Recipient Role Mapping (Strict 6 Categories)
         role_map = {
+            "rektor": "Rahbariyat",
+            "prorektor": "Rahbariyat",
+            "yoshlar_prorektor": "Rahbariyat",
+            "rahbariyat": "Rahbariyat",
+            "dekan": "Dekanat",
+            "dekan_orinbosari": "Dekanat",
+            "dekan_yoshlar": "Dekanat",
             "dekanat": "Dekanat",
             "tyutor": "Tyutor",
-            "buxgalter": "Buxgalteriya",
             "psixolog": "Psixolog",
-            "rahbariyat": "Rahbariyat",
-            "rector": "Rektor",
-            "prorector": "Prorektor",
-            "teacher": "O'qituvchi",
             "inspektor": "Inspektor",
-            "kafedra": "Kafedra",
-            "kafedra_mudiri": "Kafedra mudiri",
-            "dekan": "Dekan",
-            "dekan_orinbosari": "Dekan o'rinbosari"
+            "kutubxona": "Kutubxona"
         }
         
         # Get readable role or capitalize fallback
-        role_key = fb.assigned_role or "unknown"
-        role_name = role_map.get(role_key, role_key.capitalize())
+        role_key = fb.assigned_role.lower() if fb.assigned_role else ""
+        role_name = role_map.get(role_key, role_key.capitalize() or "Umumiy")
         
         # Qisqartirish (agar ro'l nomi juda uzun bo'lsa)
         if len(role_name) > 12:

@@ -68,6 +68,9 @@ async def get_my_feedback(
     db: AsyncSession = Depends(get_db)
 ):
     """List all feedback/appeals sent by the student."""
+    # DEBUG LOG
+    print(f"DEBUG: get_my_feedback for student {student.id}")
+    
     feedbacks = await db.scalars(
         select(StudentFeedback)
         .where(
@@ -89,15 +92,43 @@ async def get_my_feedback(
                  display_title = clean_text[:30] + "..." if len(clean_text) > 30 else clean_text
         
         # 2. Build Dict (Safer than modifying ORM object)
+        images_list = []
+        if fb.file_id:
+            images_list.append({
+                "file_id": fb.file_id,
+                "file_type": fb.file_type or "photo"
+            })
+            
+        # 3. Calculate Department/Recipient for Filtering (Strict 6 Categories)
+        role_map = {
+            "rektor": "Rahbariyat",
+            "prorektor": "Rahbariyat",
+            "yoshlar_prorektor": "Rahbariyat",
+            "rahbariyat": "Rahbariyat",
+            "dekan": "Dekanat",
+            "dekan_orinbosari": "Dekanat",
+            "dekan_yoshlar": "Dekanat",
+            "dekanat": "Dekanat",
+            "tyutor": "Tyutor",
+            "psixolog": "Psixolog",
+            "inspektor": "Inspektor",
+            "kutubxona": "Kutubxona"
+        }
+        raw_role = fb.assigned_role.lower() if fb.assigned_role else ""
+        dept = role_map.get(raw_role, None)
+
         item = {
             "id": fb.id,
             "text": fb.text,
             "title": display_title,
+            "department": dept,
+            "recipient": dept, # For display on the card
             "status": fb.status,
-            "assigned_role": fb.assigned_role,
-            "created_at": fb.created_at, # Pydantic will serialize this
+            "assigned_role": dept, # For strict filtering in the app
+            "created_at": fb.created_at, 
             "is_anonymous": fb.is_anonymous,
-            "file_id": fb.file_id
+            "file_id": fb.file_id,
+            "images": images_list
         }
         response_list.append(item)
 
@@ -205,10 +236,28 @@ async def get_feedback_detail(
     # Sort by time
     messages.sort(key=lambda x: x['timestamp'])
 
+    # Map Internal Role to Display Category
+    role_map = {
+        "rektor": "Rahbariyat",
+        "prorektor": "Rahbariyat",
+        "yoshlar_prorektor": "Rahbariyat",
+        "rahbariyat": "Rahbariyat",
+        "dekan": "Dekanat",
+        "dekan_orinbosari": "Dekanat",
+        "dekan_yoshlar": "Dekanat",
+        "dekanat": "Dekanat",
+        "tyutor": "Tyutor",
+        "psixolog": "Psixolog",
+        "inspektor": "Inspektor",
+        "kutubxona": "Kutubxona"
+    }
+    raw_role = appeal.assigned_role.lower() if appeal.assigned_role else ""
+    mapped_recipient = role_map.get(raw_role, raw_role.capitalize() or "General")
+
     return {
         "id": appeal.id,
-        "title": f"Murojaat #{appeal.id}", # Or derive from text
-        "recipient": appeal.assigned_role or "General",
+        "title": f"Murojaat #{appeal.id}", 
+        "recipient": mapped_recipient,
         "status": appeal.status,
         "date": appeal.created_at.strftime("%d.%m.%Y"),
         "is_anonymous": appeal.is_anonymous,

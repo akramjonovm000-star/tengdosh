@@ -183,24 +183,23 @@ async def feedback_view(call: CallbackQuery, session: AsyncSession):
     }
     status_text = status_map.get(fb.status, f"⏳ {fb.status}")
 
-    # Role Mapping (Display Name)
+    # Role Mapping (Strict 6 Categories)
     role_map = {
+        "rektor": "Rahbariyat",
+        "prorektor": "Rahbariyat",
+        "yoshlar_prorektor": "Rahbariyat",
+        "rahbariyat": "Rahbariyat",
+        "dekan": "Dekanat",
+        "dekan_orinbosari": "Dekanat",
+        "dekan_yoshlar": "Dekanat",
         "dekanat": "Dekanat",
         "tyutor": "Tyutor",
-        "buxgalter": "Buxgalteriya",
         "psixolog": "Psixolog",
-        "rahbariyat": "Rahbariyat",
-        "rector": "Rektor",
-        "prorector": "Prorektor",
-        "teacher": "O'qituvchi",
         "inspektor": "Inspektor",
-        "kafedra": "Kafedra",
-        "kafedra_mudiri": "Kafedra mudiri",
-        "dekan": "Dekan",
-        "dekan_orinbosari": "Dekan o'rinbosari"
+        "kutubxona": "Kutubxona"
     }
-    role_key = fb.assigned_role or "unknown"
-    role_name = role_map.get(role_key, role_key.capitalize())
+    role_key = fb.assigned_role.lower() if fb.assigned_role else ""
+    role_name = role_map.get(role_key, role_key.capitalize() or "Umumiy")
     
     date_str = fb.created_at.strftime("%d.%m.%Y %H:%M")
 

@@ -106,10 +106,13 @@ class FeedbackListSchema(BaseModel):
     id: int
     text: Optional[str]
     title: Optional[str] = None # NEW: Computed title for UI
+    department: Optional[str] = None # NEW: Grouping for Filters
+    recipient: Optional[str] = None # NEW: Mapped recipient for display
     status: str
     assigned_role: Optional[str]
     created_at: datetime
     is_anonymous: bool = False
+    images: list[ActivityImageSchema] = []
     
     class Config:
         from_attributes = True
