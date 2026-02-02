@@ -116,6 +116,7 @@ class FeedbackListSchema(BaseModel):
     assigned_role: Optional[str]
     created_at: datetime
     is_anonymous: bool = False
+    file_id: Optional[str] = None
     images: list[ActivityImageSchema] = []
     
     class Config:

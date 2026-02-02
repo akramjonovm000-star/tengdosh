@@ -464,9 +464,9 @@ class AppealCard extends StatelessWidget {
                   height: 180,
                   width: double.infinity,
                   color: Colors.grey[100],
-                  child: appeal.fileId != null
+                  child: (appeal.images.isNotEmpty || appeal.fileId != null)
                     ? CachedNetworkImage(
-                        imageUrl: "${ApiConstants.fileProxy}/${appeal.fileId}",
+                        imageUrl: "${ApiConstants.fileProxy}/${appeal.images.isNotEmpty ? appeal.images.first : appeal.fileId}",
                         fit: BoxFit.cover,
                         placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
                         errorWidget: (context, url, error) => Center(

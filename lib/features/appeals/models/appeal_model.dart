@@ -10,6 +10,7 @@ class Appeal {
   final bool isAnonymous;
   final String? assignedRole;
   final String? fileId;
+  final List<String> images;
 
   Appeal({
     required this.id,
@@ -21,6 +22,7 @@ class Appeal {
     this.isAnonymous = false,
     this.assignedRole,
     this.fileId,
+    this.images = const [],
   });
 
   factory Appeal.fromJson(Map<String, dynamic> json) {
@@ -30,6 +32,13 @@ class Appeal {
       parsedDate = DateTime.parse(json['created_at'].toString());
     } catch (e) {
       parsedDate = DateTime.now(); // Fallback
+    }
+
+    // Parse Images
+    List<String> parsedImages = [];
+    if (json['images'] != null) {
+      var raw = json['images'] as List;
+      parsedImages = raw.map((e) => e['file_id'].toString()).toList();
     }
 
     return Appeal(
@@ -42,6 +51,7 @@ class Appeal {
       isAnonymous: json['is_anonymous'] == true || json['is_anonymous'] == "true",
       assignedRole: json['assigned_role']?.toString(),
       fileId: json['file_id']?.toString(),
+      images: parsedImages,
     );
   }
   
