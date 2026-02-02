@@ -4,6 +4,7 @@ import '../models/community_models.dart';
 import '../services/chat_service.dart';
 import 'chat_detail_screen.dart';
 import '../widgets/user_search_delegate.dart'; // NEW
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
@@ -57,10 +58,24 @@ class _ChatListScreenState extends State<ChatListScreen> {
                     CircleAvatar(
                       radius: 24,
                       backgroundColor: AppTheme.primaryBlue.withOpacity(0.1),
-                      child: Text(
-                        chat.partnerName.isNotEmpty ? chat.partnerName[0] : "?",
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
-                      ),
+                      child: chat.partnerAvatar.isNotEmpty
+                          ? ClipOval(
+                              child: CachedNetworkImage(
+                                imageUrl: chat.partnerAvatar,
+                                width: 48,
+                                height: 48,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                                errorWidget: (context, url, error) => Text(
+                                  chat.partnerName.isNotEmpty ? chat.partnerName[0] : "?",
+                                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
+                                ),
+                              ),
+                            )
+                          : Text(
+                              chat.partnerName.isNotEmpty ? chat.partnerName[0] : "?",
+                              style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
+                            ),
                     ),
                     if (chat.isOnline)
                       Positioned(
@@ -84,9 +99,11 @@ class _ChatListScreenState extends State<ChatListScreen> {
                       chat.formattedName,
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    if (chat.partnerCustomBadge != null) ...[
+                    if (chat.partnerIsPremium) ...[
                       const SizedBox(width: 4),
-                      Text(chat.partnerCustomBadge!, style: const TextStyle(fontSize: 14)),
+                      chat.partnerCustomBadge != null 
+                          ? Text(chat.partnerCustomBadge!, style: const TextStyle(fontSize: 14))
+                          : const Icon(Icons.verified, color: Colors.blue, size: 16),
                     ]
                   ],
                 ),

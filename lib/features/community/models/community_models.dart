@@ -297,6 +297,7 @@ class Chat {
   final bool isOnline;
   final bool isLastMessageMine; 
   final String? partnerCustomBadge; // NEW
+  final bool partnerIsPremium; // NEW
 
   Chat({
     required this.id,
@@ -310,7 +311,8 @@ class Chat {
     this.unreadCount = 0,
     this.isOnline = false,
     this.isLastMessageMine = false, 
-    this.partnerCustomBadge, // NEW
+    this.partnerCustomBadge, 
+    this.partnerIsPremium = false, // NEW
   });
 
   factory Chat.fromJson(Map<String, dynamic> json) {
@@ -327,7 +329,8 @@ class Chat {
       unreadCount: json['unread_count'] ?? 0,
       isOnline: false, 
       isLastMessageMine: json['is_last_message_mine'] ?? false, 
-      partnerCustomBadge: user['custom_badge'], // NEW
+      partnerCustomBadge: user['custom_badge'], 
+      partnerIsPremium: user['is_premium'] ?? false, // NEW
     );
   }
 

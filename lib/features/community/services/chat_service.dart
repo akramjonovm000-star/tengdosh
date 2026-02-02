@@ -46,7 +46,8 @@ class ChatService {
            partnerRole: data['target_user']['role'] ?? "student",  
            lastMessage: "Suhbat boshlandi", 
            timeAgo: "Hozirgina",
-           isLastMessageMine: true 
+           isLastMessageMine: true,
+           partnerIsPremium: data['target_user']['is_premium'] ?? false, // NEW
          );
       } else {
         print("Chat Start Error: ${response.statusCode} - ${response.body}");

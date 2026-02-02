@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException, Request, Depends
+from fastapi import APIRouter, HTTPException, Request, Depends, Query
+from typing import Optional
 from fastapi.responses import RedirectResponse, HTMLResponse
 import httpx
 from sqlalchemy.future import select
@@ -27,11 +28,18 @@ async def oauth_login(source: str = "mobile"):
     redirect_url = HemisService.generate_auth_url(state=source)
     return RedirectResponse(redirect_url)
 
+@authlog_router.get("/")
 @authlog_router.get("/authlog")
-async def authlog_callback(code: str, state: str = "mobile", db: AsyncSession = Depends(get_session)):
+async def authlog_callback(code: Optional[str] = None, error: Optional[str] = None, state: str = "mobile", db: AsyncSession = Depends(get_session)):
     """
-    Handles the callback from HEMIS (redirected via Nginx /authlog)
+    Handles the callback from HEMIS (redirected via Nginx /authlog OR Root)
     """
+    if not code and not error:
+         return {"status": "active", "service": "TalabaHamkor API", "version": "1.0.0"}
+
+    if error:
+         return HTMLResponse(content=f"<h1>Avtorizatsiya rad etildi: {error}</h1>", status_code=400)
+
     logger.info(f"OAuth Callback received code: {code}, state: {state}")
     
     # 1. Exchange Code for Exchange Token

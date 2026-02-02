@@ -45,7 +45,7 @@ async def start_chat(
         raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
         
     chat = await get_or_create_chat(student.id, target_user_id, db)
-    return {"chat_id": chat.id, "target_user": {"id": target.id, "full_name": target.full_name, "image_url": target.image_url, "username": target.username, "custom_badge": target.custom_badge}}
+    return {"chat_id": chat.id, "target_user": {"id": target.id, "full_name": target.full_name, "image_url": target.image_url, "username": target.username, "custom_badge": target.custom_badge, "is_premium": target.is_premium}}
 
 @router.get("/unread-count")
 async def get_total_unread_count(
@@ -105,7 +105,8 @@ async def list_chats(
                 "image_url": other_user.image_url,
                 "username": other_user.username,
                 "role": other_user.hemis_role or "student",
-                "custom_badge": other_user.custom_badge
+                "custom_badge": other_user.custom_badge,
+                "is_premium": other_user.is_premium
             },
             "last_message": c.last_message_content,
             "last_message_time": c.last_message_time,
