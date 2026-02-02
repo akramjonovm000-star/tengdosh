@@ -148,7 +148,9 @@ class DataService {
           "missed_hours_unexcused": data['missed_hours_unexcused'] ?? 0,
           "activities_count": data['activities_count'] ?? 0,
           "clubs_count": data['clubs_count'] ?? 0,
-          "activities_approved_count": data['activities_approved_count'] ?? 0
+          "activities_approved_count": data['activities_approved_count'] ?? 0,
+          "has_active_election": data['has_active_election'] ?? false,
+          "active_election_id": data['active_election_id']
         };
 
         // Update Local DB (Non-blocking or at least non-failing for UI)
@@ -180,7 +182,8 @@ class DataService {
       "missed_hours_excused": 0, 
       "missed_hours_unexcused": 0,
       "activities_count": 0,
-      "clubs_count": 0
+      "clubs_count": 0,
+      "has_active_election": false
     };
   }
 
@@ -790,6 +793,25 @@ class DataService {
       print("DataService: Error initiating feedback upload: $e");
       return {"success": false, "message": "Tarmoq xatosi"};
     }
+  }
+
+  // 24. Election Methods
+  Future<Map<String, dynamic>> getElectionDetails(int electionId) async {
+    final response = await _get("${ApiConstants.backendUrl}/election/$electionId");
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    }
+    throw Exception(json.decode(response.body)['detail'] ?? "Saylov ma'lumotlarini yuklab bo'lmadi");
+  }
+
+  Future<bool> voteInElection(int electionId, int candidateId) async {
+    final response = await _post(
+      "${ApiConstants.backendUrl}/election/$electionId/vote",
+      body: {"candidate_id": candidateId},
+    );
+    if (response.statusCode == 200) return true;
+    final body = json.decode(response.body);
+    throw Exception(body['detail'] ?? "Ovoz berishda xato yuz berdi");
   }
 
   Future<Map<String, dynamic>> checkFeedbackUploadStatus(String sessionId) async {

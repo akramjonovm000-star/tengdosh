@@ -11,6 +11,7 @@ import 'package:talabahamkor_mobile/features/student_module/screens/student_modu
 import 'package:talabahamkor_mobile/features/ai/screens/ai_screen.dart';
 import 'package:talabahamkor_mobile/features/student_module/widgets/student_dashboard_widgets.dart';
 import 'package:talabahamkor_mobile/features/student_module/screens/academic_screen.dart';
+import 'package:talabahamkor_mobile/features/student_module/screens/election_screen.dart';
 import 'package:talabahamkor_mobile/features/social/screens/social_activity_screen.dart';
 import 'package:talabahamkor_mobile/features/documents/screens/documents_screen.dart';
 import '../../certificates/screens/certificates_screen.dart';
@@ -445,8 +446,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     ElevatedButton(
                       onPressed: () {
-                         // TODO: Navigator.push to ElectionScreen
-                         _showMock("Saylov");
+                         final electionId = _dashboard?['active_election_id'];
+                         if (electionId != null) {
+                            Navigator.push(
+                              context, 
+                              MaterialPageRoute(builder: (_) => ElectionScreen(electionId: electionId))
+                            );
+                         }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.primaryBlue,

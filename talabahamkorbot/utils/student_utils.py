@@ -4,17 +4,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database.models import TgAccount, Student, StudentNotification
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
+import re
+
 def format_name(full_name: str) -> str:
-    """Formats full name to 'First Last' (Sentence Case)."""
+    """Formats full name to 'First Last' (Sentence Case), removing (...) parts."""
     if not full_name: return "Noma'lum"
-    parts = full_name.split()
+    
+    # Remove text inside parentheses (e.g., patronymic)
+    clean_name = re.sub(r'\s*\(.*?\)', '', full_name).strip()
+    
+    parts = clean_name.split()
     if len(parts) >= 2:
-        # Assume DB stores "Last First" (Hemis style) or mixed.
-        # We want "First Last" for friendly UI.
-        # If input is "Akramjonov Muhammadali", parts[0]=Last, parts[1]=First.
-        # We return "First Last".
+        # Assume DB stores "Last First" (Hemis default)
+        # We want "First Last"
         return f"{parts[1].capitalize()} {parts[0].capitalize()}"
-    return full_name.title()
+        
+    return clean_name.title()
 
 from sqlalchemy.orm import selectinload
 
