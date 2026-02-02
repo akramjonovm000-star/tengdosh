@@ -144,11 +144,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                           doc['created_at'] as String,
                           style: TextStyle(color: Colors.grey[500], fontSize: 12),
                         ),
-                        const SizedBox(width: 12),
-                        Text(
-                          doc['category'] as String,
-                          style: TextStyle(color: AppTheme.primaryBlue.withOpacity(0.8), fontSize: 13, fontWeight: FontWeight.w600),
-                        ),
+
                       ],
                     ),
                   ),
