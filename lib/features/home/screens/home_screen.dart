@@ -14,6 +14,8 @@ import 'package:talabahamkor_mobile/features/student_module/screens/academic_scr
 import 'package:talabahamkor_mobile/features/student_module/screens/election_screen.dart';
 import 'package:talabahamkor_mobile/features/social/screens/social_activity_screen.dart';
 import 'package:talabahamkor_mobile/features/documents/screens/documents_screen.dart';
+import 'package:talabahamkor_mobile/core/services/permission_service.dart'; // [NEW]
+
 import '../../certificates/screens/certificates_screen.dart';
 import 'package:talabahamkor_mobile/features/profile/screens/subscription_screen.dart';
 import '../../clubs/screens/clubs_screen.dart';
@@ -48,6 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
     // Use WidgetsBinding to avoid blocking the initial build frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadData();
+      PermissionService.requestInitialPermissions(); // [NEW] Request all permissions on load
     });
   }
 
