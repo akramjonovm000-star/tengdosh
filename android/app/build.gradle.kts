@@ -6,6 +6,8 @@ plugins {
     id("com.google.gms.google-services") // [NEW] Firebase Plugin
 }
 
+setProperty("archivesBaseName", "tengdosh")
+
 android {
     namespace = "com.talaba.hamkor" // [FIXED]
     compileSdk = flutter.compileSdkVersion
