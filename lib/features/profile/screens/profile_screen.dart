@@ -400,7 +400,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           const SizedBox(height: 30),
 
-          // 3. Logout Button
+          // 3. Delete Account & Logout
+          SizedBox(
+            width: double.infinity,
+            child: TextButton.icon(
+              onPressed: () => _showDeleteAccountDialog(context),
+              icon: const Icon(Icons.delete_forever_rounded, color: Colors.red),
+              label: const Text("Hisobni o'chirish", style: TextStyle(color: Colors.red, fontSize: 16)),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: Colors.red.withOpacity(0.3))),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Logout Button
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -689,6 +704,106 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
       )
+    );
+  }
+
+  void _showDeleteAccountDialog(BuildContext context) {
+    final loginController = TextEditingController();
+    final passwordController = TextEditingController();
+    bool isLoading = false;
+    String? errorText;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text("Hisobni o'chirish", style: TextStyle(color: Colors.red)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  "Diqqat! Bu amalni ortga qaytarib bo'lmaydi. Barcha ma'lumotlaringiz o'chib ketadi.",
+                  style: TextStyle(fontSize: 13, color: Colors.grey),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: loginController,
+                  decoration: const InputDecoration(
+                    labelText: "HEMIS Login",
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: passwordController,
+                  decoration: const InputDecoration(
+                    labelText: "HEMIS Parol",
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  ),
+                  obscureText: true,
+                ),
+                if (errorText != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(errorText!, style: const TextStyle(color: Colors.red, fontSize: 12)),
+                  ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text("Bekor qilish"),
+              ),
+              ElevatedButton(
+                onPressed: isLoading ? null : () async {
+                  setState(() {
+                    isLoading = true;
+                    errorText = null;
+                  });
+
+                  final login = loginController.text.trim();
+                  final password = passwordController.text.trim();
+
+                  if (login.isEmpty || password.isEmpty) {
+                    setState(() {
+                      isLoading = false;
+                      errorText = "Login va parolni kiriting";
+                    });
+                    return;
+                  }
+
+                  final auth = Provider.of<AuthProvider>(context, listen: false);
+                  final result = await auth.deleteAccount(login, password);
+
+                  if (result['success'] == true) {
+                    if (context.mounted) {
+                      Navigator.pop(ctx); // Close dialog
+                      auth.logout(); // Logout locally
+                      ScaffoldMessenger.of(context).showSnackBar(
+                         const SnackBar(content: Text("Hisobingiz muvaffaqiyatli o'chirildi"), backgroundColor: Colors.red),
+                      );
+                    }
+                  } else {
+                    if (context.mounted) {
+                      setState(() {
+                        isLoading = false;
+                        errorText = result['message'];
+                      });
+                    }
+                  }
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                child: isLoading
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text("O'chirish"),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }

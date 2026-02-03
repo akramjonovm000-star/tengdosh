@@ -239,4 +239,27 @@ class AuthService {
       return null;
     }
   }
+
+  Future<Map<String, dynamic>> deleteAccount(String login, String password) async {
+    final url = Uri.parse("${ApiConstants.backendUrl}/auth/delete-account");
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'login': login, 'password': password}),
+      );
+      
+      final body = jsonDecode(response.body);
+      
+      if (response.statusCode == 200 && body['success'] == true) {
+        return {'success': true};
+      } else {
+        return {'success': false, 'message': body['detail'] ?? "Xatolik yuz berdi"};
+      }
+    } catch (e) {
+      return {'success': false, 'message': "Tarmoq xatosi: $e"};
+    }
+  }
 }

@@ -568,3 +568,48 @@ def _get_error_html(error: str):
         </body>
     </html>
     """
+
+@router.post("/delete-account")
+async def delete_account(
+    creds: HemisLoginRequest,
+    db: AsyncSession = Depends(get_session)
+):
+    """
+    Permanently delete account and all associated data.
+    Requires valid HEMIS credentials for confirmation.
+    """
+    # 1. Verify Credentials via HEMIS (Identity Proof)
+    token, error = await HemisService.authenticate(creds.login, creds.password)
+    
+    if not token:
+        raise HTTPException(status_code=401, detail="Parol noto'g'ri. Iltimos, ma'lumotlarni tekshiring.")
+        
+    # 2. Find Student Record
+    student = await db.scalar(select(Student).where(Student.hemis_login == creds.login))
+    if not student:
+        raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
+        
+    # 3. Find User Record (Unified Auth)
+    user = await db.scalar(select(User).where(User.hemis_login == creds.login))
+    
+    # 4. Perform Delete
+    # Note: Cascading relationships in models.py will handle:
+    # - activities, documents, certificates, feedbacks (ondelete="CASCADE")
+    # - TgAccount links (ondelete="SET NULL")
+    
+    try:
+        if student:
+            await db.delete(student)
+            
+        if user:
+            await db.delete(user)
+            
+        await db.commit()
+        
+        logger.info(f"ACCOUNT DELETED: {creds.login}")
+        return {"success": True, "message": "Hisob muvaffaqiyatli o'chirildi"}
+        
+    except Exception as e:
+        logger.error(f"Delete Account Error: {e}")
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="Hisobni o'chirishda xatolik yuz berdi")

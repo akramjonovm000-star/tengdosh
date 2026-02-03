@@ -151,4 +151,8 @@ class AuthProvider with ChangeNotifier {
       return "Xatolik: $e";
     }
   }
+
+  Future<Map<String, dynamic>> deleteAccount(String login, String password) async {
+    return await _authService.deleteAccount(login, password);
+  }
 }
