@@ -58,5 +58,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Profil rasmini yuklash uchun galereyaga ruxsat bering.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Profil rasmini olish uchun kameraga ruxsat bering.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Video yuklash uchun mikrofonga ruxsat bering.</string>
 </dict>
 </plist>
