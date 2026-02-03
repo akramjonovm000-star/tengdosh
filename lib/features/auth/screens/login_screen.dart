@@ -16,6 +16,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isObscure = true;
+  bool _isPolicyAccepted = false; // New state
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -129,18 +130,76 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     validator: (v) => v!.isEmpty ? "Iltimos parolni kiriting" : null,
                   ),
+                  const SizedBox(height: 16),
+                  
+                  // Privacy Policy Checkbox
+                  Row(
+                    children: [
+                      SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: Checkbox(
+                          value: _isPolicyAccepted,
+                          activeColor: AppTheme.primaryBlue,
+                          onChanged: (val) {
+                            setState(() {
+                              _isPolicyAccepted = val ?? false;
+                            });
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                             // Toggle checkbox on text tap too (optional, or just open policy)
+                             // Better UX: Tap text -> Open Policy? Or tap text -> toggle?
+                             // Usually: "I agree to the [Privacy Policy]" -> Text toggles, Link opens policy.
+                             // Let's make "Maxfiylik siyosati" clickable specifically.
+                          },
+                          child: Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              Text(
+                                "Men ",
+                                style: TextStyle(color: Colors.grey[700], fontSize: 13),
+                              ),
+                              GestureDetector(
+                                onTap: _showPrivacyPolicy,
+                                child: const Text(
+                                  "Maxfiylik siyosati",
+                                  style: TextStyle(
+                                    color: AppTheme.primaryBlue,
+                                    fontWeight: FontWeight.bold,
+                                    decoration: TextDecoration.underline,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                " bilan tanishib chiqdim va qabul qilaman.",
+                                style: TextStyle(color: Colors.grey[700], fontSize: 13),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  
                   const SizedBox(height: 24),
                   
                   Consumer<AuthProvider>(
                     builder: (context, auth, _) {
                       return ElevatedButton(
-                        onPressed: auth.isLoading ? null : _submit,
+                        onPressed: (_isPolicyAccepted && !auth.isLoading) ? _submit : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTheme.primaryBlue,
+                          disabledBackgroundColor: Colors.grey[300],
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          elevation: 2,
+                          elevation: _isPolicyAccepted ? 2 : 0,
                         ),
                         child: auth.isLoading
                             ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
@@ -181,6 +240,136 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  void _showPrivacyPolicy() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (context, scrollController) {
+            return Column(
+              children: [
+                // Handle bar
+                Center(
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 12, bottom: 12),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8),
+                  child: Text(
+                    "Maxfiylik Siyosati",
+                    style: AppTheme.lightTheme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const Divider(),
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: scrollController,
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          "1. Umumiy qoidalar",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          "Ushbu ilova (\"Tengdosh\") talabalarga o'quv jarayoni haqida ma'lumot berish, OTM yangiliklaridan xabardor qilish va o'zaro muloqotni ta'minlash maqsadida ishlab chiqilgan. Ilova OTMning HEMIS axborot tizimi bilan integratsiya qilingan.",
+                          style: TextStyle(fontSize: 14, height: 1.5, color: Colors.black87),
+                        ),
+                        SizedBox(height: 16),
+                        
+                        Text(
+                          "2. Ma'lumotlarni yig'ish va foydalanish",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          "Biz sizning quyidagi shaxsiy ma'lumotlaringizni to'playmiz va qayta ishlaymiz:\n"
+                          "• Ism, familiya va talaba ID raqami.\n"
+                          "• O'quv jarayoni ma'lumotlari (baho, davomat, dars jadvali va h.k).\n"
+                          "• Ilova orqali yuborilgan murojaatlar, xabarlar va fayllar.\n"
+                          "• Qurilma haqidagi texnik ma'lumotlar (versiya, IP manzil - xavfsizlik uchun).",
+                          style: TextStyle(fontSize: 14, height: 1.5, color: Colors.black87),
+                        ),
+                        SizedBox(height: 16),
+
+                        Text(
+                          "3. Ma'lumotlar xavfsizligi",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          "Sizning login va parolingiz shifrlangan holda saqlanadi va uzatiladi. Biz sizning shaxsiy ma'lumotlaringizni uchinchi shaxslarga bermaymiz, faqat O'zbekiston Respublikasi qonunchiligida belgilangan hollar bundan mustasno.",
+                          style: TextStyle(fontSize: 14, height: 1.5, color: Colors.black87),
+                        ),
+                        SizedBox(height: 16),
+
+                        Text(
+                          "4. Foydalanuvchi majburiyatlari",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          "Siz o'z login va parolingizni boshqa shaxslarga bermaslikka majbursiz. Agrar hisobingizdan shubhali harakatlar sezilsa, darhol ma'muriyatga xabar berishingiz so'raladi.",
+                          style: TextStyle(fontSize: 14, height: 1.5, color: Colors.black87),
+                        ),
+                         SizedBox(height: 16),
+                        
+                        Text(
+                          "5. Bog'lanish",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          "Ilova bo'yicha savol yoki takliflaringiz bo'lsa, 'Murojaatlar' bo'limi orqali bizga xabar berishingiz mumkin.",
+                          style: TextStyle(fontSize: 14, height: 1.5, color: Colors.black87),
+                        ),
+                        SizedBox(height: 40),
+                      ],
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryBlue,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text("Tushunarli", style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }
