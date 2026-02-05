@@ -15,6 +15,7 @@ import 'package:talabahamkor_mobile/features/student_module/screens/election_scr
 import 'package:talabahamkor_mobile/features/social/screens/social_activity_screen.dart';
 import 'package:talabahamkor_mobile/features/documents/screens/documents_screen.dart';
 import 'package:talabahamkor_mobile/core/services/permission_service.dart'; // [NEW]
+import 'package:talabahamkor_mobile/features/tutor/screens/tutor_groups_screen.dart'; // [NEW]
 
 import '../../certificates/screens/certificates_screen.dart';
 import 'package:talabahamkor_mobile/features/profile/screens/subscription_screen.dart';
@@ -62,6 +63,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadData({bool refresh = false}) async {
     try {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final isTutor = auth.isTutor;
+
       // Fetch profile and semesters first
       final results = await Future.wait([
         _dataService.getProfile(),
@@ -77,14 +81,17 @@ class _HomeScreenState extends State<HomeScreen> {
         _selectedSemesterId = first['code']?.toString() ?? first['id']?.toString();
       }
       
-      // Now fetch dashboard (Overall stats)
-      _dashboard = await _dataService.getDashboardStats(refresh: refresh);
-      
-      // AUTO-FIX: If GPA is 0.0, it might be stale cache or previous semester issue.
-      // Force refresh silently if we haven't already.
-      if (!refresh && (_dashboard?['gpa'] == 0 || _dashboard?['gpa'] == 0.0)) {
-         print("Zero GPA detected, forcing dashboard refresh...");
-         _dashboard = await _dataService.getDashboardStats(refresh: true);
+      // Fetch Dashboard Stats based on Role
+      if (isTutor) {
+         _dashboard = await _dataService.getTutorDashboard();
+      } else {
+         _dashboard = await _dataService.getDashboardStats(refresh: refresh);
+         
+         // AUTO-FIX: If GPA is 0.0, it might be stale cache or previous semester issue.
+         if (!refresh && (_dashboard?['gpa'] == 0 || _dashboard?['gpa'] == 0.0)) {
+            print("Zero GPA detected, forcing dashboard refresh...");
+            _dashboard = await _dataService.getDashboardStats(refresh: true);
+         }
       }
       
       if (mounted) {
@@ -132,7 +139,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     // Screens for BottomNav
     final List<Widget> screens = [
-      _buildHomeContent(),           // 0: Home (Dashboard)
+      _buildHomeContent(),           // 0: Home (Dashboard) - Tutor/Student Logic inside
       const StudentModuleScreen(),   // 1: Yangiliklar (Ex-Talaba)
       const AiScreen(),              // 2: AI
       const CommunityScreen(),       // 3: Choyxona
@@ -203,7 +210,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHomeContent() {
-    final student = Provider.of<AuthProvider>(context).currentUser;
+    final auth = Provider.of<AuthProvider>(context);
+    final student = auth.currentUser;
+    final isTutor = auth.isTutor;
     
     return RefreshIndicator(
       onRefresh: () async => _loadData(refresh: true),
@@ -252,15 +261,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           Flexible(
                             child: Text(
                               "Salom, ${() {
-                                if (student == null) return "Talaba";
+                                if (student == null) return "Foydalanuvchi";
                                 
                                 final fullName = student.fullName;
-                                if (fullName == "Talaba") return "Talaba";
+                                if (fullName == "Talaba") return "Foydalanuvchi";
 
                                 final parts = fullName.split(' ');
-                                
-                                // Student model normalizes name to "Firstname Lastname"
-                                // So we just take the first part.
                                 if (parts.isNotEmpty) {
                                    String first = parts[0];
                                    return first[0].toUpperCase() + first.substring(1).toLowerCase();
@@ -290,13 +296,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppTheme.accentGreen, shape: BoxShape.circle)),
                           const SizedBox(width: 6),
-                          Text("Online", style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                          Text(isTutor ? "Tyutor" : "Online", style: TextStyle(color: Colors.grey[600], fontSize: 12)),
                         ],
                       ),
                     ],
                   ),
                 ),
-                // Removed Spacer() as Expanded above takes all space
                 Consumer<NotificationProvider>(
                   builder: (context, notificationProvider, _) => Stack(
                     children: [
@@ -326,6 +331,124 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 24),
 
+            if (isTutor) 
+               _buildTutorDashboard()
+            else
+               _buildStudentDashboard(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTutorDashboard() {
+     return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+            // Stats Row
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStatCard(
+                    "Talabalar",
+                    "${_dashboard?['student_count'] ?? 0}",
+                    Icons.people_alt_rounded,
+                    Colors.blue,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildStatCard(
+                    "Guruhlar",
+                    "${_dashboard?['group_count'] ?? 0}",
+                    Icons.class_rounded,
+                    Colors.orange,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            
+            const Text(
+              "Menyu",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+            ),
+            const SizedBox(height: 16),
+            
+            GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: 2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 1.1,
+              children: [
+                 DashboardCard(
+                   title: "Mening Guruhlarim",
+                   icon: Icons.group_work_rounded,
+                   color: Colors.indigo,
+                   onTap: () {
+                     Navigator.push(context, MaterialPageRoute(builder: (_) => const TutorGroupsScreen()));
+                   },
+                 ),
+                 DashboardCard(
+                   title: "KPI va Reyting",
+                   icon: Icons.bar_chart_rounded,
+                   color: Colors.green,
+                   onTap: () => _showMock("KPI"),
+                 ),
+                 DashboardCard(
+                   title: "Davomat Nazorati",
+                   icon: Icons.verified_user_rounded,
+                   color: Colors.redAccent,
+                   onTap: () => _showMock("Davomat"),
+                 ),
+                 DashboardCard( // Added extra card to fill grid
+                   title: "Sozlamalar",
+                   icon: Icons.settings_rounded,
+                   color: Colors.grey,
+                   onTap: () => setState(() => _currentIndex = 4),
+                 ),
+              ],
+            )
+        ],
+     );
+  }
+
+  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 32),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+          Text(
+            title,
+            style: TextStyle(color: Colors.grey[600], fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStudentDashboard() {
+    return Column(
+      children: [
             // 2. GPA Module (Full Width)
             Container(
               width: double.infinity,
@@ -473,17 +596,17 @@ class _HomeScreenState extends State<HomeScreen> {
                          }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryBlue,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        elevation: 0,
-                      ),
-                      child: const Text("Ovoz berish"),
-                    )
-                  ],
-                ),
+                      backgroundColor: AppTheme.primaryBlue,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      elevation: 0,
+                    ),
+                    child: const Text("Ovoz berish"),
+                  )
+                ],
               ),
+            ),
 
             // 3. Module Grid (Dashboard)
             const Text(
@@ -531,22 +654,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CertificatesScreen())),
                 ),
                 DashboardCard(
-            title: "Klublar",
-            icon: Icons.groups_rounded,
-            color: Colors.teal,
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ClubsScreen())),
-          ),
-                  DashboardCard(
-                    title: "Murojaatlar",
-                    icon: Icons.chat_bubble_outline_rounded,
-                    color: Colors.redAccent,
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AppealsScreen())),
-                  ),
+                  title: "Klublar",
+                  icon: Icons.groups_rounded,
+                  color: Colors.teal,
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ClubsScreen())),
+                ),
+                DashboardCard(
+                  title: "Murojaatlar",
+                  icon: Icons.chat_bubble_outline_rounded,
+                  color: Colors.redAccent,
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AppealsScreen())),
+                ),
               ],
             ),
-          ],
-        ),
-      ),
+      ],
     );
   }
 

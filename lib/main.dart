@@ -122,9 +122,6 @@ class _TalabaHamkorAppState extends State<TalabaHamkorApp> {
              return const Scaffold(body: Center(child: CircularProgressIndicator()));
           }
           if (auth.isAuthenticated) {
-            if (auth.isTutor) {
-              return const TutorHomeScreen();
-            }
             return const HomeScreen();
           }
           return const LoginScreen();
