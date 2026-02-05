@@ -16,6 +16,7 @@ class Student {
   final bool trialUsed;
   final String? premiumExpiry; // Added string for simplicity
   final String? customBadge;
+  final String? staffRole; // New field for Tutor/Staff roles
 
   Student({
     required this.id,
@@ -35,6 +36,7 @@ class Student {
     this.trialUsed = false,
     this.premiumExpiry,
     this.customBadge,
+    this.staffRole,
   });
 
   factory Student.fromJson(Map<String, dynamic> json) {
@@ -115,6 +117,7 @@ class Student {
       trialUsed: json['trial_used'] ?? false,
       premiumExpiry: json['premium_expiry']?.toString(),
       customBadge: json['custom_badge'],
+      staffRole: json['staff_role'] ?? json['role'], // Map generic role to staffRole if needed, or specific field
     );
   }
 
@@ -137,6 +140,7 @@ class Student {
       'trial_used': trialUsed,
       'premium_expiry': premiumExpiry,
       'custom_badge': customBadge,
+      'staff_role': staffRole,
     };
   }
 
@@ -158,6 +162,7 @@ class Student {
     bool? trialUsed,
     String? premiumExpiry,
     String? customBadge,
+    String? staffRole,
   }) {
     return Student(
       id: id ?? this.id,
@@ -177,6 +182,7 @@ class Student {
       trialUsed: trialUsed ?? this.trialUsed,
       premiumExpiry: premiumExpiry ?? this.premiumExpiry,
       customBadge: customBadge ?? this.customBadge,
+      staffRole: staffRole ?? this.staffRole,
     );
   }
 }

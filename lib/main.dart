@@ -10,6 +10,8 @@ import 'core/theme/app_theme.dart';
 import 'core/services/push_notification_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 
+import 'features/tutor/screens/tutor_home_screen.dart'; // [NEW]
+
 import 'package:app_links/app_links.dart';
 import 'dart:async';
 import 'dart:io';
@@ -120,6 +122,9 @@ class _TalabaHamkorAppState extends State<TalabaHamkorApp> {
              return const Scaffold(body: Center(child: CircularProgressIndicator()));
           }
           if (auth.isAuthenticated) {
+            if (auth.isTutor) {
+              return const TutorHomeScreen();
+            }
             return const HomeScreen();
           }
           return const LoginScreen();

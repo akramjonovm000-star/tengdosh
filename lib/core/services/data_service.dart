@@ -799,6 +799,70 @@ class DataService {
   Future<Map<String, dynamic>> getElectionDetails(int electionId) async {
     final response = await _get("${ApiConstants.backendUrl}/election/$electionId");
     if (response.statusCode == 200) {
+      final body = json.decode(response.body);
+      if (body['success'] == true) return body['data'];
+    }
+    return {};
+  }
+  
+  // ==========================================================
+  // TYUTOR MODULE
+  // ==========================================================
+  
+  // 30. Get Tutor Groups
+  Future<List<dynamic>> getTutorGroups() async {
+    try {
+      final response = await _get("${ApiConstants.backendUrl}/tutor/groups");
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) {
+          return body['data'];
+        }
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching tutor groups: $e");
+    }
+    return [];
+  }
+  
+  // 31. Get Tutor Dashboard
+  Future<Map<String, dynamic>> getTutorDashboard() async {
+    try {
+      final response = await _get("${ApiConstants.backendUrl}/tutor/dashboard");
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) {
+          return body['data'];
+        }
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching tutor dashboard: $e");
+    }
+    return {};
+  }
+  
+  // 32. Get Tutor Students
+  Future<List<dynamic>> getTutorStudents({String? group}) async {
+    try {
+      String url = "${ApiConstants.backendUrl}/tutor/students";
+      if (group != null) {
+        url += "?group=$group";
+      }
+      
+      final response = await _get(url);
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) {
+          return body['data'];
+        }
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching tutor students: $e");
+    }
+    return [];
+  }
+}
+    if (response.statusCode == 200) {
       return json.decode(response.body);
     }
     throw Exception(json.decode(response.body)['detail'] ?? "Saylov ma'lumotlarini yuklab bo'lmadi");

@@ -16,6 +16,8 @@ class AuthProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _currentUser != null;
   bool get isAuthUpdateRequired => _isAuthUpdateRequired;
+  
+  bool get isTutor => _currentUser?.role == 'tyutor' || _currentUser?.staffRole == 'tyutor';
 
   AuthProvider() {
     loadUser();
