@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:talabahamkor_mobile/core/services/data_service.dart';
 import 'package:talabahamkor_mobile/core/theme/app_theme.dart';
-import 'package:talabahamkor_mobile/features/student_module/screens/public_profile_screen.dart'; // Reuse existing public profile
 
 class TutorStudentsScreen extends StatefulWidget {
   final String groupNumber;

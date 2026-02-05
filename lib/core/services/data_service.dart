@@ -861,11 +861,6 @@ class DataService {
     }
     return [];
   }
-}
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    }
-    throw Exception(json.decode(response.body)['detail'] ?? "Saylov ma'lumotlarini yuklab bo'lmadi");
   }
 
   Future<bool> voteInElection(int electionId, int candidateId) async {
