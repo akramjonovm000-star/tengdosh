@@ -1294,30 +1294,5 @@ class DataService {
     return false;
   }
 
-  // --- Private Helpers ---
-
-  final AuthService _authService = AuthService();
-
-  Future<Map<String, String>> _getHeaders() async {
-    final token = await _authService.getToken();
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token',
-    };
-  }
-
-  Future<http.Response> _get(String url) async {
-    final headers = await _getHeaders();
-    return await http.get(Uri.parse(url), headers: headers);
-  }
-
-  Future<http.Response> _post(String url, {Object? body}) async {
-    final headers = await _getHeaders();
-    return await http.post(
-      Uri.parse(url),
-      headers: headers,
-      body: body != null ? json.encode(body) : null,
-    );
-  }
 }
 
