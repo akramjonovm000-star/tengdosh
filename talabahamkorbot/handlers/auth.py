@@ -141,8 +141,8 @@ async def cmd_start(message: Message, state: FSMContext, session: AsyncSession):
 
         # ===================== OWNER =====================
 
-        # ===================== OWNER =====================
-        if account.current_role == StaffRole.OWNER.value:
+        # ===================== OWNER / DEVELOPER =====================
+        if account.current_role in [StaffRole.OWNER.value, StaffRole.DEVELOPER.value]:
             text = await get_owner_dashboard_text(session)
             return await message.answer(
                 text,

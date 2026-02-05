@@ -444,7 +444,7 @@ def format_grades_msg(grades_data, web_grades_map=None):
              subj = item.get("subject", {}).get("name", "Fan")
         
         # 2. Parse Detailed Grades
-        details_list = HemisService.parse_grades_detailed(item)
+        details_dict = HemisService.parse_grades_detailed(item)
         overall = item.get("overallScore", {}).get("grade", 0)
         
         msg += f"📘 <b>{html.escape(subj)}</b>\n"
@@ -452,18 +452,11 @@ def format_grades_msg(grades_data, web_grades_map=None):
             msg += f"   Jami: <b>{overall}</b>\n"
         
         line_parts = []
-        for g in details_list:
-            t = g['type']
-            v = g['val_5']
-            # r = g['raw']
-            # m = g['max']
-            
-            if t == 'JN':
-                line_parts.append(f"JN: {v}")
-            elif t == 'ON':
-                line_parts.append(f"ON: {v}")
-            elif t == 'YN':
-                line_parts.append(f"YN: {v}")
+        for t in ['JN', 'ON', 'YN']:
+            g = details_dict.get(t)
+            if g and g.get('val_5', 0) > 0:
+                v = g['val_5']
+                line_parts.append(f"{t}: {v}")
         
         if line_parts:
             msg += "   " + " | ".join(line_parts) + "\n\n"

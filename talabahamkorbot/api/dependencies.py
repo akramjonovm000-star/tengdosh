@@ -29,10 +29,18 @@ async def get_current_user_token_data(authorization: str = Header(None)):
         except:
              pass
 
+
     if token.startswith("student_id_"):
         try:
             sid = int(token.replace("student_id_", ""))
             return {"type": "student", "id": sid}
+        except:
+            pass
+
+    if token.startswith("staff_id_"):
+        try:
+            sid = int(token.replace("staff_id_", ""))
+            return {"type": "staff", "id": sid}
         except:
             pass
             
@@ -42,6 +50,21 @@ async def get_current_user_token_data(authorization: str = Header(None)):
 async def get_current_user_id(token_data: dict = Depends(get_current_user_token_data)):
     # Legacy support if needed, but better to use token_data directly
     return token_data["id"]
+
+from database.models import Staff
+
+async def get_current_staff(
+    token_data: dict = Depends(get_current_user_token_data),
+    db: AsyncSession = Depends(get_db)
+):
+    if token_data["type"] != "staff":
+        raise HTTPException(status_code=403, detail="Faqat xodimlar uchun")
+        
+    staff = await db.get(Staff, token_data["id"])
+    if not staff:
+        raise HTTPException(status_code=404, detail="Xodim topilmadi")
+        
+    return staff
 
 async def get_current_student(
     token_data: dict = Depends(get_current_user_token_data),
@@ -54,9 +77,11 @@ async def get_current_student(
             if not tg_acc or not tg_acc.student_id:
                 raise HTTPException(status_code=404, detail="Student not found (TG)")
             student = await db.get(Student, tg_acc.student_id)
-        else:
+        elif token_data["type"] == "student":
             # Direct Student ID
             student = await db.get(Student, token_data["id"])
+        else:
+             raise HTTPException(status_code=403, detail="Faqat talabalar uchun")
 
         if not student:
             raise HTTPException(status_code=404, detail="Student profile not found")

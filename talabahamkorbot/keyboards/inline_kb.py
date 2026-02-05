@@ -346,7 +346,7 @@ def get_retry_channel_forward_kb() -> InlineKeyboardMarkup:
 # TALABA ASOSIY MENYUSI
 # ============================================================
 
-def get_student_main_menu_kb(led_clubs: list = None, is_election_admin: bool = False, has_active_election: bool = False) -> InlineKeyboardMarkup:
+def get_student_main_menu_kb(led_clubs: list = None, is_election_admin: bool = False, has_active_election: bool = False, is_developer: bool = False) -> InlineKeyboardMarkup:
     """ Talaba asosiy menyusi """
     rows = [
         [InlineKeyboardButton(text="👤 Profilim", callback_data="student_profile")],
@@ -371,6 +371,9 @@ def get_student_main_menu_kb(led_clubs: list = None, is_election_admin: bool = F
     if is_election_admin:
         rows.append([InlineKeyboardButton(text="⚙️ Saylovni boshqarish", callback_data="admin_election_menu")])
 
+    if is_developer:
+        rows.append([InlineKeyboardButton(text="👨‍💻 Developer", callback_data="owner_menu")])
+
     if led_clubs:
         for c in led_clubs:
             rows.append([InlineKeyboardButton(text=f"📢 {c.name} (Boshqarish)", callback_data=f"leader_manage:{c.id}")])
@@ -378,7 +381,7 @@ def get_student_main_menu_kb(led_clubs: list = None, is_election_admin: bool = F
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def get_student_profile_menu_kb(is_election_admin: bool = False, has_active_election: bool = False) -> InlineKeyboardMarkup:
+def get_student_profile_menu_kb(is_election_admin: bool = False, has_active_election: bool = False, is_developer: bool = False) -> InlineKeyboardMarkup:
     """ Profilim menusi """
     rows = [
         [InlineKeyboardButton(text="🏛 Akademik bo'lim", callback_data="student_academic_menu:profile")],
@@ -402,6 +405,9 @@ def get_student_profile_menu_kb(is_election_admin: bool = False, has_active_elec
     if is_election_admin:
         rows.insert(-1, [InlineKeyboardButton(text="⚙️ Saylovni boshqarish", callback_data="admin_election_menu")])
         
+    if is_developer:
+        rows.insert(-1, [InlineKeyboardButton(text="👨‍💻 Developer", callback_data="owner_menu")])
+
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
@@ -597,6 +603,33 @@ def get_certificate_actions_kb(cert_id: int) -> InlineKeyboardMarkup:
 # ============================================================
 # XODIM ROLINI TANLASH TUGMASI (agar kerak bo‘lsa)
 # ============================================================
+
+def get_owner_developers_kb(developers: list) -> InlineKeyboardMarkup:
+    """ Developerlar ro'yxati va boshqaruv tugmalari """
+    rows = []
+    
+    for dev in developers:
+        rows.append([
+            InlineKeyboardButton(text=f"👤 {dev.full_name}", callback_data=f"owner_dev_view:{dev.id}"),
+            InlineKeyboardButton(text="❌ O'chirish", callback_data=f"owner_dev_del:{dev.id}")
+        ])
+        
+    rows.append([
+        InlineKeyboardButton(text="➕ Developer qo'shish", callback_data="owner_dev_add")
+    ])
+    rows.append([
+        InlineKeyboardButton(text="⬅️ Ortga", callback_data="owner_menu")
+    ])
+    
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+def get_dev_add_cancel_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="❌ Bekor qilish", callback_data="owner_dev")]
+        ]
+    )
+
 
 def get_staff_role_select_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(

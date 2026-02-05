@@ -5,7 +5,7 @@ from sqlalchemy import select, and_
 import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.models import TgAccount, Club, Student, Election
+from database.models import TgAccount, Club, Student, Election, Staff, StaffRole
 from keyboards.inline_kb import get_student_main_menu_kb
 
 router = Router()
@@ -34,6 +34,18 @@ async def show_student_main_menu(target, session: AsyncSession, state: FSMContex
                 from utils.student_utils import get_election_info
                 is_election_admin, has_active_election = await get_election_info(student, session)
         
+    # Developer check
+    is_developer = False
+    result = await session.execute(
+        select(Staff).where(
+            Staff.telegram_id == user_id,
+            Staff.role == StaffRole.DEVELOPER,
+            Staff.is_active == True
+        )
+    )
+    if result.scalar_one_or_none():
+        is_developer = True
+        
     # Delete instruction message if exists
     data = await state.get_data()
     instr_id = data.get("reply_instruction_msg_id")
@@ -47,21 +59,39 @@ async def show_student_main_menu(target, session: AsyncSession, state: FSMContex
     if not text:
         text = "🎓 <b>Talaba asosiy menyusi:</b>"
         
-    kb = get_student_main_menu_kb(led_clubs=led_clubs, is_election_admin=is_election_admin, has_active_election=has_active_election)
+    kb = get_student_main_menu_kb(
+        led_clubs=led_clubs, 
+        is_election_admin=is_election_admin, 
+        has_active_election=has_active_election,
+        is_developer=is_developer
+    )
     
     message = target.message if isinstance(target, CallbackQuery) else target
+    
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"show_student_main_menu: Sending menu to {user_id}")
     
     try:
         if isinstance(target, CallbackQuery):
             await message.edit_text(text, reply_markup=kb, parse_mode="HTML")
+            logger.info("show_student_main_menu: edit_text success")
         else:
             await message.answer(text, reply_markup=kb, parse_mode="HTML")
-    except Exception:
+            logger.info("show_student_main_menu: answer success")
+    except Exception as e:
+        logger.error(f"show_student_main_menu: First attempt failed: {e}")
         try:
             await message.delete()
         except:
             pass
-        await message.answer(text, reply_markup=kb, parse_mode="HTML")
+        try:
+            await message.answer(text, reply_markup=kb, parse_mode="HTML")
+            logger.info("show_student_main_menu: Retry answer success")
+        except Exception as e2:
+             logger.error(f"show_student_main_menu: Retry FAILED: {e2}")
+             raise e2
+
 
 @router.callback_query(F.data == "go_student_home")
 async def cb_go_student_home(call: CallbackQuery, session: AsyncSession, state: FSMContext):

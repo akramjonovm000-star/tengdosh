@@ -81,53 +81,85 @@ async def login_via_hemis(
          print(f"DEBUG AUTH: demo_login='{demo_login}'")
              
          if demo_login:
-             # Ensure Demo User Exists
-             demo_user = await db.scalar(select(Student).where(Student.hemis_login == demo_login))
-             if not demo_user:
-                 demo_user = Student(
-                     hemis_id=f"{login_clean}_123",
-                     full_name=full_name,
-                     hemis_login=demo_login,
-                     hemis_password="123",
-                     university_name="Test Universiteti",
-                     faculty_name="Test Fakulteti",
-                     level_name="1-kurs",
-                     group_number="101-GROUP",
-                     hemis_role=role,
-                     image_url=f"https://ui-avatars.com/api/?name={full_name.replace(' ', '+')}&background=random"
-                 )
-                 db.add(demo_user)
-                 await db.flush()
+             if role == "tutor":
+                 # Demo Staff Logic
+                 from database.models import Staff, StaffRole
+                 demo_staff = await db.scalar(select(Staff).where(Staff.hemis_id == 999999))
+                 if not demo_staff:
+                     demo_staff = Staff(
+                         full_name=full_name,
+                         jshshir="12345678901234",
+                         role="tyutor", # or StaffRole.TUTOR
+                         hemis_id=999999,
+                         phone="998901234567"
+                     )
+                     db.add(demo_staff)
+                     await db.commit()
+                     await db.refresh(demo_staff)
                  
-                 # Also sync to Users table
-                 new_u = User(
-                     hemis_login=demo_login,
-                     role=role,
-                     full_name=full_name,
-                     hemis_password="123",
-                     university_name="Test Universiteti",
-                     faculty_name="Test Fakulteti"
-                 )
-                 db.add(new_u)
-                 await db.commit()
-                 await db.refresh(demo_user)
-             
-             print(f"DEBUG AUTH: Success! Token='student_id_{demo_user.id}'")
-             
-             return {
-                 "success": True,
-                 "data": {
-                     "token": f"student_id_{demo_user.id}",
-                     "role": role,
-                     "profile": {
-                         "id": demo_user.id,
-                         "full_name": demo_user.full_name,
-                         "university": {"name": demo_user.university_name},
-                         "image": demo_user.image_url,
-                         "role": role
+                 print(f"DEBUG AUTH: Success! Token='staff_id_{demo_staff.id}'")
+                 return {
+                     "success": True, 
+                     "data": {
+                         "token": f"staff_id_{demo_staff.id}",
+                         "role": "tyutor",
+                         "profile": {
+                              "id": demo_staff.id,
+                              "full_name": demo_staff.full_name,
+                              "role": "tyutor",
+                              "image": f"https://ui-avatars.com/api/?name={full_name.replace(' ', '+')}&background=random"
+                         }
                      }
                  }
-             }
+             else:
+                 # Demo Student Logic
+                 # Ensure Demo User Exists
+                 demo_user = await db.scalar(select(Student).where(Student.hemis_login == demo_login))
+                 if not demo_user:
+                     demo_user = Student(
+                         hemis_id=f"{login_clean}_123",
+                         full_name=full_name,
+                         hemis_login=demo_login,
+                         hemis_password="123",
+                         university_name="Test Universiteti",
+                         faculty_name="Test Fakulteti",
+                         level_name="1-kurs",
+                         group_number="101-GROUP",
+                         hemis_role=role,
+                         image_url=f"https://ui-avatars.com/api/?name={full_name.replace(' ', '+')}&background=random"
+                     )
+                     db.add(demo_user)
+                     await db.flush()
+                     
+                     # Also sync to Users table
+                     new_u = User(
+                         hemis_login=demo_login,
+                         role=role,
+                         full_name=full_name,
+                         hemis_password="123",
+                         university_name="Test Universiteti",
+                         faculty_name="Test Fakulteti"
+                     )
+                     db.add(new_u)
+                     await db.commit()
+                     await db.refresh(demo_user)
+                 
+                 print(f"DEBUG AUTH: Success! Token='student_id_{demo_user.id}'")
+                 
+                 return {
+                     "success": True,
+                     "data": {
+                         "token": f"student_id_{demo_user.id}",
+                         "role": role,
+                         "profile": {
+                             "id": demo_user.id,
+                             "full_name": demo_user.full_name,
+                             "university": {"name": demo_user.university_name},
+                             "image": demo_user.image_url,
+                             "role": role
+                         }
+                     }
+                 }
 
     # 1. AUTHENTICATE
     import time
@@ -140,25 +172,76 @@ async def login_via_hemis(
         logger.warning(f"AuthLog: Auth failed via Hemis: {error}")
         raise HTTPException(status_code=401, detail=error or "Login yoki parol noto'g'ri")
         
+
     # 2. GET PROFILE
     print(f"AuthLog: Fetching profile for login {creds.login}...", flush=True)
     me = await HemisService.get_me(token)
     t_profile = time.time()
     print(f"AuthLog: Get Me took {t_profile - t_auth:.2f}s", flush=True)
     
-    # DEBUG LOGGING
-    import json
-    # logger.info(f"HEMIS RAW PROFILE REPSONSE: {json.dumps(me, indent=2)}") 
-    # Reduced log spam
-    
     if not me:
         raise HTTPException(status_code=500, detail="Profil ma'lumotlarini olib bo'lmadi")
+
+    # 3. CHECK USER TYPE
+    user_type = me.get("type", "student")
+    
+    if user_type != "student":
+        # --- STAFF / TUTOR LOGIC ---
+        from database.models import Staff
         
-    # 3. SYNC TO DB
+        # Identify via ID or PINFL
+        h_id = me.get("id")
+        pinfl = me.get("pinfl") or me.get("jshshir")
+        
+        staff = None
+        if h_id:
+            staff = await db.scalar(select(Staff).where(Staff.hemis_id == int(h_id)))
+            
+        if not staff and pinfl:
+            staff = await db.scalar(select(Staff).where(Staff.jshshir == pinfl))
+            
+        if not staff:
+             # Auto-register Staff? Currently restricted to imported staff.
+             # But for Tutors, we assume they are imported.
+             logger.warning(f"Login attempted by Staff {creds.login} (ID={h_id}) but not found in DB.")
+             raise HTTPException(status_code=403, detail="Siz tizimda xodim sifatida topilmadingiz")
+             
+        # Update Staff info
+        if h_id and not staff.hemis_id:
+            staff.hemis_id = int(h_id)
+            
+        # Determine Role directly from DB or Hemis?
+        # Ideally, we trust our DB role (e.g. 'tyutor')
+        # But we can update if needed.
+        
+        # Check Hemis Roles if logic needed:
+        # roles = me.get("roles", [])
+        # ...
+        
+        await db.commit()
+        
+        # Generate Staff Token
+        token_str = f"staff_id_{staff.id}"
+        
+        return {
+            "success": True,
+            "data": {
+                "token": token_str,
+                "role": staff.role.value if hasattr(staff.role, 'value') else staff.role, # e.g. "tyutor"
+                "profile": {
+                    "id": staff.id,
+                    "full_name": staff.full_name,
+                    "role": staff.role,
+                    "image": me.get("image") or me.get("picture"),
+                    # Add other staff fields if needed
+                }
+            }
+        }
+
+    # --- STUDENT LOGIC (Existing) ---
     h_id = str(me.get("id", ""))
     h_login = me.get("login") or creds.login
     
-    # Parse Names - Expanded Logic
     # Parse Names - Robust Extraction
     first_name = me.get('firstname') or me.get('first_name') or ""
     last_name = me.get('lastname') or me.get('surname') or me.get('last_name') or ""

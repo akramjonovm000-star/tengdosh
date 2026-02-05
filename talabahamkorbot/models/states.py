@@ -179,6 +179,9 @@ class OwnerStates(StatesGroup):
     # Reklama tarqatish
     broadcasting_message = State()
 
+    # Developerlik boshqaruvi
+    waiting_dev_tg_id = State()
+
 class OwnerGifts(StatesGroup):
     waiting_user_id = State()
     selecting_duration = State()

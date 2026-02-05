@@ -36,6 +36,8 @@ from keyboards.inline_kb import (
     get_university_actions_kb,
     get_import_confirm_kb,
     get_import_retry_kb,
+    get_owner_developers_kb,
+    get_dev_add_cancel_kb,
 )
 
 logger = logging.getLogger(__name__)
@@ -45,18 +47,20 @@ router = Router()
 # -------------------------------------------------------------
 #                 OWNER HUQUQINI TEKSHIRISH
 # -------------------------------------------------------------
-async def _ensure_owner(message: Message, session: AsyncSession) -> Staff | None:
+async def _ensure_owner(event: Message | CallbackQuery, session: AsyncSession) -> Staff | None:
     """
     Owner yoki developer ekanligini tekshiruvchi funksiya.
     """
+    user_id = event.from_user.id
 
     # Egasi bo‘lsa → to‘g‘ridan to‘g‘ri owner
-    if message.from_user.id == OWNER_TELEGRAM_ID:
+    if user_id == OWNER_TELEGRAM_ID:
         return Staff(id=0, full_name="Owner", role=StaffRole.OWNER, is_active=True)
 
     # Boshqa owner/developer xodimni tekshiramiz
     result = await session.execute(
         select(Staff).where(
+            Staff.telegram_id == user_id,
             Staff.is_active.is_(True),
             Staff.role.in_([StaffRole.OWNER, StaffRole.DEVELOPER]),
         )
@@ -67,7 +71,8 @@ async def _ensure_owner(message: Message, session: AsyncSession) -> Staff | None
         return staff
 
     # Ruxsat yo‘q
-    await message.answer(
+    msg = event.message if isinstance(event, CallbackQuery) else event
+    await msg.answer(
         "❌ Sizda owner/developer huquqlari mavjud emas.\n\n"
         "Bosh menyuga qayting va mos rol bilan tizimga kiring.",
         reply_markup=get_start_role_inline_kb(),
@@ -124,7 +129,7 @@ async def cb_owner_universities(call: CallbackQuery, state: FSMContext, session:
 
     await state.clear()  # ortga tugma ishlashi uchun state tozalaymiz
 
-    staff = await _ensure_owner(call.message, session)
+    staff = await _ensure_owner(call, session)
     if not staff:
         return
 
@@ -465,7 +470,7 @@ async def cb_owner_import(
     session: AsyncSession,
 ):
 
-    staff = await _ensure_owner(call.message, session)
+    staff = await _ensure_owner(call, session)
     if not staff:
         return
 
@@ -488,7 +493,7 @@ async def cb_owner_broadcast(
     state: FSMContext,
     session: AsyncSession,
 ):
-    staff = await _ensure_owner(call.message, session)
+    staff = await _ensure_owner(call, session)
     if not staff:
         return
 
@@ -604,22 +609,144 @@ async def cb_owner_dev(
     state: FSMContext,
     session: AsyncSession,
 ):
-
-    if call.from_user.id != OWNER_TELEGRAM_ID:
-        await call.message.edit_text(
-            "❌ Bu bo'lim faqat bot egasi (owner) uchun.\n\n"
-            "Developer qo'shish imkoniyati keyingi bosqichda qo‘shiladi.",
-            reply_markup=get_back_inline_kb("owner_menu"),
-        )
-        await call.answer()
+    """ Developerlar ro'yxatini ko'rsatish """
+    staff = await _ensure_owner(call, session)
+    if not staff:
         return
 
-    await call.message.edit_text(
-        "👨‍💻 Developerlar boshqaruvi.\n\n"
-        "Keyingi bosqichda developer qo‘shish/tahrirlash tizimi qo‘shiladi.",
-        reply_markup=get_back_inline_kb("owner_menu"),
+    # Faqat OWNER va DEVELOPER developer qo'sha/o'chira oladi
+    is_privileged = (user_id == OWNER_TELEGRAM_ID or staff.role in [StaffRole.OWNER, StaffRole.DEVELOPER])
+
+    # Developerlarni bazadan olamiz
+    result = await session.execute(
+        select(Staff).where(Staff.role == StaffRole.DEVELOPER, Staff.is_active == True)
     )
-    await state.set_state(OwnerStates.main_menu)
+    developers = result.scalars().all()
+
+    text = "👨‍💻 <b>Developerlar (Dasturchilar) ro'yxati</b>\n\n"
+    if not developers:
+        text += "Hozircha developerlar yo'q."
+    else:
+        for i, dev in enumerate(developers, 1):
+            text += f"{i}. {dev.full_name} (ID: {dev.telegram_id})\n"
+
+    await call.message.edit_text(
+        text,
+        reply_markup=get_owner_developers_kb(developers) if is_privileged else get_back_inline_kb("owner_menu"),
+        parse_mode="HTML"
+    )
+    await state.clear()
+    await call.answer()
+
+
+@router.callback_query(F.data == "owner_dev_add")
+async def cb_owner_dev_add(call: CallbackQuery, state: FSMContext, session: AsyncSession):
+    """ Developer qo'shishni boshlash """
+    if call.from_user.id != OWNER_TELEGRAM_ID:
+        return await call.answer("❌ Faqat asosiy Owner developer qo'sha oladi.", show_alert=True)
+
+    await state.set_state(OwnerStates.waiting_dev_tg_id)
+    await call.message.edit_text(
+        "➕ <b>Yangi developer qo'shish</b>\n\n"
+        "Iltimos, yangi developerning <b>Telegram ID</b> sini yuboring.\n"
+        "Foydalanuvchi botdan ro'yxatdan o'tgan bo'lishi kerak.",
+        parse_mode="HTML",
+        reply_markup=get_dev_add_cancel_kb()
+    )
+    await call.answer()
+
+
+@router.message(OwnerStates.waiting_dev_tg_id)
+async def owner_add_dev_process(message: Message, state: FSMContext, session: AsyncSession):
+    """ Telegram ID qabul qilib xodimni developer qilish """
+    tg_id_str = message.text.strip()
+    if not tg_id_str.isdigit():
+        return await message.answer("❌ Telegram ID raqamlardan iborat bo'lishi kerak.")
+
+    target_tg_id = int(tg_id_str)
+
+    # 1. TgAccount dan foydalanuvchini qidiramiz
+    result = await session.execute(
+        select(TgAccount).where(TgAccount.telegram_id == target_tg_id)
+    )
+    acc = result.scalar_one_or_none()
+
+    if not acc:
+        return await message.answer(
+            "❌ Bu foydalanuvchi botdan ro'yxatdan o'tmagan.\n"
+            "Avval u botni ishga tushirishi kerak."
+        )
+
+    # 2. Staff jadvalida bormi yoki yangi yaratish kerakmi?
+    if acc.staff_id:
+        result = await session.execute(select(Staff).where(Staff.id == acc.staff_id))
+        staff_member = result.scalar_one_or_none()
+        if staff_member:
+            staff_member.role = StaffRole.DEVELOPER
+            staff_member.is_active = True
+    else:
+        # Yangi staff yaratamiz (Student bo'lsa ham developer qilaveramiz)
+        # Student ma'lumotlariniStaff ga nusxalaymiz yoki shunchaki staff yaratamiz
+        full_name = "Yangi Developer"
+        if acc.student_id:
+            student = await session.get(Student, acc.student_id)
+            if student:
+                full_name = student.full_name
+
+        staff_member = Staff(
+            full_name=full_name,
+            jshshir=f"DEV_{target_tg_id}", # Dummy JSHSHIR
+            role=StaffRole.DEVELOPER,
+            telegram_id=target_tg_id,
+            is_active=True
+        )
+        session.add(staff_member)
+        await session.flush()
+        acc.staff_id = staff_member.id
+
+    await session.commit()
+
+    # 3. Foydalanuvchiga xabar yuboramiz
+    try:
+        await message.bot.send_message(
+            target_tg_id,
+            "🎉 <b>Tabriklaymiz!</b>\n\n"
+            "Siz TalabaHamkor botida <b>Developer</b> etib tayinlandingiz.\n"
+            "Endi sizda barcha boshqaruv huquqlari mavjud.",
+            parse_mode="HTML"
+        )
+    except Exception as e:
+        logger.error(f"Failed to notify new developer {target_tg_id}: {e}")
+
+    await message.answer(
+        f"✅ Foydalanuvchi (ID: {target_tg_id}) muvaffaqiyatli developer etib tayinlandi.",
+        reply_markup=get_back_inline_kb("owner_dev")
+    )
+    await state.clear()
+
+
+@router.callback_query(F.data.startswith("owner_dev_del:"))
+async def cb_owner_dev_delete(call: CallbackQuery, state: FSMContext, session: AsyncSession):
+    """ Developerni o'chirish """
+    if call.from_user.id != OWNER_TELEGRAM_ID:
+        return await call.answer("❌ Faqat asosiy Owner developerlarni o'chira oladi.", show_alert=True)
+
+    dev_id = int(call.data.split(":")[1])
+    dev = await session.get(Staff, dev_id)
+
+    if not dev:
+        return await call.answer("❌ Developer topilmadi.", show_alert=True)
+
+    # Rolni 'tyutor' yoki shunchaki deactivated qilish (bizda tyutor default bo'lishi mumkin yoki xodimlikdan butunlay olib tashlash)
+    # User talab bo'yicha 'o'chirish' degani uchun is_active=False qilamiz yoki rolni pasaytiramiz
+    dev.is_active = False # Butunlay o'chiramiz staff sifatida
+    await session.commit()
+
+    await call.message.edit_text(
+        f"🗑 Developer <b>{dev.full_name}</b> o'chirildi.",
+        reply_markup=get_back_inline_kb("owner_dev"),
+        parse_mode="HTML"
+    )
     await call.answer()
 
 
@@ -633,7 +760,7 @@ async def cb_owner_settings(
     session: AsyncSession,
 ):
 
-    staff = await _ensure_owner(call.message, session)
+    staff = await _ensure_owner(call, session)
     if not staff:
         return
 

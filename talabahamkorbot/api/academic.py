@@ -64,15 +64,18 @@ async def get_grades(
         name = sub_details.get("name") or item.get("subject", {}).get("name", "Nomsiz fan")
         s_id = sub_details.get("id") or item.get("subject", {}).get("id")
 
-        detailed = HemisService.parse_grades_detailed(item)
-        on = next((g for g in detailed if g['type'] == 'ON'), {"val_5": 0, "raw": 0})
-        yn = next((g for g in detailed if g['type'] == 'YN'), {"val_5": 0, "raw": 0})
-        jn = next((g for g in detailed if g['type'] == 'JN'), {"val_5": 0, "raw": 0})
+        detailed_dict = HemisService.parse_grades_detailed(item)
+        on = detailed_dict.get("ON", {"val_5": 0, "raw": 0})
+        yn = detailed_dict.get("YN", {"val_5": 0, "raw": 0})
+        jn = detailed_dict.get("JN", {"val_5": 0, "raw": 0})
+        
+        # Convert to list for frontend compatibility
+        detailed_list = [v for k, v in detailed_dict.items() if k in ["JN", "ON", "YN"]]
 
         results.append({
             "id": s_id, "subject": name, "name": name,
             "overall_grade": item.get("overallScore", {}).get("grade", 0),
-            "on": on, "yn": yn, "jn": jn, "detailed": detailed
+            "on": on, "yn": yn, "jn": jn, "detailed": detailed_list
         })
     return {"success": True, "data": results}
 
@@ -211,16 +214,19 @@ async def get_subjects(
         s_id = sub_details.get("id")
         name_lower = name.lower().strip()
         t_info = teacher_map.get(name_lower, {})
-        detailed = HemisService.parse_grades_detailed(item)
-        on = next((g for g in detailed if g['type'] == 'ON'), {"val_5": 0, "raw": 0})
-        yn = next((g for g in detailed if g['type'] == 'YN'), {"val_5": 0, "raw": 0})
-        jn = next((g for g in detailed if g['type'] == 'JN'), {"val_5": 0, "raw": 0})
+        detailed_dict = HemisService.parse_grades_detailed(item)
+        on = detailed_dict.get("ON", {"val_5": 0, "raw": 0})
+        yn = detailed_dict.get("YN", {"val_5": 0, "raw": 0})
+        jn = detailed_dict.get("JN", {"val_5": 0, "raw": 0})
+        
+        # Convert to list for frontend compatibility
+        detailed_list = [v for k, v in detailed_dict.items() if k in ["JN", "ON", "YN"]]
         
         results.append({
             "id": s_id, "name": name, "lecturer": t_info.get("lecturer"),
             "seminar": t_info.get("seminar"), "absent_hours": abs_map.get(name_lower, 0),
             "overall_grade": item.get("overallScore", {}).get("grade", 0),
-            "grades": {"ON": on, "YN": yn, "JN": jn, "detailed": detailed}
+            "grades": {"ON": on, "YN": yn, "JN": jn, "detailed": detailed_list}
         })
     return {"success": True, "data": results}
 
@@ -353,11 +359,14 @@ async def get_subject_details_endpoint(subject_id: str, semester: str = None, st
     
     if not target_subject: return {"success": False, "message": "Fan topilmadi"}
 
-    detailed = HemisService.parse_grades_detailed(target_subject)
+    detailed_dict = HemisService.parse_grades_detailed(target_subject)
+    # Convert to list for frontend
+    detailed_list = [v for k, v in detailed_dict.items() if k in ["JN", "ON", "YN"]]
+    
     schedule = await HemisService.get_student_schedule_cached(student.hemis_token, semester_code=semester, student_id=student.id)
     teachers = {item.get("employee", {}).get("name") for item in schedule if str(item.get("subject", {}).get("id")) == str(subject_id) if item.get("employee", {}).get("name")}
     _, _, _, absence_items = await HemisService.get_student_absence(student.hemis_token, semester_code=semester, student_id=student.id)
     
     subject_absence = [{"date": datetime.fromtimestamp(item.get("lesson_date")).strftime("%d.%m.%Y") if item.get("lesson_date") else "", "hours": item.get("absent_on", 0) + item.get("absent_off", 0) or item.get("hour", 2)} for item in absence_items if str(item.get("subject", {}).get("id")) == str(subject_id)]
     
-    return {"success": True, "data": {"subject": {"name": target_subject.get("subject", {}).get("name"), "grades": {"overall": target_subject.get("overallScore", {}).get("grade", 0), "detailed": detailed}}, "teachers": list(teachers), "attendance": {"total_missed": sum(a['hours'] for a in subject_absence), "details": subject_absence}}}
+    return {"success": True, "data": {"subject": {"name": target_subject.get("subject", {}).get("name"), "grades": {"overall": target_subject.get("overallScore", {}).get("grade", 0), "detailed": detailed_list}}, "teachers": list(teachers), "attendance": {"total_missed": sum(a['hours'] for a in subject_absence), "details": subject_absence}}}

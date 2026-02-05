@@ -12,6 +12,7 @@ from config import WEBHOOK_URL, BOT_TOKEN
 from database.db_connect import engine, create_tables, AsyncSessionLocal
 from handlers import setup_routers
 from utils.logging_config import setup_logging
+from api.tutor import router as tutor_router
 
 # Middlewares
 from middlewares.db import DbSessionMiddleware
@@ -53,6 +54,9 @@ async def lifespan(app: FastAPI):
     # Check if router is already registered to avoid duplicates
     if root_router not in dp.sub_routers:
         dp.include_router(root_router)
+    
+    # API Routers
+    app.include_router(tutor_router)
     
     if MODE == "POLLING":
         logger.info("🔄 Starting Polling in Background...")
@@ -139,6 +143,13 @@ async def bot_webhook(request: Request):
         try:
             body = await request.json()
             
+            # [DEBUG] Log everything
+            import json
+            # [DEBUG] Log payload (Non-blocking via standard logger)
+            logger.info(f"🔥 WEBHOOK HIT: {json.dumps(body)}")
+
+            
+
             if "callback_query" in body:
                 logger.info(f"🔍 Callback: {body['callback_query'].get('data')}")
             elif "message" in body:

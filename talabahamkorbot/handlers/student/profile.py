@@ -16,7 +16,9 @@ from database.models import (
     UserDocument,
     UserCertificate,
     StudentFeedback,
-    Election
+    Election,
+    Staff,
+    StaffRole
 )
 from keyboards.inline_kb import get_student_profile_menu_kb, get_student_main_menu_kb
 from utils.student_utils import get_student_by_tg
@@ -127,8 +129,23 @@ async def send_profile_view(target, student: Student, session: AsyncSession, is_
         if not active_election.deadline or active_election.deadline > datetime.utcnow():
             has_active_election = True
 
+    # Developer check
+    user_id = target.from_user.id
+    result = await session.execute(
+        select(Staff).where(
+            Staff.telegram_id == user_id,
+            Staff.role == StaffRole.DEVELOPER,
+            Staff.is_active == True
+        )
+    )
+    is_developer = result.scalar_one_or_none() is not None
+
     msg_target = target.message if isinstance(target, CallbackQuery) else target
-    kb = get_student_profile_menu_kb(is_election_admin=student.is_election_admin, has_active_election=has_active_election)
+    kb = get_student_profile_menu_kb(
+        is_election_admin=student.is_election_admin, 
+        has_active_election=has_active_election,
+        is_developer=is_developer
+    )
     
     try:
         if student.image_url:

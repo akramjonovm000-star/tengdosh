@@ -40,6 +40,8 @@ class StaffRole(str, enum.Enum):
     KUTUBXONA = "kutubxona"
     INSPEKTOR = "inspektor"
     PSIXOLOG = "psixolog"
+    YOSHLAR_YETAKCHISI = "yoshlar_yetakchisi"
+    KLUB_RAHBARI = "klub_rahbari"
 
 # ============================================================
 # OBUNA (FOLLOW) MODELI
@@ -103,26 +105,6 @@ class PrivateMessage(Base):
 
     chat: Mapped["PrivateChat"] = relationship("PrivateChat", back_populates="messages")
     sender: Mapped["Student"] = relationship("Student", foreign_keys=[sender_id])
-
-    RAHBARIYAT = "rahbariyat"
-    DEKANAT = "dekanat"
-    TYUTOR = "tyutor"
-    PSIXOLOG = "psixolog"
-    YOSHLAR_YETAKCHISI = "yoshlar_yetakchisi"
-    KLUB_RAHBARI = "klub_rahbari"
-    
-    # Yangi rollar (Student Feedback uchun)
-    TEACHER = "teacher"
-    KAFEDRA_MUDIRI = "kafedra_mudiri"
-    DEKAN = "dekan"
-    DEKAN_ORINBOSARI = "dekan_orinbosari"
-    DEKAN_YOSHLAR = "dekan_yoshlar"
-    PROREKTOR = "prorektor"
-    YOSHLAR_PROREKTOR = "yoshlar_prorektor"
-    REKTOR = "rektor"
-    BUXGALTER = "buxgalter"
-    KUTUBXONA = "kutubxona"
-    INSPEKTOR = "inspektor"
 
 
 class StudentStatus(str, enum.Enum):

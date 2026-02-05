@@ -467,7 +467,7 @@ class HemisService:
         except: return 0.0
 
     @staticmethod
-    def parse_grades_detailed(subject_data: dict) -> list:
+    def parse_grades_detailed(subject_data: dict) -> dict:
         exams = subject_data.get("gradesByExam", []) or []
         def to_5_scale(val, max_val):
             if val is None: val = 0
@@ -475,24 +475,37 @@ class HemisService:
             if max_val <= 5: return round(val)
             return round((val / max_val) * 5)
             
-        results = []
+        # Default Structure
+        results = {
+            "JN": {"val_5": 0, "raw": 0, "max": 0},
+            "ON": {"val_5": 0, "raw": 0, "max": 0},
+            "YN": {"val_5": 0, "raw": 0, "max": 0},
+            "total": {"val_5": 0, "raw": 0, "max": 0},
+            "raw_total": 0
+        }
+        
+        raw_total = 0
         for ex in exams:
             code = str(ex.get("examType", {}).get("code"))
             name = ex.get("examType", {}).get("name", "Noma'lum")
             val = ex.get("grade", 0)
             max_b = ex.get("max_ball", 0)
             
+            raw_total += val
+            
             # 11/15: JN, 12: ON, 13: YN
             type_map = {'11': 'JN', '15': 'JN', '12': 'ON', '13': 'YN'}
             if code in type_map:
-                res = {
-                    "type": type_map[code],
+                t = type_map[code]
+                results[t] = {
+                    "type": t,
                     "name": name,
                     "val_5": to_5_scale(val, max_b),
                     "raw": val,
                     "max": max_b
                 }
-                results.append(res)
+        
+        results["raw_total"] = raw_total
         return results
 
     @staticmethod
