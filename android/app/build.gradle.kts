@@ -62,6 +62,14 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
+
+    // [WORKAROUND] Bypass NDK Strip failure by keeping symbols (increases size but builds without NDK)
+    packaging {
+        jniLibs {
+            keepDebugSymbols.add("**/libapp.so")
+            keepDebugSymbols.add("**/libflutter.so")
+        }
+    }
 }
 
 flutter {
