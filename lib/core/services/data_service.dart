@@ -861,7 +861,6 @@ class DataService {
     }
     return [];
   }
-  }
 
   Future<bool> voteInElection(int electionId, int candidateId) async {
     final response = await _post(
