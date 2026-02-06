@@ -102,8 +102,7 @@ class _TutorGroupsScreenState extends State<TutorGroupsScreen> {
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                   decoration: const BoxDecoration(
                                     color: Colors.red,
-                                    shape: BoxShape.circle, // Or rounded rect? Circle for number only? 
-                                    // User said "right side red dot". Let's do a nice badge.
+                                    // shape: BoxShape.circle removed to allow borderRadius
                                     borderRadius: BorderRadius.all(Radius.circular(20)),
                                   ),
                                   child: Text(
