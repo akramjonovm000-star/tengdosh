@@ -146,8 +146,8 @@ class _TutorHomeScreenState extends State<TutorHomeScreen> {
                     const SizedBox(height: 16),
 
                     _buildMenuTile(
-                      "Mening Guruhlarim",
-                      Icons.group_work_rounded,
+                      "Murojaatlar",
+                      Icons.mark_chat_unread_rounded,
                       Colors.indigo,
                       () {
                         Navigator.push(

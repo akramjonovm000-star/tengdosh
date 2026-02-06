@@ -825,6 +825,39 @@ class DataService {
     return [];
   }
   
+
+  // 30.1 Get Group Appeals
+  Future<List<dynamic>> getGroupAppeals(String groupNumber) async {
+    try {
+      final response = await _get("${ApiConstants.backendUrl}/tutor/groups/$groupNumber/appeals");
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) {
+          return body['data'];
+        }
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching group appeals: $e");
+    }
+    return [];
+  }
+
+  // 30.2 Reply to Appeal (Tutor)
+  Future<void> replyToTutorAppeal(int appealId, String text) async {
+    final token = await _authService.getToken();
+    final uri = Uri.parse('${ApiConstants.backendUrl}/tutor/appeals/$appealId/reply?text=${Uri.encodeComponent(text)}');
+    final response = await http.post(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to reply');
+    }
+  }
+
   // 31. Get Tutor Dashboard
   Future<Map<String, dynamic>> getTutorDashboard() async {
     // Return Mock Data directly requested by user
