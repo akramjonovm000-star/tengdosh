@@ -54,6 +54,12 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   }
 
   Future<void> _topUp(String provider) async {
+    // TEMPORARY: Show coming soon message
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Tez kunda ishga tushadi")),
+    );
+    
+    /* 
     setState(() => _loadingAction = provider);
     try {
       String? url;
@@ -77,6 +83,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     } finally {
       if (mounted) setState(() => _loadingAction = null);
     }
+    */
   }
 
   Future<void> _purchasePlan(SubscriptionPlan plan) async {
