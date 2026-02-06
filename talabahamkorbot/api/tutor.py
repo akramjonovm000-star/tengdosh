@@ -183,6 +183,8 @@ async def get_group_appeals(
             "student_id": student.id,
             "student_name": student.full_name,
             "student_image": student.image_url,
+            "student_faculty": student.faculty_name, 
+            "student_group": student.group_number,
             "text": feedback.text,
             "status": feedback.status,
             "created_at": feedback.created_at.isoformat(),

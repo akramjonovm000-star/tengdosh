@@ -61,39 +61,7 @@ class _TutorGroupsScreenState extends State<TutorGroupsScreen> {
                         borderRadius: BorderRadius.circular(12),
                         side: BorderSide(color: Colors.grey.withOpacity(0.2)),
                       ),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        leading: Stack(
-                          children: [
-                            CircleAvatar(
-                              backgroundColor: AppTheme.primaryBlue.withOpacity(0.1),
-                              child: const Icon(Icons.group, color: AppTheme.primaryBlue),
-                            ),
-                          ],
-                        ),
-                        title: Text(
-                          group['group_number'] ?? "Noma'lum",
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (unreadCount > 0)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Colors.red,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  "$unreadCount yangi",
-                                  style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            const SizedBox(width: 8),
-                            const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey),
-                          ],
-                        ),
+                      child: InkWell(
                         onTap: () {
                           Navigator.push(
                             context,
@@ -102,8 +70,53 @@ class _TutorGroupsScreenState extends State<TutorGroupsScreen> {
                                 groupNumber: group['group_number'],
                               ),
                             ),
-                          ).then((_) => _loadGroups()); // Refresh on return
+                          ).then((_) => _loadGroups()); // Refresh
                         },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                backgroundColor: AppTheme.primaryBlue.withOpacity(0.1),
+                                child: const Icon(Icons.people_alt_rounded, color: AppTheme.primaryBlue),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      group['group_number'] ?? "Noma'lum",
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                    ),
+                                    Text(
+                                      group['faculty_id'] != null ? "Fakultet ID: ${group['faculty_id']}" : "Guruh", // Assuming API provided Faculty Name in groups too? No, only Appeal details.
+                                      // Actually getTutorGroups sends faculty_id. We can just say "Guruh" or nothing.
+                                      style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (unreadCount > 0) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle, // Or rounded rect? Circle for number only? 
+                                    // User said "right side red dot". Let's do a nice badge.
+                                    borderRadius: BorderRadius.all(Radius.circular(20)),
+                                  ),
+                                  child: Text(
+                                    "$unreadCount",
+                                    style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                              ],
+                              const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey),
+                            ],
+                          ),
+                        ),
                       ),
                     );
                   },
