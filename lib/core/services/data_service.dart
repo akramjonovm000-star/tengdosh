@@ -917,6 +917,55 @@ class DataService {
     throw Exception(body['detail'] ?? "Ovoz berishda xato yuz berdi");
   }
 
+  // 34. Get Tutor Activity Stats
+  Future<List<dynamic>> getTutorActivityStats() async {
+    try {
+      final response = await _get("${ApiConstants.backendUrl}/tutor/activities/stats");
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) {
+          return body['data'];
+        }
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching activity stats: $e");
+    }
+    return [];
+  }
+
+  // 35. Get Group Activities
+  Future<List<dynamic>> getGroupActivities(String groupNumber) async {
+    try {
+      final response = await _get("${ApiConstants.backendUrl}/tutor/activities/group/$groupNumber");
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) {
+          return body['data'];
+        }
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching group activities: $e");
+    }
+    return [];
+  }
+
+  // 36. Review Activity
+  Future<bool> reviewActivity(int activityId, String status) async {
+    try {
+      final response = await _post(
+        "${ApiConstants.backendUrl}/tutor/activity/$activityId/review",
+        body: {"status": status},
+      );
+      if (response.statusCode == 200) {
+        return true;
+      }
+    } catch (e) {
+      debugPrint("DataService: Error reviewing activity: $e");
+    }
+    return false;
+  }
+  
+  // 37. Legacy Upload Status (if needed) or keep existing
   Future<Map<String, dynamic>> checkFeedbackUploadStatus(String sessionId) async {
     try {
       final response = await _get("${ApiConstants.backendUrl}/student/feedback/upload-status/$sessionId");

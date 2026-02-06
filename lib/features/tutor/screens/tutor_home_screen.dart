@@ -6,6 +6,7 @@ import 'package:talabahamkor_mobile/core/theme/app_theme.dart';
 import 'package:talabahamkor_mobile/features/tutor/screens/tutor_groups_screen.dart';
 import 'package:talabahamkor_mobile/features/tutor/screens/tutor_students_screen.dart';
 import 'package:talabahamkor_mobile/features/tutor/screens/tutor_groups_list_screen.dart';
+import 'package:talabahamkor_mobile/features/tutor/screens/tutor_activity_groups_screen.dart';
 
 class TutorHomeScreen extends StatefulWidget {
   const TutorHomeScreen({super.key});
@@ -172,12 +173,13 @@ class _TutorHomeScreenState extends State<TutorHomeScreen> {
                     ),
                     const SizedBox(height: 12),
                     _buildMenuTile(
-                      "KPI va Reyting",
-                      Icons.bar_chart_rounded,
-                      Colors.green,
+                      "Faolliklar",
+                      Icons.accessibility_new_rounded,
+                      Colors.deepPurple,
                       () {
-                         ScaffoldMessenger.of(context).showSnackBar(
-                           const SnackBar(content: Text("Tez kunda ishga tushadi"))
+                         Navigator.push(
+                           context,
+                           MaterialPageRoute(builder: (_) => const TutorActivityGroupsScreen()),
                          );
                       },
                     ),

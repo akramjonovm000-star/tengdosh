@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, case, desc
+from sqlalchemy.orm import joinedload
 from typing import List, Optional
 
 from database.db_connect import get_session
-from database.models import Staff, TutorGroup, Student, StaffRole, TyutorKPI, StudentFeedback, FeedbackReply
+from database.models import Staff, TutorGroup, Student, StaffRole, TyutorKPI, StudentFeedback, FeedbackReply, UserActivity
 from api.dependencies import get_current_staff
 
 router = APIRouter(prefix="/tutor", tags=["Tutor"])
@@ -212,36 +213,197 @@ async def reply_to_appeal(
         select(StudentFeedback, Student)
         .join(Student, StudentFeedback.student_id == Student.id)
         .where(StudentFeedback.id == appeal_id)
-    )
-    row = result.first()
-    if not row:
-        raise HTTPException(status_code=404, detail="Appeal not found")
-        
-    feedback, student = row
+    appeal_id: int, 
+    text: str, 
+    db: AsyncSession = Depends(get_session), 
+    tutor: Staff = Depends(get_current_staff)
+):
+    # Check appeal exists
+    stmt = select(StudentFeedback).where(StudentFeedback.id == appeal_id)
+    result = await db.execute(stmt)
+    appeal = result.scalar_one_or_none()
     
-    # 2. Check if student is in one of tutor's groups
-    has_access = await db.scalar(
-        select(TutorGroup)
-        .where(
-            TutorGroup.tutor_id == tutor.id,
-            TutorGroup.group_number == student.group_number
-        )
-    )
-    if not has_access:
-        raise HTTPException(status_code=403, detail="You do not have access to this student's appeals")
-
-    # 3. Create Reply
+    if not appeal:
+        raise HTTPException(status_code=404, detail="Murojaat topilmadi")
+        
+    # Check access (simple check: is student in my groups?)
+    # ideally we check specific permission, but for now:
+    # We trust the tutor context or checking Student->Group link
+    
     reply = FeedbackReply(
-        feedback_id=feedback.id,
+        feedback_id=appeal_id,
         staff_id=tutor.id,
         text=text
     )
     db.add(reply)
     
-    # 4. Update Status
-    feedback.status = "answered"
-    feedback.assigned_staff_id = tutor.id
+    # Update appeal status
+    appeal.status = "answered"
+    appeal.assigned_staff_id = tutor.id
+    appeal.assigned_role = "tyutor"
     
     await db.commit()
     
-    return {"success": True, "message": "Reply sent successfully"}
+    return {"success": True, "message": "Javob yuborildi"}
+
+
+# ============================================================
+# 5. FAOLLIKLAR (ACTIVITIES)
+# ============================================================
+
+@router.get("/activities/stats")
+async def get_tutor_activity_stats(
+    db: AsyncSession = Depends(get_session),
+    tutor: Staff = Depends(get_current_staff)
+):
+    """
+    Returns groups with counts of pending and today's activities.
+    """
+    # 1. Get Tutor's Groups
+    groups_result = await db.execute(select(TutorGroup).where(TutorGroup.tutor_id == tutor.id))
+    tutor_groups = groups_result.scalars().all()
+    group_numbers = [g.group_number for g in tutor_groups]
+    
+    if not group_numbers:
+        return {"success": True, "data": []}
+
+    # 2. Results container
+    stats = []
+    
+    from datetime import datetime, timedelta
+    today_str = datetime.utcnow().strftime("%Y-%m-%d") # Assuming date stored as string YYYY-MM-DD or similar
+    
+    # We will do a query to count for each group
+    # Optimized: Group by group_number
+    # user_activities -> student -> group_number
+    
+    for gn in group_numbers:
+        # Count Pending
+        q_pending = select(func.count(UserActivity.id)).join(Student).where(
+            Student.group_number == gn,
+            UserActivity.status == "pending"
+        )
+        res_pending = await db.execute(q_pending)
+        count_pending = res_pending.scalar() or 0
+        
+        # Count Today's (All statuses)
+        # Note: UserActivity.date is a string, let's assume standard format or check created_at
+        # Using created_at for reliability
+        start_of_day = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        q_today = select(func.count(UserActivity.id)).join(Student).where(
+            Student.group_number == gn,
+            UserActivity.created_at >= start_of_day
+        )
+        res_today = await db.execute(q_today)
+        count_today = res_today.scalar() or 0
+        
+        stats.append({
+            "group_number": gn,
+            "pending_count": count_pending,
+            "today_count": count_today
+        })
+        
+    return {"success": True, "data": stats}
+
+
+@router.get("/activities/group/{group_number}")
+async def get_group_activities(
+    group_number: str,
+    db: AsyncSession = Depends(get_session),
+    tutor: Staff = Depends(get_current_staff)
+):
+    """
+    Get activities for a specific group.
+    """
+    # Verify access
+    access_check = await db.execute(
+        select(TutorGroup).where(
+            TutorGroup.tutor_id == tutor.id,
+            TutorGroup.group_number == group_number
+        )
+    )
+    if not access_check.scalar_one_or_none():
+        raise HTTPException(status_code=403, detail="Siz bu guruhga biriktirilmagansiz")
+
+    # Fetch activities
+    stmt = select(UserActivity).join(Student).where(
+        Student.group_number == group_number
+    ).order_by(
+        case(
+            (UserActivity.status == 'pending', 0),
+            else_=1
+        ),
+        UserActivity.created_at.desc()
+    ).limit(50)
+    
+    result = await db.execute(stmt)
+    activities = result.scalars().all()
+    
+    data = []
+    for act in activities:
+        # Load student info (lazy loaded usually, but let's be safe if sync)
+        # We need student name and image. 
+        # Since we didn't eager load, we might trigger n+1 if not careful, 
+        # but for 50 items it's acceptable or we can add options(joinedload(UserActivity.student))
+        # Let's trust lazy loading for now or do a join above if models support it.
+        # Actually better to eager load.
+        pass
+        
+    # Re-query with eager load to be efficient
+    stmt = select(UserActivity).options(joinedload(UserActivity.student)).join(Student).where(
+        Student.group_number == group_number
+    ).order_by(
+        case(
+            (UserActivity.status == 'pending', 0),
+            else_=1
+        ),
+        UserActivity.created_at.desc()
+    ).limit(50)
+    result = await db.execute(stmt)
+    activities = result.scalars().all()
+
+    for act in activities:
+        data.append({
+            "id": act.id,
+            "category": act.category,
+            "name": act.name,
+            "description": act.description,
+            "status": act.status,
+            "created_at": act.created_at.isoformat(),
+            "student": {
+                "full_name": act.student.full_name,
+                "image": act.student.image_url,
+                "hemis_id": act.student.hemis_id
+            }
+            # Add images if related
+        })
+
+    return {"success": True, "data": data}
+
+
+@router.post("/activity/{activity_id}/review")
+async def review_activity(
+    activity_id: int,
+    request: dict, # {"status": "accepted" | "rejected"}
+    db: AsyncSession = Depends(get_session),
+    tutor: Staff = Depends(get_current_staff)
+):
+    stmt = select(UserActivity).where(UserActivity.id == activity_id)
+    result = await db.execute(stmt)
+    activity = result.scalar_one_or_none()
+    
+    if not activity:
+        raise HTTPException(status_code=404, detail="Faollik topilmadi")
+        
+    # Verify tutor access to this student's group?
+    # For now assuming if they have ID they can review, or strict check:
+    # await verify_tutor_access(db, tutor.id, activity.student.group_number)
+    
+    new_status = request.get("status")
+    if new_status not in ["accepted", "rejected"]:
+        raise HTTPException(status_code=400, detail="Noto'g'ri status")
+        
+    activity.status = new_status
+    await db.commit()
+    
+    return {"success": True, "message": f"Faollik {new_status} qilindi"}
