@@ -169,6 +169,22 @@ class _GroupAppealsScreenState extends State<GroupAppealsScreen> {
                               maxLines: 4,
                               overflow: TextOverflow.ellipsis,
                             ),
+                            if (appeal['file_id'] != null && appeal['file_id'] != "") ...[
+                              const SizedBox(height: 8),
+                              Container(
+                                height: 150,
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  color: Colors.grey[200],
+                                  image: DecorationImage(
+                                    image: NetworkImage("${ApiConstants.backendUrl}/static/uploads/${appeal['file_id']}"),
+                                    fit: BoxFit.cover,
+                                    onError: (e, s) => const Icon(Icons.broken_image, color: Colors.grey),
+                                  ),
+                                ),
+                              ),
+                            ],
                             const SizedBox(height: 12),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.end,
