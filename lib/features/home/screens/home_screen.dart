@@ -403,6 +403,18 @@ class _HomeScreenState extends State<HomeScreen> {
                    color: Colors.redAccent,
                    onTap: () => _showMock("Davomat"),
                  ),
+                 DashboardCard(
+                   title: "Hujjatlar",
+                   icon: Icons.folder_shared_rounded,
+                   color: Colors.blueGrey,
+                   onTap: () => _showMock("Hujjatlar"),
+                 ),
+                 DashboardCard(
+                   title: "Sertifikatlar",
+                   icon: Icons.workspace_premium_rounded,
+                   color: Colors.amber,
+                   onTap: () => _showMock("Sertifikatlar"),
+                 ),
                  DashboardCard( // Added extra card to fill grid
                    title: "Sozlamalar",
                    icon: Icons.settings_rounded,
