@@ -4,6 +4,8 @@ import 'package:talabahamkor_mobile/core/providers/auth_provider.dart';
 import 'package:talabahamkor_mobile/core/services/data_service.dart';
 import 'package:talabahamkor_mobile/core/theme/app_theme.dart';
 import 'package:talabahamkor_mobile/features/tutor/screens/tutor_groups_screen.dart';
+import 'package:talabahamkor_mobile/features/tutor/screens/tutor_students_screen.dart';
+import 'package:talabahamkor_mobile/features/tutor/screens/tutor_groups_list_screen.dart';
 
 class TutorHomeScreen extends StatefulWidget {
   const TutorHomeScreen({super.key});
@@ -122,6 +124,12 @@ class _TutorHomeScreenState extends State<TutorHomeScreen> {
                             "${_dashboardData?['student_count'] ?? 0}",
                             Icons.people_alt_rounded,
                             Colors.blue,
+                            () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const TutorStudentsScreen()),
+                              );
+                            },
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -131,6 +139,12 @@ class _TutorHomeScreenState extends State<TutorHomeScreen> {
                             "${_dashboardData?['group_count'] ?? 0}",
                             Icons.class_rounded,
                             Colors.orange,
+                            () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const TutorGroupsListScreen()),
+                              );
+                            },
                           ),
                         ),
                       ],

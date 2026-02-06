@@ -872,13 +872,6 @@ class DataService {
 
   // 31. Get Tutor Dashboard
   Future<Map<String, dynamic>> getTutorDashboard() async {
-    // Return Mock Data directly requested by user
-    return {
-      "student_count": 24,
-      "group_count": 2,
-      "kpi": 85.5,
-    };
-    /* 
     try {
       final response = await _get("${ApiConstants.backendUrl}/tutor/dashboard");
       if (response.statusCode == 200) {
@@ -891,7 +884,6 @@ class DataService {
       debugPrint("DataService: Error fetching tutor dashboard: $e");
     }
     return {};
-    */
   }
   
   // 32. Get Tutor Students
