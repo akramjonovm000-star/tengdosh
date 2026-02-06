@@ -197,10 +197,15 @@ async def get_group_appeals(
         "data": data
     }
 
+from pydantic import BaseModel
+
+class ReplyRequest(BaseModel):
+    text: str
+
 @router.post("/appeals/{appeal_id}/reply")
 async def reply_to_appeal(
     appeal_id: int,
-    text: str,
+    request: ReplyRequest,
     db: AsyncSession = Depends(get_session),
     tutor: Staff = Depends(get_current_staff)
 ):
@@ -234,7 +239,7 @@ async def reply_to_appeal(
     reply = FeedbackReply(
         feedback_id=feedback.id,
         staff_id=tutor.id,
-        text=text
+        text=request.text
     )
     db.add(reply)
     
