@@ -56,6 +56,12 @@ class _TutorStudentsScreenState extends State<TutorStudentsScreen> {
                   itemCount: _students.length,
                   itemBuilder: (context, index) {
                     final student = _students[index];
+                    final fullName = student['full_name'] ?? "Ism Familiya";
+                    final username = student['username'] != null && student['username'].toString().isNotEmpty 
+                        ? "@${student['username']}" 
+                        : "talaba";
+                    final group = student['group'] ?? "";
+
                     return Card(
                       margin: const EdgeInsets.only(bottom: 12),
                       elevation: 0,
@@ -74,9 +80,8 @@ class _TutorStudentsScreenState extends State<TutorStudentsScreen> {
                             MaterialPageRoute(
                               builder: (_) => UserProfileScreen(
                                 authorId: authId,
-                                authorName: student['full_name'] ?? "Talaba",
-                                authorUsername: student['full_name'] ?? "student", 
-                                // Used full_name as fallback username for display
+                                authorName: fullName,
+                                authorUsername: student['username'] ?? "student", 
                                 authorAvatar: student['image'] ?? "",
                                 authorRole: "student",
                               ),
@@ -104,24 +109,44 @@ class _TutorStudentsScreenState extends State<TutorStudentsScreen> {
                                       )
                                     : const Icon(Icons.person, color: AppTheme.primaryBlue),
                               ),
-                              const SizedBox(width: 16),
+                              const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      student['full_name'] ?? "Ism Familiya",
+                                      fullName,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      "Guruh: ${student['group'] ?? 'Noma\'lum'}",
-                                      style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                                      username,
+                                      style: TextStyle(
+                                        color: username == "talaba" ? Colors.grey : AppTheme.primaryBlue, 
+                                        fontSize: 13,
+                                        fontWeight: username == "talaba" ? FontWeight.normal : FontWeight.w500
+                                      ),
                                     ),
                                   ],
                                 ),
                               ),
-                              const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[100],
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  group,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold, 
+                                    color: Colors.black87,
+                                    fontSize: 14
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ),
