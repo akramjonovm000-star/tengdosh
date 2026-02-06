@@ -384,8 +384,8 @@ class _HomeScreenState extends State<HomeScreen> {
               childAspectRatio: 1.1,
               children: [
                  DashboardCard(
-                   title: "Mening Guruhlarim",
-                   icon: Icons.group_work_rounded,
+                   title: "Murojaatlar",
+                   icon: Icons.mark_chat_unread_rounded,
                    color: Colors.indigo,
                    onTap: () {
                      Navigator.push(context, MaterialPageRoute(builder: (_) => const TutorGroupsScreen()));
