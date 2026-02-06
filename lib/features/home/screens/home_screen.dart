@@ -16,6 +16,7 @@ import 'package:talabahamkor_mobile/features/social/screens/social_activity_scre
 import 'package:talabahamkor_mobile/features/documents/screens/documents_screen.dart';
 import 'package:talabahamkor_mobile/core/services/permission_service.dart'; // [NEW]
 import 'package:talabahamkor_mobile/features/tutor/screens/tutor_groups_screen.dart'; // [NEW]
+import 'package:talabahamkor_mobile/features/tutor/screens/tutor_activity_groups_screen.dart';
 
 import '../../certificates/screens/certificates_screen.dart';
 import 'package:talabahamkor_mobile/features/profile/screens/subscription_screen.dart';
@@ -415,11 +416,13 @@ class _HomeScreenState extends State<HomeScreen> {
                    color: Colors.amber,
                    onTap: () => _showMock("Sertifikatlar"),
                  ),
-                 DashboardCard( // Added extra card to fill grid
-                   title: "Sozlamalar",
-                   icon: Icons.settings_rounded,
-                   color: Colors.grey,
-                   onTap: () => setState(() => _currentIndex = 4),
+                 DashboardCard(
+                   title: "Faolliklar",
+                   icon: Icons.accessibility_new_rounded,
+                   color: Colors.deepPurple,
+                   onTap: () {
+                     Navigator.push(context, MaterialPageRoute(builder: (_) => const TutorActivityGroupsScreen()));
+                   },
                  ),
               ],
             )
