@@ -80,15 +80,20 @@ async def get_current_student(
         elif token_data["type"] == "student":
             # Direct Student ID
             student = await db.get(Student, token_data["id"])
+        elif token_data["type"] == "staff":
+            # Staff ID - Return Staff object (Duck typing for basic user fields)
+            from database.models import Staff
+            student = await db.get(Staff, token_data["id"])
         else:
-             raise HTTPException(status_code=403, detail="Faqat talabalar uchun")
+            raise HTTPException(status_code=403, detail="Faqat talabalar uchun")
 
         if not student:
             raise HTTPException(status_code=404, detail="Student profile not found")
             
-        # --- AUTO-EXPIRATION CHECK ---
+        # --- AUTO-EXPIRATION CHECK (STUDENT ONLY) ---
         from datetime import datetime
-        if student.is_premium and student.premium_expiry:
+        # Check if attribute exists (Duck typing safety for Staff)
+        if hasattr(student, 'is_premium') and student.is_premium and student.premium_expiry:
             if student.premium_expiry < datetime.utcnow():
                 student.is_premium = False
                 

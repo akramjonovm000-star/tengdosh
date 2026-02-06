@@ -20,8 +20,9 @@ async def get_semester_gpa(
     Calculate Weighted GPA for a specific semester.
     """
     semester_id_provided = semester_id is not None
-    token = student.hemis_token
+    token = getattr(student, 'hemis_token', None)
     if not token:
+
         # Return empty / zero 
         return {
             "gpa": 0.0,
@@ -79,8 +80,9 @@ async def get_cumulative_gpa(
     """
     Calculate Cumulative GPA across ALL semesters.
     """
-    token = student.hemis_token
+    token = getattr(student, 'hemis_token', None)
     if not token:
+
         return {
             "gpa": 0.0,
             "total_credits": 0.0,

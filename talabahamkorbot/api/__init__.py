@@ -15,6 +15,8 @@ from .oauth import router as oauth_router
 from .files import router as files_router
 from .surveys import router as surveys_router
 from .election import router as election_router
+from .tutor import router as tutor_router
+
 
 router.include_router(auth_router, prefix="/auth", tags=["Auth"])
 router.include_router(oauth_router, tags=["OAuth"])
@@ -61,3 +63,5 @@ router.include_router(plans_router, prefix="/plans", tags=["Plans"])
 router.include_router(surveys_router, prefix="/student", tags=["Surveys"])
 router.include_router(student_router, prefix="/student", tags=["Student"])
 router.include_router(election_router, prefix="/election", tags=["Election"])
+router.include_router(tutor_router, tags=["Tutor"])
+

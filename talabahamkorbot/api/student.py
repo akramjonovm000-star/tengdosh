@@ -16,6 +16,36 @@ async def get_my_profile(
 ):
     """Get the currently logged-in student's profile."""
     # Ensure consistency with auth.py
+    
+    # [FIX] Handle Staff Profile (Tyutor/Dean)
+    # Staff objects don't match StudentProfileSchema
+    from database.models import Staff
+    if isinstance(student, Staff):
+        # Allow hemis_login fallback
+        h_login = getattr(student, 'hemis_login', '')
+        
+        return {
+             "id": student.id,
+             "full_name": student.full_name,
+             "first_name": student.full_name.split()[0] if student.full_name else "",
+             "last_name": student.full_name.split()[-1] if student.full_name and len(student.full_name.split()) > 1 else "",
+             "short_name": student.full_name, # Fallback
+             "role": student.role, # tyutor
+             "image": getattr(student, 'image_url', None) or "https://ui-avatars.com/api/?name=" + student.full_name.replace(" ", "+"),
+             "image_url": getattr(student, 'image_url', None) or "https://ui-avatars.com/api/?name=" + student.full_name.replace(" ", "+"),
+             "university_name": getattr(student, 'university_name', "JMCU"),
+             "faculty_name": "",
+             "specialty_name": student.position,
+             "group_number": "",
+             "level_name": "",
+             "semester_name": "",
+             "education_form": "",
+             "student_status": "active" if student.is_active else "inactive",
+             "hemis_id": str(student.hemis_id) if student.hemis_id else None,
+             "hemis_login": h_login,
+             "is_registered_bot": False # Simplification
+        }
+
     data = StudentProfileSchema.model_validate(student).model_dump()
     
     # Parse first/last names from full_name if available

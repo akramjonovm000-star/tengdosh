@@ -259,10 +259,11 @@ async def send_hemis_document(
     # 3. Handle Transcript
     if "transcript" in doc_type or "transkript" in doc_type:
         from services.pdf_service import PdfService
-        token = student.hemis_token
+        token = getattr(student, 'hemis_token', None)
         if not token: return {"success": False, "message": "Token topilmadi"}
         
         subjects_data = await HemisService.get_student_subject_list(token=token, student_id=student.id)
+
         clean_subjects = []
         for subj in subjects_data:
             grade = subj.get("overallScore", {}).get("grade", 0) or subj.get("totalPoint", 0)
@@ -286,10 +287,11 @@ async def send_hemis_document(
     # 4. Handle Study Sheet
     if "study" in doc_type or "uquv" in doc_type or "o'quv" in doc_type:
         from services.pdf_service import PdfService
-        token = student.hemis_token
+        token = getattr(student, 'hemis_token', None)
         if not token: return {"success": False, "message": "Token topilmadi"}
         
         subjects_data = await HemisService.get_student_subject_list(token=token, student_id=student.id)
+
         clean_subjects = []
         for subj in subjects_data:
             clean_subjects.append({

@@ -616,7 +616,7 @@ async def process_hemis_password(message: Message, state: FSMContext, session: A
             hemis_id=h_id,
             hemis_token=token,
             hemis_password=password,
-            username=message.from_user.username,
+            username=None, # Will set below if safe
             
             university_name=uni_name,
             faculty_name=fac_name,
@@ -634,6 +634,16 @@ async def process_hemis_password(message: Message, state: FSMContext, session: A
             district_name=district_name,
             accommodation_name=accommodation_name,
         )
+        
+        # Check Username Uniqueness
+        tg_username = message.from_user.username
+        if tg_username:
+             existing_u = await session.scalar(select(User).where(User.username == tg_username))
+             if not existing_u:
+                 u.username = tg_username
+             else:
+                 logger.warning(f"Username {tg_username} already taken by {existing_u.hemis_login}. Skipping for {login}.")
+        
         session.add(u)
     else:
         u.role = final_role_code
@@ -654,18 +664,22 @@ async def process_hemis_password(message: Message, state: FSMContext, session: A
 
     if detected_role == "tyutor":
         # --- HANDLE TUTOR ---
-        pinfl = me.get("pinfl") or me.get("passport_pin") or me.get("login")
-        staff = await session.scalar(select(Staff).where(Staff.hemis_login == login))
+        h_id_int = int(h_id) if h_id and str(h_id).isdigit() else None
+        pinfl = me.get("pinfl") or me.get("passport_pin") or me.get("jshshir")
         
-        # Fallback search
-        if not staff and pinfl and len(str(pinfl)) == 14:
-             staff = await session.scalar(select(Staff).where(Staff.jshshir == pinfl))
+        staff = None
+        if h_id_int:
+            staff = await session.scalar(select(Staff).where(Staff.hemis_id == h_id_int))
+        
+        if not staff and pinfl:
+             staff = await session.scalar(select(Staff).where(Staff.jshshir == str(pinfl)))
+
         
         if not staff:
             staff = Staff(
                 full_name=full_name,
-                jshshir=pinfl if pinfl and len(str(pinfl)) == 14 else "00000000000000", # Dummy if missing
-                hemis_login=login,
+                jshshir=pinfl if pinfl and len(str(pinfl)) == 14 else (f"D_{h_id}" if h_id else "00000000000000"), 
+                hemis_id=h_id_int,
                 role=StaffRole.TYUTOR.value,
                 position="Tyutor",
                 phone=me.get("phone"),
@@ -675,10 +689,11 @@ async def process_hemis_password(message: Message, state: FSMContext, session: A
             await session.commit()
             await session.refresh(staff)
         else:
-            staff.hemis_login = login
             staff.full_name = full_name
+            if h_id_int: staff.hemis_id = h_id_int
             staff.is_active = True
             await session.commit()
+
 
         # Link TgAccount
         account = await session.scalar(select(TgAccount).where(TgAccount.telegram_id == message.from_user.id))

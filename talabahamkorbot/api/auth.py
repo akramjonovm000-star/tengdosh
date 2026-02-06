@@ -84,7 +84,13 @@ async def login_via_hemis(
              if role == "tutor":
                  # Demo Staff Logic
                  from database.models import Staff, StaffRole
-                 demo_staff = await db.scalar(select(Staff).where(Staff.hemis_id == 999999))
+                 # Check by ID OR JSHSHIR to avoid IntegrityError
+                 demo_staff = await db.scalar(
+                     select(Staff).where(
+                         (Staff.hemis_id == 999999) | (Staff.jshshir == "12345678901234")
+                     )
+                 )
+                 
                  if not demo_staff:
                      demo_staff = Staff(
                          full_name=full_name,
@@ -96,6 +102,13 @@ async def login_via_hemis(
                      db.add(demo_staff)
                      await db.commit()
                      await db.refresh(demo_staff)
+                 else:
+                     # Update existing if needed
+                     if demo_staff.role != "tyutor":
+                         demo_staff.role = "tyutor"
+                     if demo_staff.hemis_id != 999999:
+                         demo_staff.hemis_id = 999999
+                     await db.commit()
                  
                  print(f"DEBUG AUTH: Success! Token='staff_id_{demo_staff.id}'")
                  return {
@@ -378,52 +391,42 @@ async def login_via_hemis(
     # --- SYNC TO USERS TABLE (Unified Auth) ---
     existing_user = await db.scalar(select(User).where(User.hemis_login == h_login))
     if not existing_user:
+        # Check if username is already taken by ANOTHER hemis_login
+        u_name = student.username
+        if u_name:
+            conflict = await db.scalar(select(User).where(User.username == u_name))
+            if conflict:
+                logger.warning(f"Username {u_name} already taken. Skipping for {h_login}.")
+                u_name = None # Set to None to avoid UniqueViolation
+        
         new_user = User(
             hemis_login=h_login,
-            username=student.username, # Should be None initially or synced if Student has it
-            role="student", # Default for now, can improve with role_code
+            username=u_name,
+            role="student",
             full_name=full_name_db,
             short_name=first_name,
             image_url=image_url,
-            # phone=me.get("phone"), # If available
             hemis_id=h_id,
             hemis_token=token,
             hemis_password=creds.password,
-            
-            university_name=uni_name,
-            faculty_name=fac_name,
-            specialty_name=spec_name,
-            group_number=group_num,
-            level_name=level_name,
-            semester_name=sem_name,
-            education_form=edu_form,
-            education_type=edu_type,
-            payment_form=pay_form,
-            student_status=st_status,
             university_id=uni_id,
-            faculty_id=fac_id
+            faculty_id=fac_id,
+            group_number=group_num
         )
         db.add(new_user)
     else:
         # Update existing
         existing_user.hemis_token = token
         existing_user.hemis_password = creds.password
-        existing_user.hemis_password = creds.password
-        # Only overwrite image if it's NOT a custom upload
         if not (existing_user.image_url and "static/uploads" in existing_user.image_url):
             existing_user.image_url = image_url
         existing_user.full_name = full_name_db
         existing_user.short_name = first_name
-        # Update academic info
-        existing_user.group_number = group_num
-        existing_user.level_name = level_name
-        existing_user.semester_name = sem_name
-        # Update IDs
         existing_user.university_id = uni_id
         existing_user.faculty_id = fac_id
-        # ... other fields if needed
     
     await db.commit()
+
     # ------------------------------------------
     
     # Prepare response data specifically

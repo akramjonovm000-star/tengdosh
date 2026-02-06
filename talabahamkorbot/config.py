@@ -48,9 +48,9 @@ LOG_LEVEL = "INFO"
 HEMIS_CLIENT_ID = os.environ.get("HEMIS_CLIENT_ID", "5")
 HEMIS_CLIENT_SECRET = os.environ.get("HEMIS_CLIENT_SECRET", "VwSWbyEFMKm8B0LQ1ZqYcK0zUwCs01Z8g8eUP6kK")
 HEMIS_REDIRECT_URL = os.environ.get("HEMIS_REDIRECT_URL", "https://tengdosh.uzjoku.uz/api/v1/oauth/login")
-HEMIS_AUTH_URL = "https://student.jmcu.uz/oauth/authorize"
-HEMIS_TOKEN_URL = "https://student.jmcu.uz/oauth/access-token"
-HEMIS_PROFILE_URL = "https://student.jmcu.uz/oauth/api/user"
+HEMIS_AUTH_URL = "https://hemis.jmcu.uz/oauth/authorize" # User facing
+HEMIS_TOKEN_URL = "https://student.jmcu.uz/oauth/access-token" # Internal
+HEMIS_PROFILE_URL = "https://student.jmcu.uz/oauth/api/user" # Internal
 
 # 💳 --- Payme Sozlamalari --- 💳
 PAYME_MERCHANT_ID = os.environ.get("PAYME_MERCHANT_ID", "65b8...") # Placeholder: replace with real ID
