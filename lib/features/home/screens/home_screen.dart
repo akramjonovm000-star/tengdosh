@@ -17,6 +17,7 @@ import 'package:talabahamkor_mobile/features/documents/screens/documents_screen.
 import 'package:talabahamkor_mobile/core/services/permission_service.dart'; // [NEW]
 import 'package:talabahamkor_mobile/features/tutor/screens/tutor_groups_screen.dart'; // [NEW]
 import 'package:talabahamkor_mobile/features/tutor/screens/tutor_activity_groups_screen.dart';
+import 'package:talabahamkor_mobile/features/tutor/screens/tutor_documents_groups_screen.dart';
 
 import '../../certificates/screens/certificates_screen.dart';
 import 'package:talabahamkor_mobile/features/profile/screens/subscription_screen.dart';
@@ -408,7 +409,9 @@ class _HomeScreenState extends State<HomeScreen> {
                    title: "Hujjatlar",
                    icon: Icons.folder_shared_rounded,
                    color: Colors.blueGrey,
-                   onTap: () => _showMock("Hujjatlar"),
+                   onTap: () {
+                     Navigator.push(context, MaterialPageRoute(builder: (_) => const TutorDocumentsGroupsScreen()));
+                   },
                  ),
                  DashboardCard(
                    title: "Sertifikatlar",
