@@ -5,10 +5,177 @@ from sqlalchemy.orm import joinedload
 from typing import List, Optional
 
 from database.db_connect import get_session
-from database.models import Staff, TutorGroup, Student, StaffRole, TyutorKPI, StudentFeedback, FeedbackReply, UserActivity
+from database.models import Staff, TutorGroup, Student, StaffRole, TyutorKPI, StudentFeedback, FeedbackReply, UserActivity, UserDocument
 from api.dependencies import get_current_staff
+from bot import bot
 
 router = APIRouter(prefix="/tutor", tags=["Tutor"])
+
+@router.get("/documents/stats")
+async def get_tutor_document_stats(
+    db: AsyncSession = Depends(get_session),
+    tutor: Staff = Depends(get_current_staff)
+):
+    """
+    Get document upload statistics for each of the tutor's groups.
+    """
+    # 1. Get Tutor's Groups
+    groups_result = await db.execute(select(TutorGroup.group_number).where(TutorGroup.tutor_id == tutor.id))
+    group_numbers = groups_result.scalars().all()
+    
+    if not group_numbers:
+        return {"success": True, "data": []}
+
+    # 2. Optimized Aggregate Query
+    from sqlalchemy import distinct
+    
+    stmt = (
+        select(
+            Student.group_number,
+            func.count(Student.id).label("total_count"),
+            func.count(distinct(UserDocument.student_id)).label("uploaded_count")
+        )
+        .outerjoin(UserDocument, Student.id == UserDocument.student_id)
+        .where(Student.group_number.in_(group_numbers))
+        .group_by(Student.group_number)
+    )
+    
+    result = await db.execute(stmt)
+    rows = result.all()
+    
+    stats_map = {
+        r.group_number: {"total": r.total_count, "uploaded": r.uploaded_count}
+        for r in rows
+    }
+    
+    data = []
+    for gn in group_numbers:
+        s = stats_map.get(gn, {"total": 0, "uploaded": 0})
+        data.append({
+            "group_number": gn,
+            "total_students": s["total"],
+            "uploaded_students": s["uploaded"]
+        })
+        
+    return {"success": True, "data": data}
+
+@router.get("/documents/group/{group_number}")
+async def get_group_document_details(
+    group_number: str,
+    db: AsyncSession = Depends(get_session),
+    tutor: Staff = Depends(get_current_staff)
+):
+    """
+    Get detailed document status for all students in a group.
+    """
+    # Verify access
+    access_check = await db.execute(
+        select(TutorGroup).where(
+            TutorGroup.tutor_id == tutor.id,
+            TutorGroup.group_number == group_number
+        )
+    )
+    if not access_check.scalar_one_or_none():
+        raise HTTPException(status_code=403, detail="Siz bu guruhga biriktirilmagansiz")
+
+    # Fetch students and their documents
+    stmt = (
+        select(Student)
+        .options(joinedload(Student.documents))
+        .where(Student.group_number == group_number)
+        .order_by(Student.full_name)
+    )
+    
+    result = await db.execute(stmt)
+    students = result.unique().scalars().all()
+    
+    data = []
+    for s in students:
+        data.append({
+            "id": s.id,
+            "full_name": s.full_name,
+            "image": s.image_url,
+            "hemis_id": s.hemis_id,
+            "has_document": len(s.documents) > 0,
+            "documents": [
+                {
+                    "id": d.id,
+                    "title": d.title,
+                    "category": d.category,
+                    "status": d.status,
+                    "created_at": d.created_at.isoformat()
+                } for d in s.documents
+            ]
+        })
+        
+    return {"success": True, "data": data}
+
+@router.post("/documents/request")
+async def request_documents(
+    student_id: Optional[int] = None,
+    group_number: Optional[str] = None,
+    db: AsyncSession = Depends(get_session),
+    tutor: Staff = Depends(get_current_staff)
+):
+    """
+    Send a notification to a specific student or entire group to upload documents.
+    """
+    from database.models import TgAccount
+    
+    if student_id:
+        tg_acc = await db.scalar(select(TgAccount).where(TgAccount.student_id == student_id))
+        if tg_acc:
+            try:
+                msg = (
+                    f"🔔 <b>Hujjat topshirish eslatmasi</b>\n\n"
+                    f"Hurmatli talaba, tyutoringiz <b>{tutor.full_name}</b> hujjatlaringizni "
+                    f"yuklashingizni so'ramoqda.\n\n"
+                    f"Iltimos, ilovaning 'Hujjatlar' bo'limiga kiring."
+                )
+                await bot.send_message(tg_acc.telegram_id, msg, parse_mode="HTML")
+                return {"success": True, "message": "Xabar yuborildi"}
+            except Exception as e:
+                 return {"success": False, "message": f"Xabar yuborishda xato: {str(e)}"}
+        return {"success": False, "message": "Talabaning telegrami ulanmagan"}
+        
+    elif group_number:
+        access_check = await db.execute(
+            select(TutorGroup).where(
+                TutorGroup.tutor_id == tutor.id,
+                TutorGroup.group_number == group_number
+            )
+        )
+        if not access_check.scalar_one_or_none():
+             raise HTTPException(status_code=403, detail="Siz bu guruhga biriktirilmagansiz")
+             
+        stmt = (
+            select(TgAccount)
+            .join(Student, TgAccount.student_id == Student.id)
+            .outerjoin(UserDocument, Student.id == UserDocument.student_id)
+            .where(
+                Student.group_number == group_number,
+                UserDocument.id == None
+            )
+        )
+        result = await db.execute(stmt)
+        tg_accounts = result.scalars().all()
+        
+        count = 0
+        for acc in tg_accounts:
+            try:
+                msg = (
+                    f"🔔 <b>Guruh bo'yicha hujjat topshirish eslatmasi</b>\n\n"
+                    f"Tyutoringiz <b>{tutor.full_name}</b> ({group_number} guruhi) barcha "
+                    f"hujjatlarni yuklashingizni so'ramoqda."
+                )
+                await bot.send_message(acc.telegram_id, msg, parse_mode="HTML")
+                count += 1
+            except:
+                pass
+                
+        return {"success": True, "message": f"{count} ta talabaga xabar yuborildi"}
+        
+    return {"success": False, "message": "Ma'lumotlar yetarli emas"}
 
 @router.get("/groups")
 async def get_tutor_groups(
@@ -198,21 +365,8 @@ async def get_group_appeals(
         "data": data
     }
 
-@router.post("/appeals/{appeal_id}/reply")
+@router.post("/reply")
 async def reply_to_appeal(
-    appeal_id: int,
-    text: str,
-    db: AsyncSession = Depends(get_session),
-    tutor: Staff = Depends(get_current_staff)
-):
-    """
-    Reply to a student appeal.
-    """
-    # 1. Get Appeal and Verify Access
-    result = await db.execute(
-        select(StudentFeedback, Student)
-        .join(Student, StudentFeedback.student_id == Student.id)
-        .where(StudentFeedback.id == appeal_id)
     appeal_id: int, 
     text: str, 
     db: AsyncSession = Depends(get_session), 
@@ -267,40 +421,37 @@ async def get_tutor_activity_stats(
     if not group_numbers:
         return {"success": True, "data": []}
 
-    # 2. Results container
+    # 2. Optimized Aggregate Query
+    from datetime import datetime
+    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    stmt = (
+        select(
+            Student.group_number,
+            func.count(case((UserActivity.status == 'pending', 1), else_=None)).label("pending_count"),
+            func.count(case((UserActivity.created_at >= today_start, 1), else_=None)).label("today_count")
+        )
+        .join(Student, UserActivity.student_id == Student.id)
+        .where(Student.group_number.in_(group_numbers))
+        .group_by(Student.group_number)
+    )
+    
+    result = await db.execute(stmt)
+    rows = result.all()
+    
+    # Convert to map for easy lookup
+    stats_map = {
+        r.group_number: {"pending": r.pending_count, "today": r.today_count}
+        for r in rows
+    }
+    
     stats = []
-    
-    from datetime import datetime, timedelta
-    today_str = datetime.utcnow().strftime("%Y-%m-%d") # Assuming date stored as string YYYY-MM-DD or similar
-    
-    # We will do a query to count for each group
-    # Optimized: Group by group_number
-    # user_activities -> student -> group_number
-    
     for gn in group_numbers:
-        # Count Pending
-        q_pending = select(func.count(UserActivity.id)).join(Student).where(
-            Student.group_number == gn,
-            UserActivity.status == "pending"
-        )
-        res_pending = await db.execute(q_pending)
-        count_pending = res_pending.scalar() or 0
-        
-        # Count Today's (All statuses)
-        # Note: UserActivity.date is a string, let's assume standard format or check created_at
-        # Using created_at for reliability
-        start_of_day = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-        q_today = select(func.count(UserActivity.id)).join(Student).where(
-            Student.group_number == gn,
-            UserActivity.created_at >= start_of_day
-        )
-        res_today = await db.execute(q_today)
-        count_today = res_today.scalar() or 0
-        
+        s = stats_map.get(gn, {"pending": 0, "today": 0})
         stats.append({
             "group_number": gn,
-            "pending_count": count_pending,
-            "today_count": count_today
+            "pending_count": s["pending"],
+            "today_count": s["today"]
         })
         
     return {"success": True, "data": stats}

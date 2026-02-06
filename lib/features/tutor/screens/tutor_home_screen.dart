@@ -7,6 +7,7 @@ import 'package:talabahamkor_mobile/features/tutor/screens/tutor_groups_screen.d
 import 'package:talabahamkor_mobile/features/tutor/screens/tutor_students_screen.dart';
 import 'package:talabahamkor_mobile/features/tutor/screens/tutor_groups_list_screen.dart';
 import 'package:talabahamkor_mobile/features/tutor/screens/tutor_activity_groups_screen.dart';
+import 'package:talabahamkor_mobile/features/tutor/screens/tutor_documents_groups_screen.dart';
 
 class TutorHomeScreen extends StatefulWidget {
   const TutorHomeScreen({super.key});
@@ -200,8 +201,9 @@ class _TutorHomeScreenState extends State<TutorHomeScreen> {
                       Icons.folder_shared_rounded,
                       Colors.blueGrey,
                       () {
-                         ScaffoldMessenger.of(context).showSnackBar(
-                           const SnackBar(content: Text("Tez kunda ishga tushadi"))
+                         Navigator.push(
+                           context,
+                           MaterialPageRoute(builder: (_) => const TutorDocumentsGroupsScreen()),
                          );
                       },
                     ),

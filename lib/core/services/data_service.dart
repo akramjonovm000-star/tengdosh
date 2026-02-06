@@ -1390,5 +1390,58 @@ class DataService {
     return false;
   }
 
+  // 36. Get Tutor Document Stats
+  Future<List<dynamic>?> getTutorDocumentStats() async {
+    try {
+      final response = await _get("${ApiConstants.backendUrl}/tutor/documents/stats");
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) {
+          return body['data'];
+        }
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching document stats: $e");
+      return null;
+    }
+    return [];
+  }
+
+  // 37. Get Group Document Details
+  Future<List<dynamic>?> getGroupDocumentDetails(String groupNumber) async {
+    try {
+      final response = await _get("${ApiConstants.backendUrl}/tutor/documents/group/$groupNumber");
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) {
+          return body['data'];
+        }
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching group document details: $e");
+      return null;
+    }
+    return [];
+  }
+
+  // 38. Request Documents
+  Future<bool> requestDocuments({int? studentId, String? groupNumber}) async {
+    try {
+      final response = await _post(
+        "${ApiConstants.backendUrl}/tutor/documents/request",
+        body: {
+          if (studentId != null) 'student_id': studentId,
+          if (groupNumber != null) 'group_number': groupNumber,
+        },
+      );
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        return body['success'] == true;
+      }
+    } catch (e) {
+      debugPrint("DataService: Error requesting documents: $e");
+    }
+    return false;
+  }
 }
 
