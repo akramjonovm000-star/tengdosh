@@ -856,15 +856,13 @@ class DataService {
   // 30.2 Reply to Appeal (Tutor)
   Future<void> replyToTutorAppeal(int appealId, String text) async {
     final token = await _authService.getToken();
-    final uri = Uri.parse('${ApiConstants.backendUrl}/tutor/appeals/$appealId/reply');
+    final uri = Uri.parse('${ApiConstants.backendUrl}/tutor/appeals/$appealId/reply?text=${Uri.encodeComponent(text)}');
     
     final response = await http.post(
       uri,
       headers: {
         'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
       },
-      body: jsonEncode({"text": text}),
     );
 
     if (response.statusCode != 200) {
