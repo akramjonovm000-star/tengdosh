@@ -178,6 +178,28 @@ class _TutorHomeScreenState extends State<TutorHomeScreen> {
                          );
                       },
                     ),
+                    const SizedBox(height: 12),
+                    _buildMenuTile(
+                      "Hujjatlar",
+                      Icons.folder_shared_rounded,
+                      Colors.blueGrey,
+                      () {
+                         ScaffoldMessenger.of(context).showSnackBar(
+                           const SnackBar(content: Text("Tez kunda ishga tushadi"))
+                         );
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    _buildMenuTile(
+                      "Sertifikatlar",
+                      Icons.workspace_premium_rounded,
+                      Colors.amber,
+                      () {
+                         ScaffoldMessenger.of(context).showSnackBar(
+                           const SnackBar(content: Text("Tez kunda ishga tushadi"))
+                         );
+                      },
+                    ),
                   ],
                 ),
               ),
