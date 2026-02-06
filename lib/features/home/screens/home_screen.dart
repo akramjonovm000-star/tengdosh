@@ -406,7 +406,7 @@ class _HomeScreenState extends State<HomeScreen> {
                    onTap: () => _showMock("Davomat"),
                  ),
                  DashboardCard(
-                   title: "Hujjatlar",
+                   title: "Hujjatlar (Yangi)",
                    icon: Icons.folder_shared_rounded,
                    color: Colors.blueGrey,
                    onTap: () {
