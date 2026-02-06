@@ -31,8 +31,10 @@ class _GroupActivitiesScreenState extends State<GroupActivitiesScreen> with Sing
     super.dispose();
   }
 
-  Future<void> _loadActivities() async {
-    setState(() => _isLoading = true);
+  Future<void> _loadActivities({bool showLoading = true}) async {
+    if (showLoading) {
+      setState(() => _isLoading = true);
+    }
     final acts = await _dataService.getGroupActivities(widget.groupNumber);
     if (mounted) {
       setState(() {
@@ -43,15 +45,43 @@ class _GroupActivitiesScreenState extends State<GroupActivitiesScreen> with Sing
   }
   
   Future<void> _handleReview(int id, String status) async {
+    // Optimistic Update: Remove from list immediately
+    final index = _activities.indexWhere((a) => a['id'] == id);
+    if (index != -1) {
+       setState(() {
+         // Create a modified copy of activity with new status
+         final activity = Map<String, dynamic>.from(_activities[index]);
+         activity['status'] = status;
+         _activities[index] = activity;
+       });
+    }
+
+    // Call API in background
     final success = await _dataService.reviewActivity(id, status);
-    if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(status == "accepted" ? "Faollik qabul qilindi" : "Faollik rad etildi"),
-          backgroundColor: status == "accepted" ? Colors.green : Colors.red,
-        )
-      );
-      _loadActivities();
+    
+    if (success) {
+      // Ideally refresh completely to sync data, but silently
+      _loadActivities(showLoading: false);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(status == "accepted" ? "Faollik qabul qilindi" : "Faollik rad etildi"),
+            backgroundColor: status == "accepted" ? Colors.green : Colors.red,
+            duration: const Duration(milliseconds: 1500),
+            behavior: SnackBarBehavior.floating,
+          )
+        );
+      }
+    } else {
+      // Revert on failure (optional, but good practice)
+      _loadActivities(showLoading: false); 
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Xatolik yuz berdi"), backgroundColor: Colors.red)
+        );
+      }
     }
   }
 
