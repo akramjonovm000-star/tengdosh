@@ -38,9 +38,18 @@ class _GroupActivitiesScreenState extends State<GroupActivitiesScreen> with Sing
     final acts = await _dataService.getGroupActivities(widget.groupNumber);
     if (mounted) {
       setState(() {
-        _activities = acts;
+        _activities = acts ?? [];
         _isLoading = false;
       });
+      
+      if (acts == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Ma'lumotlarni yuklashda xatolik yuz berdi (Timeout)"),
+            backgroundColor: Colors.red,
+          )
+        );
+      }
     }
   }
   

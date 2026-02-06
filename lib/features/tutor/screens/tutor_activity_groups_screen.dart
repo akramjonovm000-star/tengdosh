@@ -22,12 +22,22 @@ class _TutorActivityGroupsScreenState extends State<TutorActivityGroupsScreen> {
   }
 
   Future<void> _loadStats() async {
+    setState(() => _isLoading = true);
     final stats = await _dataService.getTutorActivityStats();
     if (mounted) {
       setState(() {
-        _stats = stats;
+        _stats = stats ?? [];
         _isLoading = false;
       });
+      
+      if (stats == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Ma'lumotlarni yuklashda xatolik yuz berdi (Timeout)"),
+            backgroundColor: Colors.red,
+          )
+        );
+      }
     }
   }
 

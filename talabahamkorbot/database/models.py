@@ -351,7 +351,7 @@ class Student(Base):
     faculty_name: Mapped[str | None] = mapped_column(String(255), nullable=True) # New Field
     specialty_name: Mapped[str | None] = mapped_column(String(255), nullable=True) # Yor'nalish
     
-    group_number: Mapped[str | None] = mapped_column(String(255), nullable=True) # Expanded length
+    group_number: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True) # Expanded length
     
     # --- New Profile Fields ---
     short_name: Mapped[str | None] = mapped_column(String(64), nullable=True)
@@ -504,8 +504,8 @@ class UserActivity(Base):
     description: Mapped[str | None] = mapped_column(String(2000), nullable=True)
     date: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
-    status: Mapped[str] = mapped_column(String(32), default="pending")
-    created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
+    status: Mapped[str] = mapped_column(String(32), default="pending", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow, index=True)
 
     student: Mapped["Student"] = relationship("Student", back_populates="activities")
 
@@ -569,7 +569,7 @@ class UserActivityImage(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     activity_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("user_activities.id", ondelete="CASCADE"), nullable=False
+        Integer, ForeignKey("user_activities.id", ondelete="CASCADE"), nullable=False, index=True
     )
 
     file_id: Mapped[str] = mapped_column(String(255), nullable=False)

@@ -918,7 +918,7 @@ class DataService {
   }
 
   // 34. Get Tutor Activity Stats
-  Future<List<dynamic>> getTutorActivityStats() async {
+  Future<List<dynamic>?> getTutorActivityStats() async {
     try {
       final response = await _get("${ApiConstants.backendUrl}/tutor/activities/stats");
       if (response.statusCode == 200) {
@@ -929,12 +929,13 @@ class DataService {
       }
     } catch (e) {
       debugPrint("DataService: Error fetching activity stats: $e");
+      return null;
     }
     return [];
   }
 
   // 35. Get Group Activities
-  Future<List<dynamic>> getGroupActivities(String groupNumber) async {
+  Future<List<dynamic>?> getGroupActivities(String groupNumber) async {
     try {
       final response = await _get("${ApiConstants.backendUrl}/tutor/activities/group/$groupNumber");
       if (response.statusCode == 200) {
@@ -945,6 +946,7 @@ class DataService {
       }
     } catch (e) {
       debugPrint("DataService: Error fetching group activities: $e");
+      return null;
     }
     return [];
   }
