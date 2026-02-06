@@ -828,13 +828,24 @@ class DataService {
 
   // 30.1 Get Group Appeals
   Future<List<dynamic>> getGroupAppeals(String groupNumber) async {
+    debugPrint("DataService: Fetching appeals for group '$groupNumber'...");
     try {
-      final response = await _get("${ApiConstants.backendUrl}/tutor/groups/$groupNumber/appeals");
+      final url = "${ApiConstants.backendUrl}/tutor/groups/${groupNumber.trim()}/appeals";
+      debugPrint("DataService: URL: $url");
+      final response = await _get(url);
+      
+      debugPrint("DataService: Status: ${response.statusCode}");
       if (response.statusCode == 200) {
         final body = json.decode(response.body);
         if (body['success'] == true) {
-          return body['data'];
+          final list = body['data'] as List;
+          debugPrint("DataService: Found ${list.length} appeals");
+          return list;
+        } else {
+             debugPrint("DataService: Success false. Message: ${body['message']}");
         }
+      } else {
+         debugPrint("DataService: Error Error Body: ${response.body}");
       }
     } catch (e) {
       debugPrint("DataService: Error fetching group appeals: $e");

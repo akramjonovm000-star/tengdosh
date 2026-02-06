@@ -91,6 +91,8 @@ async def setup_large_demo_data():
                         group_number=gr_num,
                         university_id=uni.id,
                         faculty_id=fac.id,
+                        university_name=uni.name, # Added
+                        faculty_name=fac.name,    # Added
                         is_active=True,
                         image_url=None # Can leave empty or set random
                     )
