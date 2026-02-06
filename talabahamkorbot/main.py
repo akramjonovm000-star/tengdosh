@@ -176,6 +176,9 @@ from fastapi.staticfiles import StaticFiles
 app.include_router(authlog_router)
 app.include_router(api_router, prefix="/api/v1")
 
+from api.support import router as support_router
+app.include_router(support_router, prefix="/api")
+
 import os
 os.makedirs("static/uploads", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
