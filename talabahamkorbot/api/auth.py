@@ -77,6 +77,10 @@ async def login_via_hemis(
              demo_login = "demo.tutor_new"
              full_name = "Yangi Demo Tyutor"
              role = "tutor"
+         elif login_clean == "sanjar_botirovich" and pass_clean == "102938":
+             demo_login = "demo.rahbar"
+             full_name = "Sanjar Botirovich"
+             role = "rahbariyat"
              
          logger.debug(f"DEBUG AUTH: demo_login='{demo_login}'")
              
@@ -94,9 +98,9 @@ async def login_via_hemis(
                  if not demo_staff:
                      demo_staff = Staff(
                          full_name=full_name,
-                         jshshir="12345678901234",
-                         role="tyutor", # or StaffRole.TUTOR
-                         hemis_id=999999,
+                         jshshir="12345678901234" if role == "tutor" else "98765432109876",
+                         role=role, 
+                         hemis_id=999999 if role == "tutor" else 888888,
                          phone="998901234567"
                      )
                      db.add(demo_staff)
@@ -104,10 +108,12 @@ async def login_via_hemis(
                      await db.refresh(demo_staff)
                  else:
                      # Update existing if needed
-                     if demo_staff.role != "tyutor":
-                         demo_staff.role = "tyutor"
-                     if demo_staff.hemis_id != 999999:
+                     if demo_staff.role != role:
+                         demo_staff.role = role
+                     if role == "tutor" and demo_staff.hemis_id != 999999:
                          demo_staff.hemis_id = 999999
+                     elif role == "rahbariyat" and demo_staff.hemis_id != 888888:
+                         demo_staff.hemis_id = 888888
                      await db.commit()
                  
                  print(f"DEBUG AUTH: Success! Token='staff_id_{demo_staff.id}'")

@@ -20,8 +20,7 @@ import 'package:talabahamkor_mobile/features/tutor/screens/tutor_groups_screen.d
 import 'package:talabahamkor_mobile/features/tutor/screens/tutor_activity_groups_screen.dart';
 import 'package:talabahamkor_mobile/features/tutor/screens/tutor_documents_groups_screen.dart';
 import 'package:talabahamkor_mobile/features/tutor/screens/tutor_certificates_groups_screen.dart';
-
-import '../../certificates/screens/certificates_screen.dart';
+import 'package:talabahamkor_mobile/features/home/widgets/management_dashboard.dart';
 import 'package:talabahamkor_mobile/features/profile/screens/subscription_screen.dart';
 import '../../clubs/screens/clubs_screen.dart';
 import '../../appeals/screens/appeals_screen.dart';
@@ -91,6 +90,9 @@ class _HomeScreenState extends State<HomeScreen> {
       // Fetch Dashboard Stats based on Role
       if (isTutor) {
          _dashboard = await _dataService.getTutorDashboard();
+      } else if (auth.isManagement) {
+         // Placeholder for management stats if needed
+         _dashboard = null; 
       } else {
          final dashResult = await _dataService.getDashboardStats(refresh: refresh);
          final announcements = await _dataService.getAnnouncementModels();
@@ -312,7 +314,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppTheme.accentGreen, shape: BoxShape.circle)),
                           const SizedBox(width: 6),
-                          Text(isTutor ? "Tyutor" : "Online", style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                          Text(
+                            auth.isManagement ? "Rahbariyat" : (isTutor ? "Tyutor" : "Online"), 
+                            style: TextStyle(color: Colors.grey[600], fontSize: 12)
+                          ),
                         ],
                       ),
                     ],
@@ -347,7 +352,9 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 24),
 
-            if (isTutor) 
+            if (auth.isManagement)
+               const ManagementDashboard()
+            else if (isTutor) 
                _buildTutorDashboard()
             else
                _buildStudentDashboard(),
