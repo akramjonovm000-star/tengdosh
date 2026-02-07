@@ -18,6 +18,7 @@ import 'package:talabahamkor_mobile/core/services/permission_service.dart'; // [
 import 'package:talabahamkor_mobile/features/tutor/screens/tutor_groups_screen.dart'; // [NEW]
 import 'package:talabahamkor_mobile/features/tutor/screens/tutor_activity_groups_screen.dart';
 import 'package:talabahamkor_mobile/features/tutor/screens/tutor_documents_groups_screen.dart';
+import 'package:talabahamkor_mobile/features/tutor/screens/tutor_certificates_groups_screen.dart';
 
 import '../../certificates/screens/certificates_screen.dart';
 import 'package:talabahamkor_mobile/features/profile/screens/subscription_screen.dart';
@@ -406,7 +407,7 @@ class _HomeScreenState extends State<HomeScreen> {
                    onTap: () => _showMock("Davomat"),
                  ),
                  DashboardCard(
-                   title: "Hujjatlar (Yangi)",
+                   title: "Hujjatlar",
                    icon: Icons.folder_shared_rounded,
                    color: Colors.blueGrey,
                    onTap: () {
@@ -417,7 +418,9 @@ class _HomeScreenState extends State<HomeScreen> {
                    title: "Sertifikatlar",
                    icon: Icons.workspace_premium_rounded,
                    color: Colors.amber,
-                   onTap: () => _showMock("Sertifikatlar"),
+                   onTap: () {
+                     Navigator.push(context, MaterialPageRoute(builder: (_) => const TutorCertificatesGroupsScreen()));
+                   },
                  ),
                  DashboardCard(
                    title: "Faolliklar",
