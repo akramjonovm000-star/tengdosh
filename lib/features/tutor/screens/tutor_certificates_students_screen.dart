@@ -86,7 +86,7 @@ class _TutorCertificatesStudentsScreenState extends State<TutorCertificatesStude
                               margin: const EdgeInsets.only(bottom: 12),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
-                                border: BorderSide(color: Colors.grey[100]!),
+                                side: BorderSide(color: Colors.grey[100]!),
                               ),
                               elevation: 0,
                               child: ListTile(
