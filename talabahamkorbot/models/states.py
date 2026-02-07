@@ -185,6 +185,7 @@ class OwnerStates(StatesGroup):
 class OwnerGifts(StatesGroup):
     waiting_user_id = State()
     selecting_duration = State()
+    selecting_duration_all = State()
     waiting_revoke_id = State()
     
     # Balance Top-up

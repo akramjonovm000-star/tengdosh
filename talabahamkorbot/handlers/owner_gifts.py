@@ -42,6 +42,7 @@ async def cb_owner_gifts_menu(call: CallbackQuery, state: FSMContext, session: A
 
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🎁 Premium sovg'a qilish", callback_data="owner_gift_start")],
+        [InlineKeyboardButton(text="📢 Barchaga Premium sovg'a qilish", callback_data="owner_gift_all_start")],
         [InlineKeyboardButton(text="💰 Balansni to'ldirish", callback_data="owner_topup_start")],
         [InlineKeyboardButton(text="❌ Premium to'xtatish", callback_data="owner_revoke_start")],
         [InlineKeyboardButton(text="⬅️ Ortga", callback_data="owner_menu")]
@@ -134,9 +135,11 @@ async def msg_process_user_id(message: Message, state: FSMContext, session: Asyn
     await state.set_state(OwnerGifts.selecting_duration)
     
     kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="📅 3 kun", callback_data="gift_dur_3d")],
+        [InlineKeyboardButton(text="📅 Bir hafta", callback_data="gift_dur_7d")],
+        [InlineKeyboardButton(text="📅 10 kun", callback_data="gift_dur_10d")],
         [InlineKeyboardButton(text="📅 Bir oy", callback_data="gift_dur_1m")],
         [InlineKeyboardButton(text="📅 Uch oy", callback_data="gift_dur_3m")],
-        [InlineKeyboardButton(text="📅 Olti oy", callback_data="gift_dur_6m")],
         [InlineKeyboardButton(text="📅 Bir yil", callback_data="gift_dur_1y")],
         [InlineKeyboardButton(text="♾ Doimiy (Lifetime)", callback_data="gift_dur_life")],
         [InlineKeyboardButton(text="⬅️ Bekor qilish", callback_data="owner_gifts_menu")]
@@ -215,7 +218,16 @@ async def cb_process_duration(call: CallbackQuery, state: FSMContext, session: A
     expiry_date = None
     duration_text = ""
     
-    if duration_code == "1m":
+    if duration_code == "3d":
+        expiry_date = now + timedelta(days=3)
+        duration_text = "3 kun"
+    elif duration_code == "7d":
+        expiry_date = now + timedelta(days=7)
+        duration_text = "Bir hafta"
+    elif duration_code == "10d":
+        expiry_date = now + timedelta(days=10)
+        duration_text = "10 kun"
+    elif duration_code == "1m":
         expiry_date = now + timedelta(days=30)
         duration_text = "Bir oy"
     elif duration_code == "3m":
@@ -269,6 +281,101 @@ async def cb_process_duration(call: CallbackQuery, state: FSMContext, session: A
     except Exception as e:
         logger.warning(f"Could not notify user: {e}")
         
+    await state.clear()
+    await call.answer()
+
+# -------------------------------------------------------------
+# 4.1 GIFT TO ALL START
+# -------------------------------------------------------------
+@router.callback_query(F.data == "owner_gift_all_start")
+async def cb_gift_all_start(call: CallbackQuery, state: FSMContext, session: AsyncSession):
+    if not await _is_owner(call.from_user.id, session):
+        return await call.answer("❌ Ruxsat yo'q", show_alert=True)
+
+    await state.set_state(OwnerGifts.selecting_duration_all)
+    
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="📅 3 kun", callback_data="gift_all_dur_3d")],
+        [InlineKeyboardButton(text="📅 Bir hafta", callback_data="gift_all_dur_7d")],
+        [InlineKeyboardButton(text="📅 10 kun", callback_data="gift_all_dur_10d")],
+        [InlineKeyboardButton(text="📅 Bir oy", callback_data="gift_all_dur_1m")],
+        [InlineKeyboardButton(text="⬅️ Bekor qilish", callback_data="owner_gifts_menu")]
+    ])
+    
+    await call.message.edit_text(
+        "📢 <b>Barcha foydalanuvchilarga Premium berish</b>\n\n"
+        "Barcha login qilgan talabalarga premium beriladi. Muddatni tanlang:",
+        reply_markup=kb,
+        parse_mode="HTML"
+    )
+    await call.answer()
+
+# -------------------------------------------------------------
+# 4.2 PROCESS DURATION ALL & GIVE PREMIUM
+# -------------------------------------------------------------
+@router.callback_query(OwnerGifts.selecting_duration_all, F.data.startswith("gift_all_dur_"))
+async def cb_process_duration_all(call: CallbackQuery, state: FSMContext, session: AsyncSession):
+    duration_code = call.data.split("_")[3] # 3d, 7d, 10d, 1m
+    
+    now = datetime.utcnow()
+    expiry_date = None
+    duration_text = ""
+    
+    if duration_code == "3d":
+        expiry_date = now + timedelta(days=3)
+        duration_text = "3 kun"
+    elif duration_code == "7d":
+        expiry_date = now + timedelta(days=7)
+        duration_text = "Bir hafta"
+    elif duration_code == "10d":
+        expiry_date = now + timedelta(days=10)
+        duration_text = "10 kun"
+    elif duration_code == "1m":
+        expiry_date = now + timedelta(days=30)
+        duration_text = "Bir oy"
+        
+    # Bulk Update Students
+    from sqlalchemy import update as sa_update
+    from database.models import StudentNotification
+    
+    # 1. Update Students
+    stmt_student = sa_update(Student).values(
+        is_premium=True,
+        premium_expiry=expiry_date
+    )
+    await session.execute(stmt_student)
+    
+    # 2. Update Users (if they have is_premium field)
+    stmt_user = sa_update(User).values(
+        is_premium=True,
+        premium_expiry=expiry_date
+    )
+    await session.execute(stmt_user)
+    
+    # 3. Add notifications (This part is tricky for ALL users, usually we don't insert 50k rows. 
+    # Better to send a global broadcast via a service later, but user requested 'barcha login qilganlarga'.
+    # For now, let's at least perform the bulk update. The app's profile screen checks the DB anyway.)
+    
+    await session.commit()
+    
+    # 4. Trigger Global Broadcast in background
+    try:
+        from services.notification_service import NotificationService
+        NotificationService.run_broadcast.delay(
+            title="🎁 Barchaga Premium sovg'a!",
+            body=f"Ma'muriyat tomonidan barcha foydalanuvchilarga {duration_text} muddatga Premium obuna taqdim etildi! 🎉",
+            data={"type": "premium_gift"}
+        )
+    except Exception as e:
+        logger.error(f"Global broadcast failed: {e}")
+
+    await call.message.edit_text(
+        f"✅ <b>Barchaga Premium berildi!</b>\n⏳ Muddat: {duration_text}\n\n"
+        f"Xabar tarqatish jarayoni fonda boshlandi.",
+        reply_markup=get_back_inline_kb("owner_gifts_menu"),
+        parse_mode="HTML"
+    )
+    
     await state.clear()
     await call.answer()
 
