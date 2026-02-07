@@ -589,32 +589,32 @@ class _HomeScreenState extends State<HomeScreen> {
                        _showPremiumDialog();
                        return;
                     }
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const SocialActivityScreen()));
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => SocialActivityScreen()));
                   },
                 ),
                 DashboardCard(
                   title: "Hujjatlar",
                   icon: Icons.folder_copy_rounded,
                   color: Colors.blue,
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DocumentsScreen())),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DocumentsScreen())),
                 ),
                 DashboardCard(
                   title: "Sertifikatlar",
                   icon: Icons.workspace_premium_rounded,
                   color: Colors.orange,
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CertificatesScreen())),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CertificatesScreen())),
                 ),
                 DashboardCard(
                   title: "Klublar",
                   icon: Icons.groups_rounded,
                   color: Colors.teal,
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ClubsScreen())),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ClubsScreen())),
                 ),
                 DashboardCard(
                   title: "Murojaatlar",
                   icon: Icons.chat_bubble_outline_rounded,
                   color: Colors.redAccent,
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AppealsScreen())),
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AppealsScreen())),
                 ),
               ],
             ),
