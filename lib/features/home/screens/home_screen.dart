@@ -20,6 +20,7 @@ import 'package:talabahamkor_mobile/features/tutor/screens/tutor_groups_screen.d
 import 'package:talabahamkor_mobile/features/tutor/screens/tutor_activity_groups_screen.dart';
 import 'package:talabahamkor_mobile/features/tutor/screens/tutor_documents_groups_screen.dart';
 import 'package:talabahamkor_mobile/features/tutor/screens/tutor_certificates_groups_screen.dart';
+import '../../certificates/screens/certificates_screen.dart';
 import 'package:talabahamkor_mobile/features/home/widgets/management_dashboard.dart';
 import 'package:talabahamkor_mobile/features/profile/screens/subscription_screen.dart';
 import '../../clubs/screens/clubs_screen.dart';
