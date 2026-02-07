@@ -40,7 +40,7 @@ class DataService {
     }
   }
 
-  Future<http.Response> _get(String url, {Duration timeout = const Duration(seconds: 15)}) async {
+  Future<http.Response> _get(String url, {Duration timeout = const Duration(seconds: 30)}) async {
     final response = await http.get(Uri.parse(url), headers: await _getHeaders()).timeout(timeout);
     _handleAuthError(response);
     return response;

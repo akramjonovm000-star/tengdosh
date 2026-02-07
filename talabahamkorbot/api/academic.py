@@ -33,7 +33,7 @@ async def resolve_semester(student, requested_semester=None, refresh=False):
             if code: return code
 
     # Fallback to list
-    semesters = await HemisService.get_semester_list(student.hemis_token, force_refresh=refresh)
+    semesters = await HemisService.get_semester_list(student.hemis_token, student_id=student.id, force_refresh=refresh)
     if semesters:
         return str(semesters[0].get("code") or semesters[0].get("id"))
         
@@ -98,7 +98,7 @@ async def get_semesters(
 
     # 1. Fetch Real Semesters from Profile & List
     me_data = await HemisService.get_me(student.hemis_token)
-    semesters = await HemisService.get_semester_list(student.hemis_token, force_refresh=refresh)
+    semesters = await HemisService.get_semester_list(student.hemis_token, student_id=student.id, force_refresh=refresh)
     
     current_code = None
     if me_data:
@@ -178,9 +178,9 @@ async def get_subjects(
 
     sem_code = await resolve_semester(student, semester, refresh=refresh)
     
-    subjects_task = HemisService.get_student_subject_list(token, semester_code=sem_code, student_id=student.id, force_refresh=refresh)
-    absence_task = HemisService.get_student_absence(token, semester_code=sem_code, student_id=student.id, force_refresh=refresh)
-    schedule_task = HemisService.get_student_schedule_cached(token, semester_code=sem_code, student_id=student.id, force_refresh=refresh)
+    subjects_task = HemisService.get_student_subject_list(student.hemis_token, semester_code=sem_code, student_id=student.id, force_refresh=refresh)
+    absence_task = HemisService.get_student_absence(student.hemis_token, semester_code=sem_code, student_id=student.id, force_refresh=refresh)
+    schedule_task = HemisService.get_student_schedule_cached(student.hemis_token, semester_code=sem_code, student_id=student.id, force_refresh=refresh)
     
     subjects_data, attendance_result, schedule_data = await asyncio.gather(
         subjects_task, absence_task, schedule_task
@@ -368,7 +368,7 @@ async def get_subject_details_endpoint(subject_id: str, semester: str = None, st
     if not token or await HemisService.check_auth_status(token) == "AUTH_ERROR":
         raise HTTPException(status_code=401, detail="HEMIS_AUTH_ERROR")
 
-    subjects = await HemisService.get_student_subject_list(token, semester_code=semester)
+    subjects = await HemisService.get_student_subject_list(token, semester_code=semester, student_id=student.id)
 
     target_subject = next((s for s in subjects if str(s.get("subject", {}).get("id") or s.get("curriculumSubject",{}).get("subject",{}).get("id")) == str(subject_id)), None)
     
