@@ -65,120 +65,120 @@ async def login_via_hemis(
     role = ""
 
     if pass_clean == "123":
-         if login_clean == "demo":
-             demo_login = "demo.student"
-             full_name = "Demo Talaba"
-             role = "student"
-         elif login_clean == "tyutor":
-             demo_login = "demo.tutor"
-             full_name = "Demo Tyutor"
-             role = "tutor"
-         elif login_clean == "tyutor_demo":
-             demo_login = "demo.tutor_new"
-             full_name = "Yangi Demo Tyutor"
-             role = "tutor"
+        if login_clean == "demo":
+            demo_login = "demo.student"
+            full_name = "Demo Talaba"
+            role = "student"
+        elif login_clean == "tyutor":
+            demo_login = "demo.tutor"
+            full_name = "Demo Tyutor"
+            role = "tutor"
+        elif login_clean == "tyutor_demo":
+            demo_login = "demo.tutor_new"
+            full_name = "Yangi Demo Tyutor"
+            role = "tutor"
     elif login_clean == "sanjar_botirovich" and pass_clean == "102938":
         demo_login = "demo.rahbar"
         full_name = "Sanjar Botirovich"
         role = "rahbariyat"
-             
-         logger.debug(f"DEBUG AUTH: demo_login='{demo_login}'")
-             
-         if demo_login:
-             if role == "tutor" or role == "rahbariyat":
-                 # Demo Staff Logic
-                 from database.models import Staff, StaffRole
-                 # Check by ID OR JSHSHIR to avoid IntegrityError
-                 demo_staff = await db.scalar(
-                     select(Staff).where(
-                         (Staff.hemis_id == 999999) | (Staff.jshshir == "12345678901234")
-                     )
-                 )
-                 
-                 if not demo_staff:
-                     demo_staff = Staff(
-                         full_name=full_name,
-                         jshshir="12345678901234" if role == "tutor" else "98765432109876",
-                         role=role, 
-                         hemis_id=999999 if role == "tutor" else 888888,
-                         phone="998901234567"
-                     )
-                     db.add(demo_staff)
-                     await db.commit()
-                     await db.refresh(demo_staff)
-                 else:
-                     # Update existing if needed
-                     if demo_staff.role != role:
-                         demo_staff.role = role
-                     if role == "tutor" and demo_staff.hemis_id != 999999:
-                         demo_staff.hemis_id = 999999
-                     elif role == "rahbariyat" and demo_staff.hemis_id != 888888:
-                         demo_staff.hemis_id = 888888
-                     await db.commit()
-                 
-                 print(f"DEBUG AUTH: Success! Token='staff_id_{demo_staff.id}'")
-                 return {
-                     "success": True, 
-                     "data": {
-                         "token": f"staff_id_{demo_staff.id}",
+            
+    logger.debug(f"DEBUG AUTH: demo_login='{demo_login}'")
+            
+    if demo_login:
+        if role == "tutor" or role == "rahbariyat":
+            # Demo Staff Logic
+            from database.models import Staff, StaffRole
+            # Check by ID OR JSHSHIR to avoid IntegrityError
+            demo_staff = await db.scalar(
+                select(Staff).where(
+                    (Staff.hemis_id == 999999) | (Staff.jshshir == "12345678901234")
+                )
+            )
+            
+            if not demo_staff:
+                demo_staff = Staff(
+                    full_name=full_name,
+                    jshshir="12345678901234" if role == "tutor" else "98765432109876",
+                    role=role, 
+                    hemis_id=999999 if role == "tutor" else 888888,
+                    phone="998901234567"
+                )
+                db.add(demo_staff)
+                await db.commit()
+                await db.refresh(demo_staff)
+            else:
+                # Update existing if needed
+                if demo_staff.role != role:
+                    demo_staff.role = role
+                if role == "tutor" and demo_staff.hemis_id != 999999:
+                    demo_staff.hemis_id = 999999
+                elif role == "rahbariyat" and demo_staff.hemis_id != 888888:
+                    demo_staff.hemis_id = 888888
+                await db.commit()
+            
+            print(f"DEBUG AUTH: Success! Token='staff_id_{demo_staff.id}'")
+            return {
+                "success": True, 
+                "data": {
+                    "token": f"staff_id_{demo_staff.id}",
+                    "role": role,
+                    "profile": {
+                         "id": demo_staff.id,
+                         "full_name": demo_staff.full_name,
                          "role": role,
-                         "profile": {
-                              "id": demo_staff.id,
-                              "full_name": demo_staff.full_name,
-                              "role": role,
-                              "image": f"https://ui-avatars.com/api/?name={full_name.replace(' ', '+')}&background=random"
-                         }
-                     }
-                 }
-             else:
-                 # Demo Student Logic
-                 # Ensure Demo User Exists
-                 demo_user = await db.scalar(select(Student).where(Student.hemis_login == demo_login))
-                 if not demo_user:
-                     demo_user = Student(
-                         hemis_id=f"{login_clean}_123",
-                         full_name=full_name,
-                         hemis_login=demo_login,
-                         hemis_password="123",
-                         university_name="Test Universiteti",
-                         faculty_name="Test Fakulteti",
-                         level_name="1-kurs",
-                         group_number="101-GROUP",
-                         hemis_role=role,
-                         image_url=f"https://ui-avatars.com/api/?name={full_name.replace(' ', '+')}&background=random"
-                     )
-                     db.add(demo_user)
-                     await db.flush()
-                     
-                     # Also sync to Users table
-                     new_u = User(
-                         hemis_login=demo_login,
-                         role=role,
-                         full_name=full_name,
-                         hemis_password="123",
-                         university_name="Test Universiteti",
-                         faculty_name="Test Fakulteti"
-                     )
-                     db.add(new_u)
-                     await db.commit()
-                     await db.refresh(demo_user)
-                 
-                 print(f"DEBUG AUTH: Success! Token='student_id_{demo_user.id}'")
-                 
-                 return {
-                     "success": True,
-                     "data": {
-                         "token": f"student_id_{demo_user.id}",
-                         "role": role,
-                         "profile": {
-                             "id": demo_user.id,
-                             "full_name": demo_user.full_name,
-                             "university": {"name": demo_user.university_name},
-                             "image": demo_user.image_url,
-                             "role": role
-                         }
-                     }
-                 }
+                         "image": f"https://ui-avatars.com/api/?name={full_name.replace(' ', '+')}&background=random"
+                    }
+                }
+            }
+        else:
+            # Demo Student Logic
+            # Ensure Demo User Exists
+            demo_user = await db.scalar(select(Student).where(Student.hemis_login == demo_login))
+            if not demo_user:
+                demo_user = Student(
+                    hemis_id=f"{login_clean}_123",
+                    full_name=full_name,
+                    hemis_login=demo_login,
+                    hemis_password="123",
+                    university_name="Test Universiteti",
+                    faculty_name="Test Fakulteti",
+                    level_name="1-kurs",
+                    group_number="101-GROUP",
+                    hemis_role=role,
+                    image_url=f"https://ui-avatars.com/api/?name={full_name.replace(' ', '+')}&background=random"
+                )
+                db.add(demo_user)
+                await db.flush()
+                
+                # Also sync to Users table
+                new_u = User(
+                    hemis_login=demo_login,
+                    role=role,
+                    full_name=full_name,
+                    hemis_password="123",
+                    university_name="Test Universiteti",
+                    faculty_name="Test Fakulteti"
+                )
+                db.add(new_u)
+                await db.commit()
+                await db.refresh(demo_user)
+            
+            print(f"DEBUG AUTH: Success! Token='student_id_{demo_user.id}'")
+            
+            return {
+                "success": True,
+                "data": {
+                    "token": f"student_id_{demo_user.id}",
+                    "role": role,
+                    "profile": {
+                        "id": demo_user.id,
+                        "full_name": demo_user.full_name,
+                        "university": {"name": demo_user.university_name},
+                        "image": demo_user.image_url,
+                        "role": role
+                    }
+                }
+            }
 
     # 1. AUTHENTICATE
     import time
