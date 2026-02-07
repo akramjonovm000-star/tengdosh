@@ -7,6 +7,7 @@ import 'package:talabahamkor_mobile/core/theme/app_theme.dart';
 import 'package:talabahamkor_mobile/core/providers/auth_provider.dart';
 import 'package:talabahamkor_mobile/features/profile/screens/profile_screen.dart';
 import 'package:talabahamkor_mobile/features/community/screens/community_screen.dart';
+import 'package:talabahamkor_mobile/features/home/models/announcement.dart';
 import 'package:talabahamkor_mobile/features/student_module/screens/student_module_screen.dart';
 import 'package:talabahamkor_mobile/features/ai/screens/ai_screen.dart';
 import 'package:talabahamkor_mobile/features/student_module/widgets/student_dashboard_widgets.dart';
