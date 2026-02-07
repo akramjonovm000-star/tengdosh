@@ -61,20 +61,8 @@ def get_owner_main_menu_inline_kb() -> InlineKeyboardMarkup:
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="🏫 Universitet qo‘shish",
-                    callback_data="owner_add_university"
-                )
-            ],
-            [
-                InlineKeyboardButton(
                     text="🏛 OTM va fakultetlar",
                     callback_data="owner_universities",
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    text="👥 Xodim / talaba importi",
-                    callback_data="owner_import",
                 )
             ],
             [
@@ -105,12 +93,6 @@ def get_owner_main_menu_inline_kb() -> InlineKeyboardMarkup:
                 InlineKeyboardButton(
                     text="🗳 Saylovlarni boshqarish",
                     callback_data="admin_election_menu:global",
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    text="⚙️ Bot sozlamalari",
-                    callback_data="owner_settings",
                 )
             ],
         ]
