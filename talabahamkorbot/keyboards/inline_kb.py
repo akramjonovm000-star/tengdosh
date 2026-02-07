@@ -61,7 +61,7 @@ def get_owner_main_menu_inline_kb() -> InlineKeyboardMarkup:
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="🏛 OTM va fakultetlar",
+                    text="🏛 OTM",
                     callback_data="owner_universities",
                 )
             ],
