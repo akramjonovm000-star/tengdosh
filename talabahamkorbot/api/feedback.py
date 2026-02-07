@@ -9,7 +9,11 @@ from datetime import datetime
 from api.dependencies import get_current_student, get_db
 from api.schemas import FeedbackListSchema, AppealListResponseSchema, AppealStatsSchema
 from database.models import Student, StudentFeedback, FeedbackReply, TgAccount, PendingUpload
+
 from bot import bot
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Feedback"])
 
