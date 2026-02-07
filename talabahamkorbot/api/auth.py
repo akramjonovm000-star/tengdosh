@@ -60,11 +60,11 @@ async def login_via_hemis(
     
     logger.debug(f"DEBUG AUTH: login='{login_clean}', pass='{pass_clean}'")
     
+    demo_login = None
+    full_name = ""
+    role = ""
+
     if pass_clean == "123":
-         demo_login = None
-         full_name = ""
-         role = ""
-         
          if login_clean == "demo":
              demo_login = "demo.student"
              full_name = "Demo Talaba"
@@ -77,15 +77,15 @@ async def login_via_hemis(
              demo_login = "demo.tutor_new"
              full_name = "Yangi Demo Tyutor"
              role = "tutor"
-         elif login_clean == "sanjar_botirovich" and pass_clean == "102938":
-             demo_login = "demo.rahbar"
-             full_name = "Sanjar Botirovich"
-             role = "rahbariyat"
+    elif login_clean == "sanjar_botirovich" and pass_clean == "102938":
+        demo_login = "demo.rahbar"
+        full_name = "Sanjar Botirovich"
+        role = "rahbariyat"
              
          logger.debug(f"DEBUG AUTH: demo_login='{demo_login}'")
              
          if demo_login:
-             if role == "tutor":
+             if role == "tutor" or role == "rahbariyat":
                  # Demo Staff Logic
                  from database.models import Staff, StaffRole
                  # Check by ID OR JSHSHIR to avoid IntegrityError
@@ -121,11 +121,11 @@ async def login_via_hemis(
                      "success": True, 
                      "data": {
                          "token": f"staff_id_{demo_staff.id}",
-                         "role": "tyutor",
+                         "role": role,
                          "profile": {
                               "id": demo_staff.id,
                               "full_name": demo_staff.full_name,
-                              "role": "tyutor",
+                              "role": role,
                               "image": f"https://ui-avatars.com/api/?name={full_name.replace(' ', '+')}&background=random"
                          }
                      }
