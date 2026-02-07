@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>API_KEY</key>
-	<string>AIzaSyDYndw1URNh9Pu3CZANTInx5fEXyS_B-v0</string>
+	<string>AIzaSyDPvmheie66n8ImmoTF7UCeqgyg0KJx3yM</string>
 	<key>GCM_SENDER_ID</key>
 	<string>190217311647</string>
 	<key>PLIST_VERSION</key>
@@ -15,18 +15,16 @@
 	<key>STORAGE_BUCKET</key>
 	<string>talabahamkor.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
-	<false/>
+	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
-	<false/>
+	<false></false>
 	<key>IS_APPINVITE_ENABLED</key>
-	<true/>
+	<true></true>
 	<key>IS_GCM_ENABLED</key>
-	<true/>
+	<true></true>
 	<key>IS_SIGNIN_ENABLED</key>
-	<true/>
+	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:190217311647:ios:REPLACE_WITH_ACTUAL_IOS_APP_ID</string>
-	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.190217311647-ios-placeholder</string>
+	<string>1:190217311647:ios:c20a015252f87bad2f99aa</string>
 </dict>
 </plist>
