@@ -25,16 +25,37 @@ class AppealService {
     if (token == null) return null;
 
     final url = Uri.parse("${ApiConstants.backendUrl}/student/feedback");
+    
+    // Create headers with User-Agent
+    final headers = await _getHeaders();
+    headers['User-Agent'] = 'TalabaHamkor/1.0 (Mobile)';
 
     try {
+      print("AppealService: Fetching appeals from $url");
       final response = await http.get(
         url,
-        headers: await _getHeaders(),
+        headers: headers,
       );
 
+      print("AppealService: Response ${response.statusCode}");
+      
       if (response.statusCode == 200) {
-        final List<dynamic> listData = jsonDecode(response.body);
-        final List<Appeal> appeals = listData.map((e) => Appeal.fromJson(e)).toList();
+        final dynamic decoded = jsonDecode(response.body);
+        
+        // Safety check: Is it a List?
+        if (decoded is! List) {
+           print("Error: Appeals API returned non-list: $decoded");
+           return null;
+        }
+
+        final List<Appeal> appeals = [];
+        for (var e in decoded) {
+            try {
+                appeals.add(Appeal.fromJson(e));
+            } catch (parseError) {
+                print("Error parsing appeal item: $parseError | Data: $e");
+            }
+        }
         
         // Fetch stats separately
         AppealStats stats = AppealStats(answered: 0, pending: 0, closed: 0);
@@ -44,6 +65,7 @@ class AppealService {
             headers: {
               "Authorization": "Bearer $token",
               "Accept": "application/json",
+              "User-Agent": "TalabaHamkor/1.0 (Mobile)",
             },
           );
           if (statsResponse.statusCode == 200) {
@@ -53,6 +75,7 @@ class AppealService {
           print("Error fetching feedback stats: $e");
         }
 
+        print("AppealService: Successfully parsed ${appeals.length} appeals");
         return AppealsResponse(appeals: appeals, stats: stats);
       } else {
         print("Error fetching appeals: ${response.statusCode} - ${response.body}");
