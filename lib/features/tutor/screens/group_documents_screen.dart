@@ -48,7 +48,7 @@ class _GroupDocumentsScreenState extends State<GroupDocumentsScreen> {
   Future<void> _requestFromAll() async {
     final success = await _dataService.requestDocuments(
       groupNumber: widget.groupNumber,
-      category: _selectedCategory,
+      categoryName: _selectedCategory,
     );
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -63,7 +63,7 @@ class _GroupDocumentsScreenState extends State<GroupDocumentsScreen> {
   Future<void> _requestFromStudent(int studentId) async {
     final success = await _dataService.requestDocuments(
       studentId: studentId,
-      category: _selectedCategory,
+      categoryName: _selectedCategory,
     );
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

@@ -1425,13 +1425,14 @@ class DataService {
   }
 
   // 38. Request Documents
-  Future<bool> requestDocuments({int? studentId, String? groupNumber}) async {
+  Future<bool> requestDocuments({int? studentId, String? groupNumber, String? categoryName}) async {
     try {
       final response = await _post(
         "${ApiConstants.backendUrl}/tutor/documents/request",
         body: {
           if (studentId != null) 'student_id': studentId,
           if (groupNumber != null) 'group_number': groupNumber,
+          if (categoryName != null) 'category': categoryName,
         },
       );
       if (response.statusCode == 200) {
