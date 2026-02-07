@@ -50,6 +50,9 @@ post_install do |installer|
       # FIX: Disable strict module verification to allow SDWebImage and others to build with static linkage
       config.build_settings['ENABLE_MODULE_VERIFIER'] = 'NO'
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+      
+      # FIX: Disable "Double-quoted include" warning/error
+      config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
     end
   end
 
