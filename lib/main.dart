@@ -28,7 +28,7 @@ void main() async {
     debugPrint("Firebase Init Error: $e");
   }
 
-  HttpOverrides.global = MyHttpOverrides(); // Bypass SSL issues for Emulator
+  // HttpOverrides.global = MyHttpOverrides(); // REMOVED: Potentially causing proxy issues on iOS
   runApp(
     MultiProvider(
       providers: [
