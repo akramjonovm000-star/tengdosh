@@ -99,6 +99,35 @@ def get_owner_main_menu_inline_kb() -> InlineKeyboardMarkup:
     )
 
 
+def get_numbered_universities_kb(universities: list) -> InlineKeyboardMarkup:
+    """
+    Creates numeric buttons for a list of universities.
+    [1] [2] [3]
+    [4] [5] [6]
+    """
+    buttons = []
+    current_row = []
+    
+    for i, uni in enumerate(universities, 1):
+        current_row.append(
+            InlineKeyboardButton(
+                text=str(i),
+                callback_data=f"owner_uni_select:{uni.id}"
+            )
+        )
+        if len(current_row) == 5:
+            buttons.append(current_row)
+            current_row = []
+            
+    if current_row:
+        buttons.append(current_row)
+        
+    # Back button
+    buttons.append([InlineKeyboardButton(text="⬅️ Ortga", callback_data="owner_menu")])
+    
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
 # ============================================================
 # 3) Xato → Qayta urinish / Bosh menyu
 # ============================================================

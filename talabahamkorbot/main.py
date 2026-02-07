@@ -179,8 +179,7 @@ from api.student import router as student_router
 from api.announcements import router as announcements_router
 from fastapi.staticfiles import StaticFiles
 
-app.include_router(authlog_router, prefix="/api/v1")
-app.include_router(student_router, prefix="/api/v1")
+app.include_router(api_router, prefix="/api/v1")
 app.include_router(announcements_router, prefix="/api/v1")
 
 from api.support import router as support_router

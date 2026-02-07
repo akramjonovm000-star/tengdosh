@@ -46,7 +46,7 @@ async def get_semester_gpa(
             semester_id = "11"
 
     # Fetch subjects
-    subjects = await HemisService.get_student_subject_list(token, semester_code=semester_id)
+    subjects = await HemisService.get_student_subject_list(token, semester_code=semester_id, student_id=student.id)
     if not subjects:
         subjects = []
 
@@ -60,7 +60,7 @@ async def get_semester_gpa(
         try:
             prev_code = str(int(semester_id) - 1)
             # Fetch previous subjects
-            prev_subjects = await HemisService.get_student_subject_list(token, semester_code=prev_code)
+            prev_subjects = await HemisService.get_student_subject_list(token, semester_code=prev_code, student_id=student.id)
             if prev_subjects:
                 prev_result = GPACalculator.calculate_gpa(prev_subjects)
                 if prev_result.total_credits > 0:
@@ -117,7 +117,7 @@ async def get_cumulative_gpa(
     
     tasks = []
     for code in range(11, current_sem_code + 2): # Check +1 just in case
-        tasks.append(HemisService.get_student_subject_list(token, semester_code=str(code)))
+        tasks.append(HemisService.get_student_subject_list(token, semester_code=str(code), student_id=student.id))
         
     results = await asyncio.gather(*tasks)
     

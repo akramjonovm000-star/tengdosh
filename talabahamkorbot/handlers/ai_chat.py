@@ -14,6 +14,10 @@ from models.states import AIStates
 from utils.student_utils import get_student_by_tg, check_premium_access
 from services.grant_service import calculate_grant_score
 from services.hemis_service import HemisService
+from config import OPENAI_MODEL_CHAT, OPENAI_MODEL_OWNER, ADMIN_ACCESS_ID
+from services.analytics_service import get_ai_analytics_summary
+import asyncio
+import time
 
 router = Router()
 logger = logging.getLogger(__name__)
@@ -324,20 +328,44 @@ async def process_chat_message(message: Message, session: AsyncSession, state: F
         await state.clear()
         return await message.answer("⚠️ Premium muddati tugagan yoki ruxsat yo'q. Suhbatni davom ettirish uchun obunani yangilang.")
         
-    wait_msg = await message.answer("🤔 O'ylayapman...")
+    # Send initial "Thinking" message
+    wait_msg = await message.answer("🤔 . . .")
     
     # 1. Talaba kontekstini aniqlash
     tg_id = message.from_user.id
     acc = await session.scalar(select(TgAccount).where(TgAccount.telegram_id == tg_id))
     
     prompt_text = message.text
-    
-    if acc and acc.current_role == "student" and acc.student_id:
-        student = await session.get(Student, acc.student_id)
+    role = "student"
+    model = OPENAI_MODEL_CHAT
+    system_context = None
+    student_obj = None # To store for logging
+
+    if acc and acc.current_role:
+        role = acc.current_role
+
+    # CHECK FOR OWNER/ADMIN
+    is_admin = False
+    if role == StaffRole.OWNER.value:
+        is_admin = True
+    elif acc and acc.student_id:
+        student_obj = await session.get(Student, acc.student_id)
+        if student_obj:
+            if getattr(student_obj, 'hemis_id', None) == ADMIN_ACCESS_ID or getattr(student_obj, 'hemis_login', None) == ADMIN_ACCESS_ID:
+                is_admin = True
+                role = "admin" # Override for AI prompt
+
+    if is_admin:
+        model = OPENAI_MODEL_OWNER
+        # Inject DB Analytics
+        system_context = await get_ai_analytics_summary(session) # Use session directly
+
+    # STUDENT CONTEXT (If likely student)
+    if role == "student" and acc and acc.student_id:
+        student = student_obj if student_obj else await session.get(Student, acc.student_id)
+        student_obj = student # Sync
         if student:
-            # Context yangilash kerakmi? (Agar yo'q bo'lsa yoki eski bo'lsa)
-            # User "tizimga kirishi bilan" dedi, bu yerda "chatga kirishi bilan" deb tushunamiz.
-            # Va 24 soatlik limitni tekshiramiz.
+            # Context logic...
             need_update = False
             if not student.ai_context:
                 need_update = True
@@ -347,52 +375,88 @@ async def process_chat_message(message: Message, session: AsyncSession, state: F
             
             context_str = student.ai_context
             if need_update:
-                 # Real-time update (Nightly job also does this, but this is fallback/lazy-load)
                  context_str = await build_student_context(session, student.id)
             
-            # CHECK FOR CUSTOM CONTEXT (e.g. Grant Calc history)
             data = await state.get_data()
             custom_ctx = data.get("custom_context")
             
             if custom_ctx:
-                 # Use the session-specific context
                  prompt_text = f"CONTEXT:\n{custom_ctx}\n\nUSER_QUERY:\n{message.text}"
             elif context_str:
-                # System prompt injection technique
                 prompt_text = f"STUDENT_CONTEXT:\n{context_str}\n\nUSER_QUERY:\n{message.text}"
 
-    response = await generate_response(prompt_text)
-    
-    # 2. Log yozish (Analytics)
-    if acc and acc.current_role == "student" and acc.student_id:
-        # Student object may be loaded above, if not load it
-        if 'student' not in locals() or not student:
-            student = await session.get(Student, acc.student_id)
+    # GENERATE RESPONSE (STREAMING)
+    try:
+        stream_gen = await generate_response(
+            prompt_text, 
+            model=model, 
+            stream=True, 
+            system_context=system_context, 
+            role=role
+        )
+        
+        full_response = ""
+        last_edit_time = time.time()
+        
+        if isinstance(stream_gen, str):
+            # Error or simple string return
+            full_response = stream_gen
+            await wait_msg.edit_text(full_response, parse_mode="Markdown")
+        else:
+            # Async Generator
+            async for chunk in stream_gen:
+                if chunk.choices[0].delta.content:
+                    content = chunk.choices[0].delta.content
+                    full_response += content
+                    
+                    # Throttle edits (every 1.5 seconds) to avoid FloodWait
+                    if time.time() - last_edit_time > 1.5:
+                        try:
+                            # Telegram limits formatting, so we might need safe parsing
+                            # For now, disable parse_mode during stream to avoid "Unclosed tag" errors
+                            await wait_msg.edit_text(full_response + " ▌") 
+                            last_edit_time = time.time()
+                        except Exception:
+                            pass # Ignore intermediate errors
             
-        if student:
-            from database.models import StudentAILog # Import here to avoid circular or top-level mess
-            
-            log_entry = StudentAILog(
-                student_id=student.id,
-                full_name=student.full_name,
-                university_name=student.university_name,
-                faculty_name=student.faculty_name,
-                group_number=student.group_number,
-                user_query=message.text, # Original user text, not prompt
-                ai_response=response
-            )
-            session.add(log_entry)
-            await session.commit()
+            # Final Edit with Markdown
+            try:
+                await wait_msg.edit_text(
+                    full_response,
+                    parse_mode="Markdown",
+                    reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                        [InlineKeyboardButton(text="❌ Suhbatni tugatish", callback_data="ai_assistant_main")]
+                    ])
+                )
+            except Exception as e:
+                # Fallback if Markdown fails
+                await wait_msg.edit_text(
+                    full_response,
+                    reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                        [InlineKeyboardButton(text="❌ Suhbatni tugatish", callback_data="ai_assistant_main")]
+                    ])
+                )
 
-    await wait_msg.delete()
+    except Exception as e:
+        logger.error(f"AI Stream Error: {e}")
+        await wait_msg.edit_text("❌ Xatolik yuz berdi.")
+        return
+
     
-    await message.answer(
-        response,
-        parse_mode="Markdown",
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="❌ Suhbatni tugatish", callback_data="ai_assistant_main")]
-        ])
-    )
+    # 2. Log yozish
+    if student_obj:
+        from database.models import StudentAILog
+        log_entry = StudentAILog(
+            student_id=student_obj.id,
+            full_name=student_obj.full_name,
+            university_name=student_obj.university_name,
+            faculty_name=student_obj.faculty_name,
+            group_number=student_obj.group_number,
+            user_query=message.text,
+            ai_response=full_response
+        )
+        session.add(log_entry)
+        await session.commit()
 
 
 # ============================================================

@@ -173,15 +173,45 @@ class CommunityService {
     }
   }
 
-  Future<List<Post>> getPosts({required String scope, int skip = 0, int limit = 20}) async {
+  Future<Map<String, dynamic>> getCommunityFilters() async {
     try {
       final response = await http.get(
-        Uri.parse('${ApiConstants.communityPosts}?category=$scope&skip=$skip&limit=$limit'),
+        Uri.parse('${ApiConstants.backendUrl}/community/filters/meta'),
+        headers: await _getHeaders(),
+      );
+      if (response.statusCode == 200) {
+        return json.decode(utf8.decode(response.bodyBytes));
+      }
+      return {'faculties': [], 'specialties': []};
+    } catch (e) {
+      print("Error getting community filters: $e");
+      return {'faculties': [], 'specialties': []};
+    }
+  }
+
+  Future<List<Post>> getPosts({
+    required String scope, 
+    int skip = 0, 
+    int limit = 20,
+    int? facultyId,
+    String? specialtyName,
+  }) async {
+    try {
+      String url = '${ApiConstants.communityPosts}?category=$scope&skip=$skip&limit=$limit';
+      if (facultyId != null) {
+        url += '&faculty_id=$facultyId';
+      }
+      if (specialtyName != null && specialtyName.isNotEmpty) {
+        url += '&specialty_name=${Uri.encodeComponent(specialtyName)}';
+      }
+
+      final response = await http.get(
+        Uri.parse(url),
         headers: await _getHeaders(),
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
+        final List<dynamic> data = json.decode(utf8.decode(response.bodyBytes));
         return data.map((json) => _mapJsonToPost(json)).toList();
       } else {
         print("CommunityService: Failed to load posts: ${response.statusCode}");

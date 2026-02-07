@@ -1,36 +1,117 @@
 import logging
 import os
 from openai import AsyncOpenAI
-from config import OPENAI_API_KEY, OPENAI_MODEL_TASKS, OPENAI_MODEL_CHAT
+from config import OPENAI_API_KEY, OPENAI_MODEL_TASKS, OPENAI_MODEL_CHAT, OPENAI_API_KEY_OWNER
 from data.ai_prompts import AI_PROMPTS
 
 logger = logging.getLogger(__name__)
 
-# Configure API
+# Configure APIs
 client = None
 if OPENAI_API_KEY:
     client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 else:
-    logger.warning("OPENAI_API_KEY topilmadi! AI ishlamaydi.")
+    logger.warning("OPENAI_API_KEY topilmadi! Student AI ishlamaydi.")
 
-async def generate_response(prompt_text: str, model: str = OPENAI_MODEL_CHAT) -> str:
+client_owner = None
+if OPENAI_API_KEY_OWNER:
+    client_owner = AsyncOpenAI(api_key=OPENAI_API_KEY_OWNER)
+else:
+    logger.warning("OPENAI_API_KEY_OWNER topilmadi! Owner AI ishlamaydi.")
+
+async def generate_response(prompt_text: str, model: str = OPENAI_MODEL_CHAT, stream: bool = False, system_context: str = None, role: str = 'student') -> str:
     """
     Oddiy matnli so'rov yuborish va javob olish.
     Chat uchun default model: gpt-3.5-turbo (Nano)
     Aniq vazifalar uchun: gpt-4o-mini (Mini)
+    
+    stream=True -> returns AsyncGenerator
+    system_context -> Additional system prompt context (e.g. analytics)
+    role -> 'student', 'staff', 'owner', 'admin'
     """
-    if not client:
+    # Select Client based on Role
+    active_client = client
+    if role in ['owner', 'admin']:
+        if client_owner:
+            active_client = client_owner
+        else:
+            return "⚠️ Owner API kaliti sozlanmagan."
+    
+    if not active_client:
         return "⚠️ Tizimda API kalit sozlanmagan."
 
-    try:
-        completion = await client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": "Sen O'zbekistondagi talabalarga yordam beruvchi aqlli botsan. Isming 'TalabaHamkor AI'. Faqat o'zbek tilida javob ber. Muloyim va aniq bo'l. Latex formatidagi formulalarni tushunarli yoz."},
-                {"role": "user", "content": prompt_text}
-            ]
+    # Dynamic System Prompt
+    if role in ['owner', 'admin']:
+        base_system = (
+            "Sen Universitet tizimining boshqaruvchisi yordamchisisan (TalabaHamkor AI). "
+            "Sening vazifang - tizim ma'lumotlarini tahlil qilish va aniq hisobotlarni taqdim etish. "
+            "Faqat o'zbek tilida, rasmiy va lo'nda javob ber. "
+            "Salomlashganda har doim 'Assalomu alaykum, janob!' deb murojaat qil."
         )
-        return completion.choices[0].message.content
+    elif role == 'staff':
+         base_system = (
+            "Sen Universitet xodimlari yordamchisisan. "
+            "Talabalar murojaatlarini tahlil qilishda yordam berasan. "
+            "Faqat o'zbek tilida javob ber."
+         )
+    else:
+        base_system = (
+            "Sen O'zbekistondagi talabalarga yordam beruvchi aqlli botsan. Isming 'TalabaHamkor AI'. "
+            "Faqat o'zbek tilida javob ber. Muloyim va aniq bo'l. "
+            "Salomlashganda do'stona 'Salom, talaba!' deb gap boshla."
+        )
+    
+    if system_context:
+        base_system += f"\n\nQO'SHIMCHA TIZIM MA'LUMOTLARI (Admin uchun):\n{system_context}"
+
+    try:
+        if stream:
+            try:
+                return await active_client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {"role": "system", "content": base_system},
+                        {"role": "user", "content": prompt_text}
+                    ],
+                    stream=True
+                )
+            except Exception as e:
+                logger.error(f"AI Stream Error with model {model}: {e}")
+                # Fallback to gpt-4o if model is invalid/unavailable
+                if model == "gpt-5.2" or "model" in str(e).lower():
+                    logger.warning("Falling back to gpt-4o...")
+                    return await active_client.chat.completions.create(
+                        model="gpt-4o",
+                        messages=[
+                            {"role": "system", "content": base_system},
+                            {"role": "user", "content": prompt_text}
+                        ],
+                        stream=True
+                    )
+                raise e
+        else:
+            try:
+                completion = await active_client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {"role": "system", "content": base_system},
+                        {"role": "user", "content": prompt_text}
+                    ]
+                )
+                return completion.choices[0].message.content
+            except Exception as e:
+                logger.error(f"AI Error with model {model}: {e}")
+                if model == "gpt-5.2" or "model" in str(e).lower():
+                     logger.warning("Falling back to gpt-4o...")
+                     completion = await active_client.chat.completions.create(
+                        model="gpt-4o",
+                        messages=[
+                            {"role": "system", "content": base_system},
+                            {"role": "user", "content": prompt_text}
+                        ]
+                    )
+                     return completion.choices[0].message.content
+                raise e
     except Exception as e:
         logger.error(f"OpenAI API Error ({model}): {e}")
         return "⚠️ Kechirasiz, AI xizmatida xatolik yuz berdi."

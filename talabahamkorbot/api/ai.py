@@ -3,12 +3,15 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 
+from fastapi.responses import StreamingResponse
 from services.ai_service import generate_response
+from services.analytics_service import get_ai_analytics_summary
 from database.models import Student, AiMessage
 from database.db_connect import get_session
 from api.dependencies import get_current_student, get_premium_student
+from config import OPENAI_MODEL_CHAT, OPENAI_MODEL_OWNER, ADMIN_ACCESS_ID
 
-router = APIRouter(prefix="/ai", tags=["ai"])
+router = APIRouter(tags=["ai"])
 
 class ChatRequest(BaseModel):
     message: str
@@ -78,14 +81,55 @@ async def chat_with_ai(
     
     full_prompt = f"Context:\n{context}\n\nSavol: {req.message}"
     
-    response_text = await generate_response(full_prompt)
+    # Check for Elevated Access (Owner or Specific Admin)
+    is_admin = False
+    if getattr(student, 'role', None) == 'owner':
+        is_admin = True
+    elif getattr(student, 'hemis_id', None) == ADMIN_ACCESS_ID or getattr(student, 'hemis_login', None) == ADMIN_ACCESS_ID:
+        is_admin = True
+        
+    model = OPENAI_MODEL_CHAT
+    system_context = None
     
-    # 3. Save AI Response
-    ai_msg = AiMessage(student_id=student.id, role="assistant", content=response_text)
-    db.add(ai_msg)
-    await db.commit()
+    if is_admin:
+        model = OPENAI_MODEL_OWNER
+        # Inject DB Analytics
+        system_context = await get_ai_analytics_summary(db)
     
-    return {"success": True, "data": response_text}
+    # STREAMING RESPONSE
+    async def response_stream():
+        # 1. Save User Message
+        user_msg = AiMessage(student_id=student.id, role="user", content=req.message)
+        db.add(user_msg)
+        await db.commit()
+        
+        full_response = ""
+        
+        stream_gen = await generate_response(
+            full_prompt, 
+            model=model, 
+            stream=True, 
+            system_context=system_context,
+            role="owner" if is_admin else getattr(student, 'role', 'student')
+        )
+        
+        if isinstance(stream_gen, str):
+            # Error case (not a generator)
+            yield stream_gen
+            full_response = stream_gen
+        else:
+            async for chunk in stream_gen:
+                if chunk.choices[0].delta.content:
+                    content = chunk.choices[0].delta.content
+                    full_response += content
+                    yield content
+        
+        # 2. Save AI Response (after stream completes)
+        ai_msg = AiMessage(student_id=student.id, role="assistant", content=full_response)
+        db.add(ai_msg)
+        await db.commit()
+
+    return StreamingResponse(response_stream(), media_type="text/plain")
 
 
 from fastapi import UploadFile, File, Form, HTTPException
@@ -121,7 +165,7 @@ async def summarize_content(
     limit = student.ai_limit if student.ai_limit is not None else 25
     
     # If admin/owner -> Unlimited
-    if student.role == 'owner':
+    if getattr(student, 'role', None) == 'owner':
         limit = 9999
         
     if student.ai_usage_count >= limit:

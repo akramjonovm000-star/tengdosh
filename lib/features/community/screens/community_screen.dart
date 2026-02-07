@@ -26,6 +26,13 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
   Timer? _pollTimer;
   int _unreadCount = 0; // NEW
 
+  // Filters for Management
+  List<dynamic> _faculties = [];
+  List<String> _specialties = [];
+  int? _selectedFacultyId;
+  String? _selectedSpecialtyName;
+  bool _isFiltersLoading = false;
+
   // State Management for Silent Updates
   final Map<String, List<Post>> _posts = {
     'university': [],
@@ -63,6 +70,13 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
     super.initState();
     _tabController = TabController(length: 3, vsync: this, initialIndex: 0);
     _tabController.addListener(_handleTabSelection);
+    
+    // Load Filters if Management
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.read<AuthProvider>().isManagement) {
+        _loadFilters();
+      }
+    });
     
     // Initial Load
     _loadAllScopes();
@@ -120,6 +134,23 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
     }
   }
 
+  Future<void> _loadFilters() async {
+    setState(() => _isFiltersLoading = true);
+    try {
+      final data = await _service.getCommunityFilters();
+      if (mounted) {
+        setState(() {
+          _faculties = data['faculties'] ?? [];
+          _specialties = List<String>.from(data['specialties'] ?? []);
+          _isFiltersLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isFiltersLoading = false);
+      debugPrint("Load Filters Error: $e");
+    }
+  }
+
   Future<void> _loadAllScopes() async {
     await Future.wait([
       _fetchPosts('university'),
@@ -136,7 +167,14 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
     }
 
     try {
-      final newPosts = await _service.getPosts(scope: scope, skip: 0, limit: _limit);
+      final isManagement = context.read<AuthProvider>().isManagement;
+      final newPosts = await _service.getPosts(
+        scope: scope, 
+        skip: 0, 
+        limit: _limit,
+        facultyId: isManagement ? _selectedFacultyId : null,
+        specialtyName: isManagement ? _selectedSpecialtyName : null,
+      );
       if (mounted) {
         setState(() {
           _posts[scope] = newPosts;
@@ -160,8 +198,15 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
      setState(() => _isFetchingMore[scope] = true);
      
      try {
+        final isManagement = context.read<AuthProvider>().isManagement;
         final skip = _posts[scope]?.length ?? 0;
-        final morePosts = await _service.getPosts(scope: scope, skip: skip, limit: _limit);
+        final morePosts = await _service.getPosts(
+          scope: scope, 
+          skip: skip, 
+          limit: _limit,
+          facultyId: isManagement ? _selectedFacultyId : null,
+          specialtyName: isManagement ? _selectedSpecialtyName : null,
+        );
         
         if (mounted) {
            setState(() {
@@ -232,10 +277,10 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                     indicatorSize: TabBarIndicatorSize.tab,
                     labelPadding: EdgeInsets.zero,
                     tabs: isManagement 
-                      ? const [
-                          Tab(child: Text("Universitet", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
-                          Tab(child: Text("Fakultet", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
-                          Tab(child: Text("Yo'nalish", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+                      ? [
+                          const Tab(child: Text("Universitet", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+                          Tab(child: _buildFilterTab("Fakultet", _selectedFacultyId == null ? "Barchasi" : (_faculties.firstWhere((f) => f['id'] == _selectedFacultyId, orElse: () => {'name': "Barchasi"})['name']), 1)),
+                          Tab(child: _buildFilterTab("Yo'nalish", _selectedSpecialtyName ?? "Barchasi", 2)),
                         ]
                       : const [
                           Tab(child: Text("Yo'nalish", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
@@ -317,6 +362,74 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
           child: const Icon(Icons.edit, color: Colors.white),
         ),
       );
+  }
+
+  Widget _buildFilterTab(String title, String subtitle, int tabIndex) {
+    final isActive = _tabController.index == tabIndex;
+    return GestureDetector(
+      onTap: () {
+        if (_tabController.index != tabIndex) {
+          _tabController.animateTo(tabIndex);
+        } else {
+          _showFilterMenu(tabIndex);
+        }
+      },
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+          if (isActive)
+            Text(
+              subtitle, 
+              style: TextStyle(fontSize: 9, color: AppTheme.primaryBlue, fontWeight: FontWeight.normal),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showFilterMenu(int tabIndex) {
+    if (tabIndex == 1) { // Faculty
+      final List<PopupMenuEntry<int?>> items = [
+        const PopupMenuItem<int?>(value: null, child: Text("Barcha fakultetlar")),
+        ..._faculties.map((f) => PopupMenuItem<int?>(value: f['id'], child: Text(f['name'] ?? ""))),
+      ];
+      
+      showMenu<int?>(
+        context: context,
+        position: const RelativeRect.fromLTRB(100, 100, 100, 100), // Adjusted later
+        items: items,
+      ).then((value) {
+        if (value != _selectedFacultyId) {
+          setState(() {
+            _selectedFacultyId = value;
+          });
+          _fetchPosts('faculty');
+          if (_tabController.index == 2) _fetchPosts('specialty'); // Also affects specialty scope if needed? 
+          // Usually faculty filter affects both if available on backend.
+        }
+      });
+    } else if (tabIndex == 2) { // Specialty
+      final List<PopupMenuEntry<String?>> items = [
+        const PopupMenuItem<String?>(value: null, child: Text("Barcha yo'nalishlar")),
+        ..._specialties.map((s) => PopupMenuItem<String?>(value: s, child: Text(s))),
+      ];
+      
+      showMenu<String?>(
+        context: context,
+        position: const RelativeRect.fromLTRB(100, 100, 100, 100),
+        items: items,
+      ).then((value) {
+        if (value != _selectedSpecialtyName) {
+          setState(() {
+            _selectedSpecialtyName = value;
+          });
+          _fetchPosts('specialty');
+        }
+      });
+    }
   }
 
   Widget _buildFeed(String scope) {

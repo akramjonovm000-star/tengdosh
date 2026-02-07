@@ -14,10 +14,10 @@ async def get_announcements(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    \"\"\"
+    """
     Fetch unread announcements for the user.
     If priority >= 100 (Superadmin), they might be forced or always show first.
-    \"\"\"
+    """
     # 1. Get IDs of announcements already read by user
     read_stmt = select(AnnouncementRead.announcement_id).where(AnnouncementRead.user_id == user.id)
     read_res = await db.execute(read_stmt)
@@ -63,9 +63,9 @@ async def mark_as_read(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    \"\"\"
+    """
     Mark an announcement as read.
-    \"\"\"
+    """
     # Check if already read
     stmt = select(AnnouncementRead).where(
         and_(AnnouncementRead.user_id == user.id, AnnouncementRead.announcement_id == announcement_id)
@@ -91,9 +91,9 @@ async def create_announcement(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    \"\"\"
+    """
     Admin only: Create new announcement.
-    \"\"\"
+    """
     if user.role not in ["admin", "owner", "developer"]:
         raise HTTPException(status_code=403, detail="Permission denied")
     

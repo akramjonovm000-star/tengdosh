@@ -1,0 +1,858 @@
+/home/user/talabahamkor/talabahamkorbot/api/gpa.py:76: FastAPIDeprecationWarning: `regex` has been deprecated, please use `pattern` instead
+  retake_policy: str = Query("latest", regex="^(latest|best)$"),
+/home/user/talabahamkor/talabahamkorbot/main.py:92: DeprecationWarning: 
+        on_event is deprecated, use lifespan event handlers instead.
+
+        Read more about it in the
+        [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+        
+  @app.on_event("startup")
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started parent process [185177]
+INFO:     Waiting for child process [185432]
+INFO:     Child process [185432] died
+/home/user/talabahamkor/talabahamkorbot/api/gpa.py:76: FastAPIDeprecationWarning: `regex` has been deprecated, please use `pattern` instead
+  retake_policy: str = Query("latest", regex="^(latest|best)$"),
+/home/user/talabahamkor/talabahamkorbot/api/gpa.py:76: FastAPIDeprecationWarning: `regex` has been deprecated, please use `pattern` instead
+  retake_policy: str = Query("latest", regex="^(latest|best)$"),
+/home/user/talabahamkor/talabahamkorbot/api/gpa.py:76: FastAPIDeprecationWarning: `regex` has been deprecated, please use `pattern` instead
+  retake_policy: str = Query("latest", regex="^(latest|best)$"),
+INFO:     Started server process [185435]
+INFO:     Waiting for application startup.
+2026-02-07 05:56:16,861 - main - INFO - 🚀 Starting up (WEBHOOK Mode)...
+2026-02-07 05:56:16,921 - services.notification_service - INFO - 🚀 Firebase Admin initialized successfully.
+INFO:     Started server process [185434]
+INFO:     Waiting for application startup.
+2026-02-07 05:56:16,988 - main - INFO - 🚀 Starting up (WEBHOOK Mode)...
+INFO:     Started server process [185433]
+INFO:     Waiting for application startup.
+2026-02-07 05:56:16,997 - main - INFO - 🚀 Starting up (WEBHOOK Mode)...
+2026-02-07 05:56:17,048 - services.notification_service - INFO - 🚀 Firebase Admin initialized successfully.
+2026-02-07 05:56:17,052 - services.notification_service - INFO - 🚀 Firebase Admin initialized successfully.
+INFO:     Application startup complete.
+2026-02-07 05:56:17,487 - main - WARNING - ⚠️ Webhook setup skip/fail (likely concurrency): Telegram server says - Flood control exceeded on method 'SetWebhook'. Retry in 1 seconds.
+Original description: Too Many Requests: retry after 1
+(background on this error at: https://core.telegram.org/bots/faq#my-bot-is-hitting-limits-how-do-i-avoid-this)
+INFO:     Application startup complete.
+2026-02-07 05:56:17,498 - main - WARNING - ⚠️ Webhook setup skip/fail (likely concurrency): Telegram server says - Flood control exceeded on method 'SetWebhook'. Retry in 1 seconds.
+Original description: Too Many Requests: retry after 1
+(background on this error at: https://core.telegram.org/bots/faq#my-bot-is-hitting-limits-how-do-i-avoid-this)
+INFO:     Application startup complete.
+2026-02-07 05:56:17,509 - api.dependencies - INFO - Checking auth header: Bearer student_id_867...
+2026-02-07 05:56:17,794 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/account/me "HTTP/1.1 200 OK"
+2026-02-07 05:56:17,900 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/account/me "HTTP/1.1 200 OK"
+2026-02-07 05:56:18,001 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/education/schedule?semester=16 "HTTP/1.1 200 OK"
+2026-02-07 05:56:18,022 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/education/attendance?semester=16 "HTTP/1.1 200 OK"
+2026-02-07 05:56:18,031 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/education/subject-list?semester=16 "HTTP/1.1 200 OK"
+INFO:     172.30.0.22:0 - "GET /api/v1/education/subjects?refresh=true HTTP/1.1" 200 OK
+/home/user/talabahamkor/talabahamkorbot/api/gpa.py:76: FastAPIDeprecationWarning: `regex` has been deprecated, please use `pattern` instead
+  retake_policy: str = Query("latest", regex="^(latest|best)$"),
+INFO:     Waiting for child process [185636]
+INFO:     Child process [185636] died
+2026-02-07 05:56:26,538 - api.dependencies - INFO - Checking auth header: Bearer staff_id_24...
+INFO:     127.0.0.1:38942 - "GET /api/v1/tutor/certificates/student/771 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [185935]
+INFO:     Child process [185935] died
+2026-02-07 05:56:28,704 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+2026-02-07 05:56:32,419 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 05:56:32,422 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [186116]
+INFO:     Child process [186116] died
+2026-02-07 05:56:34,382 - api.dependencies - INFO - Checking auth header: Bearer staff_id_24...
+INFO:     127.0.0.1:33154 - "POST /api/v1/tutor/certificates/-101/download HTTP/1.1" 200 OK
+INFO:     Waiting for child process [186305]
+INFO:     Child process [186305] died
+2026-02-07 05:56:41,794 - api.dependencies - INFO - Checking auth header: Bearer staff_id_24...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+INFO:     Waiting for child process [186519]
+INFO:     Child process [186519] died
+2026-02-07 05:56:47,449 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 05:56:47,450 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [186662]
+INFO:     Child process [186662] died
+INFO:     Waiting for child process [186864]
+INFO:     Child process [186864] died
+2026-02-07 05:56:58,778 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+INFO:     Waiting for child process [187013]
+INFO:     Child process [187013] died
+2026-02-07 05:57:02,433 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 05:57:02,438 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [187162]
+INFO:     Child process [187162] died
+INFO:     Waiting for child process [187359]
+INFO:     Child process [187359] died
+2026-02-07 05:57:12,879 - api.dependencies - INFO - Checking auth header: Bearer staff_id_24...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+2026-02-07 05:57:17,464 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 05:57:17,466 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     Waiting for child process [187501]
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     Child process [187501] died
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+2026-02-07 05:57:19,399 - api.dependencies - INFO - Checking auth header: Bearer staff_id_24...
+INFO:     172.30.0.22:0 - "POST /api/v1/student/notifications/register-token HTTP/1.1" 200 OK
+2026-02-07 05:57:19,423 - api.dependencies - INFO - Checking auth header: Bearer staff_id_24...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/me HTTP/1.1" 200 OK
+2026-02-07 05:57:20,192 - api.dependencies - INFO - Checking auth header: Bearer staff_id_24...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+2026-02-07 05:57:20,515 - api.dependencies - INFO - Checking auth header: Bearer staff_id_24...
+INFO:     172.30.0.22:0 - "GET /api/v1/education/semesters HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/home/user/talabahamkor/talabahamkorbot/venv/lib/python3.10/site-packages/uvicorn/protocols/http/h11_impl.py", line 410, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+  File "/home/user/talabahamkor/talabahamkorbot/venv/lib/python3.10/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+  File "/home/user/talabahamkor/talabahamkorbot/venv/lib/python3.10/site-packages/fastapi/applications.py", line 1135, in __call__
+    await super().__call__(scope, receive, send)
+  File "/home/user/talabahamkor/talabahamkorbot/venv/lib/python3.10/site-packages/starlette/applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/user/talabahamkor/talabahamkorbot/venv/lib/python3.10/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/home/user/talabahamkor/talabahamkorbot/venv/lib/python3.10/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/home/user/talabahamkor/talabahamkorbot/venv/lib/python3.10/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+  File "/home/user/talabahamkor/talabahamkorbot/venv/lib/python3.10/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/home/user/talabahamkor/talabahamkorbot/venv/lib/python3.10/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/user/talabahamkor/talabahamkorbot/venv/lib/python3.10/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/user/talabahamkor/talabahamkorbot/venv/lib/python3.10/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/home/user/talabahamkor/talabahamkorbot/venv/lib/python3.10/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/user/talabahamkor/talabahamkorbot/venv/lib/python3.10/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/home/user/talabahamkor/talabahamkorbot/venv/lib/python3.10/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/home/user/talabahamkor/talabahamkorbot/venv/lib/python3.10/site-packages/fastapi/routing.py", line 115, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/home/user/talabahamkor/talabahamkorbot/venv/lib/python3.10/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/user/talabahamkor/talabahamkorbot/venv/lib/python3.10/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/user/talabahamkor/talabahamkorbot/venv/lib/python3.10/site-packages/fastapi/routing.py", line 101, in app
+    response = await f(request)
+  File "/home/user/talabahamkor/talabahamkorbot/venv/lib/python3.10/site-packages/fastapi/routing.py", line 355, in app
+    raw_response = await run_endpoint_function(
+  File "/home/user/talabahamkor/talabahamkorbot/venv/lib/python3.10/site-packages/fastapi/routing.py", line 243, in run_endpoint_function
+    return await dependant.call(**values)
+  File "/home/user/talabahamkor/talabahamkorbot/api/academic.py", line 93, in get_semesters
+    if not student.hemis_token:
+AttributeError: 'Staff' object has no attribute 'hemis_token'
+2026-02-07 05:57:20,756 - api.dependencies - INFO - Checking auth header: Bearer staff_id_24...
+INFO:     172.30.0.22:0 - "GET /api/v1/tutor/dashboard HTTP/1.1" 200 OK
+INFO:     Waiting for child process [187687]
+INFO:     Child process [187687] died
+2026-02-07 05:57:25,163 - api.dependencies - INFO - Checking auth header: Bearer staff_id_24...
+INFO:     172.30.0.22:0 - "GET /api/v1/tutor/certificates/stats HTTP/1.1" 200 OK
+INFO:     Waiting for child process [187876]
+INFO:     Child process [187876] died
+2026-02-07 05:57:28,692 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+2026-02-07 05:57:32,407 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 05:57:32,412 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [188070]
+INFO:     Child process [188070] died
+INFO:     Waiting for child process [188256]
+INFO:     Child process [188256] died
+INFO:     Waiting for child process [188423]
+INFO:     Child process [188423] died
+2026-02-07 05:57:47,418 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+2026-02-07 05:57:47,429 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+2026-02-07 05:57:49,364 - api.dependencies - INFO - Checking auth header: Bearer staff_id_24...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+INFO:     Waiting for child process [188564]
+INFO:     Child process [188564] died
+INFO:     Waiting for child process [188768]
+INFO:     Child process [188768] died
+2026-02-07 05:57:58,697 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+INFO:     Waiting for child process [188911]
+INFO:     Child process [188911] died
+2026-02-07 05:58:02,484 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 05:58:02,487 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [189060]
+INFO:     Child process [189060] died
+INFO:     Waiting for child process [189249]
+INFO:     Child process [189249] died
+2026-02-07 05:58:17,447 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+2026-02-07 05:58:17,455 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [189393]
+INFO:     Child process [189393] died
+INFO:     Waiting for child process [189580]
+INFO:     Child process [189580] died
+2026-02-07 05:58:28,772 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+INFO:     Waiting for child process [189768]
+INFO:     Child process [189768] died
+2026-02-07 05:58:32,406 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 05:58:32,418 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [189904]
+INFO:     Child process [189904] died
+INFO:     Waiting for child process [190122]
+INFO:     Child process [190122] died
+INFO:     Waiting for child process [190266]
+INFO:     Child process [190266] died
+2026-02-07 05:58:47,437 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 05:58:47,440 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     Waiting for child process [190385]
+INFO:     Child process [190385] died
+INFO:     Waiting for child process [190553]
+INFO:     Child process [190553] died
+2026-02-07 05:58:58,709 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+2026-02-07 05:59:02,420 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 05:59:02,425 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [190683]
+INFO:     Child process [190683] died
+INFO:     Waiting for child process [190798]
+INFO:     Child process [190798] died
+INFO:     Waiting for child process [190958]
+INFO:     Child process [190958] died
+2026-02-07 05:59:17,449 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 05:59:17,449 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [191082]
+INFO:     Child process [191082] died
+INFO:     Waiting for child process [191265]
+INFO:     Child process [191265] died
+2026-02-07 05:59:28,698 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+INFO:     Waiting for child process [191408]
+INFO:     Child process [191408] died
+2026-02-07 05:59:32,434 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 05:59:32,438 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [191543]
+INFO:     Child process [191543] died
+INFO:     Waiting for child process [191706]
+INFO:     Child process [191706] died
+INFO:     Waiting for child process [191821]
+INFO:     Child process [191821] died
+2026-02-07 05:59:47,444 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 05:59:47,445 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [191939]
+INFO:     Child process [191939] died
+INFO:     Waiting for child process [192104]
+INFO:     Child process [192104] died
+2026-02-07 05:59:58,722 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+2026-02-07 06:00:02,439 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:00:02,450 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     Waiting for child process [192215]
+INFO:     Child process [192215] died
+INFO:     Waiting for child process [192334]
+INFO:     Child process [192334] died
+INFO:     Waiting for child process [192542]
+INFO:     Child process [192542] died
+2026-02-07 06:00:17,422 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:00:17,434 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     Waiting for child process [192665]
+INFO:     Child process [192665] died
+INFO:     Waiting for child process [192857]
+INFO:     Child process [192857] died
+2026-02-07 06:00:28,739 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+INFO:     Waiting for child process [192972]
+INFO:     Child process [192972] died
+2026-02-07 06:00:32,424 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:00:32,429 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [193091]
+INFO:     Child process [193091] died
+INFO:     Waiting for child process [193255]
+INFO:     Child process [193255] died
+2026-02-07 06:00:47,419 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:00:47,420 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [193368]
+INFO:     Child process [193368] died
+INFO:     Waiting for child process [193491]
+INFO:     Child process [193491] died
+INFO:     Waiting for child process [193654]
+INFO:     Child process [193654] died
+2026-02-07 06:00:58,704 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+2026-02-07 06:01:02,446 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:01:02,449 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [193780]
+INFO:     Child process [193780] died
+INFO:     Waiting for child process [193920]
+INFO:     Child process [193920] died
+INFO:     Waiting for child process [194086]
+INFO:     Child process [194086] died
+INFO:     172.30.0.22:0 - "GET /api/v1/student/check-username?username=badasa HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/student/check-username?username=badasal HTTP/1.1" 200 OK
+2026-02-07 06:01:17,430 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:01:17,434 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [194233]
+INFO:     Child process [194233] died
+INFO:     Waiting for child process [194402]
+INFO:     Child process [194402] died
+2026-02-07 06:01:28,709 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+INFO:     Waiting for child process [194592]
+INFO:     Child process [194592] died
+2026-02-07 06:01:32,419 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:01:32,420 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [194716]
+INFO:     Child process [194716] died
+INFO:     Waiting for child process [194882]
+INFO:     Child process [194882] died
+2026-02-07 06:01:47,428 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:01:47,433 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [194999]
+INFO:     Child process [194999] died
+INFO:     Waiting for child process [195110]
+INFO:     Child process [195110] died
+2026-02-07 06:01:58,699 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+INFO:     Waiting for child process [195274]
+INFO:     Child process [195274] died
+2026-02-07 06:02:02,418 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:02:02,424 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [195403]
+INFO:     Child process [195403] died
+INFO:     Waiting for child process [195566]
+INFO:     Child process [195566] died
+INFO:     Waiting for child process [195720]
+INFO:     Child process [195720] died
+2026-02-07 06:02:17,424 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+2026-02-07 06:02:17,438 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [195835]
+INFO:     Child process [195835] died
+INFO:     Waiting for child process [196016]
+INFO:     Child process [196016] died
+2026-02-07 06:02:28,694 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+2026-02-07 06:02:32,405 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:02:32,419 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [196138]
+INFO:     Child process [196138] died
+INFO:     Waiting for child process [196265]
+INFO:     Child process [196265] died
+INFO:     Waiting for child process [196431]
+INFO:     Child process [196431] died
+2026-02-07 06:02:47,458 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:02:47,463 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [196551]
+INFO:     Child process [196551] died
+INFO:     Waiting for child process [196689]
+INFO:     Child process [196689] died
+2026-02-07 06:02:58,724 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+INFO:     Waiting for child process [196826]
+INFO:     Child process [196826] died
+2026-02-07 06:03:02,420 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+2026-02-07 06:03:02,432 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [196938]
+INFO:     Child process [196938] died
+INFO:     Waiting for child process [197144]
+INFO:     Child process [197144] died
+INFO:     Waiting for child process [197265]
+INFO:     Child process [197265] died
+2026-02-07 06:03:17,468 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+2026-02-07 06:03:17,481 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [197382]
+INFO:     Child process [197382] died
+INFO:     Waiting for child process [197570]
+INFO:     Child process [197570] died
+2026-02-07 06:03:28,698 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+2026-02-07 06:03:32,452 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:03:32,458 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [197687]
+INFO:     Child process [197687] died
+INFO:     Waiting for child process [197802]
+INFO:     Child process [197802] died
+INFO:     Waiting for child process [197973]
+INFO:     Child process [197973] died
+2026-02-07 06:03:47,435 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:03:47,439 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [198090]
+INFO:     Child process [198090] died
+INFO:     Waiting for child process [198254]
+INFO:     Child process [198254] died
+2026-02-07 06:03:58,703 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+INFO:     Waiting for child process [198375]
+INFO:     Child process [198375] died
+2026-02-07 06:04:02,455 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+2026-02-07 06:04:02,464 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [198489]
+INFO:     Child process [198489] died
+INFO:     Waiting for child process [198652]
+INFO:     Child process [198652] died
+2026-02-07 06:04:17,425 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:04:17,429 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [198811]
+INFO:     Child process [198811] died
+INFO:     Waiting for child process [198930]
+INFO:     Child process [198930] died
+INFO:     Waiting for child process [199123]
+INFO:     Child process [199123] died
+2026-02-07 06:04:28,757 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+2026-02-07 06:04:32,434 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+2026-02-07 06:04:32,439 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [199240]
+INFO:     Child process [199240] died
+INFO:     Waiting for child process [199383]
+INFO:     Child process [199383] died
+INFO:     Waiting for child process [199515]
+INFO:     Child process [199515] died
+2026-02-07 06:04:47,448 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:04:47,450 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [199640]
+INFO:     Child process [199640] died
+INFO:     Waiting for child process [199799]
+INFO:     Child process [199799] died
+2026-02-07 06:04:58,693 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+INFO:     Waiting for child process [199919]
+INFO:     Child process [199919] died
+2026-02-07 06:05:02,457 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:05:02,457 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [200044]
+INFO:     Child process [200044] died
+INFO:     Waiting for child process [200211]
+INFO:     Child process [200211] died
+2026-02-07 06:05:17,420 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:05:17,425 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [200369]
+INFO:     Child process [200369] died
+INFO:     Waiting for child process [200456]
+INFO:     Child process [200456] died
+2026-02-07 06:05:28,731 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+INFO:     Waiting for child process [200648]
+INFO:     Child process [200648] died
+2026-02-07 06:05:32,411 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:05:32,420 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [200762]
+INFO:     Child process [200762] died
+INFO:     Waiting for child process [200952]
+INFO:     Child process [200952] died
+INFO:     Waiting for child process [201072]
+INFO:     Child process [201072] died
+2026-02-07 06:05:47,439 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:05:47,443 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [201194]
+INFO:     Child process [201194] died
+INFO:     Waiting for child process [201362]
+INFO:     Child process [201362] died
+2026-02-07 06:05:58,780 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+2026-02-07 06:06:02,420 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:06:02,423 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [201475]
+INFO:     Child process [201475] died
+INFO:     Waiting for child process [201595]
+INFO:     Child process [201595] died
+INFO:     Waiting for child process [201758]
+INFO:     Child process [201758] died
+2026-02-07 06:06:17,448 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:06:17,456 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [201887]
+INFO:     Child process [201887] died
+INFO:     Waiting for child process [202033]
+INFO:     Child process [202033] died
+2026-02-07 06:06:28,699 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+INFO:     Waiting for child process [202197]
+INFO:     Child process [202197] died
+2026-02-07 06:06:32,410 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:06:32,419 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [202322]
+INFO:     Child process [202322] died
+INFO:     Waiting for child process [202504]
+INFO:     Child process [202504] died
+INFO:     Waiting for child process [202626]
+INFO:     Child process [202626] died
+2026-02-07 06:06:47,450 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:06:47,455 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [202745]
+INFO:     Child process [202745] died
+INFO:     Waiting for child process [202907]
+INFO:     Child process [202907] died
+2026-02-07 06:06:58,710 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+2026-02-07 06:07:02,419 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:07:02,422 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [203028]
+INFO:     Child process [203028] died
+INFO:     Waiting for child process [203179]
+INFO:     Child process [203179] died
+INFO:     Waiting for child process [203339]
+INFO:     Child process [203339] died
+2026-02-07 06:07:17,434 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:07:17,440 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [203472]
+INFO:     Child process [203472] died
+INFO:     Waiting for child process [203672]
+INFO:     Child process [203672] died
+2026-02-07 06:07:28,698 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+INFO:     Waiting for child process [203819]
+INFO:     Child process [203819] died
+2026-02-07 06:07:32,424 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+2026-02-07 06:07:32,432 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [203951]
+INFO:     Child process [203951] died
+INFO:     Waiting for child process [204168]
+INFO:     Child process [204168] died
+2026-02-07 06:07:47,420 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:07:47,421 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [204304]
+INFO:     Child process [204304] died
+INFO:     Waiting for child process [204449]
+INFO:     Child process [204449] died
+2026-02-07 06:07:58,708 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+INFO:     Waiting for child process [204664]
+INFO:     Child process [204664] died
+2026-02-07 06:08:01,377 - services.hemis_service - INFO - Authenticating User: 395 251 100 073...
+2026-02-07 06:08:01,492 - httpx - INFO - HTTP Request: POST https://student.jmcu.uz/rest/v1/auth/login "HTTP/1.1 401 Unauthorized"
+2026-02-07 06:08:01,495 - services.hemis_service - INFO - Auth Response: 401
+2026-02-07 06:08:01,495 - services.hemis_service - WARNING - Auth Failed 401: {'success': False, 'error': 'Login yoki parol xato', 'data': [], 'code': 401}
+DEBUG AUTH: login='395 251 100 073', pass='Bahora2008'
+AuthLog: Authenticate took 0.12s
+2026-02-07 06:08:01,496 - api.auth - WARNING - AuthLog: Auth failed via Hemis: Login yoki parol xato
+INFO:     172.30.0.22:0 - "POST /api/v1/auth/hemis HTTP/1.1" 401 Unauthorized
+2026-02-07 06:08:02,428 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:08:02,430 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [204789]
+INFO:     Child process [204789] died
+INFO:     Waiting for child process [205004]
+INFO:     Child process [205004] died
+INFO:     Waiting for child process [205152]
+INFO:     Child process [205152] died
+2026-02-07 06:08:17,450 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:08:17,454 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [205270]
+INFO:     Child process [205270] died
+INFO:     Waiting for child process [205456]
+INFO:     Child process [205456] died
+2026-02-07 06:08:28,698 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+INFO:     Waiting for child process [205573]
+INFO:     Child process [205573] died
+2026-02-07 06:08:32,444 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:08:32,450 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+2026-02-07 06:08:34,897 - services.hemis_service - INFO - Authenticating User: 395251100073...
+2026-02-07 06:08:35,572 - httpx - INFO - HTTP Request: POST https://student.jmcu.uz/rest/v1/auth/login "HTTP/1.1 200 OK"
+2026-02-07 06:08:35,574 - services.hemis_service - INFO - Auth Response: 200
+DEBUG AUTH: login='395251100073', pass='Bahora2008'
+AuthLog: Authenticate took 0.68s
+AuthLog: Fetching profile for login 395251100073...
+2026-02-07 06:08:35,778 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/account/me "HTTP/1.1 200 OK"
+AuthLog: Get Me took 0.21s
+2026-02-07 06:08:35,781 - api.auth - INFO - FINAL PARSED NAME: Full='Asadulloyeva Bahora Rahmatillo Qizi', Short='ASADULLOYEVA B. R.'
+2026-02-07 06:08:35,902 - api.auth - INFO - Triggering background prefetch for student 868
+2026-02-07 06:08:35,902 - api.auth - INFO - Background prefetch task created
+INFO:     172.30.0.22:0 - "POST /api/v1/auth/hemis HTTP/1.1" 200 OK
+2026-02-07 06:08:35,903 - services.hemis_service - INFO - Prefetching data for student 868...
+2026-02-07 06:08:36,003 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/account/me "HTTP/1.1 200 OK"
+2026-02-07 06:08:36,180 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/education/semesters "HTTP/1.1 200 OK"
+2026-02-07 06:08:36,313 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/education/attendance?semester=12 "HTTP/1.1 200 OK"
+2026-02-07 06:08:36,333 - api.dependencies - INFO - Checking auth header: Bearer student_id_868...
+2026-02-07 06:08:36,337 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/education/subject-list?semester=12 "HTTP/1.1 200 OK"
+2026-02-07 06:08:36,349 - api.dependencies - INFO - Checking auth header: Bearer student_id_868...
+2026-02-07 06:08:36,351 - api.dependencies - INFO - Checking auth header: Bearer student_id_868...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/me HTTP/1.1" 200 OK
+2026-02-07 06:08:36,358 - services.hemis_service - INFO - Prefetching data for student 868...
+2026-02-07 06:08:36,390 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/education/schedule?semester=12 "HTTP/1.1 200 OK"
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+2026-02-07 06:08:36,438 - services.hemis_service - INFO - Prefetch complete for student 868
+2026-02-07 06:08:36,473 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/account/me "HTTP/1.1 200 OK"
+2026-02-07 06:08:36,476 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/account/me "HTTP/1.1 200 OK"
+2026-02-07 06:08:36,576 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/account/me "HTTP/1.1 200 OK"
+2026-02-07 06:08:36,587 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/education/attendance?semester=12 "HTTP/1.1 200 OK"
+2026-02-07 06:08:36,588 - services.hemis_service - INFO - Prefetch complete for student 868
+INFO:     172.30.0.22:0 - "GET /api/v1/education/semesters HTTP/1.1" 200 OK
+2026-02-07 06:08:36,627 - api.dependencies - INFO - Checking auth header: Bearer student_id_868...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/dashboard/ HTTP/1.1" 200 OK
+2026-02-07 06:08:36,719 - api.dependencies - INFO - Checking auth header: Bearer student_id_868...
+2026-02-07 06:08:36,831 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/account/me "HTTP/1.1 200 OK"
+2026-02-07 06:08:36,924 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/education/attendance?semester=12 "HTTP/1.1 200 OK"
+2026-02-07 06:08:37,075 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/education/subject-list "HTTP/1.1 200 OK"
+2026-02-07 06:08:37,093 - services.sync_service - INFO - Sync: Updated data for ASADULLOYEVA BAHORA RAHMATILLO QIZI
+INFO:     172.30.0.22:0 - "GET /api/v1/student/dashboard/?refresh=true HTTP/1.1" 200 OK
+INFO:     Waiting for child process [205701]
+INFO:     Child process [205701] died
+INFO:     Waiting for child process [205897]
+INFO:     Child process [205897] died
+2026-02-07 06:08:46,912 - api.dependencies - INFO - Checking auth header: Bearer student_id_868...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/certificates HTTP/1.1" 200 OK
+2026-02-07 06:08:47,453 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:08:47,455 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [206037]
+INFO:     Child process [206037] died
+2026-02-07 06:08:51,552 - api.dependencies - INFO - Checking auth header: Bearer student_id_868...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/dashboard/ HTTP/1.1" 200 OK
+INFO:     Waiting for child process [206200]
+INFO:     Child process [206200] died
+2026-02-07 06:08:58,738 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+INFO:     Waiting for child process [206374]
+INFO:     Child process [206374] died
+2026-02-07 06:09:02,407 - api.dependencies - INFO - Checking auth header: Bearer student_id_868...
+2026-02-07 06:09:02,409 - api.dependencies - INFO - Checking auth header: Bearer student_id_868...
+2026-02-07 06:09:02,428 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+2026-02-07 06:09:02,447 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+2026-02-07 06:09:02,527 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/account/me "HTTP/1.1 200 OK"
+2026-02-07 06:09:02,528 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/account/me "HTTP/1.1 200 OK"
+2026-02-07 06:09:02,621 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/education/attendance?semester=12 "HTTP/1.1 200 OK"
+INFO:     172.30.0.22:0 - "GET /api/v1/education/attendance HTTP/1.1" 200 OK
+2026-02-07 06:09:02,631 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/account/me "HTTP/1.1 200 OK"
+INFO:     172.30.0.22:0 - "GET /api/v1/education/semesters HTTP/1.1" 200 OK
+2026-02-07 06:09:04,697 - api.dependencies - INFO - Checking auth header: Bearer student_id_868...
+2026-02-07 06:09:04,703 - api.dependencies - INFO - Checking auth header: Bearer student_id_868...
+2026-02-07 06:09:04,794 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/account/me "HTTP/1.1 200 OK"
+2026-02-07 06:09:04,816 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/account/me "HTTP/1.1 200 OK"
+2026-02-07 06:09:04,879 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/education/attendance?semester=12 "HTTP/1.1 200 OK"
+INFO:     172.30.0.22:0 - "GET /api/v1/education/attendance HTTP/1.1" 200 OK
+2026-02-07 06:09:04,911 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/data/curriculum-subject-topic-list?limit=200&_subject=1405&_semester=12&_training_type=11 "HTTP/1.1 401 Unauthorized"
+2026-02-07 06:09:04,995 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/data/curriculum-subject-topic-list?limit=200&_subject=1405&_semester=12&_training_type=14 "HTTP/1.1 401 Unauthorized"
+2026-02-07 06:09:05,072 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/data/curriculum-subject-topic-list?limit=200&_subject=2002&_semester=12&_training_type=11 "HTTP/1.1 401 Unauthorized"
+2026-02-07 06:09:05,151 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/data/curriculum-subject-topic-list?limit=200&_subject=2002&_semester=12&_training_type=14 "HTTP/1.1 401 Unauthorized"
+INFO:     Waiting for child process [206515]
+INFO:     Child process [206515] died
+2026-02-07 06:09:05,228 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/data/curriculum-subject-topic-list?limit=200&_subject=947&_semester=12&_training_type=13 "HTTP/1.1 401 Unauthorized"
+2026-02-07 06:09:05,302 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/data/curriculum-subject-topic-list?limit=200&_subject=772&_semester=12&_training_type=11 "HTTP/1.1 401 Unauthorized"
+2026-02-07 06:09:05,374 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/data/curriculum-subject-topic-list?limit=200&_subject=772&_semester=12&_training_type=14 "HTTP/1.1 401 Unauthorized"
+2026-02-07 06:09:05,451 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/data/curriculum-subject-topic-list?limit=200&_subject=1092&_semester=12&_training_type=11 "HTTP/1.1 401 Unauthorized"
+2026-02-07 06:09:05,527 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/data/curriculum-subject-topic-list?limit=200&_subject=1092&_semester=12&_training_type=14 "HTTP/1.1 401 Unauthorized"
+2026-02-07 06:09:05,605 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/data/curriculum-subject-topic-list?limit=200&_subject=1907&_semester=12&_training_type=11 "HTTP/1.1 401 Unauthorized"
+2026-02-07 06:09:05,677 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/data/curriculum-subject-topic-list?limit=200&_subject=1907&_semester=12&_training_type=14 "HTTP/1.1 401 Unauthorized"
+INFO:     172.30.0.22:0 - "GET /api/v1/education/schedule HTTP/1.1" 200 OK
+2026-02-07 06:09:06,070 - api.dependencies - INFO - Checking auth header: Bearer student_id_868...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+2026-02-07 06:09:08,864 - api.dependencies - INFO - Checking auth header: Bearer student_id_868...
+2026-02-07 06:09:08,965 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/account/me "HTTP/1.1 200 OK"
+INFO:     172.30.0.22:0 - "GET /api/v1/education/semesters HTTP/1.1" 200 OK
+2026-02-07 06:09:09,080 - api.dependencies - INFO - Checking auth header: Bearer student_id_868...
+2026-02-07 06:09:09,200 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/account/me "HTTP/1.1 200 OK"
+2026-02-07 06:09:09,304 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/account/me "HTTP/1.1 200 OK"
+2026-02-07 06:09:09,414 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/education/attendance?semester=12 "HTTP/1.1 200 OK"
+INFO:     172.30.0.22:0 - "GET /api/v1/education/subjects HTTP/1.1" 200 OK
+INFO:     Waiting for child process [206695]
+INFO:     Child process [206695] died
+INFO:     Waiting for child process [206891]
+INFO:     Child process [206891] died
+2026-02-07 06:09:17,443 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:09:17,448 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     Waiting for child process [207032]
+INFO:     Child process [207032] died
+2026-02-07 06:09:25,992 - api.dependencies - INFO - Checking auth header: Bearer student_id_868...
+2026-02-07 06:09:26,891 - httpx - INFO - HTTP Request: GET https://student.jmcu.uz/rest/v1/student/survey "HTTP/1.1 200 OK"
+INFO:     172.30.0.22:0 - "GET /api/v1/student/survey HTTP/1.1" 200 OK
+INFO:     Waiting for child process [207219]
+INFO:     Child process [207219] died
+2026-02-07 06:09:28,699 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+2026-02-07 06:09:32,438 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:09:32,443 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [207371]
+INFO:     Child process [207371] died
+2026-02-07 06:09:36,092 - api.dependencies - INFO - Checking auth header: Bearer student_id_868...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+INFO:     Waiting for child process [207581]
+INFO:     Child process [207581] died
+INFO:     Waiting for child process [207743]
+INFO:     Child process [207743] died
+2026-02-07 06:09:47,416 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+2026-02-07 06:09:47,431 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     Waiting for child process [207881]
+INFO:     Child process [207881] died
+INFO:     Waiting for child process [208023]
+INFO:     Child process [208023] died
+2026-02-07 06:09:58,731 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+INFO:     Waiting for child process [208212]
+INFO:     Child process [208212] died
+2026-02-07 06:10:02,430 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:10:02,431 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [208338]
+INFO:     Child process [208338] died
+INFO:     Waiting for child process [208506]
+INFO:     Child process [208506] died
+INFO:     Waiting for child process [208626]
+INFO:     Child process [208626] died
+2026-02-07 06:10:17,432 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:10:17,432 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [208753]
+INFO:     Child process [208753] died
+INFO:     Waiting for child process [208913]
+INFO:     Child process [208913] died
+2026-02-07 06:10:28,715 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+2026-02-07 06:10:32,438 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:10:32,443 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [209035]
+INFO:     Child process [209035] died
+INFO:     Waiting for child process [209263]
+INFO:     Child process [209263] died
+INFO:     Waiting for child process [209423]
+INFO:     Child process [209423] died
+2026-02-07 06:10:47,436 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:10:47,440 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [209576]
+INFO:     Child process [209576] died
+INFO:     Waiting for child process [209772]
+INFO:     Child process [209772] died
+2026-02-07 06:10:58,769 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+INFO:     Waiting for child process [209892]
+INFO:     Child process [209892] died
+2026-02-07 06:11:02,409 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+2026-02-07 06:11:02,423 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     Waiting for child process [210014]
+INFO:     Child process [210014] died
+INFO:     Waiting for child process [210190]
+INFO:     Child process [210190] died
+2026-02-07 06:11:17,471 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:11:17,468 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [210347]
+INFO:     Child process [210347] died
+INFO:     Waiting for child process [210464]
+INFO:     Child process [210464] died
+2026-02-07 06:11:28,700 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/student/notifications/unread-count HTTP/1.1" 200 OK
+INFO:     Waiting for child process [210677]
+INFO:     Child process [210677] died
+2026-02-07 06:11:32,472 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+2026-02-07 06:11:32,476 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [210834]
+INFO:     Child process [210834] died
+INFO:     Waiting for child process [210986]
+INFO:     Child process [210986] died
+INFO:     Waiting for child process [211179]
+INFO:     Child process [211179] died
+2026-02-07 06:11:47,419 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/chat/unread-count HTTP/1.1" 200 OK
+2026-02-07 06:11:47,434 - api.dependencies - INFO - Checking auth header: Bearer student_id_729...
+INFO:     172.30.0.22:0 - "GET /api/v1/community/posts?category=university&skip=0&limit=15 HTTP/1.1" 200 OK
+INFO:     Waiting for child process [211319]
+INFO:     Child process [211319] died

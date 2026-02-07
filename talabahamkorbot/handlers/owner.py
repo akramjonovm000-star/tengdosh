@@ -38,6 +38,7 @@ from keyboards.inline_kb import (
     get_import_retry_kb,
     get_owner_developers_kb,
     get_dev_add_cancel_kb,
+    get_numbered_universities_kb,
 )
 
 logger = logging.getLogger(__name__)
@@ -133,16 +134,56 @@ async def cb_owner_universities(call: CallbackQuery, state: FSMContext, session:
     if not staff:
         return
 
-    await state.set_state(OwnerStates.entering_uni_code)
+    # Fetch all universities
+    result = await session.execute(select(University).order_by(University.id))
+    universities = result.scalars().all()
+
+    if not universities:
+        await call.message.edit_text(
+            "🏛 OTMlar ro'yxati bo'sh.\n\n"
+            "Yangi OTM qo'shish uchun <b>uni_code</b> kiriting.",
+            parse_mode="HTML",
+            reply_markup=get_back_inline_kb("owner_menu")
+        )
+        await state.set_state(OwnerStates.entering_uni_code)
+        await call.answer()
+        return
+
+    text = "🏛 <b>Mavjud universitetlar:</b>\n\n"
+    for i, uni in enumerate(universities, 1):
+        text += f"{i}. {uni.name} (<code>{uni.uni_code}</code>)\n"
+
+    text += "\nSozlash uchun raqamlardan birini tanlang:"
 
     await call.message.edit_text(
-        "🏛 OTM qo'shish / tahrirlash bo‘limi.\n\n"
-        "Iltimos, OTM uchun <b>uni_code</b> kiriting.\n"
-        "Masalan: <code>UZB_UZJOKU_001</code>",
+        text,
         parse_mode="HTML",
-        reply_markup=get_back_inline_kb("owner_menu")
+        reply_markup=get_numbered_universities_kb(universities)
     )
 
+    await call.answer()
+
+
+@router.callback_query(F.data.startswith("owner_uni_select:"))
+async def owner_select_uni(call: CallbackQuery, state: FSMContext, session: AsyncSession):
+    """
+    Handles numeric selection of a university.
+    """
+    uni_id = int(call.data.split(":")[1])
+    uni = await session.get(University, uni_id)
+    
+    if not uni:
+        return await call.answer("❌ OTM topilmadi.", show_alert=True)
+
+    await state.update_data(university_id=uni.id, uni_code=uni.uni_code)
+    await state.set_state(OwnerStates.university_selected)
+
+    await call.message.edit_text(
+        f"✅ <b>{uni.name}</b> tanlandi!\n\n"
+        "Quyidagi bo‘limlardan birini tanlang:",
+        reply_markup=get_university_actions_kb(uni.id),
+        parse_mode="HTML",
+    )
     await call.answer()
 
     # -------------------------------------------------------------

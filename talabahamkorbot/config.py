@@ -11,13 +11,16 @@ BOT_USERNAME = os.environ.get("BOT_USERNAME", "talabahamkorbot")
 
 # 👤 --- Bot owner Telegram ID (Muhammadali) --- 👤
 OWNER_TELEGRAM_ID = int(os.environ.get("OWNER_TELEGRAM_ID", "387178074"))
+ADMIN_ACCESS_ID = "395251101411" # Full access to AI analytics for this ID
 HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY") 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # 🧠 --- OpenAI Sozlamalari --- 🧠
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+OPENAI_API_KEY_OWNER = os.environ.get("OPENAI_API_KEY_OWNER")
 OPENAI_MODEL_TASKS = "gpt-4o-mini"    # Konspekt va senariylar uchun (User: 4.1 mini)
 OPENAI_MODEL_CHAT = "gpt-4o-mini"     # Shunchaki suhbat uchun (User: Nano O'zbekchada yaxshi emas -> Mini ga qaytarildi)
+OPENAI_MODEL_OWNER = "gpt-5.2"        # Owner va Admin uchun maxsus model
 
 # 🐘 --- PostgreSQL Sozlamalari --- 🐘
 DB_HOST = os.environ.get("DB_HOST", "localhost")
@@ -46,7 +49,7 @@ LOG_LEVEL = "INFO"
 
 # 🔐 --- HEMIS OAuth Settings --- 🔐
 HEMIS_CLIENT_ID = os.environ.get("HEMIS_CLIENT_ID", "5")
-HEMIS_CLIENT_SECRET = os.environ.get("HEMIS_CLIENT_SECRET", "VwSWbyEFMKm8B0LQ1ZqYcK0zUwCs01Z8g8eUP6kK")
+HEMIS_CLIENT_SECRET = os.environ.get("HEMIS_CLIENT_SECRET")
 HEMIS_REDIRECT_URL = os.environ.get("HEMIS_REDIRECT_URL", "https://tengdosh.uzjoku.uz/api/v1/oauth/login")
 HEMIS_AUTH_URL = "https://hemis.jmcu.uz/oauth/authorize" # User facing
 HEMIS_TOKEN_URL = "https://student.jmcu.uz/oauth/access-token" # Internal

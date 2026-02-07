@@ -20,6 +20,13 @@ def get_payme_url(amount: int = 10000, current_student: Student = Depends(get_cu
     # Unique order ID
     order_id = f"prem_{current_student.id}_{int(time.time())}"
     
+    # Temporarily redirect to Coming Soon page
+    return {
+        "success": True,
+        "url": "https://tengdosh.uzjoku.uz/static/payment_soon.html",
+        "order_id": order_id
+    }
+    """
     url = PaymentService.generate_payme_url(amount, order_id)
     
     return {
@@ -27,6 +34,7 @@ def get_payme_url(amount: int = 10000, current_student: Student = Depends(get_cu
         "url": url,
         "order_id": order_id
     }
+    """
 
 @router.post("/payme")
 async def payme_webhook(
@@ -74,12 +82,20 @@ from services.payment_service import ClickHandler
 def get_click_url(amount: int = 10000, current_student: Student = Depends(get_current_student)):
     import time
     order_id = f"prem_{current_student.id}_{int(time.time())}"
+    # Temporarily redirect to Coming Soon page
+    return {
+        "success": True,
+        "url": "https://tengdosh.uzjoku.uz/static/payment_soon.html",
+        "order_id": order_id
+    }
+    """
     url = ClickHandler.generate_url(amount, order_id)
     return {
         "success": True,
         "url": url,
         "order_id": order_id
     }
+    """
 
 @router.post("/click")
 async def click_webhook(
@@ -126,12 +142,20 @@ from config import UZUM_SECRET_KEY, UZUM_SERVICE_ID
 def get_uzum_url(amount: int = 10000, current_student: Student = Depends(get_current_student)):
     import time
     order_id = f"prem_{current_student.id}_{int(time.time())}"
+    # Temporarily redirect to Coming Soon page
+    return {
+        "success": True,
+        "url": "https://tengdosh.uzjoku.uz/static/payment_soon.html",
+        "order_id": order_id
+    }
+    """
     url = UzumHandler.generate_url(amount, order_id)
     return {
         "success": True,
         "url": url,
         "order_id": order_id
     }
+    """
 
 @router.post("/uzum")
 async def uzum_webhook(

@@ -2,7 +2,7 @@ from fastapi import Header, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from database.db_connect import AsyncSessionLocal
-from database.models import TgAccount, Student
+from database.models import TgAccount, Student, User
 
 async def get_db():
     async with AsyncSessionLocal() as session:
@@ -137,7 +137,7 @@ async def get_premium_student(student: Student = Depends(get_current_student)):
     """
     from datetime import datetime, timedelta
     
-    if not student.is_premium:
+    if not getattr(student, 'is_premium', False):
         raise HTTPException(
             status_code=403, 
             detail="Premium obuna talab etiladi. Iltimos, obunani faollashtiring."
@@ -162,4 +162,22 @@ async def get_owner(student: Student = Depends(get_current_student)):
             detail="Bu amal uchun ruxsat yo'q. Faqat adminlar uchun."
         )
     return student
+
+
+async def get_current_user(
+    student: Student = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Returns the User model instance corresponding to the currently authenticated student/staff.
+    Reuses get_current_student to handle multiple auth types.
+    """
+    user = await db.scalar(select(User).where(User.hemis_login == student.hemis_login))
+    if not user:
+        # Fallback for staff who might not have hemis_login sync'd yet or differently
+        user = await db.scalar(select(User).where(User.full_name == student.full_name))
+        
+    if not user:
+        raise HTTPException(status_code=401, detail="Unified User record not found")
+    return user
 
