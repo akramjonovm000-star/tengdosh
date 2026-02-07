@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, case, desc
 from sqlalchemy.orm import joinedload
 from typing import List, Optional
+from datetime import datetime
 
 from fastapi_cache.decorator import cache
 from database.db_connect import get_session
@@ -707,15 +708,25 @@ async def get_student_certificates_for_tutor(
     result = await db.execute(stmt)
     certs = result.scalars().all()
     
+    data = [
+        {
+            "id": c.id,
+            "title": c.title,
+            "created_at": c.created_at.isoformat()
+        } for c in certs
+    ]
+
+    # [DEMO] Add Mock Data for specific Demo Students
+    if student_id in [771, 858] and not data:
+        data = [
+            {"id": -101, "title": "IELTS 7.5 Certificate", "created_at": datetime.utcnow().isoformat()},
+            {"id": -102, "title": "IT-Park Python Programming", "created_at": datetime.utcnow().isoformat()},
+            {"id": -103, "title": "Topik II Level 4", "created_at": datetime.utcnow().isoformat()},
+        ]
+    
     return {
         "success": True,
-        "data": [
-            {
-                "id": c.id,
-                "title": c.title,
-                "created_at": c.created_at.isoformat()
-            } for c in certs
-        ]
+        "data": data
     }
 
 @router.post("/certificates/{cert_id}/download")
@@ -737,6 +748,10 @@ async def send_student_cert_to_tutor(
     result = await db.execute(stmt)
     row = result.first()
     
+    if cert_id < 0:
+        # Mock handle for demo certificates
+        return {"success": True, "message": "Demo sertifikat Telegramingizga yuborildi!"}
+
     if not row:
         raise HTTPException(status_code=404, detail="Sertifikat topilmadi")
         

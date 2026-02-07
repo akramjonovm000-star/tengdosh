@@ -5,7 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'tutor_student_certificates_screen.dart';
 
 class TutorCertificatesStudentsScreen extends StatefulWidget {
-  final int groupNumber;
+  final String groupNumber;
   const TutorCertificatesStudentsScreen({super.key, required this.groupNumber});
 
   @override
@@ -38,9 +38,10 @@ class _TutorCertificatesStudentsScreenState extends State<TutorCertificatesStude
   @override
   Widget build(BuildContext context) {
     List<dynamic> filtered = _students.where((s) {
-      final name = "${s['firstname']} ${s['lastname']}".toLowerCase();
+      final name = (s['full_name'] ?? "").toString().toLowerCase();
+      final hemisId = (s['hemis_id'] ?? "").toString().toLowerCase();
       return name.contains(_searchQuery.toLowerCase()) || 
-             s['student_id'].toString().contains(_searchQuery);
+             hemisId.contains(_searchQuery.toLowerCase());
     }).toList();
 
     return Scaffold(
@@ -107,7 +108,7 @@ class _TutorCertificatesStudentsScreenState extends State<TutorCertificatesStude
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                                 leading: Hero(
-                                  tag: "student_${student['student_id']}",
+                                  tag: "student_${student['id']}",
                                   child: Container(
                                     width: 52,
                                     height: 52,
@@ -127,13 +128,13 @@ class _TutorCertificatesStudentsScreenState extends State<TutorCertificatesStude
                                   ),
                                 ),
                                 title: Text(
-                                  "${student['firstname']} ${student['lastname']}",
+                                  student['full_name'] ?? "",
                                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                 ),
                                 subtitle: Padding(
                                   padding: const EdgeInsets.only(top: 4),
                                   child: Text(
-                                    "ID: ${student['student_id']}",
+                                    "ID: ${student['hemis_id'] ?? student['id']}",
                                     style: TextStyle(color: Colors.grey[500], fontSize: 13),
                                   ),
                                 ),
@@ -162,13 +163,13 @@ class _TutorCertificatesStudentsScreenState extends State<TutorCertificatesStude
                                     ],
                                   ),
                                 ),
-                                onTap: () {
+                                  onTap: () {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder: (_) => TutorStudentCertificatesScreen(
-                                        studentId: student['student_id'],
-                                        studentName: "${student['firstname']} ${student['lastname']}",
+                                        studentId: student['id'],
+                                        studentName: student['full_name'] ?? "",
                                       ),
                                     ),
                                   ).then((_) => _loadStudents());
