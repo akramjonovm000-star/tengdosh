@@ -67,7 +67,7 @@ async def sync_student_data(session: AsyncSession, student_id: int):
 
     # 2. Update Profile Fields
     # Fetch Semesters to find latest active
-    semesters = await HemisService.get_semester_list(student.hemis_token)
+    semesters = await HemisService.get_semester_list(student.hemis_token, student_id=student.id)
     
     current_sem = None
     if semesters:
@@ -119,7 +119,7 @@ async def sync_student_data(session: AsyncSession, student_id: int):
             student.hemis_token, 
             semester_code=sem_code,
             student_id=student.id,
-            force_refresh=True
+            force_refresh=False # Respect cache logic
         )
     else:
         # If no semester found yet, try default (often current)
@@ -127,7 +127,7 @@ async def sync_student_data(session: AsyncSession, student_id: int):
             student.hemis_token, 
             semester_code=None,
             student_id=student.id,
-            force_refresh=True
+            force_refresh=False
         )
 
     # Safety: Ensure total is the sum if there's any discrepancy
@@ -145,28 +145,22 @@ async def sync_student_data(session: AsyncSession, student_id: int):
     # 4. Update Performance (GPA) - Prioritize current semester
     gpa = 0.0
     if sem_code:
-        gpa = await HemisService.get_student_performance(student.hemis_token, semester_code=sem_code)
+        gpa = await HemisService.get_student_performance(student.hemis_token, student_id=student.id, semester_code=sem_code)
     
     # Fallback to default if 0
     if gpa == 0.0:
-        gpa = await HemisService.get_student_performance(student.hemis_token, semester_code=None)
+        gpa = await HemisService.get_student_performance(student.hemis_token, student_id=student.id, semester_code=None)
         
     # [DEEP FALLBACK] If still 0, try finding ANY recent semester with GPA > 0
     if gpa == 0.0 and semesters:
-        # Sort semesters by code desc just in case
-        def get_sem_code(x):
-            try: return int(x.get("code") or x.get("id"))
-            except: return 0
-        
-        # We already sorted in HemisService but let's be safe or just iterate existing list
-        # We start looking from index 1 (previous) because index 0 (current) already checked above
-        for i in range(1, len(semesters)):
+        # Sorted semesters loop
+        for i in range(1, min(len(semesters), 5)): # Check last 5 semesters max to avoid overhead
             prev_sem = semesters[i]
             prev_code = str(prev_sem.get("code") or prev_sem.get("id") or "")
             if not prev_code: continue
             
             logger.info(f"Sync: Fallback GPA check for {student.full_name}, sem: {prev_code}")
-            prev_gpa = await HemisService.get_student_performance(student.hemis_token, semester_code=prev_code)
+            prev_gpa = await HemisService.get_student_performance(student.hemis_token, student_id=student.id, semester_code=prev_code)
             if prev_gpa > 0:
                 gpa = prev_gpa
                 logger.info(f"Sync: Found valid GPA {gpa} in semester {prev_code}")

@@ -116,10 +116,10 @@ async def start_scheduler():
     #     scheduler.add_job(run_lesson_reminders, 'cron', hour=h, minute=m)
     
     # [NEW] Election Deadline Checker (Every 30 mins)
-    scheduler.add_job(ElectionService.check_deadlines, 'interval', minutes=30)
+    # scheduler.add_job(ElectionService.check_deadlines, 'interval', minutes=30)
         
-    scheduler.start()
-    logger.info("⏰ Background Task Scheduler Started (Celery + Fixed Reminders)")
+    # scheduler.start()
+    logger.info("⏰ Background Task Scheduler DISABLED by User Request")
 
 
 # ============================================================
@@ -196,4 +196,5 @@ MODE = os.environ.get("BOT_MODE", "WEBHOOK")
 
 if __name__ == "__main__":
     logger.info("🔥 Server starting (Universal Mode)...")
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)
+    # Reverted to 1 worker to stop the "Child process died" loop and save resources.
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False, workers=1)

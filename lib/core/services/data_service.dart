@@ -1444,5 +1444,70 @@ class DataService {
     }
     return false;
   }
+
+  // 39. Get Tutor Certificate Stats
+  Future<List<dynamic>?> getTutorCertificateStats() async {
+    try {
+      final response = await _get("${ApiConstants.backendUrl}/tutor/certificates/stats");
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) {
+          return body['data'];
+        }
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching tutor certificate stats: $e");
+      return null;
+    }
+    return [];
+  }
+
+  // 40. Get Group Certificate Details
+  Future<List<dynamic>?> getTutorGroupCertificateDetails(String groupNumber) async {
+    try {
+      final response = await _get("${ApiConstants.backendUrl}/tutor/certificates/group/$groupNumber");
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) {
+          return body['data'];
+        }
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching group certificate details: $e");
+      return null;
+    }
+    return [];
+  }
+
+  // 41. Get Student Certificates for Tutor
+  Future<List<dynamic>?> getTutorStudentCertificates(int studentId) async {
+    try {
+      final response = await _get("${ApiConstants.backendUrl}/tutor/certificates/student/$studentId");
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) {
+          return body['data'];
+        }
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching student certificates for tutor: $e");
+      return null;
+    }
+    return [];
+  }
+
+  // 42. Send Student Certificate to Tutor's Bot
+  Future<bool> sendTutorCertificateToMe(int certId) async {
+    try {
+      final response = await _post("${ApiConstants.backendUrl}/tutor/certificates/$certId/download");
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        return body['success'] == true;
+      }
+    } catch (e) {
+      debugPrint("DataService: Error sending certificate to bot: $e");
+    }
+    return false;
+  }
 }
 

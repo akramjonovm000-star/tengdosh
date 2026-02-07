@@ -36,7 +36,11 @@ class NotificationService:
 
     @classmethod
     async def send_push(cls, token: str, title: str, body: str, data: Optional[dict] = None):
-        """Send a push notification to a specific FCM token"""
+        """Send a push notification to a specific FCM token (Async Wrapper)"""
+        return await asyncio.to_thread(cls._send_push_sync, token, title, body, data)
+
+    @classmethod
+    def _send_push_sync(cls, token: str, title: str, body: str, data: Optional[dict] = None):
         if not cls._initialized:
             cls.initialize()
             if not cls._initialized:
@@ -63,7 +67,11 @@ class NotificationService:
 
     @classmethod
     async def send_multicast(cls, tokens: List[str], title: str, body: str, data: Optional[dict] = None):
-        """Send push notifications to multiple FCM tokens"""
+        """Send push notifications to multiple FCM tokens (Async Wrapper)"""
+        return await asyncio.to_thread(cls._send_multicast_sync, tokens, title, body, data)
+
+    @classmethod
+    def _send_multicast_sync(cls, tokens: List[str], title: str, body: str, data: Optional[dict] = None):
         if not cls._initialized:
             cls.initialize()
             if not cls._initialized:

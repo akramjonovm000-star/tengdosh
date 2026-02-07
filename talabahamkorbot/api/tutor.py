@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, case, desc
 from sqlalchemy.orm import joinedload
@@ -114,6 +114,7 @@ async def get_group_document_details(
 async def request_documents(
     student_id: Optional[int] = None,
     group_number: Optional[str] = None,
+    category: Optional[str] = Body(None),
     db: AsyncSession = Depends(get_session),
     tutor: Staff = Depends(get_current_staff)
 ):
@@ -122,13 +123,16 @@ async def request_documents(
     """
     from database.models import TgAccount
     
+    cat_name = category.capitalize() if category and category != "all" else "kerakli hujjatlarni"
+    if category == "boshqa": cat_name = "so'ralgan hujjatni"
+    
     if student_id:
         tg_acc = await db.scalar(select(TgAccount).where(TgAccount.student_id == student_id))
         if tg_acc:
             try:
                 msg = (
                     f"🔔 <b>Hujjat topshirish eslatmasi</b>\n\n"
-                    f"Hurmatli talaba, tyutoringiz <b>{tutor.full_name}</b> hujjatlaringizni "
+                    f"Hurmatli talaba, tyutoringiz <b>{tutor.full_name}</b> sizdan <b>{cat_name}</b> "
                     f"yuklashingizni so'ramoqda.\n\n"
                     f"Iltimos, ilovaning 'Hujjatlar' bo'limiga kiring."
                 )
@@ -139,6 +143,7 @@ async def request_documents(
         return {"success": False, "message": "Talabaning telegrami ulanmagan"}
         
     elif group_number:
+        # Verify access
         access_check = await db.execute(
             select(TutorGroup).where(
                 TutorGroup.tutor_id == tutor.id,
@@ -147,16 +152,20 @@ async def request_documents(
         )
         if not access_check.scalar_one_or_none():
              raise HTTPException(status_code=403, detail="Siz bu guruhga biriktirilmagansiz")
-             
-        stmt = (
-            select(TgAccount)
-            .join(Student, TgAccount.student_id == Student.id)
-            .outerjoin(UserDocument, Student.id == UserDocument.student_id)
-            .where(
-                Student.group_number == group_number,
-                UserDocument.id == None
-            )
-        )
+
+        # Find students who are missing the document(s)
+        from sqlalchemy import exists
+        
+        # Base query for students in group with a TG account
+        stmt = select(TgAccount).join(Student, TgAccount.student_id == Student.id).where(Student.group_number == group_number)
+        
+        # Subquery for checking existence of documents
+        doc_exists = exists().where(UserDocument.student_id == Student.id)
+        if category and category != "all":
+            doc_exists = doc_exists.where(UserDocument.category == category)
+            
+        stmt = stmt.where(~doc_exists)
+        
         result = await db.execute(stmt)
         tg_accounts = result.scalars().all()
         
@@ -166,7 +175,7 @@ async def request_documents(
                 msg = (
                     f"🔔 <b>Guruh bo'yicha hujjat topshirish eslatmasi</b>\n\n"
                     f"Tyutoringiz <b>{tutor.full_name}</b> ({group_number} guruhi) barcha "
-                    f"hujjatlarni yuklashingizni so'ramoqda."
+                    f"talabalardan <b>{cat_name}</b> yuklashni so'ramoqda."
                 )
                 await bot.send_message(acc.telegram_id, msg, parse_mode="HTML")
                 count += 1
@@ -558,3 +567,207 @@ async def review_activity(
     await db.commit()
     
     return {"success": True, "message": f"Faollik {new_status} qilindi"}
+
+
+# ============================================================
+# 6. SERTIFIKATLAR (CERTIFICATES)
+# ============================================================
+
+@router.get("/certificates/stats")
+async def get_tutor_certificate_stats(
+    db: AsyncSession = Depends(get_session),
+    tutor: Staff = Depends(get_current_staff)
+):
+    """
+    Get certificate upload statistics for each of the tutor's groups.
+    """
+    # 1. Get Tutor's Groups
+    groups_result = await db.execute(select(TutorGroup.group_number).where(TutorGroup.tutor_id == tutor.id))
+    group_numbers = groups_result.scalars().all()
+    
+    if not group_numbers:
+        return {"success": True, "data": []}
+
+    # 2. Optimized Aggregate Query
+    from sqlalchemy import distinct
+    from database.models import UserCertificate
+    
+    stmt = (
+        select(
+            Student.group_number,
+            func.count(Student.id).label("total_students"),
+            func.count(distinct(UserCertificate.student_id)).label("students_with_certs")
+        )
+        .outerjoin(UserCertificate, Student.id == UserCertificate.student_id)
+        .where(Student.group_number.in_(group_numbers))
+        .group_by(Student.group_number)
+    )
+    
+    result = await db.execute(stmt)
+    rows = result.all()
+    
+    stats_map = {
+        r.group_number: {"total": r.total_students, "uploaded": r.students_with_certs}
+        for r in rows
+    }
+    
+    data = []
+    for gn in group_numbers:
+        s = stats_map.get(gn, {"total": 0, "uploaded": 0})
+        data.append({
+            "group_number": gn,
+            "total_students": s["total"],
+            "uploaded_students": s["uploaded"]
+        })
+        
+    return {"success": True, "data": data}
+
+@router.get("/certificates/group/{group_number}")
+async def get_group_certificate_details(
+    group_number: str,
+    db: AsyncSession = Depends(get_session),
+    tutor: Staff = Depends(get_current_staff)
+):
+    """
+    Get detailed certificate status (counts) for all students in a group.
+    """
+    # Verify access
+    access_check = await db.execute(
+        select(TutorGroup).where(
+            TutorGroup.tutor_id == tutor.id,
+            TutorGroup.group_number == group_number
+        )
+    )
+    if not access_check.scalar_one_or_none():
+        raise HTTPException(status_code=403, detail="Siz bu guruhga biriktirilmagansiz")
+
+    # Fetch students and their certificates
+    from database.models import UserCertificate
+    stmt = (
+        select(
+            Student.id,
+            Student.full_name,
+            Student.image_url,
+            Student.hemis_id,
+            func.count(UserCertificate.id).label("cert_count")
+        )
+        .outerjoin(UserCertificate, Student.id == UserCertificate.student_id)
+        .where(Student.group_number == group_number)
+        .group_by(Student.id)
+        .order_by(Student.full_name)
+    )
+    
+    result = await db.execute(stmt)
+    rows = result.all()
+    
+    data = []
+    for r in rows:
+        data.append({
+            "id": r.id,
+            "full_name": r.full_name,
+            "image": r.image_url,
+            "hemis_id": r.hemis_id,
+            "certificate_count": r.cert_count
+        })
+        
+    return {"success": True, "data": data}
+
+@router.get("/certificates/student/{student_id}")
+async def get_student_certificates_for_tutor(
+    student_id: int,
+    db: AsyncSession = Depends(get_session),
+    tutor: Staff = Depends(get_current_staff)
+):
+    """
+    Get all certificates for a specific student.
+    """
+    # 1. Get Student
+    stmt = select(Student).where(Student.id == student_id)
+    result = await db.execute(stmt)
+    student = result.scalar_one_or_none()
+    
+    if not student:
+        raise HTTPException(status_code=404, detail="Talaba topilmadi")
+        
+    # 2. Verify Tutor Access to Student's Group
+    access_check = await db.execute(
+        select(TutorGroup).where(
+            TutorGroup.tutor_id == tutor.id,
+            TutorGroup.group_number == student.group_number
+        )
+    )
+    if not access_check.scalar_one_or_none():
+        raise HTTPException(status_code=403, detail="Siz bu talabaga biriktirilmagansiz")
+
+    # 3. Fetch Certificates
+    from database.models import UserCertificate
+    stmt = select(UserCertificate).where(UserCertificate.student_id == student_id).order_by(UserCertificate.created_at.desc())
+    result = await db.execute(stmt)
+    certs = result.scalars().all()
+    
+    return {
+        "success": True,
+        "data": [
+            {
+                "id": c.id,
+                "title": c.title,
+                "created_at": c.created_at.isoformat()
+            } for c in certs
+        ]
+    }
+
+@router.post("/certificates/{cert_id}/download")
+async def send_student_cert_to_tutor(
+    cert_id: int,
+    db: AsyncSession = Depends(get_session),
+    tutor: Staff = Depends(get_current_staff)
+):
+    """
+    Sends the certificate file to the tutor's Telegram bot.
+    """
+    # 1. Get Certificate and Student Info
+    from database.models import UserCertificate
+    stmt = (
+        select(UserCertificate, Student)
+        .join(Student, UserCertificate.student_id == Student.id)
+        .where(UserCertificate.id == cert_id)
+    )
+    result = await db.execute(stmt)
+    row = result.first()
+    
+    if not row:
+        raise HTTPException(status_code=404, detail="Sertifikat topilmadi")
+        
+    cert, student = row
+    
+    # 2. Verify Tutor Access
+    access_check = await db.execute(
+        select(TutorGroup).where(
+            TutorGroup.tutor_id == tutor.id,
+            TutorGroup.group_number == student.group_number
+        )
+    )
+    if not access_check.scalar_one_or_none():
+        raise HTTPException(status_code=403, detail="Siz bu talabaga biriktirilmagansiz")
+
+    # 3. Get Tutor's TG Account
+    from database.models import TgAccount
+    stmt = select(TgAccount).where(TgAccount.staff_id == tutor.id)
+    tg_acc = await db.scalar(stmt)
+    
+    if not tg_acc:
+        return {"success": False, "message": "Sizning Telegram hisobingiz ulanmagan. Iltimos, botga kiring."}
+
+    # 4. Send via Bot
+    try:
+        caption = (
+            f"🎓 <b>Yangi Sertifikat</b>\n\n"
+            f"Talaba: <b>{student.full_name}</b>\n"
+            f"Guruh: <b>{student.group_number}</b>\n"
+            f"Sertifikat: <b>{cert.title}</b>"
+        )
+        await bot.send_document(tg_acc.telegram_id, cert.file_id, caption=caption, parse_mode="HTML")
+        return {"success": True, "message": "Sertifikat Telegramingizga yuborildi!"}
+    except Exception as e:
+        logger.error(f"Error sending cert to tutor: {e}")
+        return {"success": False, "message": f"Botda xatolik yuz berdi: {str(e)}"}

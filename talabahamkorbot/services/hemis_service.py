@@ -24,12 +24,39 @@ class HemisService:
     _client: httpx.AsyncClient = None
     _auth_cache: Dict[str, Dict[str, Any]] = {} # {token: {"status": str, "expiry": datetime}}
 
+    @staticmethod
+    async def fetch_with_retry(client: httpx.AsyncClient, method: str, url: str, **kwargs):
+        """
+        Robust fetch with retries for network errors.
+        """
+        tries = 3
+        last_exception = None
+        for i in range(tries):
+            try:
+                response = await client.request(method, url, **kwargs)
+                return response
+            except (httpx.ConnectError, httpx.ReadTimeout, httpx.ConnectTimeout) as e:
+                last_exception = e
+                logger.warning(f"Network error {e}, retrying {i+1}/{tries} for {url}")
+                import asyncio
+                await asyncio.sleep(1.0 * (i + 1))
+            except Exception as e:
+                # Other errors (SSL, Protocol) might not be recoverable instantly
+                logger.error(f"Unrecoverable Request Error: {e}")
+                raise e
+        
+        logger.error(f"Max retries reached for {url}")
+        if last_exception:
+            raise last_exception
+        raise Exception("Request failed after retries")
+
     @classmethod
     async def get_client(cls):
         if cls._client is None or cls._client.is_closed:
             # Optimized restrictions for faster connection setup
-            limits = httpx.Limits(max_keepalive_connections=10, max_connections=20)
-            timeout = httpx.Timeout(20.0, connect=10.0)
+            # Increased limits to avoid bottlenecks under load
+            limits = httpx.Limits(max_keepalive_connections=50, max_connections=200)
+            timeout = httpx.Timeout(30.0, connect=10.0) # Increased to 30s
             cls._client = httpx.AsyncClient(
                 verify=False,
                 limits=limits,
@@ -92,7 +119,7 @@ class HemisService:
             params['semester'] = semester_id
         
         try:
-            response = await client.get(url, headers=HemisService.get_headers(token), params=params)
+            response = await HemisService.fetch_with_retry(client, "GET", url, headers=HemisService.get_headers(token), params=params)
             if response.status_code == 200:
                 data = response.json()
                 return data.get("data", {}).get("items", []) or data.get("data", [])
@@ -122,9 +149,8 @@ class HemisService:
             # LOGGING ADDED FOR DEBUGGING
             logger.info(f"Authenticating User: {safe_login}...")
             
-            response = await client.post(
-                url,
-                json=json_payload
+            response = await HemisService.fetch_with_retry(
+                client, "POST", url, json=json_payload
             )
             
             logger.info(f"Auth Response: {response.status_code}")
@@ -220,7 +246,7 @@ class HemisService:
         try:
             # 1. Try REST API Endpoint
             url = f"{HemisService.BASE_URL}/account/me"
-            response = await client.get(url, headers=HemisService.get_headers(token))
+            response = await HemisService.fetch_with_retry(client, "GET", url, headers=HemisService.get_headers(token))
             
             if response.status_code == 200:
                 data = response.json()
@@ -233,7 +259,7 @@ class HemisService:
 
             # 2. Fallback to OAuth Endpoint
             url_oauth = f"{HEMIS_PROFILE_URL}?fields=id,uuid,type,login,firstname,surname,patronymic,picture,email,phone,birth_date"
-            response = await client.get(url_oauth, headers=HemisService.get_headers(token))
+            response = await HemisService.fetch_with_retry(client, "GET", url_oauth, headers=HemisService.get_headers(token))
             if response.status_code == 200:
                 return response.json()
 
@@ -265,23 +291,26 @@ class HemisService:
             return total, excused, unexcused
 
         stale_data = None
-        # DISABLED StudentCache: Force live data
-        # if student_id and not force_refresh:
-        #     try:
-        #         async with AsyncSessionLocal() as session:
-        #             cache = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
-        #             if cache: 
-        #                 age = (datetime.utcnow() - cache.updated_at).total_seconds()
-        #                 if age < 4 * 3600:
-        #                     t, e, u = calculate_totals(cache.data)
-        #                     return t, e, u, cache.data
-        #                 stale_data = cache.data
-        #     except: pass
+        # Check Cache if not forcing refresh
+        if student_id and not force_refresh:
+            try:
+                async with AsyncSessionLocal() as session:
+                    cache = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
+                    if cache: 
+                        # Cache validity: 30 minutes for attendance (it changes often)
+                        age = (datetime.utcnow() - cache.updated_at).total_seconds()
+                        if age < 30 * 60:
+                            t, e, u = calculate_totals(cache.data)
+                            return t, e, u, cache.data
+                        stale_data = cache.data
+            except Exception as e: 
+                logger.error(f"Cache Read Error: {e}")
 
         client = await HemisService.get_client()
         try:
             params = {"semester": semester_code} if semester_code else {}
-            response = await client.get(
+            response = await HemisService.fetch_with_retry(
+                client, "GET", 
                 f"{HemisService.BASE_URL}/education/attendance",
                 headers=HemisService.get_headers(token), params=params
             )
@@ -289,16 +318,19 @@ class HemisService:
             if response.status_code == 200:
                 data = response.json().get("data", [])
                 
-                # DISABLED StudentCache: No update
-                # if student_id:
-                #      async with AsyncSessionLocal() as session:
-                #          c = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
-                #          if c: 
-                #              c.data = data
-                #              c.updated_at = datetime.utcnow()
-                #          else:
-                #              session.add(StudentCache(student_id=student_id, key=key, data=data))
-                #          await session.commit()
+                # Update Cache ONLY if data is present
+                if student_id and data:
+                     try:
+                         async with AsyncSessionLocal() as session:
+                             c = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
+                             if c: 
+                                 c.data = data
+                                 c.updated_at = datetime.utcnow()
+                             else:
+                                 session.add(StudentCache(student_id=student_id, key=key, data=data))
+                             await session.commit()
+                     except Exception as e:
+                         logger.error(f"Cache Write Error: {e}")
                          
                 t, e, u = calculate_totals(data)
                 return t, e, u, data
@@ -308,21 +340,51 @@ class HemisService:
                 return t, e, u, stale_data
             
             return 0, 0, 0, []
-        except:
+        except Exception as e:
             if stale_data:
                 t, e, u = calculate_totals(stale_data)
                 return t, e, u, stale_data
-            return 0, 0, 0, []
+            # Raise error if no cache and network failed
+            logger.error(f"Absence Error: {e}")
+            raise e
 
     @staticmethod
-    async def get_semester_list(token: str, force_refresh: bool = False):
+    async def get_semester_list(token: str, student_id: int = None, force_refresh: bool = False):
+        key = "semesters_list"
+        
+        # Check Cache
+        if student_id and not force_refresh:
+            try:
+                async with AsyncSessionLocal() as session:
+                    cache = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
+                    # Cache validity: 24 hours for semesters (they rarely change)
+                    if cache and (datetime.utcnow() - cache.updated_at).total_seconds() < 86400:
+                        return cache.data
+            except Exception as e: 
+                logger.error(f"Semester Cache Read Error: {e}")
+
         client = await HemisService.get_client()
         try:
             url = f"{HemisService.BASE_URL}/education/semesters"
-            response = await client.get(url, headers=HemisService.get_headers(token))
+            response = await HemisService.fetch_with_retry(client, "GET", url, headers=HemisService.get_headers(token))
             
             if response.status_code == 200:
                 data = response.json().get("data", [])
+                
+                # Update Cache
+                if student_id and data:
+                    try:
+                        async with AsyncSessionLocal() as session:
+                            c = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
+                            if c: 
+                                c.data = data
+                                c.updated_at = datetime.utcnow()
+                            else:
+                                session.add(StudentCache(student_id=student_id, key=key, data=data))
+                            await session.commit()
+                    except Exception as e:
+                        logger.error(f"Semester Cache Write Error: {e}")
+
                 def get_code(x):
                     try: return int(str(x.get("code") or x.get("id")))
                     except: return 0
@@ -330,77 +392,96 @@ class HemisService:
                 return data
             return []
         except Exception as e:
+            logger.error(f"Semester List Error: {e}")
             return []
 
     @staticmethod
     async def get_student_subject_list(token: str, semester_code: str = None, student_id: int = None, force_refresh: bool = False):
         key = f"subjects_{semester_code}" if semester_code else "subjects_all"
-        # DISABLED StudentCache
-        # if student_id and not force_refresh:
-        #     try:
-        #         async with AsyncSessionLocal() as session:
-        #             cache = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
-        #             if cache and (datetime.utcnow() - cache.updated_at).total_seconds() < 1800:
-        #                 return cache.data
-        #     except: pass
+        
+        # Check Cache
+        if student_id and not force_refresh:
+            try:
+                async with AsyncSessionLocal() as session:
+                    cache = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
+                    # Cache validity: 1 hour for subjects/grades
+                    if cache and (datetime.utcnow() - cache.updated_at).total_seconds() < 3600:
+                        return cache.data
+            except Exception as e: 
+                logger.error(f"Cache Read Error: {e}")
 
         client = await HemisService.get_client()
         try:
             params = {"semester": semester_code} if semester_code else {}
-            response = await client.get(
+            response = await HemisService.fetch_with_retry(
+                client, "GET", 
                 f"{HemisService.BASE_URL}/education/subject-list",
                 headers=HemisService.get_headers(token), params=params
             )
             if response.status_code == 200:
                 data = response.json().get("data", [])
-                # DISABLED StudentCache
-                # if student_id:
-                #      async with AsyncSessionLocal() as session:
-                #          c = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
-                #          if c: 
-                #              c.data = data
-                #              c.updated_at = datetime.utcnow()
-                #          else:
-                #              session.add(StudentCache(student_id=student_id, key=key, data=data))
-                #          await session.commit()
+                # Update Cache ONLY if data is present
+                if student_id and data:
+                     try:
+                         async with AsyncSessionLocal() as session:
+                             c = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
+                             if c: 
+                                 c.data = data
+                                 c.updated_at = datetime.utcnow()
+                             else:
+                                 session.add(StudentCache(student_id=student_id, key=key, data=data))
+                             await session.commit()
+                     except Exception as e:
+                         logger.error(f"Cache Write Error: {e}")
                 return data
             return []
-        except: return []
+        except Exception as e:
+            logger.error(f"Subject List Error: {e}")
+            return []
 
     @staticmethod
     async def get_student_schedule_cached(token: str, semester_code: str = None, student_id: int = None, force_refresh: bool = False):
         key = f"schedule_{semester_code}" if semester_code else "schedule_all"
-        # DISABLED StudentCache
-        # if student_id and not force_refresh:
-        #     try:
-        #         async with AsyncSessionLocal() as session:
-        #             cache = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
-        #             if cache and (datetime.utcnow() - cache.updated_at).total_seconds() < 1800:
-        #                     return cache.data
-        #     except: pass
+        
+        # Check Cache
+        if student_id and not force_refresh:
+            try:
+                async with AsyncSessionLocal() as session:
+                    cache = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
+                    # Cache validity: 1 day for schedule (it basically never changes mid-semester)
+                    if cache and (datetime.utcnow() - cache.updated_at).total_seconds() < 86400:
+                            return cache.data
+            except Exception as e: 
+                logger.error(f"Cache Read Error: {e}")
 
         client = await HemisService.get_client()
         try:
             params = {"semester": semester_code} if semester_code else {}
-            response = await client.get(
+            response = await HemisService.fetch_with_retry(
+                client, "GET", 
                 f"{HemisService.BASE_URL}/education/schedule",
                 headers=HemisService.get_headers(token), params=params
             )
             if response.status_code == 200:
                 data = response.json().get("data", [])
-                # DISABLED StudentCache
-                # if student_id:
-                #      async with AsyncSessionLocal() as session:
-                #          c = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
-                #          if c: 
-                #              c.data = data
-                #              c.updated_at = datetime.utcnow()
-                #          else:
-                #              session.add(StudentCache(student_id=student_id, key=key, data=data))
-                #          await session.commit()
+                # Update Cache ONLY if data is present
+                if student_id and data:
+                     try:
+                         async with AsyncSessionLocal() as session:
+                             c = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
+                             if c: 
+                                 c.data = data
+                                 c.updated_at = datetime.utcnow()
+                             else:
+                                 session.add(StudentCache(student_id=student_id, key=key, data=data))
+                             await session.commit()
+                     except Exception as e:
+                         logger.error(f"Cache Write Error: {e}")
                 return data
             return []
-        except: return []
+        except Exception as e:
+            logger.error(f"Schedule Error: {e}")
+            return []
 
     @staticmethod
     async def get_curriculum_topics(token: str, subject_id: str = None, semester_code: str = None, training_type_code: str = None, student_id: int = None):
@@ -409,7 +490,8 @@ class HemisService:
             try:
                 async with AsyncSessionLocal() as session:
                     cache = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
-                    if cache and (datetime.utcnow() - cache.updated_at).total_seconds() < 24 * 3600:
+                    # Cache validity: 3 days for curriculum
+                    if cache and (datetime.utcnow() - cache.updated_at).total_seconds() < 3 * 86400:
                             return cache.data
             except: pass
 
@@ -428,7 +510,8 @@ class HemisService:
             
             if response.status_code == 200:
                 data = response.json().get("data", {}).get("items", [])
-                if student_id:
+                # Only cache if data exists
+                if student_id and data:
                     async with AsyncSessionLocal() as session:
                         c = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
                         if c:
@@ -457,14 +540,17 @@ class HemisService:
         except: return []
 
     @staticmethod
-    async def get_student_performance(token: str, semester_code: str = None):
+    async def get_student_performance(token: str, student_id: int = None, semester_code: str = None):
         try:
-            subjects = await HemisService.get_student_subject_list(token, semester_code)
+            # Reuses get_student_subject_list which is cached
+            subjects = await HemisService.get_student_subject_list(token, semester_code=semester_code, student_id=student_id)
             if not subjects: return 0.0
             from services.gpa_calculator import GPACalculator
             result = GPACalculator.calculate_gpa(subjects)
             return result.gpa
-        except: return 0.0
+        except Exception as e:
+            logger.error(f"GPA Calculation Error: {e}")
+            return 0.0
 
     @staticmethod
     def parse_grades_detailed(subject_data: dict) -> dict:
@@ -636,4 +722,45 @@ class HemisService:
         except Exception as e:
             logger.error(f"Error finishing survey: {e}")
             return None
+
 # Force update
+
+    @staticmethod
+    async def prefetch_data(token: str, student_id: int):
+        """
+        Eagerly loads critical data into cache to prevent 'First Load' delay.
+        Should be called as a background task upon login.
+        """
+        logger.info(f"Prefetching data for student {student_id}...")
+        try:
+            # 1. Semesters (Fast)
+            semesters = await HemisService.get_semester_list(token)
+            
+            # Resolve ID
+            sem_code = None
+            # Try to get from Me first if possible, but get_me isn't cached here. 
+            # Let's assume most recent semester from list is current or close enough for cache warming.
+            if semesters:
+                 # Find 'current' flag
+                 for s in semesters:
+                     if s.get("current") is True:
+                         sem_code = str(s.get("code") or s.get("id"))
+                         break
+                 if not sem_code and semesters:
+                     sem_code = str(semesters[0].get("code") or semesters[0].get("id"))
+
+            if not sem_code: sem_code = "11" # Fallback
+
+            # 2. Parallel Fetch of Critical Modules
+            import asyncio
+            await asyncio.gather(
+                # Grades / Subjects
+                HemisService.get_student_subject_list(token, semester_code=sem_code, student_id=student_id),
+                # Attendance
+                HemisService.get_student_absence(token, semester_code=sem_code, student_id=student_id),
+                # Schedule
+                HemisService.get_student_schedule_cached(token, semester_code=sem_code, student_id=student_id)
+            )
+            logger.info(f"Prefetch complete for student {student_id}")
+        except Exception as e:
+            logger.error(f"Prefetch error: {e}")
