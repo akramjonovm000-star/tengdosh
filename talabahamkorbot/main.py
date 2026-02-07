@@ -195,6 +195,5 @@ import asyncio
 MODE = os.environ.get("BOT_MODE", "WEBHOOK")
 
 if __name__ == "__main__":
-    logger.info("🔥 Server starting (Universal Mode)...")
-    # Reverted to 1 worker to stop the "Child process died" loop and save resources.
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False, workers=1)
+    # Increased workers to 4 to prevent concurrency bottlenecks (e.g. during slow HEMIS or aggregate queries)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False, workers=4)
