@@ -7,7 +7,7 @@ import 'package:talabahamkor_mobile/core/theme/app_theme.dart';
 import 'package:talabahamkor_mobile/core/providers/auth_provider.dart';
 import 'package:talabahamkor_mobile/features/profile/screens/profile_screen.dart';
 import 'package:talabahamkor_mobile/features/community/screens/community_screen.dart';
-import '../models/announcement.dart';
+import 'package:talabahamkor_mobile/features/home/models/announcement_model.dart';
 import 'package:talabahamkor_mobile/features/student_module/screens/student_module_screen.dart';
 import 'package:talabahamkor_mobile/features/ai/screens/ai_screen.dart';
 import 'package:talabahamkor_mobile/features/student_module/widgets/student_dashboard_widgets.dart';
@@ -45,7 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, dynamic>? _dashboard;
   bool _isLoading = true;
   Timer? _refreshTimer;
-  List<Announcement> _announcements = [];
+  List<AnnouncementModel> _announcements = [];
   final PageController _pageController = PageController();
   
   // Semester Handling
@@ -93,7 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
          _dashboard = await _dataService.getTutorDashboard();
       } else {
          final dashResult = await _dataService.getDashboardStats(refresh: refresh);
-         final announcements = await _dataService.getAnnouncements();
+         final announcements = await _dataService.getAnnouncementModels();
          
          if (mounted) {
            setState(() {
@@ -483,7 +483,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildStudentDashboard() {
     return Column(
       children: [
-            // 2. GPA/Announcement Module (Full Width)
+            // 2. GPA/AnnouncementModel Module (Full Width)
             SizedBox(
               height: 180,
               child: PageView.builder(
@@ -492,7 +492,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 itemCount: _announcements.length + 1,
                 itemBuilder: (context, index) {
                   if (index < _announcements.length) {
-                    return _buildAnnouncementCard(_announcements[index]);
+                    return _buildAnnouncementModelCard(_announcements[index]);
                   }
                   return _buildGpaCard(); // Always last
                 },
@@ -696,13 +696,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildAnnouncementCard(Announcement announcement) {
+  Widget _buildAnnouncementModelCard(AnnouncementModel announcement) {
     return GestureDetector(
       onTap: () async {
         if (announcement.link != null) {
           // 1. Open Link
           final uri = Uri.parse(announcement.link!);
-          final success = await _dataService.markAnnouncementAsRead(announcement.id);
+          final success = await _dataService.markAnnouncementModelAsRead(announcement.id);
           
           if (success) {
             setState(() {

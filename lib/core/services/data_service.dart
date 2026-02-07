@@ -8,7 +8,7 @@ import 'auth_service.dart';
 import '../models/attendance.dart';
 import '../models/lesson.dart';
 import 'package:talabahamkor_mobile/features/social/models/social_activity.dart';
-import 'package:talabahamkor_mobile/features/home/models/announcement.dart';
+import 'package:talabahamkor_mobile/features/home/models/announcement_model.dart';
 import 'local_database_service.dart';
 import '../../features/academic/models/survey_models.dart';
 
@@ -300,14 +300,14 @@ class DataService {
   }
 
   // Announcements
-  Future<List<Announcement>> getAnnouncements() async {
+  Future<List<AnnouncementModel>> getAnnouncementModels() async {
     try {
       final response = await _get(ApiConstants.announcements);
       if (response.statusCode == 200) {
         final body = json.decode(response.body);
         if (body['success'] == true) {
           final List<dynamic> list = body['data'];
-          return list.map((item) => Announcement.fromJson(item)).toList();
+          return list.map((item) => AnnouncementModel.fromJson(item)).toList();
         }
       }
     } catch (e) {
@@ -316,7 +316,7 @@ class DataService {
     return [];
   }
 
-  Future<bool> markAnnouncementAsRead(int id) async {
+  Future<bool> markAnnouncementModelAsRead(int id) async {
     try {
       final response = await _post('${ApiConstants.announcements}/$id/read');
       if (response.statusCode == 200) {
