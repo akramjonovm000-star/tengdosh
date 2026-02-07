@@ -183,50 +183,59 @@ async def get_mgmt_student_details(
     staff: Any = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
 ):
-    from database.models import UserActivity, UserDocument, UserCertificate, StudentFeedback
-    
-    student = await db.get(Student, student_id)
-    if not student: raise HTTPException(status_code=404, detail="Talaba topilmadi")
+    try:
+        from database.models import UserActivity, UserDocument, UserCertificate, StudentFeedback
+        
+        student = await db.get(Student, student_id)
+        if not student: raise HTTPException(status_code=404, detail="Talaba topilmadi")
 
-    # 1. Appeales (Feedbacks)
-    appeals_result = await db.execute(
-        select(StudentFeedback).where(StudentFeedback.student_id == student_id, StudentFeedback.parent_id == None)
-    )
-    appeals = appeals_result.scalars().all()
+        # 1. Appeales (Feedbacks)
+        appeals_result = await db.execute(
+            select(StudentFeedback).where(StudentFeedback.student_id == student_id, StudentFeedback.parent_id == None)
+        )
+        appeals = appeals_result.scalars().all()
 
-    # 2. Activities
-    activities_result = await db.execute(
-        select(UserActivity).where(UserActivity.student_id == student_id)
-    )
-    activities = activities_result.scalars().all()
+        # 2. Activities
+        activities_result = await db.execute(
+            select(UserActivity).where(UserActivity.student_id == student_id)
+        )
+        activities = activities_result.scalars().all()
 
-    # 3. Documents
-    docs_result = await db.execute(
-        select(UserDocument).where(UserDocument.student_id == student_id)
-    )
-    docs = docs_result.scalars().all()
+        # 3. Documents
+        docs_result = await db.execute(
+            select(UserDocument).where(UserDocument.student_id == student_id)
+        )
+        docs = docs_result.scalars().all()
 
-    # 4. Certificates
-    certs_result = await db.execute(
-        select(UserCertificate).where(UserCertificate.student_id == student_id)
-    )
-    certs = certs_result.scalars().all()
+        # 4. Certificates
+        certs_result = await db.execute(
+            select(UserCertificate).where(UserCertificate.student_id == student_id)
+        )
+        certs = certs_result.scalars().all()
 
-    return {
-        "success": True,
-        "data": {
-            "profile": {
-                "id": student.id,
-                "full_name": student.full_name,
-                "hemis_id": student.hemis_id,
-                "faculty_name": student.faculty_name,
-                "group_number": student.group_number,
-                "image_url": student.image_url,
-                "phone": student.phone
-            },
-            "appeals": [{"id": a.id, "text": a.text, "status": a.status, "date": a.created_at.isoformat()} for a in appeals],
-            "activities": [{"id": act.id, "title": act.title, "status": act.status} for act in activities],
-            "documents": [{"id": d.id, "title": d.title, "status": d.status} for d in docs],
-            "certificates": [{"id": c.id, "title": c.title, "status": c.status} for c in certs]
+        def safe_isoformat(dt):
+            return dt.isoformat() if dt else None
+
+        return {
+            "success": True,
+            "data": {
+                "profile": {
+                    "id": student.id,
+                    "full_name": student.full_name,
+                    "hemis_id": student.hemis_id,
+                    "faculty_name": student.faculty_name,
+                    "group_number": student.group_number,
+                    "image_url": student.image_url,
+                    "phone": student.phone
+                },
+                "appeals": [{"id": a.id, "text": a.text, "status": a.status, "date": safe_isoformat(a.created_at)} for a in appeals],
+                "activities": [{"id": act.id, "title": act.title, "status": act.status, "date": safe_isoformat(act.created_at)} for act in activities],
+                "documents": [{"id": d.id, "title": d.title, "status": d.status, "date": safe_isoformat(d.created_at)} for d in docs],
+                "certificates": [{"id": c.id, "title": c.title, "status": c.status, "date": safe_isoformat(c.created_at)} for c in certs]
+            }
         }
-    }
+    except Exception as e:
+        import traceback
+        print(f"ERROR in get_mgmt_student_details: {e}")
+        traceback.print_exc()
+        return {"success": False, "message": str(e)}
