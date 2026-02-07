@@ -175,11 +175,23 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
   }
 
   String _getCurrentScope() {
-    switch (_tabController.index) {
-      case 0: return 'specialty';
-      case 1: return 'faculty';
-      case 2: return 'university';
-      default: return 'specialty';
+    final isManagement = context.read<AuthProvider>().isManagement;
+    final index = _tabController.index;
+    
+    if (isManagement) {
+      switch (index) {
+        case 0: return 'university';
+        case 1: return 'faculty';
+        case 2: return 'specialty';
+        default: return 'university';
+      }
+    } else {
+      switch (index) {
+        case 0: return 'specialty';
+        case 1: return 'faculty';
+        case 2: return 'university';
+        default: return 'specialty';
+      }
     }
   }
 
@@ -201,24 +213,35 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                 color: Colors.grey[100],
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: TabBar(
-                controller: _tabController,
-                labelColor: Colors.black,
-                unselectedLabelColor: Colors.grey[600],
-                indicator: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 4, offset: const Offset(0, 1))
-                  ]
-                ),
-                indicatorSize: TabBarIndicatorSize.tab,
-                labelPadding: EdgeInsets.zero,
-                tabs: const [
-                  Tab(child: Text("Yo'nalish", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
-                  Tab(child: Text("Fakultet", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
-                  Tab(child: Text("Universitet", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
-                ],
+              child: Consumer<AuthProvider>(
+                builder: (context, auth, _) {
+                  final isManagement = auth.isManagement;
+                  return TabBar(
+                    controller: _tabController,
+                    labelColor: Colors.black,
+                    unselectedLabelColor: Colors.grey[600],
+                    indicator: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 4, offset: const Offset(0, 1))
+                      ]
+                    ),
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    labelPadding: EdgeInsets.zero,
+                    tabs: isManagement 
+                      ? const [
+                          Tab(child: Text("Universitet", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+                          Tab(child: Text("Fakultet", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+                          Tab(child: Text("Yo'nalish", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+                        ]
+                      : const [
+                          Tab(child: Text("Yo'nalish", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+                          Tab(child: Text("Fakultet", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+                          Tab(child: Text("Universitet", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+                        ],
+                  );
+                }
               ),
             ),
           ),
@@ -259,13 +282,24 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
             const SizedBox(width: 8),
           ],
         ),
-        body: TabBarView(
-          controller: _tabController,
-          children: [
-            _buildFeed("specialty"),
-            _buildFeed("faculty"),
-            _buildFeed("university"),
-          ],
+        body: Consumer<AuthProvider>(
+          builder: (context, auth, _) {
+            final isManagement = auth.isManagement;
+            return TabBarView(
+              controller: _tabController,
+              children: isManagement 
+                ? [
+                    _buildFeed("university"),
+                    _buildFeed("faculty"),
+                    _buildFeed("specialty"),
+                  ]
+                : [
+                    _buildFeed("specialty"),
+                    _buildFeed("faculty"),
+                    _buildFeed("university"),
+                  ],
+            );
+          }
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: () async {
