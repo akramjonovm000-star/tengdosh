@@ -304,6 +304,8 @@ class HemisService:
                             return t, e, u, cache.data
                         stale_data = cache.data
             except Exception as e: 
+                import logging
+                logger = logging.getLogger(__name__)
                 logger.error(f"Cache Read Error: {e}")
 
         client = await HemisService.get_client()
@@ -361,6 +363,8 @@ class HemisService:
                     if cache and (datetime.utcnow() - cache.updated_at).total_seconds() < 86400:
                         return cache.data
             except Exception as e: 
+                import logging
+                logger = logging.getLogger(__name__)
                 logger.error(f"Semester Cache Read Error: {e}")
 
         client = await HemisService.get_client()
@@ -408,6 +412,8 @@ class HemisService:
                     if cache and (datetime.utcnow() - cache.updated_at).total_seconds() < 3600:
                         return cache.data
             except Exception as e: 
+                import logging
+                logger = logging.getLogger(__name__)
                 logger.error(f"Cache Read Error: {e}")
 
         client = await HemisService.get_client()
@@ -452,6 +458,8 @@ class HemisService:
                     if cache and (datetime.utcnow() - cache.updated_at).total_seconds() < 86400:
                             return cache.data
             except Exception as e: 
+                import logging
+                logger = logging.getLogger(__name__)
                 logger.error(f"Cache Read Error: {e}")
 
         client = await HemisService.get_client()

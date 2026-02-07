@@ -69,7 +69,7 @@ async def get_my_feedback(
 ):
     """List all feedback/appeals sent by the student."""
     # DEBUG LOG
-    print(f"DEBUG: get_my_feedback for student {student.id}")
+    logger.debug(f"DEBUG: get_my_feedback for student {student.id}")
     
     feedbacks = await db.scalars(
         select(StudentFeedback)
@@ -114,8 +114,8 @@ async def get_my_feedback(
             "inspektor": "Inspektor",
             "kutubxona": "Kutubxona"
         }
-        raw_role = fb.assigned_role.lower() if fb.assigned_role else ""
-        dept = role_map.get(raw_role, None)
+        raw_role = (fb.assigned_role or "").lower()
+        dept = role_map.get(raw_role, "Boshqa")
 
         item = {
             "id": fb.id,
