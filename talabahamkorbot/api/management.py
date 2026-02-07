@@ -213,7 +213,12 @@ async def get_mgmt_student_details(
         certs = certs_result.scalars().all()
 
         def safe_isoformat(dt):
-            return dt.isoformat() if dt else None
+            if not dt: return None
+            if isinstance(dt, str): return dt
+            try:
+                return dt.isoformat()
+            except:
+                return str(dt)
 
         return {
             "success": True,
@@ -221,17 +226,17 @@ async def get_mgmt_student_details(
                 "profile": {
                     "id": student.id,
                     "full_name": student.full_name,
-                    "hemis_id": student.hemis_id,
-                    "faculty_name": student.faculty_name,
-                    "group_number": student.group_number,
-                    "image_url": student.image_url,
-                    "phone": student.phone,
-                    "gpa": student.gpa
+                    "hemis_id": getattr(student, 'hemis_id', None),
+                    "faculty_name": getattr(student, 'faculty_name', None),
+                    "group_number": getattr(student, 'group_number', None),
+                    "image_url": getattr(student, 'image_url', None),
+                    "phone": getattr(student, 'phone', None),
+                    "gpa": getattr(student, 'gpa', 0.0)
                 },
-                "appeals": [{"id": a.id, "text": a.text, "status": a.status, "date": safe_isoformat(a.created_at)} for a in appeals],
-                "activities": [{"id": act.id, "title": act.title, "status": act.status, "date": safe_isoformat(act.created_at)} for act in activities],
-                "documents": [{"id": d.id, "title": d.title, "status": d.status, "date": safe_isoformat(d.created_at)} for d in docs],
-                "certificates": [{"id": c.id, "title": c.title, "status": c.status, "date": safe_isoformat(c.created_at)} for c in certs]
+                "appeals": [{"id": a.id, "text": a.text, "status": getattr(a, 'status', 'pending'), "date": safe_isoformat(getattr(a, 'created_at', None))} for a in appeals],
+                "activities": [{"id": act.id, "title": getattr(act, 'name', getattr(act, 'title', 'Benoq')), "status": getattr(act, 'status', 'pending'), "date": safe_isoformat(getattr(act, 'created_at', None))} for act in activities],
+                "documents": [{"id": d.id, "title": d.title, "status": getattr(d, 'status', 'pending'), "date": safe_isoformat(getattr(d, 'created_at', None))} for d in docs],
+                "certificates": [{"id": c.id, "title": c.title, "status": "active", "date": safe_isoformat(getattr(c, 'created_at', None))} for c in certs]
             }
         }
     except Exception as e:
