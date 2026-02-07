@@ -144,7 +144,7 @@ async def get_posts(
         # 1. Category Filter (Tab Filter)
         query = query.where(ChoyxonaPost.category_type == category)
         
-        is_management = student.hemis_role == 'rahbariyat' or getattr(student, 'role', 'student') == 'rahbariyat'
+        is_management = getattr(student, 'hemis_role', None) == 'rahbariyat' or getattr(student, 'role', None) == 'rahbariyat'
         
         if category == 'university': 
              query = query.where(ChoyxonaPost.target_university_id == student.university_id)
