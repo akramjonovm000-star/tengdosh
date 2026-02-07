@@ -92,8 +92,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (isTutor) {
          _dashboard = await _dataService.getTutorDashboard();
       } else if (auth.isManagement) {
-         // Placeholder for management stats if needed
-         _dashboard = null; 
+         _dashboard = await _dataService.getManagementDashboard();
       } else {
          final dashResult = await _dataService.getDashboardStats(refresh: refresh);
          final announcements = await _dataService.getAnnouncementModels();

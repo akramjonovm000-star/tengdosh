@@ -8,16 +8,26 @@ class ManagementDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Map<String, dynamic> data = stats ?? {};
+    final int studentCount = data['student_count'] ?? 0;
+    final int platformUsers = data['platform_users'] ?? 0;
+    final int usagePercentage = data['usage_percentage'] ?? 0;
+    final int staffCount = data['staff_count'] ?? 0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Top Stats Row
+        // 1. Platform Usage Card (NEW & PROMINENT)
+        _buildPlatformUsageCard(studentCount, platformUsers, usagePercentage),
+        const SizedBox(height: 24),
+
+        // 2. Small Stats Row
         Row(
           children: [
             Expanded(
               child: _StatCard(
-                title: "Talabalar",
-                value: "${stats?['student_count'] ?? '3,450'}",
+                title: "Jami Talabalar",
+                value: studentCount.toString(),
                 icon: Icons.people_alt_rounded,
                 color: Colors.blue,
               ),
@@ -26,7 +36,7 @@ class ManagementDashboard extends StatelessWidget {
             Expanded(
               child: _StatCard(
                 title: "Xodimlar",
-                value: "${stats?['staff_count'] ?? '184'}",
+                value: staffCount.toString(),
                 icon: Icons.business_center_rounded,
                 color: Colors.orange,
               ),
@@ -89,6 +99,85 @@ class ManagementDashboard extends StatelessWidget {
         ),
         const SizedBox(height: 32),
       ],
+    );
+  }
+
+  Widget _buildPlatformUsageCard(int total, int active, int percentage) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.blue.shade700, Colors.blue.shade900],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blue.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Platforma Aktivligi",
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  "$percentage%",
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
+              value: percentage / 100,
+              backgroundColor: Colors.white.withOpacity(0.1),
+              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+              minHeight: 12,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("Faol Talabalar", style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12)),
+                  const SizedBox(height: 4),
+                  Text("$active", style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text("Jami Talabalar", style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12)),
+                  const SizedBox(height: 4),
+                  Text("$total", style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

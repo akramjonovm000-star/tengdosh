@@ -207,6 +207,22 @@ class DataService {
       };
   }
 
+  // Management Dashboard
+  Future<Map<String, dynamic>> getManagementDashboard() async {
+    try {
+      final response = await _get(ApiConstants.managementDashboard);
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) {
+          return body['data'];
+        }
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching management dashboard: $e");
+    }
+    return {};
+  }
+
   // 3. Get Activities
   Future<List<dynamic>> getActivities() async {
     // Attempt to fetch from backend

@@ -29,6 +29,7 @@ from .subscription import router as subscription_router
 from .chat import router as chat_router
 from .gpa import router as gpa_router
 from .plans import router as plans_router
+from .management import router as management_router
 
 # 1. CORE & AUTH
 router.include_router(auth_router, prefix="/auth", tags=["Auth"])
@@ -64,6 +65,7 @@ router.include_router(payment_router, prefix="/payment", tags=["Payment"])
 router.include_router(gpa_router, prefix="/gpa", tags=["GPA"])
 router.include_router(plans_router, prefix="/plans", tags=["Plans"])
 router.include_router(election_router, prefix="/election", tags=["Election"])
+router.include_router(management_router, tags=["Management"])
 router.include_router(tutor_router, tags=["Tutor"])
 
 # 6. GENERIC STUDENT PROFILE (Wildcard /{student_id} at the end)

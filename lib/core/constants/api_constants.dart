@@ -18,6 +18,7 @@ class ApiConstants {
   
   // Dashboard
   static const String dashboard = '$backendUrl/student/dashboard/';
+  static const String managementDashboard = '$backendUrl/management/dashboard';
   
   // Announcements
   static const String announcements = '$backendUrl/announcements';
