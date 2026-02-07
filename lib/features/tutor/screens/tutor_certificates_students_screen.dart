@@ -5,7 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'tutor_student_certificates_screen.dart';
 
 class TutorCertificatesStudentsScreen extends StatefulWidget {
-  final String groupNumber;
+  final int groupNumber;
   const TutorCertificatesStudentsScreen({super.key, required this.groupNumber});
 
   @override
@@ -21,15 +21,15 @@ class _TutorCertificatesStudentsScreenState extends State<TutorCertificatesStude
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _loadStudents();
   }
 
-  Future<void> _loadData() async {
+  Future<void> _loadStudents() async {
     setState(() => _isLoading = true);
-    final data = await _dataService.getTutorGroupCertificateDetails(widget.groupNumber);
+    final students = await _dataService.getTutorGroupCertificateDetails(widget.groupNumber);
     if (mounted) {
       setState(() {
-        _students = data ?? [];
+        _students = students ?? [];
         _isLoading = false;
       });
     }
@@ -38,82 +38,140 @@ class _TutorCertificatesStudentsScreenState extends State<TutorCertificatesStude
   @override
   Widget build(BuildContext context) {
     List<dynamic> filtered = _students.where((s) {
-      return s['full_name'].toString().toLowerCase().contains(_searchQuery.toLowerCase());
+      final name = "${s['firstname']} ${s['lastname']}".toLowerCase();
+      return name.contains(_searchQuery.toLowerCase()) || 
+             s['student_id'].toString().contains(_searchQuery);
     }).toList();
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundWhite,
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: Text("Guruh: ${widget.groupNumber}", style: const TextStyle(fontSize: 18)),
+        title: Text("Guruh: ${widget.groupNumber}", style: const TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        foregroundColor: Colors.black87,
       ),
       body: Column(
         children: [
+          // Search Bar
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(16),
             child: TextField(
+              onChanged: (v) => setState(() => _searchQuery = v),
               decoration: InputDecoration(
                 hintText: "Talaba ismini qidiring...",
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey[200]!),
-                ),
+                prefixIcon: const Icon(Icons.search, color: Colors.grey),
                 filled: true,
                 fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: Colors.grey.withOpacity(0.1)),
+                ),
               ),
-              onChanged: (v) => setState(() => _searchQuery = v),
             ),
           ),
+          
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : filtered.isEmpty
-                    ? const Center(child: Text("Talabalar topilmadi"))
+                    ? _buildEmptyState()
                     : RefreshIndicator(
-                        onRefresh: _loadData,
-                        child: ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                        onRefresh: _loadStudents,
+                        child: ListView.separated(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           itemCount: filtered.length,
+                          separatorBuilder: (context, index) => const SizedBox(height: 12),
                           itemBuilder: (context, index) {
-                            final s = filtered[index];
-                            final certCount = s['certificate_count'] ?? 0;
-
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                side: BorderSide(color: Colors.grey[100]!),
+                            final student = filtered[index];
+                            final count = student['certificate_count'] ?? 0;
+                            
+                            return Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.02),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
                               ),
-                              elevation: 0,
                               child: ListTile(
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                leading: CircleAvatar(
-                                  radius: 24,
-                                  backgroundColor: AppTheme.primaryBlue.withOpacity(0.1),
-                                  backgroundImage: s['image'] != null && s['image'].toString().isNotEmpty 
-                                      ? CachedNetworkImageProvider(s['image']) 
-                                      : null,
-                                  child: (s['image'] == null || s['image'].toString().isEmpty) 
-                                      ? const Icon(Icons.person, color: AppTheme.primaryBlue) 
-                                      : null,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                leading: Hero(
+                                  tag: "student_${student['student_id']}",
+                                  child: Container(
+                                    width: 52,
+                                    height: 52,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: AppTheme.primaryBlue.withOpacity(0.1), width: 2),
+                                    ),
+                                    child: CircleAvatar(
+                                      backgroundColor: Colors.grey[100],
+                                      backgroundImage: student['image'] != null
+                                          ? CachedNetworkImageProvider(student['image'])
+                                          : null,
+                                      child: student['image'] == null
+                                          ? Icon(Icons.person, color: Colors.grey[400])
+                                          : null,
+                                    ),
+                                  ),
                                 ),
-                                title: Text(s['full_name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                                subtitle: Text("Sertifikatlar: $certCount", style: TextStyle(color: (certCount > 0 ? Colors.green : Colors.grey), fontWeight: FontWeight.w500)),
-                                trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey),
+                                title: Text(
+                                  "${student['firstname']} ${student['lastname']}",
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                ),
+                                subtitle: Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text(
+                                    "ID: ${student['student_id']}",
+                                    style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                                  ),
+                                ),
+                                trailing: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: count > 0 ? Colors.green[50] : Colors.grey[50],
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.workspace_premium_rounded, 
+                                        size: 14, 
+                                        color: count > 0 ? Colors.green : Colors.grey[400]
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        count.toString(),
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: count > 0 ? Colors.green : Colors.grey[600]
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                                 onTap: () {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder: (_) => TutorStudentCertificatesScreen(
-                                        studentId: s['id'],
-                                        studentName: s['full_name'],
+                                        studentId: student['student_id'],
+                                        studentName: "${student['firstname']} ${student['lastname']}",
                                       ),
                                     ),
-                                  ).then((_) => _loadData());
+                                  ).then((_) => _loadStudents());
                                 },
                               ),
                             );
@@ -121,6 +179,19 @@ class _TutorCertificatesStudentsScreenState extends State<TutorCertificatesStude
                         ),
                       ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.person_search_rounded, size: 80, color: Colors.grey[300]),
+          const SizedBox(height: 16),
+          const Text("Talabalar topilmadi", style: TextStyle(color: Colors.grey, fontSize: 16, fontWeight: FontWeight.w600)),
         ],
       ),
     );

@@ -5,7 +5,11 @@ import 'package:talabahamkor_mobile/core/theme/app_theme.dart';
 class TutorStudentCertificatesScreen extends StatefulWidget {
   final int studentId;
   final String studentName;
-  const TutorStudentCertificatesScreen({super.key, required this.studentId, required this.studentName});
+  const TutorStudentCertificatesScreen({
+    super.key, 
+    required this.studentId,
+    required this.studentName,
+  });
 
   @override
   State<TutorStudentCertificatesScreen> createState() => _TutorStudentCertificatesScreenState();
@@ -24,22 +28,27 @@ class _TutorStudentCertificatesScreenState extends State<TutorStudentCertificate
 
   Future<void> _loadCertificates() async {
     setState(() => _isLoading = true);
-    final data = await _dataService.getTutorStudentCertificates(widget.studentId);
+    final certs = await _dataService.getStudentCertificatesForTutor(widget.studentId);
     if (mounted) {
       setState(() {
-        _certificates = data ?? [];
+        _certificates = certs ?? [];
         _isLoading = false;
       });
     }
   }
 
-  Future<void> _downloadCertificate(int certId) async {
-    final success = await _dataService.sendTutorCertificateToMe(certId);
-    if (mounted) {
+  Future<void> _downloadViaTelegram(int certId) async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Telegram botga yuborilmoqda...")),
+    );
+    
+    final msg = await _dataService.downloadStudentCertificateForTutor(certId);
+    if (mounted && msg != null) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(success ? "Sertifikat Telegramingizga yuborildi" : "Xatolik yuz berdi"),
-          backgroundColor: success ? Colors.green : Colors.red,
+          content: Text(msg),
+          backgroundColor: msg.toLowerCase().contains("xato") ? Colors.red : Colors.green,
         ),
       );
     }
@@ -48,70 +57,105 @@ class _TutorStudentCertificatesScreenState extends State<TutorStudentCertificate
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundWhite,
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: Text(widget.studentName, style: const TextStyle(fontSize: 16)),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("Sertifikatlar", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            Text(widget.studentName, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal, color: Colors.black54)),
+          ],
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        foregroundColor: Colors.black87,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _certificates.isEmpty
-              ? const Center(child: Text("Sertifikatlar yuklanmagan"))
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _certificates.length,
-                  itemBuilder: (context, index) {
-                    final cert = _certificates[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        side: BorderSide(color: Colors.grey[100]!),
-                      ),
-                      elevation: 0,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(Icons.workspace_premium_rounded, color: Colors.amber, size: 28),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    cert['title'] ?? "Sertifikat",
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                  ),
+              ? _buildEmptyState()
+              : RefreshIndicator(
+                  onRefresh: _loadCertificates,
+                  child: ListView.separated(
+                    padding: const EdgeInsets.all(20),
+                    itemCount: _certificates.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: 16),
+                    itemBuilder: (context, index) {
+                      final cert = _certificates[index];
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 15,
+                              offset: const Offset(0, 5),
+                            )
+                          ],
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primaryBlue.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              "Sana: ${cert['created_at'].toString().split('T')[0]}",
-                              style: TextStyle(color: Colors.grey[500], fontSize: 13),
-                            ),
-                            const SizedBox(height: 16),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton.icon(
-                                onPressed: () => _downloadCertificate(cert['id']),
+                                child: const Icon(Icons.workspace_premium_rounded, color: AppTheme.primaryBlue),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      cert['title'] ?? "Sertifikat",
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      cert['created_at'] ?? "",
+                                      style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              ElevatedButton.icon(
+                                onPressed: () => _downloadViaTelegram(cert['id']),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppTheme.primaryBlue,
                                   foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                   elevation: 0,
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                 ),
-                                icon: const Icon(Icons.telegram, size: 20),
-                                label: const Text("Telegramda yuklab olish"),
+                                icon: const Icon(Icons.telegram_rounded, size: 18),
+                                label: const Text("Bot", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.workspace_premium_outlined, size: 80, color: Colors.grey[300]),
+          const SizedBox(height: 16),
+          const Text("Sertifikatlar yuklanmagan", style: TextStyle(color: Colors.grey, fontSize: 16, fontWeight: FontWeight.w600)),
+        ],
+      ),
     );
   }
 }
