@@ -734,7 +734,7 @@ class HemisService:
         logger.info(f"Prefetching data for student {student_id}...")
         try:
             # 0. Warm Me Cache
-            await HemisService.get_me(token, student_id=student_id)
+            await HemisService.get_me(token)
 
             # 1. Semesters (Fast)
             semesters = await HemisService.get_semester_list(token, student_id=student_id)
