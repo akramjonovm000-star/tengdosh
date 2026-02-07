@@ -141,15 +141,15 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
             side: BorderSide(color: Colors.grey.shade200),
           ),
           child: ListTile(
-            title: Text(f['name']),
+            title: Text(f['name'] ?? "Noma'lum fakultet"),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => FacultyLevelsScreen(
-                    facultyId: f['id'],
-                    facultyName: f['name'],
+                    facultyId: f['id'] ?? 0,
+                    facultyName: f['name'] ?? "Noma'lum fakultet",
                   ),
                 ),
               );

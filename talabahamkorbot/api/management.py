@@ -67,13 +67,14 @@ async def get_mgmt_faculties(
     staff: Any = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
 ):
-    uni_id = getattr(staff, 'university_id', None)
-    if not uni_id: raise HTTPException(status_code=400, detail="Universitet aniqlanmadi")
-
-    # Show only faculties that have students
+    # Show only faculties that have students AND a name
     result = await db.execute(
         select(Student.faculty_id, Student.faculty_name)
-        .where(Student.university_id == uni_id, Student.faculty_id != None)
+        .where(
+            Student.university_id == uni_id, 
+            Student.faculty_id != None,
+            Student.faculty_name != None
+        )
         .distinct()
         .order_by(Student.faculty_name)
     )
