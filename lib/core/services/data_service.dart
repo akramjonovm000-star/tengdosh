@@ -1463,9 +1463,9 @@ class DataService {
   }
 
   // 40. Get Group Certificate Details
-  Future<List<dynamic>?> getTutorGroupCertificateDetails(String groupNumber) async {
+  Future<List<dynamic>?> getTutorGroupCertificateDetails(dynamic groupNumber) async {
     try {
-      final response = await _get("${ApiConstants.backendUrl}/tutor/certificates/group/$groupNumber");
+      final response = await _get("${ApiConstants.backendUrl}/tutor/certificates/group/${groupNumber.toString()}");
       if (response.statusCode == 200) {
         final body = json.decode(response.body);
         if (body['success'] == true) {
@@ -1480,7 +1480,7 @@ class DataService {
   }
 
   // 41. Get Student Certificates for Tutor
-  Future<List<dynamic>?> getTutorStudentCertificates(int studentId) async {
+  Future<List<dynamic>?> getStudentCertificatesForTutor(int studentId) async {
     try {
       final response = await _get("${ApiConstants.backendUrl}/tutor/certificates/student/$studentId");
       if (response.statusCode == 200) {
@@ -1496,18 +1496,19 @@ class DataService {
     return [];
   }
 
-  // 42. Send Student Certificate to Tutor's Bot
-  Future<bool> sendTutorCertificateToMe(int certId) async {
+  // 42. Download Student Certificate for Tutor (via Bot)
+  Future<String?> downloadStudentCertificateForTutor(int certId) async {
     try {
       final response = await _post("${ApiConstants.backendUrl}/tutor/certificates/$certId/download");
+      final body = json.decode(response.body);
       if (response.statusCode == 200) {
-        final body = json.decode(response.body);
-        return body['success'] == true;
+        return body['message'] ?? "Sertifikat botga yuborildi";
       }
+      return body['message'] ?? "Xatolik yuz berdi";
     } catch (e) {
-      debugPrint("DataService: Error sending certificate to bot: $e");
+      debugPrint("DataService: Error downloading certificate: $e");
+      return "Tarmoq xatosi";
     }
-    return false;
   }
 }
 
