@@ -11,7 +11,7 @@ from database.db_connect import get_session
 from database.models import Student, UserCertificate, TgAccount, PendingUpload
 from bot import bot
 
-router = APIRouter(prefix="/student/certificates", tags=["Certificates"])
+router = APIRouter(tags=["Certificates"])
 
 @router.get("")
 async def get_my_certificates(

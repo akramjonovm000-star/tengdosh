@@ -10,7 +10,7 @@ from services.hemis_service import HemisService
 from bot import bot
 from aiogram.types import BufferedInputFile
 
-router = APIRouter(prefix="/student/documents", tags=["Documents"])
+router = APIRouter(tags=["Documents"])
 
 class DocumentRequest(BaseModel):
     type: str # 'reference', 'transcript', 'contract'
@@ -244,73 +244,18 @@ async def send_hemis_document(
     
     # 2. Handle Reference
     if "reference" in doc_type or "ma'lumotnoma" in doc_type:
-        from services.pdf_service import PdfService
-        pdf_buffer = PdfService.generate_reference_pdf(
-            student_name=student.full_name,
-            hemis_id=str(student.hemis_id or "---"),
-            faculty=student.faculty_name or "Aniqlanmagan",
-            level=student.education_type or "Bakalavr",
-            courses=student.level_name or "1-kurs"
-        )
-        file_input = BufferedInputFile(pdf_buffer.read(), filename="malumotnoma.pdf")
-        await bot.send_document(chat_id, document=file_input, caption="📄 Ma'lumotnoma yuborildi")
-        return {"success": True, "message": "Ma'lumotnoma Telegramga yuborildi"}
+        # User requested to disable PDF service
+        return {"success": False, "message": "Ushbu xizmat vaqtincha o'chirilgan."}
 
     # 3. Handle Transcript
     if "transcript" in doc_type or "transkript" in doc_type:
-        from services.pdf_service import PdfService
-        token = getattr(student, 'hemis_token', None)
-        if not token: return {"success": False, "message": "Token topilmadi"}
-        
-        subjects_data = await HemisService.get_student_subject_list(token=token, student_id=student.id)
-
-        clean_subjects = []
-        for subj in subjects_data:
-            grade = subj.get("overallScore", {}).get("grade", 0) or subj.get("totalPoint", 0)
-            clean_subjects.append({
-                "name": subj.get("subject", {}).get("name", "Fan"),
-                "grade": grade,
-                "load": subj.get("credit", 0) or subj.get("totalLoad", 0)
-            })
-            
-        pdf_buffer = PdfService.generate_transcript_pdf(
-            student_name=student.full_name,
-            hemis_id=str(student.hemis_id or "---"),
-            faculty=student.faculty_name or "Aniqlanmagan",
-            level=student.education_type or "Bakalavr",
-            subjects=clean_subjects
-        )
-        file_input = BufferedInputFile(pdf_buffer.read(), filename="transkript.pdf")
-        await bot.send_document(chat_id, document=file_input, caption="📄 Transkript yuborildi")
-        return {"success": True, "message": "Transkript Telegramga yuborildi"}
+         # User requested to disable PDF service
+        return {"success": False, "message": "Ushbu xizmat vaqtincha o'chirilgan."}
 
     # 4. Handle Study Sheet
     if "study" in doc_type or "uquv" in doc_type or "o'quv" in doc_type:
-        from services.pdf_service import PdfService
-        token = getattr(student, 'hemis_token', None)
-        if not token: return {"success": False, "message": "Token topilmadi"}
-        
-        subjects_data = await HemisService.get_student_subject_list(token=token, student_id=student.id)
-
-        clean_subjects = []
-        for subj in subjects_data:
-            clean_subjects.append({
-                "name": subj.get("subject", {}).get("name", "Fan"),
-                "credit": subj.get("credit", 0),
-                "load": subj.get("totalLoad", 0)
-            })
-            
-        pdf_buffer = PdfService.generate_study_sheet_pdf(
-            student_name=student.full_name,
-            hemis_id=str(student.hemis_id or "---"),
-            faculty=student.faculty_name or "Aniqlanmagan",
-            level=student.education_type or "Bakalavr",
-            semester=student.semester_name or "Joriy",
-            subjects=clean_subjects
-        )
-        file_input = BufferedInputFile(pdf_buffer.read(), filename="oquv_varaqa.pdf")
-        await bot.send_document(chat_id, document=file_input, caption="📄 O'quv varaqa yuborildi")
-        return {"success": True, "message": "O'quv varaqa Telegramga yuborildi"}
+         # User requested to disable PDF service
+        return {"success": False, "message": "Ushbu xizmat vaqtincha o'chirilgan."}
 
     # 5. Handle Contract
     if "contract" in doc_type or "shartnoma" in doc_type:

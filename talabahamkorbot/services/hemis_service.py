@@ -228,7 +228,7 @@ class HemisService:
         return None, error
 
     @staticmethod
-    async def get_me(token: str):
+    async def get_me(token: str, student_id: int = None, force_refresh: bool = False):
         from config import HEMIS_PROFILE_URL
         
         # --- TEST CREDENTIALS ---
@@ -242,7 +242,20 @@ class HemisService:
             }
         # ------------------------
 
+        # Check Database Cache
+        key = "profile_me"
+        if student_id and not force_refresh:
+            try:
+                async with AsyncSessionLocal() as session:
+                    cache = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
+                    # Cache validity: 1 hour for profile (includes current semester)
+                    if cache and (datetime.utcnow() - cache.updated_at).total_seconds() < 3600:
+                        return cache.data
+            except Exception as e:
+                logger.error(f"Me Cache Read Error: {e}")
+
         client = await HemisService.get_client()
+        data = None
         try:
             # 1. Try REST API Endpoint
             url = f"{HemisService.BASE_URL}/account/me"
@@ -251,19 +264,40 @@ class HemisService:
             if response.status_code == 200:
                 data = response.json()
                 if "data" in data:
-                    return data["data"]
-                return data
+                    data = data["data"]
             
-            if response.status_code in [401, 403]:
+            if not data and response.status_code in [401, 403]:
                 return None
 
-            # 2. Fallback to OAuth Endpoint
-            url_oauth = f"{HEMIS_PROFILE_URL}?fields=id,uuid,type,login,firstname,surname,patronymic,picture,email,phone,birth_date"
-            response = await HemisService.fetch_with_retry(client, "GET", url_oauth, headers=HemisService.get_headers(token))
-            if response.status_code == 200:
-                return response.json()
+            if not data:
+                # 2. Fallback to OAuth Endpoint
+                url_oauth = f"{HEMIS_PROFILE_URL}?fields=id,uuid,type,login,firstname,surname,patronymic,picture,email,phone,birth_date"
+                response = await HemisService.fetch_with_retry(client, "GET", url_oauth, headers=HemisService.get_headers(token))
+                if response.status_code == 200:
+                    data = response.json()
 
-            return None
+            # Save to Cache if successful
+            if data and student_id:
+                try:
+                    async with AsyncSessionLocal() as session:
+                        from sqlalchemy.dialects.postgresql import insert as pg_insert
+                        from database.models import StudentCache
+                        
+                        stmt = pg_insert(StudentCache).values(
+                            student_id=student_id,
+                            key=key,
+                            data=data,
+                            updated_at=datetime.utcnow()
+                        ).on_conflict_do_update(
+                            constraint="uq_student_cache_key",
+                            set_={"data": data, "updated_at": datetime.utcnow()}
+                        )
+                        await session.execute(stmt)
+                        await session.commit()
+                except Exception as e:
+                    logger.error(f"Me Cache Write Error: {e}")
+
+            return data
         except Exception as e:
             logger.error(f"Me Error: {e}")
             return None
@@ -733,8 +767,11 @@ class HemisService:
         """
         logger.info(f"Prefetching data for student {student_id}...")
         try:
+            # 0. Warm Me Cache
+            await HemisService.get_me(token, student_id=student_id)
+
             # 1. Semesters (Fast)
-            semesters = await HemisService.get_semester_list(token)
+            semesters = await HemisService.get_semester_list(token, student_id=student_id)
             
             # Resolve ID
             sem_code = None

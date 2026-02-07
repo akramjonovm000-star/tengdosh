@@ -5,7 +5,7 @@ from sqlalchemy.orm import joinedload
 from typing import List, Optional
 
 from fastapi_cache.decorator import cache
-from database.db_connect import AsyncSessionLocal as get_session
+from database.db_connect import get_session
 from database.models import Staff, TutorGroup, Student, StaffRole, TyutorKPI, StudentFeedback, FeedbackReply, UserActivity, UserDocument
 from api.dependencies import get_current_staff
 from bot import bot

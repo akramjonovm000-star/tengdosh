@@ -63,7 +63,10 @@ async def lifespan(app: FastAPI):
         await bot.delete_webhook(drop_pending_updates=True)
         asyncio.create_task(dp.start_polling(bot))
     else:
-        await bot.set_webhook(WEBHOOK_URL, drop_pending_updates=True)
+        try:
+            await bot.set_webhook(WEBHOOK_URL, drop_pending_updates=True)
+        except Exception as e:
+            logger.warning(f"⚠️ Webhook setup skip/fail (likely concurrency): {e}")
     
     yield
     

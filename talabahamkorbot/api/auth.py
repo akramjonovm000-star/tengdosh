@@ -434,6 +434,15 @@ async def login_via_hemis(
     profile_data['first_name'] = first_name # Explicitly add first_name to response
     profile_data['role'] = student.hemis_role or "student" # Populate role for Mobile UI
     
+    # [NEW] Prefetch Data in Background
+    import asyncio
+    try:
+        logger.info(f"Triggering background prefetch for student {student.id}")
+        asyncio.create_task(HemisService.prefetch_data(student.hemis_token, student.id))
+        logger.info("Background prefetch task created")
+    except Exception as e:
+        logger.error(f"Failed to create prefetch task: {e}")
+
     return {
         "success": True,
         "data": {

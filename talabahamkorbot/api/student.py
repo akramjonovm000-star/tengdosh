@@ -78,7 +78,32 @@ async def get_my_profile(
     tg_acc = await db.scalar(select(TgAccount).where(TgAccount.student_id == student.id))
     data['is_registered_bot'] = True if tg_acc else False
     
+    # [NEW] Opportunistic Prefetch for existing users (Triggered on App Start)
+    # This ensures users who are ALREADY logged in get the benefit of cache warming
+    # without needing to re-login.
+    import asyncio
+    from services.hemis_service import HemisService
+    asyncio.create_task(HemisService.prefetch_data(student.hemis_token, student.id))
+
     return data
+
+
+@router.post("/sync")
+async def sync_data(
+    student: Student = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Force synchronization of Hemis data.
+    Useful for 'Pull to Refresh' or error recovery.
+    """
+    import asyncio
+    from services.hemis_service import HemisService
+    
+    # Trigger background prefetch
+    asyncio.create_task(HemisService.prefetch_data(student.hemis_token, student.id))
+    
+    return {"success": True, "message": "Ma'lumotlar yangilanmoqda..."}
 
 
 

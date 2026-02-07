@@ -115,6 +115,10 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
             db.add(student)
             await db.commit()
             await db.refresh(student)
+
+            # [NEW] Prefetch Data
+            import asyncio
+            asyncio.create_task(HemisService.prefetch_data(student.hemis_token, student.id))
         else:
             student.hemis_token = access_token
             student.hemis_refresh_token = refresh_token
@@ -191,32 +195,11 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
         
     else:
         # Default: Mobile App Deep Link
-        redirect_uri = f"talabahamkor://login?token={internal_token}&role={role}"
+        internal_token = f"student_id_{student.id}"
         
-        html_content = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Login Muvaffaqiyatli</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <style>
-                body {{ font-family: sans-serif; text-align: center; padding: 20px; }}
-                .btn {{ display: inline-block; padding: 15px 30px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; }}
-            </style>
-        </head>
-        <body>
-            <h1>✅ Login Muvaffaqiyatli!</h1>
-            <p>Ilovaga qaytishingiz mumkin.</p>
-            
-            <script>
-                // Auto redirect
-                window.location.href = "{redirect_uri}";
-            </script>
-            
-            <br><br>
-            <a href="{redirect_uri}" class="btn">Ilovani Ochish</a>
-        </body>
-        </html>
-        """
-        
-        return HTMLResponse(content=html_content)
+        # [NEW] Prefetch Data
+        import asyncio
+        asyncio.create_task(HemisService.prefetch_data(student.hemis_token, student.id))
+
+        # Redirect back to App via Deep Link
+        return RedirectResponse(url=f"talabahamkor://auth?token={internal_token}&status=success")
