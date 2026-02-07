@@ -223,6 +223,84 @@ class DataService {
     return {};
   }
 
+  Future<List<dynamic>> getManagementFaculties() async {
+    try {
+      final response = await _get(ApiConstants.managementFaculties);
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) return body['data'];
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching management faculties: $e");
+    }
+    return [];
+  }
+
+  Future<List<dynamic>> getManagementLevels(int facultyId) async {
+    try {
+      final response = await _get("${ApiConstants.managementFaculties}/$facultyId/levels");
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) return body['data'];
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching management levels: $e");
+    }
+    return [];
+  }
+
+  Future<List<dynamic>> getManagementGroups(int facultyId, String levelName) async {
+    try {
+      final response = await _get("${ApiConstants.managementFaculties}/$facultyId/levels/$levelName/groups");
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) return body['data'];
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching management groups: $e");
+    }
+    return [];
+  }
+
+  Future<List<dynamic>> getManagementGroupStudents(String groupNumber) async {
+    try {
+      final response = await _get("${ApiConstants.managementGroups}/$groupNumber/students");
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) return body['data'];
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching management group students: $e");
+    }
+    return [];
+  }
+
+  Future<List<dynamic>> searchStudents(String query) async {
+    try {
+      final response = await _get("${ApiConstants.managementStudents}/search?query=${Uri.encodeComponent(query)}");
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) return body['data'];
+      }
+    } catch (e) {
+      debugPrint("DataService: Error searching students: $e");
+    }
+    return [];
+  }
+
+  Future<Map<String, dynamic>> getStudentFullDetails(int studentId) async {
+    try {
+      final response = await _get("${ApiConstants.managementStudents}/$studentId/full-details");
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) return body['data'];
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching student full details: $e");
+    }
+    return {};
+  }
+
   // 3. Get Activities
   Future<List<dynamic>> getActivities() async {
     // Attempt to fetch from backend

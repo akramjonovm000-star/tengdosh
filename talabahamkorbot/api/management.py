@@ -63,3 +63,161 @@ async def get_management_dashboard(
             "university_name": getattr(staff, 'university_name', "Universitet")
         }
     }
+
+@router.get("/faculties")
+async def get_mgmt_faculties(
+    staff: Any = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    uni_id = getattr(staff, 'university_id', None)
+    if not uni_id: raise HTTPException(status_code=400, detail="Universitet aniqlanmadi")
+
+    from database.models import Faculty
+    result = await db.execute(select(Faculty).where(Faculty.university_id == uni_id).order_by(Faculty.name))
+    faculties = result.scalars().all()
+    
+    return {"success": True, "data": [{"id": f.id, "name": f.name} for f in faculties]}
+
+@router.get("/faculties/{faculty_id}/levels")
+async def get_mgmt_levels(
+    faculty_id: int,
+    staff: Any = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    # Unique levels for this faculty
+    result = await db.execute(
+        select(Student.level_name)
+        .where(Student.faculty_id == faculty_id)
+        .distinct()
+        .order_by(Student.level_name)
+    )
+    levels = [r for r in result.scalars().all() if r]
+    return {"success": True, "data": levels}
+
+@router.get("/faculties/{faculty_id}/levels/{level_name}/groups")
+async def get_mgmt_groups(
+    faculty_id: int,
+    level_name: str,
+    staff: Any = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    # Unique groups for this faculty and level
+    result = await db.execute(
+        select(Student.group_number)
+        .where(Student.faculty_id == faculty_id, Student.level_name == level_name)
+        .distinct()
+        .order_by(Student.group_number)
+    )
+    groups = [r for r in result.scalars().all() if r]
+    return {"success": True, "data": groups}
+
+@router.get("/groups/{group_number}/students")
+async def get_mgmt_group_students(
+    group_number: str,
+    staff: Any = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(
+        select(Student)
+        .where(Student.group_number == group_number)
+        .order_by(Student.full_name)
+    )
+    students = result.scalars().all()
+    
+    return {
+        "success": True, 
+        "data": [
+            {
+                "id": s.id, 
+                "full_name": s.full_name, 
+                "hemis_id": s.hemis_id,
+                "image_url": s.image_url
+            } for s in students
+        ]
+    }
+
+@router.get("/students/search")
+async def search_mgmt_students(
+    query: str,
+    staff: Any = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    uni_id = getattr(staff, 'university_id', None)
+    
+    stmt = select(Student).where(Student.university_id == uni_id)
+    
+    # Simple search by Name or Hemis ID
+    stmt = stmt.where(
+        (Student.full_name.ilike(f"%{query}%")) | 
+        (Student.hemis_id.ilike(f"%{query}%"))
+    ).limit(50)
+    
+    result = await db.execute(stmt)
+    students = result.scalars().all()
+    
+    return {
+        "success": True, 
+        "data": [
+            {
+                "id": s.id, 
+                "full_name": s.full_name, 
+                "hemis_id": s.hemis_id,
+                "image_url": s.image_url,
+                "group_number": s.group_number
+            } for s in students
+        ]
+    }
+
+@router.get("/students/{student_id}/full-details")
+async def get_mgmt_student_details(
+    student_id: int,
+    staff: Any = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    from database.models import UserActivity, UserDocument, UserCertificate, StudentFeedback
+    
+    student = await db.get(Student, student_id)
+    if not student: raise HTTPException(status_code=404, detail="Talaba topilmadi")
+
+    # 1. Appeales (Feedbacks)
+    appeals_result = await db.execute(
+        select(StudentFeedback).where(StudentFeedback.student_id == student_id, StudentFeedback.parent_id == None)
+    )
+    appeals = appeals_result.scalars().all()
+
+    # 2. Activities
+    activities_result = await db.execute(
+        select(UserActivity).where(UserActivity.student_id == student_id)
+    )
+    activities = activities_result.scalars().all()
+
+    # 3. Documents
+    docs_result = await db.execute(
+        select(UserDocument).where(UserDocument.student_id == student_id)
+    )
+    docs = docs_result.scalars().all()
+
+    # 4. Certificates
+    certs_result = await db.execute(
+        select(UserCertificate).where(UserCertificate.student_id == student_id)
+    )
+    certs = certs_result.scalars().all()
+
+    return {
+        "success": True,
+        "data": {
+            "profile": {
+                "id": student.id,
+                "full_name": student.full_name,
+                "hemis_id": student.hemis_id,
+                "faculty_name": student.faculty_name,
+                "group_number": student.group_number,
+                "image_url": student.image_url,
+                "phone": student.phone
+            },
+            "appeals": [{"id": a.id, "text": a.text, "status": a.status, "date": a.created_at.isoformat()} for a in appeals],
+            "activities": [{"id": act.id, "title": act.title, "status": act.status} for act in activities],
+            "documents": [{"id": d.id, "title": d.title, "status": d.status} for d in docs],
+            "certificates": [{"id": c.id, "title": c.title, "status": c.status} for c in certs]
+        }
+    }

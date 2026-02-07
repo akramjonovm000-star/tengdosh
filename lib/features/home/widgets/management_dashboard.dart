@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../screens/management/student_search_screen.dart';
 import '../../student_module/widgets/student_dashboard_widgets.dart';
+import '../../../../core/services/data_service.dart';
 
 class ManagementDashboard extends StatelessWidget {
   final Map<String, dynamic>? stats;
@@ -25,11 +27,20 @@ class ManagementDashboard extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: _StatCard(
-                title: "Jami Talabalar",
-                value: studentCount.toString(),
-                icon: Icons.people_alt_rounded,
-                color: Colors.blue,
+              child: InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const StudentSearchScreen()),
+                  );
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: _StatCard(
+                  title: "Jami Talabalar",
+                  value: studentCount.toString(),
+                  icon: Icons.people_alt_rounded,
+                  color: Colors.blue,
+                ),
               ),
             ),
             const SizedBox(width: 16),
