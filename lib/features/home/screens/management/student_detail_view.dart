@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/services/data_service.dart';
+import '../../../../core/services/data_service.dart';
 
 class StudentDetailView extends StatefulWidget {
   final int studentId;

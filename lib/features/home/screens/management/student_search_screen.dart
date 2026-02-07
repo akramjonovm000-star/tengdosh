@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/services/data_service.dart';
+import '../../../../core/services/data_service.dart';
 import 'faculty_levels_screen.dart';
 import 'student_detail_view.dart';
 

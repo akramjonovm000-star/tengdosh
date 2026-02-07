@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/services/data_service.dart';
+import '../../../../core/services/data_service.dart';
 import 'group_students_screen.dart';
 
 class LevelGroupsScreen extends StatefulWidget {
