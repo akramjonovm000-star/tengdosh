@@ -225,7 +225,8 @@ async def get_mgmt_student_details(
                     "faculty_name": student.faculty_name,
                     "group_number": student.group_number,
                     "image_url": student.image_url,
-                    "phone": student.phone
+                    "phone": student.phone,
+                    "gpa": student.gpa
                 },
                 "appeals": [{"id": a.id, "text": a.text, "status": a.status, "date": safe_isoformat(a.created_at)} for a in appeals],
                 "activities": [{"id": act.id, "title": act.title, "status": act.status, "date": safe_isoformat(act.created_at)} for act in activities],

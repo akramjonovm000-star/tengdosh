@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/services/data_service.dart';
+import 'student_items_list_screen.dart';
 
 class StudentDetailView extends StatefulWidget {
   final int studentId;
@@ -10,16 +11,14 @@ class StudentDetailView extends StatefulWidget {
   State<StudentDetailView> createState() => _StudentDetailViewState();
 }
 
-class _StudentDetailViewState extends State<StudentDetailView> with SingleTickerProviderStateMixin {
+class _StudentDetailViewState extends State<StudentDetailView> {
   final DataService _dataService = DataService();
-  late TabController _tabController;
   Map<String, dynamic>? _data;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
     _loadDetails();
   }
 
@@ -50,133 +49,243 @@ class _StudentDetailViewState extends State<StudentDetailView> with SingleTicker
     final profile = _data!['profile'];
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: NestedScrollView(
-        headerSliverBuilder: (context, innerBoxIsScrolled) {
-          return [
-            SliverAppBar(
-              expandedHeight: 200.0,
-              floating: false,
-              pinned: true,
-              backgroundColor: Colors.blue,
-              flexibleSpace: FlexibleSpaceBar(
-                background: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const SizedBox(height: 40),
-                        CircleAvatar(
-                          radius: 40,
-                          backgroundColor: Colors.white,
-                          backgroundImage: profile['image_url'] != null
-                              ? NetworkImage(profile['image_url'])
-                              : null,
-                          child: profile['image_url'] == null
-                              ? const Icon(Icons.person, size: 40, color: Colors.blue)
-                              : null,
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          profile['full_name'] ?? "",
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          "ID: ${profile['hemis_id']} • ${profile['group_number']}",
-                          style: TextStyle(color: Colors.white.withOpacity(0.8)),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _SliverAppBarDelegate(
-                TabBar(
-                  controller: _tabController,
-                  labelColor: Colors.blue,
-                  unselectedLabelColor: Colors.grey,
-                  indicatorColor: Colors.blue,
-                  isScrollable: true,
-                  tabs: const [
-                    Tab(text: "Murojaatlar"),
-                    Tab(text: "Faolliklar"),
-                    Tab(text: "Sertifikatlar"),
-                    Tab(text: "Hujjatlar"),
-                  ],
-                ),
-              ),
-            ),
-          ];
-        },
-        body: TabBarView(
-          controller: _tabController,
+      backgroundColor: Colors.grey[50],
+      appBar: AppBar(
+        title: const Text("Profil"),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: Column(
           children: [
-            _buildListSection(_data!['appeals'], "Murojaat"),
-            _buildListSection(_data!['activities'], "Faollik"),
-            _buildListSection(_data!['certificates'], "Sertifikat"),
-            _buildListSection(_data!['documents'], "Hujjat"),
+            // 1. Profile Section (Centered)
+            _buildCenteredProfile(profile),
+            const SizedBox(height: 32),
+
+            // 2. GPA Card
+            _buildGPACard(profile['gpa']?.toString() ?? "0.00"),
+            const SizedBox(height: 32),
+
+            // 3. Info Grid
+            GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: 2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 1.1,
+              children: [
+                _buildCategoryCard(
+                  title: "Murojaatlar",
+                  count: (_data!['appeals'] as List).length,
+                  icon: Icons.chat_bubble_outline_rounded,
+                  color: Colors.blue,
+                  onTap: () => _navigateToItems(
+                    context,
+                    _data!['appeals'],
+                    "Murojaatlar",
+                    "Murojaat",
+                  ),
+                ),
+                _buildCategoryCard(
+                  title: "Faolliklar",
+                  count: (_data!['activities'] as List).length,
+                  icon: Icons.local_activity_outlined,
+                  color: Colors.orange,
+                  onTap: () => _navigateToItems(
+                    context,
+                    _data!['activities'],
+                    "Faolliklar",
+                    "Faollik",
+                  ),
+                ),
+                _buildCategoryCard(
+                  title: "Sertifikatlar",
+                  count: (_data!['certificates'] as List).length,
+                  icon: Icons.card_membership_rounded,
+                  color: Colors.purple,
+                  onTap: () => _navigateToItems(
+                    context,
+                    _data!['certificates'],
+                    "Sertifikatlar",
+                    "Sertifikat",
+                  ),
+                ),
+                _buildCategoryCard(
+                  title: "Hujjatlar",
+                  count: (_data!['documents'] as List).length,
+                  icon: Icons.folder_copy_outlined,
+                  color: Colors.teal,
+                  onTap: () => _navigateToItems(
+                    context,
+                    _data!['documents'],
+                    "Hujjatlar",
+                    "Hujjat",
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 32),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildListSection(List<dynamic>? items, String type) {
-    if (items == null || items.isEmpty) {
-      return Center(child: Text("$type topilmadi"));
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: items.length,
-      itemBuilder: (context, index) {
-        final item = items[index];
-        return Card(
-          elevation: 0,
-          margin: const EdgeInsets.only(bottom: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: Colors.grey.shade200),
+  Widget _buildCenteredProfile(dynamic profile) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.blue.withOpacity(0.2), width: 2),
           ),
-          child: ListTile(
-            title: Text(item['title'] ?? item['text'] ?? "$type #${item['id']}"),
-            subtitle: Text("Status: ${item['status']}"),
-            trailing: item['date'] != null ? Text(item['date'].toString().split('T')[0]) : null,
+          child: CircleAvatar(
+            radius: 60,
+            backgroundColor: Colors.grey[200],
+            backgroundImage: profile['image_url'] != null ? NetworkImage(profile['image_url']) : null,
+            child: profile['image_url'] == null ? const Icon(Icons.person, size: 60, color: Colors.grey) : null,
           ),
-        );
-      },
+        ),
+        const SizedBox(height: 20),
+        Text(
+          profile['full_name'] ?? "",
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          "ID: ${profile['hemis_id']} • ${profile['group_number']}",
+          style: TextStyle(color: Colors.grey[600], fontSize: 14),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          profile['faculty_name'] ?? "",
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.grey[500], fontSize: 13),
+        ),
+      ],
     );
   }
-}
 
-class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
-  _SliverAppBarDelegate(this._tabBar);
-
-  final TabBar _tabBar;
-
-  @override
-  double get minExtent => _tabBar.preferredSize.height;
-  @override
-  double get maxExtent => _tabBar.preferredSize.height;
-
-  @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget _buildGPACard(String gpa) {
     return Container(
-      color: Colors.white,
-      child: _tabBar,
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.indigo.shade600, Colors.indigo.shade800],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.indigo.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "O'rtacha GPA ko'rsatkichi",
+                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                "Akademik o'zlashtirish darajasi",
+                style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
+              ),
+            ],
+          ),
+          Text(
+            gpa,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  @override
-  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
-    return false;
+  Widget _buildCategoryCard({
+    required String title,
+    required int count,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.grey.shade100),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 28),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              "$count ta",
+              style: TextStyle(color: Colors.grey[500], fontSize: 13),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _navigateToItems(BuildContext context, List<dynamic> items, String title, String type) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => StudentItemsListScreen(
+          items: items,
+          title: title,
+          itemType: type,
+        ),
+      ),
+    );
   }
 }
