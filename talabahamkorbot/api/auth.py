@@ -101,7 +101,9 @@ async def login_via_hemis(
                     jshshir="12345678901234" if role == "tutor" else "98765432109876",
                     role=role, 
                     hemis_id=999999 if role == "tutor" else 888888,
-                    phone="998901234567"
+                    phone="998901234567",
+                    university_id=1,
+                    university_name="O‘zbekiston jurnalistika va ommaviy kommunikatsiyalar universiteti"
                 )
                 db.add(demo_staff)
                 await db.commit()
@@ -114,6 +116,11 @@ async def login_via_hemis(
                     demo_staff.hemis_id = 999999
                 elif role == "rahbariyat" and demo_staff.hemis_id != 888888:
                     demo_staff.hemis_id = 888888
+                
+                # Ensure university is set
+                if not demo_staff.university_id:
+                    demo_staff.university_id = 1
+                    demo_staff.university_name = "O‘zbekiston jurnalistika va ommaviy kommunikatsiyalar universiteti"
                 await db.commit()
             
             print(f"DEBUG AUTH: Success! Token='staff_id_{demo_staff.id}'")

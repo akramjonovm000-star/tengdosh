@@ -31,12 +31,10 @@ async def get_management_dashboard(
         select(func.count(Student.id)).where(Student.university_id == uni_id)
     ) or 0
 
-    # 3. Platform Users (Students with TgAccount)
-    # We join Student and TgAccount to filter by university
+    # 3. Platform Users (Students who have logged in - have hemis_token)
     platform_users = await db.scalar(
         select(func.count(Student.id))
-        .join(TgAccount, Student.id == TgAccount.student_id)
-        .where(Student.university_id == uni_id)
+        .where(Student.university_id == uni_id, Student.hemis_token != None)
     ) or 0
 
     # 4. Total Staff in University

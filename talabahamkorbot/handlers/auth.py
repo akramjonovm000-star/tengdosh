@@ -458,7 +458,8 @@ async def process_hemis_password(message: Message, state: FSMContext, session: A
                 "type": "employee", 
                 "roles": [{"code": "head", "name": "Rahbariyat"}],
                 "pinfl": "98765432109876",
-                "phone": "+998901234567"
+                "phone": "+998901234567",
+                "university": {"name": "O‘zbekiston jurnalistika va ommaviy kommunikatsiyalar universiteti", "id": 1}
             }
 
     # HEMIS tekshirish
