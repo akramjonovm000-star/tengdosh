@@ -72,11 +72,19 @@ async def get_mgmt_faculties(
     uni_id = getattr(staff, 'university_id', None)
     if not uni_id: raise HTTPException(status_code=400, detail="Universitet aniqlanmadi")
 
-    from database.models import Faculty
-    result = await db.execute(select(Faculty).where(Faculty.university_id == uni_id).order_by(Faculty.name))
-    faculties = result.scalars().all()
+    # Show only faculties that have students
+    result = await db.execute(
+        select(Student.faculty_id, Student.faculty_name)
+        .where(Student.university_id == uni_id, Student.faculty_id != None)
+        .distinct()
+        .order_by(Student.faculty_name)
+    )
+    faculties_data = result.all()
     
-    return {"success": True, "data": [{"id": f.id, "name": f.name} for f in faculties]}
+    return {
+        "success": True, 
+        "data": [{"id": f[0], "name": f[1]} for f in faculties_data]
+    }
 
 @router.get("/faculties/{faculty_id}/levels")
 async def get_mgmt_levels(
@@ -146,10 +154,11 @@ async def search_mgmt_students(
     
     stmt = select(Student).where(Student.university_id == uni_id)
     
-    # Simple search by Name or Hemis ID
+    # Simple search by Name, Hemis ID or Hemis Login
     stmt = stmt.where(
         (Student.full_name.ilike(f"%{query}%")) | 
-        (Student.hemis_id.ilike(f"%{query}%"))
+        (Student.hemis_id.ilike(f"%{query}%")) |
+        (Student.hemis_login.ilike(f"%{query}%"))
     ).limit(50)
     
     result = await db.execute(stmt)

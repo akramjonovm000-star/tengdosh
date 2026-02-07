@@ -3,7 +3,7 @@ from datetime import datetime
 from aiogram import Router, F
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -259,7 +259,7 @@ async def handle_login_text_input(message: Message, state: FSMContext, session: 
     # Validation: Must be strictly digits (HEMIS ID) to be considered a login attempt in this global handler.
     # If the user sends ANY text that is not a number (e.g. asking a question, chatting), we show the Back button.
     # We also check length to be safe (HEMIS IDs are usually long), but isdigit() is the main filter.
-    is_login_attempt = text.isdigit() and len(text) >= 5
+    is_login_attempt = (text.isdigit() and len(text) >= 5) or (text.lower() in ["sanjar_botirovich", "tyutor_demo", "demo", "tyutor"])
     
     if not is_login_attempt:
         # Fallback for non-login text
@@ -449,6 +449,17 @@ async def process_hemis_password(message: Message, state: FSMContext, session: A
                  "group": {"name": "DEMO-GROUP"},
                  "phone": "+998900000003"
              }
+        elif login == "sanjar_botirovich" and password == "102938":
+            token = "demo_token_rahbariyat"
+            me = {
+                "id": 888888,
+                "login": "demo.rahbar",
+                "firstname": "Sanjar", "lastname": "Botirovich",
+                "type": "employee", 
+                "roles": [{"code": "head", "name": "Rahbariyat"}],
+                "pinfl": "98765432109876",
+                "phone": "+998901234567"
+            }
 
     # HEMIS tekshirish
     from services.hemis_service import HemisService
@@ -594,7 +605,13 @@ async def process_hemis_password(message: Message, state: FSMContext, session: A
             if code == "department" or "kafedra" in name:
                 detected_role = "kafedra"
                 final_role_code = "department_head"
-                # Keep checking, maybe has higher role? usually single role context though
+                break
+
+            # 4. Management (Rahbariyat)
+            if code == "head" or "rahbar" in name or "rektor" in name:
+                detected_role = "rahbariyat"
+                final_role_code = "rahbariyat"
+                break
     
     # Force 'user' type to be student as requested
     if user_type == "user":
@@ -758,6 +775,53 @@ async def process_hemis_password(message: Message, state: FSMContext, session: A
             f"🏛 <b>Assalomu alaykum, {staff.full_name}!</b>\n"
             "Siz <b>Dekanat</b> sifatida tizimga kirdingiz.",
             reply_markup=get_dekanat_main_menu_kb(),
+            parse_mode="HTML"
+        )
+
+    elif detected_role == "rahbariyat":
+        # --- HANDLE MANAGEMENT ---
+        h_id_int = int(h_id) if h_id and str(h_id).isdigit() else None
+        pinfl = me.get("pinfl") or login
+        
+        staff = None
+        if h_id_int:
+            staff = await session.scalar(select(Staff).where(Staff.hemis_id == h_id_int))
+        if not staff:
+            staff = await session.scalar(select(Staff).where(Staff.hemis_login == login))
+        
+        if not staff:
+            staff = Staff(
+                full_name=full_name,
+                jshshir=pinfl if len(str(pinfl))==14 else "00000000000000",
+                hemis_login=login,
+                role=StaffRole.RAHBARIYAT.value,
+                position="Rahbariyat",
+                is_active=True
+            )
+            session.add(staff)
+            await session.commit()
+            await session.refresh(staff)
+        else:
+            staff.role = StaffRole.RAHBARIYAT.value
+            staff.is_active = True
+            await session.commit()
+
+        # Link
+        account = await session.scalar(select(TgAccount).where(TgAccount.telegram_id == message.from_user.id))
+        if not account:
+            account = TgAccount(telegram_id=message.from_user.id, staff_id=staff.id, current_role=StaffRole.RAHBARIYAT.value)
+            session.add(account)
+        else:
+            account.staff_id = staff.id
+            account.student_id = None
+            account.current_role = StaffRole.RAHBARIYAT.value
+        await session.commit()
+        await state.clear()
+        
+        return await message.answer(
+            f"🏢 <b>Assalomu alaykum, {staff.full_name}!</b>\n"
+            "Siz <b>Rahbariyat</b> sifatida tizimga kirdingiz.",
+            reply_markup=get_rahbariyat_main_menu_kb(),
             parse_mode="HTML"
         )
 
