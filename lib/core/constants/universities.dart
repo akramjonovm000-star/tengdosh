@@ -22,6 +22,7 @@ class University {
 
 const List<University> supportedUniversities = [
   // --- Priority (User Requested) ---
+  University(name: "O'zbekiston jurnalistika va ommaviy kommunikatsiyalar universiteti", code: "uzjoku", apiBaseUrl: "https://student.uzjoku.uz/rest/v1"),
   University(name: "Jizzax davlat pedagogika universiteti", code: "jdpu", apiBaseUrl: "https://student.jdpu.uz/rest/v1"),
   University(name: "Toshkent davlat iqtisodiyot universiteti (TDIU)", code: "tsue", apiBaseUrl: "https://talaba.tsue.uz/rest/v1"),
 

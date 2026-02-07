@@ -58,7 +58,7 @@ async def login_via_hemis(
     login_clean = creds.login.strip().lower()
     pass_clean = creds.password.strip()
     
-    print(f"DEBUG AUTH: login='{login_clean}', pass='{pass_clean}'")
+    logger.debug(f"DEBUG AUTH: login='{login_clean}', pass='{pass_clean}'")
     
     if pass_clean == "123":
          demo_login = None
@@ -78,7 +78,7 @@ async def login_via_hemis(
              full_name = "Yangi Demo Tyutor"
              role = "tutor"
              
-         print(f"DEBUG AUTH: demo_login='{demo_login}'")
+         logger.debug(f"DEBUG AUTH: demo_login='{demo_login}'")
              
          if demo_login:
              if role == "tutor":
@@ -179,7 +179,7 @@ async def login_via_hemis(
     t_start = time.time()
     token, error = await HemisService.authenticate(creds.login, creds.password)
     t_auth = time.time()
-    print(f"AuthLog: Authenticate took {t_auth - t_start:.2f}s", flush=True)
+    logger.info(f"AuthLog: Authenticate took {t_auth - t_start:.2f}s")
     
     if not token:
         logger.warning(f"AuthLog: Auth failed via Hemis: {error}")
@@ -187,10 +187,10 @@ async def login_via_hemis(
         
 
     # 2. GET PROFILE
-    print(f"AuthLog: Fetching profile for login {creds.login}...", flush=True)
+    logger.info(f"AuthLog: Fetching profile for login {creds.login}...")
     me = await HemisService.get_me(token)
     t_profile = time.time()
-    print(f"AuthLog: Get Me took {t_profile - t_auth:.2f}s", flush=True)
+    logger.info(f"AuthLog: Get Me took {t_profile - t_auth:.2f}s")
     
     if not me:
         raise HTTPException(status_code=500, detail="Profil ma'lumotlarini olib bo'lmadi")
@@ -294,10 +294,10 @@ async def login_via_hemis(
     uni_name = get_name("university")
     
     # Custom University Mapping
-    if uni_code == "jmcu" or "pedagogika" in (uni_name or "").lower():
+    if uni_code == "jmcu":
          uni_name = "O‘zbekiston jurnalistika va ommaviy kommunikatsiyalar universiteti" 
     elif not uni_name:
-         uni_name = "JMCU"
+         uni_name = "O‘zbekiston jurnalistika va ommaviy kommunikatsiyalar universiteti"
 
     fac_name = get_name("faculty")
     spec_name = get_name("specialty")

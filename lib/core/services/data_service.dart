@@ -8,6 +8,7 @@ import 'auth_service.dart';
 import '../models/attendance.dart';
 import '../models/lesson.dart';
 import 'package:talabahamkor_mobile/features/social/models/social_activity.dart';
+import 'package:talabahamkor_mobile/features/home/models/announcement.dart';
 import 'local_database_service.dart';
 import '../../features/academic/models/survey_models.dart';
 
@@ -296,6 +297,36 @@ class DataService {
   Future<List<dynamic>> getMyClubs() async {
      if (useMock) return [];
      return [];
+  }
+
+  // Announcements
+  Future<List<Announcement>> getAnnouncements() async {
+    try {
+      final response = await _get(ApiConstants.announcements);
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) {
+          final List<dynamic> list = body['data'];
+          return list.map((item) => Announcement.fromJson(item)).toList();
+        }
+      }
+    } catch (e) {
+      debugPrint("Error fetching announcements: $e");
+    }
+    return [];
+  }
+
+  Future<bool> markAnnouncementAsRead(int id) async {
+    try {
+      final response = await _post('${ApiConstants.announcements}/$id/read');
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        return body['success'] == true;
+      }
+    } catch (e) {
+      debugPrint("Error marking announcement as read: $e");
+    }
+    return false;
   }
 
   // 5. Get Feedback

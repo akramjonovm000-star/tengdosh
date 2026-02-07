@@ -1241,3 +1241,42 @@ class ElectionVote(Base):
     voter: Mapped["Student"] = relationship("Student")
     candidate: Mapped["ElectionCandidate"] = relationship("ElectionCandidate", back_populates="votes")
 
+
+# ============================================================
+# NOTICE BOARD (ANNOUNCEMENTS)
+# ============================================================
+
+class Announcement(Base):
+    __tablename__ = "announcements"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    content: Mapped[str | None] = mapped_column(Text, nullable=True)
+    image_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    link: Mapped[str | None] = mapped_column(String(512), nullable=True) # External or Internal link
+    
+    priority: Mapped[int] = mapped_column(Integer, default=0) # Higher = more priority (Superadmin = 100)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    
+    university_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("universities.id", ondelete="SET NULL"), nullable=True
+    )
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(), nullable=True)
+
+    def __repr__(self):
+        return f"<Announcement {self.title}>"
+
+
+class AnnouncementRead(Base):
+    __tablename__ = "announcement_read_status"
+    __table_args__ = (
+        UniqueConstraint("user_id", "announcement_id", name="uq_announcement_read"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    announcement_id: Mapped[int] = mapped_column(Integer, ForeignKey("announcements.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    read_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)

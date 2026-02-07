@@ -103,7 +103,7 @@ class _TutorHomeScreenState extends State<TutorHomeScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    "Jizzax davlat pedagogika universiteti",
+                                    user?.universityName ?? "O‘zbekiston jurnalistika va ommaviy kommunikatsiyalar universiteti",
                                     style: TextStyle(
                                       color: Colors.grey[600],
                                       fontSize: 12,

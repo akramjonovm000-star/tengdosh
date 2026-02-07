@@ -27,6 +27,7 @@ import '../../appeals/screens/appeals_screen.dart';
 import 'package:talabahamkor_mobile/features/notifications/screens/notifications_screen.dart';
 import 'package:talabahamkor_mobile/core/providers/notification_provider.dart';
 import '../../auth/widgets/password_update_dialog.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:async';
 
 class HomeScreen extends StatefulWidget {
@@ -43,6 +44,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, dynamic>? _dashboard;
   bool _isLoading = true;
   Timer? _refreshTimer;
+  List<Announcement> _announcements = [];
+  final PageController _pageController = PageController();
   
   // Semester Handling
   List<dynamic> _semesters = [];
@@ -88,12 +91,21 @@ class _HomeScreenState extends State<HomeScreen> {
       if (isTutor) {
          _dashboard = await _dataService.getTutorDashboard();
       } else {
-         _dashboard = await _dataService.getDashboardStats(refresh: refresh);
+         final dashResult = await _dataService.getDashboardStats(refresh: refresh);
+         final announcements = await _dataService.getAnnouncements();
+         
+         if (mounted) {
+           setState(() {
+              _dashboard = dashResult;
+              _announcements = announcements;
+           });
+         }
          
          // AUTO-FIX: If GPA is 0.0, it might be stale cache or previous semester issue.
          if (!refresh && (_dashboard?['gpa'] == 0 || _dashboard?['gpa'] == 0.0)) {
             print("Zero GPA detected, forcing dashboard refresh...");
-            _dashboard = await _dataService.getDashboardStats(refresh: true);
+            final freshDash = await _dataService.getDashboardStats(refresh: true);
+            if (mounted) setState(() => _dashboard = freshDash);
          }
       }
       
@@ -470,109 +482,19 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildStudentDashboard() {
     return Column(
       children: [
-            // 2. GPA Module (Full Width)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppTheme.primaryBlue, Color(0xFF0052CC)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(color: AppTheme.primaryBlue.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 10)),
-                ],
-              ),
-              child: Stack(
-                children: [
-                  // Decorative Background Gradient (subtle)
-                  Positioned(
-                    right: -20,
-                    top: -20,
-                    child: Container(
-                      width: 150,
-                      height: 150,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.1),
-                      ),
-                    ),
-                  ),
-                  
-                  Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Row(
-                      children: [
-                        // Premium GPA Indicator
-                        Container(
-                          width: 90,
-                          height: 90,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white.withOpacity(0.1),
-                            border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              )
-                            ]
-                          ),
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              SizedBox(
-                                width: 90,
-                                height: 90,
-                                child: CircularProgressIndicator(
-                                  value: (_dashboard?['gpa'] ?? 0.0) / 5.0,
-                                  strokeWidth: 8,
-                                  strokeCap: StrokeCap.round, 
-                                  valueColor: const AlwaysStoppedAnimation(Colors.white),
-                                  backgroundColor: Colors.white.withOpacity(0.2),
-                                ),
-                              ),
-                              Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    "${_dashboard?['gpa']?.toStringAsFixed(1) ?? '0.0'}", 
-                                    style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold, height: 1.0)
-                                  ),
-                                  Text(
-                                    "GPA", 
-                                    style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 10, fontWeight: FontWeight.w500)
-                                  ),
-                                ],
-                              )
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 24),
-                        
-                        // Text Info
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const SizedBox(height: 8),
-                              Text(
-                                (_dashboard?['gpa'] ?? 0.0) >= 4.5 ? "A'lo natija! 🏆" : 
-                                (_dashboard?['gpa'] ?? 0.0) >= 4.0 ? "Yaxshi natija! 👏" :
-                                (_dashboard?['gpa'] ?? 0.0) >= 3.0 ? "Yomon emas 👍" : "Harakat qiling 💪",
-                                style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)
-                              ),
-                            ],
-                          ),
-                        )
-                      ],
-                    ),
-                  ),
-                ],
+            // 2. GPA/Announcement Module (Full Width)
+            SizedBox(
+              height: 180,
+              child: PageView.builder(
+                controller: _pageController,
+                scrollDirection: Axis.vertical,
+                itemCount: _announcements.length + 1,
+                itemBuilder: (context, index) {
+                  if (index < _announcements.length) {
+                    return _buildAnnouncementCard(_announcements[index]);
+                  }
+                  return _buildGpaCard(); // Always last
+                },
               ),
             ),
             const SizedBox(height: 24),
@@ -689,6 +611,150 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
       ],
+    );
+  }
+
+  Widget _buildGpaCard() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppTheme.primaryBlue, Color(0xFF0052CC)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -20,
+            top: -20,
+            child: Container(
+              width: 150,
+              height: 150,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.1),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Row(
+              children: [
+                Container(
+                  width: 90,
+                  height: 90,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.1),
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      SizedBox(
+                        width: 90,
+                        height: 90,
+                        child: CircularProgressIndicator(
+                          value: (_dashboard?['gpa'] ?? 0.0) / 5.0,
+                          strokeWidth: 8,
+                          strokeCap: StrokeCap.round, 
+                          valueColor: const AlwaysStoppedAnimation(Colors.white),
+                          backgroundColor: Colors.white.withOpacity(0.2),
+                        ),
+                      ),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            "${_dashboard?['gpa']?.toStringAsFixed(1) ?? '0.0'}", 
+                            style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold, height: 1.0)
+                          ),
+                          Text("GPA", style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 10)),
+                        ],
+                      )
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 24),
+                Expanded(
+                  child: Text(
+                    (_dashboard?['gpa'] ?? 0.0) >= 4.5 ? "A'lo natija! 🏆" : 
+                    (_dashboard?['gpa'] ?? 0.0) >= 4.0 ? "Yaxshi natija! 👏" :
+                    (_dashboard?['gpa'] ?? 0.0) >= 3.0 ? "Yomon emas 👍" : "Harakat qiling 💪",
+                    style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)
+                  ),
+                )
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAnnouncementCard(Announcement announcement) {
+    return GestureDetector(
+      onTap: () async {
+        if (announcement.link != null) {
+          // 1. Open Link
+          final uri = Uri.parse(announcement.link!);
+          final success = await _dataService.markAnnouncementAsRead(announcement.id);
+          
+          if (success) {
+            setState(() {
+              _announcements.removeWhere((a) => a.id == announcement.id);
+            });
+            // Auto scroll to next or GPA if empty
+            _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+          }
+          
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppTheme.primaryBlue.withOpacity(0.2)),
+          image: announcement.imageUrl != null ? DecorationImage(
+            image: CachedNetworkImageProvider(announcement.imageUrl!),
+            fit: BoxFit.cover,
+            colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.4), BlendMode.darken),
+          ) : null,
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Text(
+                announcement.title,
+                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (announcement.content != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  announcement.content!,
+                  style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
     );
   }
 
