@@ -284,7 +284,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   )
                 else
                   GestureDetector(
-                    onTap: () => setState(() => _isEditingUsername = true),
+                    onTap: () {
+                      final now = DateTime.now();
+                      final expiry = student.premiumExpiry != null ? DateTime.tryParse(student.premiumExpiry!) : null;
+                      
+                      if (!student.isPremium || (expiry != null && expiry.isBefore(now))) {
+                        // Not premium or expired (grace period)
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Username o'rnatish uchun Premium obuna faol bo'lishi kerak"))
+                        );
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionScreen()));
+                        return;
+                      }
+                      setState(() => _isEditingUsername = true);
+                    },
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       child: Row(
@@ -311,6 +324,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
 
           const SizedBox(height: 20),
+
+          // --- GRACE PERIOD WARNING ---
+          if (student.isPremium && student.premiumExpiry != null)
+            (() {
+              final now = DateTime.now();
+              final expiry = DateTime.tryParse(student.premiumExpiry!);
+              if (expiry != null && expiry.isBefore(now)) {
+                final diff = now.difference(expiry).inDays;
+                if (diff < 3) {
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.orange.withOpacity(0.5)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            "Premium tugagan. 3 kunlik imtiyozli davrdasiz. Keyin AI va faollik yopiladi.",
+                            style: TextStyle(fontSize: 12, color: Colors.orange, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                } else if (diff < 7) {
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.red.withOpacity(0.5)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline_rounded, color: Colors.red),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            "Imtiyoz tugashiga oz qoldi. Tez orada @username o'chiriladi!",
+                            style: TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+              }
+              return const SizedBox.shrink();
+            })(),
 
           // --- PREMIUM BANNER ---
           GestureDetector(

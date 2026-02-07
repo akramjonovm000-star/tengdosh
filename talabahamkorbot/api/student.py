@@ -197,6 +197,11 @@ async def set_username(
     db: AsyncSession = Depends(get_db)
 ):
     """Set or update username"""
+    # [NEW] Premium Check
+    from datetime import datetime
+    if not student.is_premium or not student.premium_expiry or student.premium_expiry < datetime.utcnow():
+        raise HTTPException(status_code=403, detail="Username o'rnatish yoki o'zgartirish faqat Premium foydalanuvchilar uchun")
+
     raw_username = data.username.strip()
     if raw_username.startswith("@"):
         raw_username = raw_username[1:]

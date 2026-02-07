@@ -88,6 +88,7 @@ from services.context_builder import run_daily_context_update
 from services.grade_checker import run_check_new_grades
 from services.sync_service import run_sync_all_students
 from services.election_service import ElectionService
+from services.premium_service import run_premium_checker
 
 @app.on_event("startup")
 async def start_scheduler():
@@ -118,9 +119,9 @@ async def start_scheduler():
     #     h, m = map(int, rt.split(":"))
     #     scheduler.add_job(run_lesson_reminders, 'cron', hour=h, minute=m)
     
-    # [NEW] Election Deadline Checker (Every 30 mins)
-    # scheduler.add_job(ElectionService.check_deadlines, 'interval', minutes=30)
-        
+    # [NEW] Premium Expiry & Grace Period Checker (Daily 00:10)
+    # scheduler.add_job(run_premium_checker, 'cron', hour=0, minute=10)
+    
     # scheduler.start()
     logger.info("⏰ Background Task Scheduler DISABLED by User Request")
 

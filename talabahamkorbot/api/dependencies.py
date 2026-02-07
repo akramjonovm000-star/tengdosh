@@ -19,7 +19,7 @@ async def get_current_user_token_data(authorization: str = Header(None)):
         logger.warning(f"Auth failed: Missing Authorization header")
         raise HTTPException(status_code=401, detail="Missing Authorization Header")
     
-    logger.info(f"Checking auth header: {authorization[:25]}...")
+    logger.debug(f"Checking auth header: {authorization[:25]}...")
     token = authorization.replace("Bearer ", "")
     
     if token.startswith("jwt_token_for_"):
@@ -90,22 +90,35 @@ async def get_current_student(
         if not student:
             raise HTTPException(status_code=404, detail="Student profile not found")
             
-        # --- AUTO-EXPIRATION CHECK (STUDENT ONLY) ---
-        from datetime import datetime
-        # Check if attribute exists (Duck typing safety for Staff)
+        # --- AUTO-EXPIRATION LOGIC (STUDENT ONLY) ---
+        from datetime import datetime, timedelta
         if hasattr(student, 'is_premium') and student.is_premium and student.premium_expiry:
-            if student.premium_expiry < datetime.utcnow():
+            # If expired for more than 7 days, remove premium and clear username
+            if student.premium_expiry + timedelta(days=7) < datetime.utcnow():
                 student.is_premium = False
                 
-                from database.models import StudentNotification
+                # Clear username if exists
+                if student.username:
+                    from database.models import TakenUsername
+                    username_entry = await db.scalar(select(TakenUsername).where(TakenUsername.student_id == student.id))
+                    if username_entry:
+                        await db.delete(username_entry)
+                    student.username = None
+                
                 notif = StudentNotification(
                     student_id=student.id,
-                    title="⚠️ Premium muddati tugadi",
-                    body="Sizning Premium obunangiz muddati tugadi. Imkoniyatlarni qayta tiklash uchun hisobingizni to'ldiring.",
+                    title="🚫 Premium va Username bekor qilindi",
+                    body="Imtiyozli 7 kunlik muddat tugadi. Premium va @username o'chirildi.",
                     type="alert"
                 )
                 db.add(notif)
                 await db.commit()
+            elif student.premium_expiry + timedelta(days=3) < datetime.utcnow():
+                # Features are closed (handled by get_premium_student), but we might want a one-time notification
+                pass
+            elif student.premium_expiry < datetime.utcnow():
+                # Just expired, but in 3-day grace period
+                pass
                 
         return student
     except HTTPException:
@@ -120,13 +133,23 @@ async def get_current_student(
 
 async def get_premium_student(student: Student = Depends(get_current_student)):
     """
-    Dependency to ensure the student has active premium.
+    Dependency to ensure the student has active premium (with 3-day grace period for general features).
     """
+    from datetime import datetime, timedelta
+    
     if not student.is_premium:
         raise HTTPException(
             status_code=403, 
             detail="Premium obuna talab etiladi. Iltimos, obunani faollashtiring."
         )
+        
+    # Check 3-day grace period for general features
+    if student.premium_expiry and student.premium_expiry + timedelta(days=3) < datetime.utcnow():
+        raise HTTPException(
+            status_code=403,
+            detail="Premium muddati va 3 kunlik imtiyoz o'tib ketgan. Funksiyalarni ochish uchun obunani yangilang."
+        )
+        
     return student
 
 async def get_owner(student: Student = Depends(get_current_student)):
