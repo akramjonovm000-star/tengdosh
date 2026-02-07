@@ -16,6 +16,8 @@ import 'package:app_links/app_links.dart';
 import 'dart:async';
 import 'dart:io';
 
+import 'core/network/direct_http_overrides.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
@@ -28,7 +30,9 @@ void main() async {
     debugPrint("Firebase Init Error: $e");
   }
 
-  // HttpOverrides.global = MyHttpOverrides(); // REMOVED: Potentially causing proxy issues on iOS
+  // FIX: Force DIRECT connection to avoid "Connection refused" on random ports (Simulators often inherit bad Proxies)
+  HttpOverrides.global = DirectHttpOverrides(); 
+  
   runApp(
     MultiProvider(
       providers: [
