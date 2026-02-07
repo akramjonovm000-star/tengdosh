@@ -33,28 +33,6 @@ class ManagementDashboard extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _StatCard(
-                title: "Akademik Qarzdorlar",
-                value: "${stats?['debtor_count'] ?? '12%'}",
-                icon: Icons.assignment_late_rounded,
-                color: Colors.redAccent,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _StatCard(
-                title: "O'rtacha GPA",
-                value: "${stats?['avg_gpa'] ?? '3.8'}",
-                icon: Icons.analytics_rounded,
-                color: Colors.green,
-              ),
-            ),
-          ],
-        ),
         const SizedBox(height: 24),
 
         const Text(
