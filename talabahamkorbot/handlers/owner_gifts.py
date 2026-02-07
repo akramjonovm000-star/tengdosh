@@ -138,9 +138,8 @@ async def msg_process_user_id(message: Message, state: FSMContext, session: Asyn
         [InlineKeyboardButton(text="📅 3 kun", callback_data="gift_dur_3d")],
         [InlineKeyboardButton(text="📅 Bir hafta", callback_data="gift_dur_7d")],
         [InlineKeyboardButton(text="📅 10 kun", callback_data="gift_dur_10d")],
-        [InlineKeyboardButton(text="📅 Bir oy", callback_data="gift_dur_1m")],
-        [InlineKeyboardButton(text="📅 Uch oy", callback_data="gift_dur_3m")],
-        [InlineKeyboardButton(text="📅 Bir yil", callback_data="gift_dur_1y")],
+        [InlineKeyboardButton(text="📅 Bir oy", callback_data="gift_dur_1m"), InlineKeyboardButton(text="📅 Uch oy", callback_data="gift_dur_3m")],
+        [InlineKeyboardButton(text="📅 Olti oy", callback_data="gift_dur_6m"), InlineKeyboardButton(text="📅 Bir yil", callback_data="gift_dur_1y")],
         [InlineKeyboardButton(text="♾ Doimiy (Lifetime)", callback_data="gift_dur_life")],
         [InlineKeyboardButton(text="⬅️ Bekor qilish", callback_data="owner_gifts_menu")]
     ])
@@ -298,7 +297,8 @@ async def cb_gift_all_start(call: CallbackQuery, state: FSMContext, session: Asy
         [InlineKeyboardButton(text="📅 3 kun", callback_data="gift_all_dur_3d")],
         [InlineKeyboardButton(text="📅 Bir hafta", callback_data="gift_all_dur_7d")],
         [InlineKeyboardButton(text="📅 10 kun", callback_data="gift_all_dur_10d")],
-        [InlineKeyboardButton(text="📅 Bir oy", callback_data="gift_all_dur_1m")],
+        [InlineKeyboardButton(text="📅 Bir oy", callback_data="gift_all_dur_1m"), InlineKeyboardButton(text="📅 Uch oy", callback_data="gift_all_dur_3m")],
+        [InlineKeyboardButton(text="📅 Olti oy", callback_data="gift_all_dur_6m"), InlineKeyboardButton(text="📅 Bir yil", callback_data="gift_all_dur_1y")],
         [InlineKeyboardButton(text="⬅️ Bekor qilish", callback_data="owner_gifts_menu")]
     ])
     
@@ -333,6 +333,15 @@ async def cb_process_duration_all(call: CallbackQuery, state: FSMContext, sessio
     elif duration_code == "1m":
         expiry_date = now + timedelta(days=30)
         duration_text = "Bir oy"
+    elif duration_code == "3m":
+        expiry_date = now + timedelta(days=90)
+        duration_text = "Uch oy"
+    elif duration_code == "6m":
+        expiry_date = now + timedelta(days=180)
+        duration_text = "Olti oy"
+    elif duration_code == "1y":
+        expiry_date = now + timedelta(days=365)
+        duration_text = "Bir yil"
         
     # Bulk Update Students
     from sqlalchemy import update as sa_update
