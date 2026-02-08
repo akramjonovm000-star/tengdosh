@@ -45,6 +45,9 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="talabahamkor" />
+                <!-- Add hosts explicitly to ensure matching -->
+                <data android:host="auth" />
+                <data android:host="login" />
             </intent-filter>
             
         </activity>
