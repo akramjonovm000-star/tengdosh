@@ -309,7 +309,9 @@ async def get_mgmt_student_details(
 
         # 1. Appeals (Feedbacks) - parent_id=None are top-level threads
         appeals_result = await db.execute(
-            select(StudentFeedback).where(StudentFeedback.student_id == student_id, StudentFeedback.parent_id == None)
+            select(StudentFeedback)
+            .where(StudentFeedback.student_id == student_id, StudentFeedback.parent_id == None)
+            .order_by(StudentFeedback.created_at.desc())
         )
         appeals = appeals_result.scalars().all()
 
@@ -318,18 +320,23 @@ async def get_mgmt_student_details(
             select(UserActivity)
             .where(UserActivity.student_id == student_id)
             .options(selectinload(UserActivity.images))
+            .order_by(UserActivity.created_at.desc())
         )
         activities = activities_result.scalars().all()
 
         # 3. Documents
         docs_result = await db.execute(
-            select(UserDocument).where(UserDocument.student_id == student_id)
+            select(UserDocument)
+            .where(UserDocument.student_id == student_id)
+            .order_by(UserDocument.created_at.desc())
         )
         docs = docs_result.scalars().all()
 
         # 4. Certificates
         certs_result = await db.execute(
-            select(UserCertificate).where(UserCertificate.student_id == student_id)
+            select(UserCertificate)
+            .where(UserCertificate.student_id == student_id)
+            .order_by(UserCertificate.created_at.desc())
         )
         certs = certs_result.scalars().all()
 
