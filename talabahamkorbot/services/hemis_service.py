@@ -265,8 +265,8 @@ class HemisService:
         if domain.endswith("/rest/v1"): domain = domain.replace("/rest/v1", "")
         
         rest_url = f"{domain}/rest/v1/account/me"
-        # Updated fields per user snippet + roles
-        oauth_profile_url = f"{domain}/oauth/api/user?fields=id,uuid,type,login,custom_role,firstname,surname,patronymic,picture,email,phone,birth_date,university_id,roles"
+        # Updated fields per user suggestion
+        oauth_profile_url = f"{domain}/oauth/api/user?fields=id,uuid,type,name,login,picture,email,university_id,phone"
 
         client = await HemisService.get_client()
         try:

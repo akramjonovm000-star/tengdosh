@@ -107,8 +107,14 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
         result = await db.execute(select(Student).where(Student.hemis_login == h_login))
         student = result.scalar_one_or_none()
         
-        # OAuth endpoint returns 'surname', REST might return 'lastname'. But with use_oauth_endpoint=True, it's 'surname'.
-        full_name = f"{me.get('surname', '')} {me.get('firstname', '')} {me.get('fathername', '')}".title().strip()
+        # [FIX] Use 'name' as primary source if available (standard OneID pattern)
+        # Fallback to manual concatenation if 'name' is missing
+        full_name = me.get("name")
+        if not full_name:
+            full_name = f"{me.get('surname', '')} {me.get('firstname', '')} {me.get('fathername', '')}".title().strip()
+        else:
+            full_name = full_name.title().strip()
+            
         image_url = me.get("picture") or me.get("image") or me.get("image_url")
         university_id = me.get("university_id")
         
@@ -152,6 +158,27 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
                     logger.warning(f"Invalid university_id format for student: {u_id}")
             
             await db.commit()
+            
+            # [NEW] Enhanced Sync with REST API (for Faculty/Group info)
+            rest_me = await HemisService.get_me(access_token, base_url=base_url, use_oauth_endpoint=False)
+            if rest_me:
+                logger.info(f"DEBUG: Syncing academic info from REST profile for student {student.id}")
+                student.university_name = rest_me.get("university", {}).get("name") if isinstance(rest_me.get("university"), dict) else rest_me.get("university_name")
+                student.faculty_name = rest_me.get("faculty", {}).get("name") if isinstance(rest_me.get("faculty"), dict) else rest_me.get("faculty_name")
+                student.group_number = rest_me.get("group", {}).get("name") if isinstance(rest_me.get("group"), dict) else rest_me.get("group_number")
+                student.level_name = rest_me.get("level", {}).get("name") if isinstance(rest_me.get("level"), dict) else rest_me.get("level_name")
+                student.specialty_name = rest_me.get("specialty", {}).get("name") if isinstance(rest_me.get("specialty"), dict) else rest_me.get("specialty_name")
+                student.education_form = rest_me.get("educationForm", {}).get("name") if isinstance(rest_me.get("educationForm"), dict) else rest_me.get("education_form")
+                
+                # Re-sync IDs based on names
+                uni_id, fac_id = await _get_or_create_academic_context(db, student.university_name, student.faculty_name)
+                student.university_id = uni_id
+                student.faculty_id = fac_id
+                await db.commit()
+
+            # [NEW] Trigger prefetch
+            import asyncio
+            asyncio.create_task(HemisService.prefetch_data(student.hemis_token, student.id))
             
         internal_token = f"student_id_{student.id}"
         
@@ -211,7 +238,12 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
                     best_priority = priority
                     user_role = mapped_role
         
-        full_name = f"{me.get('surname', '')} {me.get('firstname', '')} {me.get('patronymic', '')}".title().strip()
+        full_name = me.get("name")
+        if not full_name:
+            full_name = f"{me.get('surname', '')} {me.get('firstname', '')} {me.get('patronymic', '')}".title().strip()
+        else:
+            full_name = full_name.title().strip()
+            
         image_url = me.get("picture") or me.get("image") or me.get("image_url")
         logger.info(f"Selected Best Role: {user_role} (Priority: {best_priority}) from {hemis_roles}")
 
