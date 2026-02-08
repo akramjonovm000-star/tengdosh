@@ -161,6 +161,8 @@ class CommunityService {
           'category_type': post.scope,
           'is_poll': post.pollOptions != null && post.pollOptions!.isNotEmpty,
           'poll_options': post.pollOptions,
+          'target_faculty_id': post.targetFacultyId != null ? int.tryParse(post.targetFacultyId!) : null,
+          'target_specialty_name': post.targetSpecialtyId,
         }),
       );
 

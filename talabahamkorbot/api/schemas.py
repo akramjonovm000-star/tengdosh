@@ -91,6 +91,7 @@ class StudentDashboardSchema(BaseModel):
     
     # Management Info
     total_students: Optional[int] = None
+    total_employees: Optional[int] = None
 
 class ClubSchema(BaseModel):
     id: int
@@ -151,6 +152,8 @@ class DocumentRequestSchema(BaseModel):
 class PostCreateSchema(BaseModel):
     content: str
     category_type: str # 'university', 'faculty', 'specialty'
+    target_faculty_id: Optional[int] = None
+    target_specialty_name: Optional[str] = None
 
 class PostResponseSchema(BaseModel):
     id: int

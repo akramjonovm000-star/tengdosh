@@ -33,6 +33,7 @@ async def create_post(
     target_fac = None
     target_spec = None
     
+    is_management = getattr(student, 'hemis_role', None) == 'rahbariyat' or getattr(student, 'role', None) == 'rahbariyat'
     category = data.category_type
     
     if category == 'university':
@@ -40,14 +41,25 @@ async def create_post(
         
     elif category == 'faculty':
         target_uni = student.university_id
-        target_fac = student.faculty_id
-        if not target_fac:
-            raise HTTPException(status_code=400, detail="Sizda fakultet biriktirilmagan")
+        if is_management and data.target_faculty_id:
+            target_fac = data.target_faculty_id
+        else:
+            target_fac = student.faculty_id
+            if not target_fac:
+                raise HTTPException(status_code=400, detail="Sizda fakultet biriktirilmagan")
             
     elif category == 'specialty':
         target_uni = student.university_id
-        target_fac = student.faculty_id
-        target_spec = student.specialty_name
+        if is_management:
+            target_fac = data.target_faculty_id # Can be None if only specialty is provided? Usually both for specialty
+            target_spec = data.target_specialty_name
+            # Fallback to student context if not provided by management
+            if not target_fac: target_fac = student.faculty_id
+            if not target_spec: target_spec = student.specialty_name
+        else:
+            target_fac = student.faculty_id
+            target_spec = student.specialty_name
+            
         if not target_spec:
              raise HTTPException(status_code=400, detail="Sizda mutaxassislik (yo'nalish) ma'lumoti yo'q")
     else:

@@ -1,7 +1,5 @@
-import 'package:flutter/material.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../models/community_models.dart';
-import '../services/community_service.dart';
+import 'package:provider/provider.dart';
+import '../../../../core/providers/auth_provider.dart';
 
 class CreatePostScreen extends StatefulWidget {
   final String? initialScope;
@@ -12,6 +10,7 @@ class CreatePostScreen extends StatefulWidget {
 }
 
 class _CreatePostScreenState extends State<CreatePostScreen> {
+  final CommunityService _service = CommunityService();
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
   final List<TextEditingController> _pollControllers = [
@@ -22,10 +21,39 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   late String _selectedScope; // initialized in initState
   bool _isPoll = false;
 
+  // Targeting for Management
+  List<dynamic> _faculties = [];
+  List<String> _specialties = [];
+  int? _selectedTargetFacultyId;
+  String? _selectedTargetSpecialtyName;
+  bool _isLoadingFilters = false;
+
   @override
   void initState() {
     super.initState();
     _selectedScope = widget.initialScope ?? 'university';
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.read<AuthProvider>().isManagement) {
+        _loadFilters();
+      }
+    });
+  }
+
+  Future<void> _loadFilters() async {
+    setState(() => _isLoadingFilters = true);
+    try {
+      final data = await _service.getCommunityFilters();
+      if (mounted) {
+        setState(() {
+          _faculties = data['faculties'] ?? [];
+          _specialties = List<String>.from(data['specialties'] ?? []);
+          _isLoadingFilters = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoadingFilters = false);
+    }
   }
 
   void _addPollOption() {
@@ -42,8 +70,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     }
   }
 
-
-
   void _publish() async {
     final title = _titleController.text.trim();
     final content = _contentController.text.trim();
@@ -59,7 +85,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       finalContent = "**$title**\n\n$content";
     }
 
-    // Improve local Optimistic Post
     final newPost = Post(
       id: "temp_${DateTime.now().millisecondsSinceEpoch}",
       authorId: "0",
@@ -72,18 +97,18 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       createdAt: DateTime.now(),
       scope: _selectedScope,
       isMine: true,
+      targetFacultyId: _selectedTargetFacultyId?.toString(),
+      targetSpecialtyId: _selectedTargetSpecialtyName,
       pollOptions: _isPoll ? _pollControllers.map((c) => c.text).where((t) => t.isNotEmpty).toList() : null,
       pollVotes: _isPoll ? List.filled(_pollControllers.where((c) => c.text.isNotEmpty).length, 0) : null,
     );
 
     try {
-      await CommunityService().createPost(newPost); // Call Service
+      await _service.createPost(newPost); // Call Service
 
       if (!mounted) return;
       
       FocusScope.of(context).unfocus();
-      // Removed success toast as requested
-      
       Navigator.pop(context, true); // Return TRUE to refresh feed
     } catch (e) {
       if (mounted) {
@@ -138,6 +163,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 ),
               ),
             ),
+            
+            if (context.watch<AuthProvider>().isManagement && (_selectedScope == 'faculty' || _selectedScope == 'specialty')) ...[
+               const SizedBox(height: 12),
+               _buildTargetFilters(),
+            ],
+            
             const SizedBox(height: 16),
             
             // Title
@@ -212,6 +243,63 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           ],
         ),
       ),
+    );
+  Widget _buildTargetFilters() {
+    if (_isLoadingFilters) {
+      return const Center(child: LinearProgressIndicator());
+    }
+
+    return Column(
+      children: [
+        // Faculty Dropdown (Always shown if faculty or specialty scope)
+        _buildDropdownContainer(
+          DropdownButton<int?>(
+            value: _selectedTargetFacultyId,
+            isExpanded: true,
+             hint: const Text("Fakultetni tanlang (Ixtiyoriy)"),
+            items: [
+              const DropdownMenuItem<int?>(value: null, child: Text("📌 O'z fakultetim")),
+              ..._faculties.map((f) => DropdownMenuItem<int?>(
+                value: f['id'],
+                child: Text(f['name'] ?? "", overflow: TextOverflow.ellipsis),
+              )),
+            ],
+            onChanged: (val) => setState(() => _selectedTargetFacultyId = val),
+          ),
+        ),
+        
+        if (_selectedScope == 'specialty') ...[
+          const SizedBox(height: 8),
+          // Specialty Dropdown
+          _buildDropdownContainer(
+            DropdownButton<String?>(
+              value: _selectedTargetSpecialtyName,
+              isExpanded: true,
+              hint: const Text("Yo'nalishni tanlang (Ixtiyoriy)"),
+              items: [
+                const DropdownMenuItem<String?>(value: null, child: Text("📌 O'z yo'nalishim")),
+                ..._specialties.map((s) => DropdownMenuItem<String?>(
+                  value: s,
+                  child: Text(s, overflow: TextOverflow.ellipsis),
+                )),
+              ],
+              onChanged: (val) => setState(() => _selectedTargetSpecialtyName = val),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildDropdownContainer(Widget child) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.blue[50], 
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.blue[100]!)
+      ),
+      child: DropdownButtonHideUnderline(child: child),
     );
   }
 }
