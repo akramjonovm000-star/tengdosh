@@ -1,4 +1,5 @@
-import '../../../../core/constants/api_constants.dart';
+import 'package:flutter/material.dart';
+import 'package:talabahamkor_mobile/core/constants/api_constants.dart';
 
 class StudentItemsListScreen extends StatelessWidget {
   final List<dynamic> items;
@@ -30,7 +31,7 @@ class StudentItemsListScreen extends StatelessWidget {
                   Icon(Icons.folder_open_outlined, size: 64, color: Colors.grey[400]),
                   const SizedBox(height: 16),
                   Text(
-                    "$itemType topilmadi",
+                    "Ma'lumotlar topilmadi",
                     style: TextStyle(color: Colors.grey[600], fontSize: 16),
                   ),
                 ],
@@ -42,8 +43,8 @@ class StudentItemsListScreen extends StatelessWidget {
               itemBuilder: (context, index) {
                 final item = items[index];
                 return Card(
-                  elevation: 0,
                   margin: const EdgeInsets.only(bottom: 12),
+                  elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                     side: BorderSide(color: Colors.grey.shade200),
@@ -58,46 +59,47 @@ class StudentItemsListScreen extends StatelessWidget {
                           children: [
                             Expanded(
                               child: Text(
-                                item['title'] ?? item['text'] ?? "$itemType #${item['id']}",
+                                item['text'] ?? item['title'] ?? item['name'] ?? 'Nomsiz',
                                 style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
                                   fontSize: 16,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
-                            if (item['date'] != null)
-                              Text(
-                                item['date'].toString().split('T')[0],
-                                style: TextStyle(color: Colors.grey[500], fontSize: 12),
-                              ),
                           ],
                         ),
+                        const SizedBox(height: 4),
+                        Text(
+                          item['date'] ?? '',
+                          style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                        ),
                         const SizedBox(height: 12),
-                        // --- ATTACHMENTS START ---
-                        if (item['file_id'] != null || (item['images'] != null && (item['images'] as List).isNotEmpty))
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 12.0),
-                            child: _buildAttachments(item),
-                          ),
-                        // --- ATTACHMENTS END ---
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: _getStatusColor(item['status']).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                item['status'] ?? "Noma'lum",
-                                style: TextStyle(
-                                  color: _getStatusColor(item['status']),
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
+                        
+                        // Attachments Section
+                        _buildAttachments(context, item),
+                        
+                        const SizedBox(height: 12),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12.0),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: _getStatusColor(item['status']).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  item['status']?.toUpperCase() ?? 'PENDING',
+                                  style: TextStyle(
+                                    color: _getStatusColor(item['status']),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -117,7 +119,7 @@ class StudentItemsListScreen extends StatelessWidget {
     return Colors.blue;
   }
 
-  Widget _buildAttachments(Map<String, dynamic> item) {
+  Widget _buildAttachments(BuildContext context, Map<String, dynamic> item) {
     List<String> fileIds = [];
     if (item['file_id'] != null) {
       fileIds.add(item['file_id']);
@@ -140,7 +142,6 @@ class StudentItemsListScreen extends StatelessWidget {
           final url = "${ApiConstants.fileProxy}/${fileIds[index]}";
           return GestureDetector(
             onTap: () {
-              // Full screen view could be added here
               showDialog(
                 context: context,
                 builder: (context) => Dialog(
