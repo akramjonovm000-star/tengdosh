@@ -1,6 +1,7 @@
 import 'package:talabahamkor_mobile/core/constants/api_constants.dart';
 
 class BannerModel {
+  final int? id;
   final bool isActive;
   final String? imageFileId;
   final String? link;
@@ -11,6 +12,7 @@ class BannerModel {
       : '';
 
   BannerModel({
+    this.id,
     required this.isActive,
     this.imageFileId,
     this.link,
@@ -19,6 +21,7 @@ class BannerModel {
 
   factory BannerModel.fromJson(Map<String, dynamic> json) {
     return BannerModel(
+      id: json['id'],
       isActive: json['active'] ?? false,
       imageFileId: json['image_file_id'],
       link: json['link'],

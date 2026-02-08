@@ -79,8 +79,8 @@ def get_owner_main_menu_inline_kb() -> InlineKeyboardMarkup:
             ],
             [
                 InlineKeyboardButton(
-                    text="🖼 Banner Sozlash",
-                    callback_data="owner_banner_setup",
+                    text="🖼 Bannerlar boshqaruvi",
+                    callback_data="owner_banner_menu",
                 )
             ],
             [
@@ -103,6 +103,99 @@ def get_owner_main_menu_inline_kb() -> InlineKeyboardMarkup:
             ],
         ]
     )
+
+def get_owner_announcement_menu_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="📢 Yangi e'lon yuborish", callback_data="owner_broadcast"),
+            ],
+            [
+                InlineKeyboardButton(text="📋 E'lonlarni boshqarish", callback_data="owner_ann_list"),
+            ],
+            [
+                InlineKeyboardButton(text="🖼 Bannerlar boshqaruvi", callback_data="owner_banner_setup"),
+            ],
+            [
+                InlineKeyboardButton(text="⬅️ Ortga", callback_data="owner_menu"),
+            ]
+        ]
+    )
+
+def get_active_announcements_kb(announcements: list) -> InlineKeyboardMarkup:
+    buttons = []
+    for ann in announcements:
+        # Title limit 30 chars
+        title = ann.title[:30] + "..." if len(ann.title) > 30 else ann.title
+        buttons.append([
+            InlineKeyboardButton(text=f"📝 {title}", callback_data=f"owner_ann_view:{ann.id}")
+        ])
+    
+    buttons.append([InlineKeyboardButton(text="⬅️ Ortga", callback_data="owner_ann_menu")])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def get_announcement_actions_kb(ann_id: int) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="🗑 O'chirish", callback_data=f"owner_ann_del:{ann_id}"),
+            ],
+            [
+                InlineKeyboardButton(text="⬅️ Ortga", callback_data="owner_ann_list"),
+            ]
+        ]
+    )
+
+# ============================================================
+# BANNERLAR BOSHQARUVI
+# ============================================================
+
+def get_owner_banner_menu_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="➕ Yangi banner qo'shish", callback_data="owner_banner_add"),
+            ],
+            [
+                InlineKeyboardButton(text="📋 Bannerlar ro'yxati", callback_data="owner_banner_list"),
+            ],
+            [
+                InlineKeyboardButton(text="⬅️ Ortga", callback_data="owner_menu"),
+            ]
+        ]
+    )
+
+def get_banner_list_kb(banners: list) -> InlineKeyboardMarkup:
+    buttons = []
+    for banner in banners:
+        # Status indicator
+        status = "✅" if banner.is_active else "❌"
+        # ID or short info
+        btn_text = f"{status} Banner #{banner.id}"
+        if banner.link:
+            btn_text += " (🔗)"
+            
+        buttons.append([
+            InlineKeyboardButton(text=btn_text, callback_data=f"owner_banner_view:{banner.id}")
+        ])
+    
+    buttons.append([InlineKeyboardButton(text="⬅️ Ortga", callback_data="owner_banner_menu")])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+def get_banner_actions_kb(banner_id: int, is_active: bool) -> InlineKeyboardMarkup:
+    rows = []
+    
+    # Toggle Active button
+    if is_active:
+        rows.append([InlineKeyboardButton(text="⏹ Nofaol qilish", callback_data=f"owner_banner_toggle:{banner_id}")])
+    else:
+        rows.append([InlineKeyboardButton(text="▶️ Faollashtirish", callback_data=f"owner_banner_toggle:{banner_id}")])
+        
+    rows.append([InlineKeyboardButton(text="🗑 O'chirish", callback_data=f"owner_banner_del:{banner_id}")])
+    rows.append([InlineKeyboardButton(text="⬅️ Ortga", callback_data="owner_banner_list")])
+    
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def get_numbered_universities_kb(universities: list) -> InlineKeyboardMarkup:

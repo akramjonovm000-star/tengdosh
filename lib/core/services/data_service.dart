@@ -427,6 +427,14 @@ class DataService {
     return null;
   }
 
+  Future<void> trackBannerClick(int bannerId) async {
+    try {
+      await _post('${ApiConstants.banner}/click/$bannerId');
+    } catch (e) {
+      debugPrint("Error tracking banner click: $e");
+    }
+  }
+
   Future<bool> markAnnouncementModelAsRead(int id) async {
     try {
       final response = await _post('${ApiConstants.announcements}/$id/read');

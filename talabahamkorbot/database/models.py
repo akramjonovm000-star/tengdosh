@@ -1294,6 +1294,9 @@ class Banner(Base):
     
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
+    
+    views: Mapped[int] = mapped_column(Integer, default=0)
+    clicks: Mapped[int] = mapped_column(Integer, default=0)
 
     def __repr__(self):
         return f"<Banner {self.id} - Active: {self.is_active}>"

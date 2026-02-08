@@ -387,12 +387,19 @@ async def process_chat_message(message: Message, session: AsyncSession, state: F
 
     # GENERATE RESPONSE (STREAMING)
     try:
+        # Extract First Name (index 1 if Family Name Path, else 0)
+        first_name = None
+        if student_obj:
+            name_parts = student_obj.full_name.split()
+            first_name = name_parts[1] if len(name_parts) > 1 else name_parts[0]
+
         stream_gen = await generate_response(
             prompt_text, 
             model=model, 
             stream=True, 
-            system_context=system_context, 
-            role=role
+            system_context=system_context,
+            role=role,
+            user_name=first_name
         )
         
         full_response = ""

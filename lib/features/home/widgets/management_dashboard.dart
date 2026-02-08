@@ -36,7 +36,7 @@ class ManagementDashboard extends StatelessWidget {
                 },
                 borderRadius: BorderRadius.circular(16),
                 child: _StatCard(
-                  title: "Jami Talabalar",
+                  title: "Talaba qidirish",
                   value: studentCount.toString(),
                   icon: Icons.people_alt_rounded,
                   color: Colors.blue,

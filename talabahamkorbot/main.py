@@ -125,6 +125,20 @@ async def start_scheduler():
     # scheduler.start()
     logger.info("⏰ Background Task Scheduler DISABLED by User Request")
 
+    # [NEW] Banner Analytics Flush (Buffer Optimization)
+    from services.banner_analytics import BannerAnalyticsService
+    
+    async def flush_banner_analytics_loop():
+        while True:
+            await asyncio.sleep(60) # Every 60 seconds
+            try:
+                await BannerAnalyticsService().flush()
+            except Exception as e:
+                logger.error(f"Banner flush error: {e}")
+
+    # Start independent loop
+    asyncio.create_task(flush_banner_analytics_loop())
+
 
 # ============================================================
 #   BOT HANDLER (WEBHOOK)

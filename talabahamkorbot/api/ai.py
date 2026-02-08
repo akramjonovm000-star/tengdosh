@@ -4,8 +4,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 
 from fastapi.responses import StreamingResponse
+from datetime import datetime, timedelta
 from services.ai_service import generate_response
 from services.analytics_service import get_ai_analytics_summary
+from services.context_builder import build_student_context
 from database.models import Student, AiMessage
 from database.db_connect import get_session
 from api.dependencies import get_current_student, get_premium_student
@@ -66,9 +68,12 @@ async def chat_with_ai(
     user_msg = AiMessage(student_id=student.id, role="user", content=req.message)
     db.add(user_msg)
     await db.commit()
-        
-    # 2. Generate Response
-    # Context Injection
+
+    # 2. Student Background Context & Personalization
+    name_parts = student.full_name.split()
+    # User said: "familiya, ism, sharif ketma ketligida", so ism is 2nd part (index 1)
+    first_name = name_parts[1] if len(name_parts) > 1 else name_parts[0]
+
     context = (
         f"Talaba ma'lumotlari:\n"
         f"Ism: {student.full_name}\n"
@@ -79,7 +84,38 @@ async def chat_with_ai(
         f"Ta'lim shakli: {student.payment_form or 'Noma`lum'} (Moliya turi)\n"
     )
     
-    full_prompt = f"Context:\n{context}\n\nSavol: {req.message}"
+    # Add AI Context if available (contains subjects, grades, etc.)
+    context_str = student.ai_context
+    need_update = False
+    if not context_str:
+        need_update = True
+    elif student.last_context_update:
+        if datetime.utcnow() - student.last_context_update > timedelta(hours=24):
+            need_update = True
+            
+    if need_update:
+        try:
+            context_str = await build_student_context(db, student.id)
+        except Exception as e:
+            # logging already done in builder
+            pass
+            
+    if context_str:
+        context += f"\n\nBATAFSIL MA'LUMOTLAR (Akademik):\n{context_str}"
+
+    # 3. Fetch Recent History for Context
+    hist_stmt = select(AiMessage).where(AiMessage.student_id == student.id).order_by(AiMessage.created_at.desc()).limit(6)
+    hist_res = await db.execute(hist_stmt)
+    recent_msgs = hist_res.scalars().all()
+    # Skip the one we just saved for history context but include others
+    recent_msgs = recent_msgs[1:] 
+    recent_msgs.reverse() # Back to chronological
+    
+    history_context = ""
+    if recent_msgs:
+        history_context = "Oxirgi xabarlar:\n" + "\n".join([f"{'Siz' if m.role == 'user' else 'AI'}: {m.content}" for m in recent_msgs])
+
+    full_prompt = f"Context:\n{context}\n\n{history_context}\n\nYangi savol: {req.message}"
     
     # Check for Elevated Access (Owner or Specific Admin)
     is_admin = False
@@ -96,40 +132,22 @@ async def chat_with_ai(
         # Inject DB Analytics
         system_context = await get_ai_analytics_summary(db)
     
-    # STREAMING RESPONSE
-    async def response_stream():
-        # 1. Save User Message
-        user_msg = AiMessage(student_id=student.id, role="user", content=req.message)
-        db.add(user_msg)
-        await db.commit()
-        
-        full_response = ""
-        
-        stream_gen = await generate_response(
-            full_prompt, 
-            model=model, 
-            stream=True, 
-            system_context=system_context,
-            role="owner" if is_admin else getattr(student, 'role', 'student')
-        )
-        
-        if isinstance(stream_gen, str):
-            # Error case (not a generator)
-            yield stream_gen
-            full_response = stream_gen
-        else:
-            async for chunk in stream_gen:
-                if chunk.choices[0].delta.content:
-                    content = chunk.choices[0].delta.content
-                    full_response += content
-                    yield content
-        
-        # 2. Save AI Response (after stream completes)
-        ai_msg = AiMessage(student_id=student.id, role="assistant", content=full_response)
-        db.add(ai_msg)
-        await db.commit()
-
-    return StreamingResponse(response_stream(), media_type="text/plain")
+    # Non-streaming response for mobile app compatibility
+    full_response = await generate_response(
+        full_prompt, 
+        model=model, 
+        stream=False, 
+        system_context=system_context,
+        role="owner" if is_admin else getattr(student, 'role', 'student'),
+        user_name=first_name
+    )
+    
+    # Save Assistant Message
+    ai_msg = AiMessage(student_id=student.id, role="assistant", content=full_response)
+    db.add(ai_msg)
+    await db.commit()
+    
+    return {"success": True, "data": full_response}
 
 
 from fastapi import UploadFile, File, Form, HTTPException

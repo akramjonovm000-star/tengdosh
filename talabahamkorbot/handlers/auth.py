@@ -240,16 +240,28 @@ async def handle_login_text_input(message: Message, state: FSMContext, session: 
     account = await session.scalar(select(TgAccount).where(TgAccount.telegram_id == message.from_user.id))
     if account:
         # User is already logged in, so this text is probably a mistake or out of context
-        # response requested by user: "AI menyusiga qaytish uchun quyidagi tugmani bosing"
-        # We can detect if they came from AI context by checking recent messages, but safely generic:
+        # We check role to give better back button
         
-        kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="⬅️ Ortga", callback_data="ai_assistant_main")]
-        ])
+        role = account.current_role
+        back_kb = None
+        back_text = "Bosh menyuga qaytish:"
         
+        if role == "student":
+             back_kb = get_student_main_menu_kb() # Or simple back button
+             # Simple button is better to avoid spamming main menu
+             back_kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🏠 Bosh menyu", callback_data="go_student_home")]])
+        elif role == StaffRole.OWNER.value:
+             back_kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🏠 Owner menyusi", callback_data="owner_menu")]])
+        elif role == StaffRole.TYUTOR.value:
+             back_kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🏠 Tyutor menyusi", callback_data="tutor_menu")]])
+        else:
+             back_kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🏠 Bosh sahifa", callback_data="back_home")]])
+
         return await message.answer(
-            "AI menyusiga qaytish uchun quyidagi tugmani bosing:",
-            reply_markup=kb
+            "ℹ️ <b>Buyruq tushunarsiz.</b>\n\n"
+            "Iltimos, kerakli bo'limni menyudan tanlang yoki /start ni bosing.",
+            reply_markup=back_kb,
+            parse_mode="HTML"
         )
     
     # If NOT logged in, then treat as login attempt

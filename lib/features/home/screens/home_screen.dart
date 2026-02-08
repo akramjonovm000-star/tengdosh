@@ -784,6 +784,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildBannerCard(BannerModel banner) {
     return GestureDetector(
       onTap: () async {
+        if (banner.id != null) {
+          _dataService.trackBannerClick(banner.id!);
+        }
         if (banner.link != null && banner.link!.isNotEmpty) {
            final uri = Uri.parse(banner.link!);
            await launchUrl(uri, mode: LaunchMode.externalApplication);

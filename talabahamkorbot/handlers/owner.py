@@ -25,7 +25,9 @@ from database.models import (
     University,
     Faculty,
     Student,
+    Student,
     Banner,
+    Announcement,
 )
 
 from models.states import OwnerStates
@@ -40,6 +42,12 @@ from keyboards.inline_kb import (
     get_owner_developers_kb,
     get_dev_add_cancel_kb,
     get_numbered_universities_kb,
+    get_owner_announcement_menu_kb,
+    get_active_announcements_kb,
+    get_announcement_actions_kb,
+    get_owner_banner_menu_kb,
+    get_banner_list_kb,
+    get_banner_actions_kb,
 )
 
 logger = logging.getLogger(__name__)
@@ -527,6 +535,102 @@ async def cb_owner_import(
 
 
 # -------------------------------------------------------------
+#                 E'LONLAR VA BANNERLAR MENYUSI
+# -------------------------------------------------------------
+@router.callback_query(F.data == "owner_ann_menu")
+async def cb_owner_ann_menu(call: CallbackQuery, state: FSMContext, session: AsyncSession):
+    staff = await _ensure_owner(call, session)
+    if not staff:
+        return
+
+    await state.clear()
+    
+    await call.message.edit_text(
+        "📢 <b>E'lonlar va Bannerlar bo'limi</b>\n\n"
+        "Quyidagi amallardan birini tanlang:",
+        reply_markup=get_owner_announcement_menu_kb(),
+        parse_mode="HTML"
+    )
+    await call.answer()
+
+
+@router.callback_query(F.data == "owner_ann_list")
+async def cb_owner_ann_list(call: CallbackQuery, state: FSMContext, session: AsyncSession):
+    staff = await _ensure_owner(call, session)
+    if not staff:
+        return
+
+    # Fetch active announcements
+    result = await session.execute(
+        select(Announcement)
+        .where(Announcement.is_active == True)
+        .order_by(Announcement.id.desc())
+        .limit(20)
+    )
+    announcements = result.scalars().all()
+
+    if not announcements:
+        await call.message.edit_text(
+            "ℹ️ Hozircha faol e'lonlar mavjud emas.",
+            reply_markup=get_back_inline_kb("owner_ann_menu"),
+            parse_mode="HTML"
+        )
+        await call.answer()
+        return
+
+    await call.message.edit_text(
+        "📋 <b>Faol e'lonlar ro'yxati:</b>\n"
+        "Batafsil ko'rish va o'chirish uchun tanlang:",
+        reply_markup=get_active_announcements_kb(announcements),
+        parse_mode="HTML"
+    )
+    await call.answer()
+
+
+@router.callback_query(F.data.startswith("owner_ann_view:"))
+async def cb_owner_ann_view(call: CallbackQuery, session: AsyncSession):
+    ann_id = int(call.data.split(":")[1])
+    ann = await session.get(Announcement, ann_id)
+    
+    if not ann:
+        await call.answer("❌ E'lon topilmadi.", show_alert=True)
+        return
+
+    text = (
+        f"📝 <b>E'lon:</b> {ann.title}\n"
+        f"📅 <b>Sana:</b> {ann.created_at.strftime('%Y-%m-%d %H:%M')}\n\n"
+        f"{ann.content or ''}\n"
+    )
+    if ann.link:
+        text += f"\n🔗 Link: {ann.link}"
+
+    await call.message.edit_text(
+        text,
+        reply_markup=get_announcement_actions_kb(ann.id),
+        parse_mode="HTML"
+    )
+    await call.answer()
+
+
+@router.callback_query(F.data.startswith("owner_ann_del:"))
+async def cb_owner_ann_delete(call: CallbackQuery, session: AsyncSession):
+    ann_id = int(call.data.split(":")[1])
+    ann = await session.get(Announcement, ann_id)
+    
+    if not ann:
+        await call.answer("❌ E'lon topilmadi.", show_alert=True)
+        return
+
+    ann.is_active = False
+    await session.commit()
+    
+    await call.answer("✅ E'lon o'chirildi!", show_alert=True)
+    
+    # Refresh list
+    await cb_owner_ann_list(call, None, session)
+
+
+# -------------------------------------------------------------
 #                 BROADCAST (E‘LON YUBORISH)
 # -------------------------------------------------------------
 @router.callback_query(F.data == "owner_broadcast")
@@ -546,7 +650,7 @@ async def cb_owner_broadcast(
         "Barcha foydalanuvchilarga (talaba va xodimlarga) xabar yuboriladi.\n"
         "Matn, rasm, video yoki hujjat yuborishingiz mumkin.\n\n"
         "👇 Xabarni yuboring:",
-        reply_markup=get_back_inline_kb("owner_menu"),
+        reply_markup=get_back_inline_kb("owner_ann_menu"),
         parse_mode="HTML"
     )
     await call.answer()
@@ -637,7 +741,7 @@ async def cb_confirm_broadcast(call: CallbackQuery, state: FSMContext, session: 
         f"⏱ Vaqt: {duration:.1f} soniya"
     )
     
-    await call.message.answer(report, reply_markup=get_back_inline_kb("owner_menu"), parse_mode="HTML")
+    await call.message.answer(report, reply_markup=get_back_inline_kb("owner_ann_menu"), parse_mode="HTML")
     await state.clear()
     await call.answer()
 
@@ -1306,8 +1410,151 @@ async def owner_add_uni_code(message: Message, state: FSMContext, session: Async
 # -------------------------------------------------------------
 #                 BANNER SOZLAMALARI
 # -------------------------------------------------------------
-@router.callback_query(F.data == "owner_banner_setup")
-async def cb_owner_banner_setup(call: CallbackQuery, state: FSMContext, session: AsyncSession):
+# -------------------------------------------------------------
+#                 BANNER SOZLAMALARI (YANGILANGAN)
+# -------------------------------------------------------------
+
+@router.callback_query(F.data == "owner_banner_menu")
+async def cb_owner_banner_menu(call: CallbackQuery, state: FSMContext, session: AsyncSession):
+    staff = await _ensure_owner(call, session)
+    if not staff: return
+
+    await state.clear()
+    
+    await call.message.edit_text(
+        "🖼 <b>Bannerlar boshqaruvi</b>\n\n"
+        "Quyidagi amallardan birini tanlang:",
+        reply_markup=get_owner_banner_menu_kb(),
+        parse_mode="HTML"
+    )
+    await call.answer()
+
+
+@router.callback_query(F.data == "owner_banner_list")
+async def cb_owner_banner_list(call: CallbackQuery, session: AsyncSession):
+    # Fetch all banners
+    result = await session.execute(select(Banner).order_by(Banner.id.desc()).limit(20))
+    banners = result.scalars().all()
+    
+    if not banners:
+        await call.answer("ℹ️ Bannerlar topilmadi.", show_alert=True)
+        return
+
+    await call.message.edit_text(
+        "📋 <b>Bannerlar ro'yxati:</b>\n"
+        "Batafsil ko'rish va boshqarish uchun tanlang:",
+        reply_markup=get_banner_list_kb(banners),
+        parse_mode="HTML"
+    )
+    await call.answer()
+
+
+@router.callback_query(F.data.startswith("owner_banner_view:"))
+async def cb_owner_banner_view(call: CallbackQuery, session: AsyncSession):
+    banner_id = int(call.data.split(":")[1])
+    banner = await session.get(Banner, banner_id)
+    
+    if not banner:
+        await call.answer("❌ Banner topilmadi.", show_alert=True)
+        return
+
+    status_text = "✅ Faol" if banner.is_active else "⏹ Nofaol"
+    text = (
+        f"🖼 <b>Banner #{banner.id}</b>\n"
+        f"Status: {status_text}\n"
+        f"Yaratilgan: {banner.created_at.strftime('%Y-%m-%d %H:%M')}\n"
+        f"👁 Ko'rishlar: {banner.views}\n"
+        f"👆 Link bosishlar: {banner.clicks}\n"
+    )
+    if banner.link:
+        text += f"🔗 Link: {banner.link}\n"
+        
+    try:
+        await call.message.answer_photo(
+            photo=banner.image_file_id,
+            caption=text,
+            reply_markup=get_banner_actions_kb(banner.id, banner.is_active),
+            parse_mode="HTML"
+        )
+        # Delete old menu message to avoid clutter, or keeping it is fine. 
+        # Typically better to edit, but can't edit text to photo.
+        await call.message.delete() 
+    except Exception as e:
+        await call.message.answer(f"Rasm yuklashda xatolik: {e}\n\n{text}")
+
+    await call.answer()
+
+
+@router.callback_query(F.data.startswith("owner_banner_toggle:"))
+async def cb_owner_banner_toggle(call: CallbackQuery, session: AsyncSession):
+    banner_id = int(call.data.split(":")[1])
+    banner = await session.get(Banner, banner_id)
+    
+    if not banner:
+        return await call.answer("❌ Banner topilmadi.", show_alert=True)
+        
+    if banner.is_active:
+        # Deactivate
+        banner.is_active = False
+        await session.commit()
+        await call.answer("⏹ Banner nofaol qilindi.")
+    else:
+        # Activate (and deactivate others)
+        from sqlalchemy import update
+        await session.execute(update(Banner).where(Banner.is_active == True).values(is_active=False))
+        banner.is_active = True
+        await session.commit()
+        await call.answer("✅ Banner faollashtirildi!")
+        
+    # Refresh view
+    # since we can't easily edit the photo caption and markup perfectly without resending in some clients,
+    # let's try editing caption.
+    status_text = "✅ Faol" if banner.is_active else "⏹ Nofaol"
+    text = (
+        f"🖼 <b>Banner #{banner.id}</b>\n"
+        f"Status: {status_text}\n"
+        f"Yaratilgan: {banner.created_at.strftime('%Y-%m-%d %H:%M')}\n"
+        f"👁 Ko'rishlar: {banner.views}\n"
+        f"👆 Link bosishlar: {banner.clicks}\n"
+    )
+    if banner.link:
+        text += f"🔗 Link: {banner.link}\n"
+        
+    try:
+        await call.message.edit_caption(
+            caption=text,
+            reply_markup=get_banner_actions_kb(banner.id, banner.is_active),
+            parse_mode="HTML"
+        )
+    except:
+        # Reset view if edit fails
+        await cb_owner_banner_list(call, session)
+
+
+@router.callback_query(F.data.startswith("owner_banner_del:"))
+async def cb_owner_banner_delete(call: CallbackQuery, session: AsyncSession):
+    banner_id = int(call.data.split(":")[1])
+    banner = await session.get(Banner, banner_id)
+    
+    if not banner:
+        return await call.answer("❌ Banner topilmadi.", show_alert=True)
+        
+    await session.delete(banner)
+    await session.commit()
+    
+    await call.answer("🗑 Banner o'chirildi!", show_alert=True)
+    
+    # Try to delete the photo message and show list
+    try:
+        await call.message.delete()
+    except:
+        pass
+        
+    await cb_owner_banner_list(call, session)
+
+
+@router.callback_query(F.data == "owner_banner_add")
+async def cb_owner_banner_add(call: CallbackQuery, state: FSMContext, session: AsyncSession):
     staff = await _ensure_owner(call, session)
     if not staff:
         return
@@ -1318,13 +1565,17 @@ async def cb_owner_banner_setup(call: CallbackQuery, state: FSMContext, session:
         "Ilovadagi bosh sahifa bannerini o'zgartirish.\n"
         "Iltimos, banner uchun <b>rasm (photo)</b> yuboring.\n"
         "O'lcham: 16:9 yoki shunga yaqin bo'lishi tavsiya etiladi.",
-        reply_markup=get_back_inline_kb("owner_menu"),
+        reply_markup=get_back_inline_kb("owner_banner_menu"),
         parse_mode="HTML"
     )
     await call.answer()
 
-@router.message(OwnerStates.waiting_banner_image, F.photo)
+@router.message(OwnerStates.waiting_banner_image)
 async def owner_process_banner_image(message: Message, state: FSMContext):
+    if not message.photo:
+        await message.answer(f"⚠️ Rasm yuborilmadi. Kelgan xabar turi: {message.content_type}\nIltimos, rasm (photo) yuboring.")
+        return
+
     # Eng katta rasmni olamiz
     photo = message.photo[-1]
     file_id = photo.file_id
@@ -1336,7 +1587,7 @@ async def owner_process_banner_image(message: Message, state: FSMContext):
         "✅ Rasm qabul qilindi.\n\n"
         "Endi banner bosilganda ochiladigan <b>havola (link)</b>ni yuboring.\n"
         "Agar havola kerak bo'lmasa, '0' yoki 'yoq' deb yozing.",
-        reply_markup=get_back_inline_kb("owner_menu")
+        reply_markup=get_back_inline_kb("owner_banner_menu")
     )
 
 @router.message(OwnerStates.waiting_banner_link)
@@ -1374,7 +1625,7 @@ async def owner_process_banner_link(message: Message, state: FSMContext, session
     await message.answer(
         "✅ <b>Banner muvaffaqiyatli o'rnatildi!</b>\n\n"
         "Endi ilovada yangi banner ko'rinadi.",
-        reply_markup=get_back_inline_kb("owner_menu"),
+        reply_markup=get_back_inline_kb("owner_banner_menu"),
         parse_mode="HTML"
     )
     await state.clear()

@@ -7,6 +7,7 @@ from data.ai_prompts import AI_PROMPTS
 logger = logging.getLogger(__name__)
 
 # Configure APIs
+# Configure APIs
 client = None
 if OPENAI_API_KEY:
     client = AsyncOpenAI(api_key=OPENAI_API_KEY)
@@ -16,10 +17,13 @@ else:
 client_owner = None
 if OPENAI_API_KEY_OWNER:
     client_owner = AsyncOpenAI(api_key=OPENAI_API_KEY_OWNER)
+elif OPENAI_API_KEY:
+    # Fallback to main key if owner key is not dedicated
+    client_owner = AsyncOpenAI(api_key=OPENAI_API_KEY)
 else:
-    logger.warning("OPENAI_API_KEY_OWNER topilmadi! Owner AI ishlamaydi.")
+    logger.warning("OPENAI_API_KEY topilmadi! AI xizmatlari ishlamaydi.")
 
-async def generate_response(prompt_text: str, model: str = OPENAI_MODEL_CHAT, stream: bool = False, system_context: str = None, role: str = 'student') -> str:
+async def generate_response(prompt_text: str, model: str = OPENAI_MODEL_CHAT, stream: bool = False, system_context: str = None, role: str = 'student', user_name: str = None) -> str:
     """
     Oddiy matnli so'rov yuborish va javob olish.
     Chat uchun default model: gpt-3.5-turbo (Nano)
@@ -28,6 +32,7 @@ async def generate_response(prompt_text: str, model: str = OPENAI_MODEL_CHAT, st
     stream=True -> returns AsyncGenerator
     system_context -> Additional system prompt context (e.g. analytics)
     role -> 'student', 'staff', 'owner', 'admin'
+    user_name -> Personalized greeting
     """
     # Select Client based on Role
     active_client = client
@@ -40,25 +45,31 @@ async def generate_response(prompt_text: str, model: str = OPENAI_MODEL_CHAT, st
     if not active_client:
         return "⚠️ Tizimda API kalit sozlanmagan."
 
+    # Personalized Name
+    display_name = user_name if user_name else "talaba"
+
     # Dynamic System Prompt
     if role in ['owner', 'admin']:
         base_system = (
-            "Sen Universitet tizimining boshqaruvchisi yordamchisisan (TalabaHamkor AI). "
+            "Sen Universitet tizimining boshqaruvchisi yordamchisisan. Sizning ismingiz 'Tengdosh AI yordamchi'. "
             "Sening vazifang - tizim ma'lumotlarini tahlil qilish va aniq hisobotlarni taqdim etish. "
             "Faqat o'zbek tilida, rasmiy va lo'nda javob ber. "
-            "Salomlashganda har doim 'Assalomu alaykum, janob!' deb murojaat qil."
+            f"Salomlashganda har doim 'Assalomu alaykum, janob {user_name if user_name else ''}!' deb murojaat qil. "
+            "Suhbat davomida esa har doim o'zingni tanishtirishing shart emas."
         )
     elif role == 'staff':
          base_system = (
-            "Sen Universitet xodimlari yordamchisisan. "
+            "Sen Universitet xodimlari yordamchisisan. Sizning ismingiz 'Tengdosh AI yordamchi'. "
             "Talabalar murojaatlarini tahlil qilishda yordam berasan. "
-            "Faqat o'zbek tilida javob ber."
+            "Faqat o'zbek tilida javob ber. "
+            "Suhbat boshida o'zingni tanishtir, lekin har bir xabarda shart emas."
          )
     else:
         base_system = (
-            "Sen O'zbekistondagi talabalarga yordam beruvchi aqlli botsan. Isming 'TalabaHamkor AI'. "
+            "Sen O'zbekistondagi talabalarga yordam beruvchi aqlli botsan. Sizning ismingiz 'Tengdosh AI yordamchi'. "
             "Faqat o'zbek tilida javob ber. Muloyim va aniq bo'l. "
-            "Salomlashganda do'stona 'Salom, talaba!' deb gap boshla."
+            f"Salomlashganda har doim '{display_name}'ga ismi bilan murojaat qil. "
+            "Suhbat boshida (birinchi marta) o'zingni 'Tengdosh AI yordamchisiman' deb tanishtir, lekin chat davomida har bir xabarda buni takrorlash shart emas."
         )
     
     if system_context:

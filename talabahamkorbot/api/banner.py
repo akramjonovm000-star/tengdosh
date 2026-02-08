@@ -8,6 +8,9 @@ from database.models import Banner
 
 router = APIRouter(prefix="/banner", tags=["Banner"])
 
+
+from services.banner_analytics import BannerAnalyticsService
+
 @router.get("/active")
 async def get_active_banner(
     db: AsyncSession = Depends(get_db)
@@ -25,12 +28,29 @@ async def get_active_banner(
     result = await db.execute(stmt)
     banner = result.scalar_one_or_none()
     
+    
+    # Increment view count via buffer
+    if banner:
+        await BannerAnalyticsService().increment_view(banner.id)
+    
     if not banner:
         return {"active": False}
         
     return {
+        "id": banner.id,
         "active": True,
         "image_file_id": banner.image_file_id,
         "link": banner.link,
         "created_at": banner.created_at.isoformat()
     }
+
+@router.post("/click/{banner_id}")
+async def track_banner_click(
+    banner_id: int,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Increment click count for a banner
+    """
+    await BannerAnalyticsService().increment_click(banner_id)
+    return {"status": "ok"}
