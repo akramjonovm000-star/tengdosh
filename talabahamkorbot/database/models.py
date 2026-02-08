@@ -290,6 +290,11 @@ class Staff(Base):
         Integer, ForeignKey("faculties.id", ondelete="SET NULL"), nullable=True
     )
 
+    # --- Premium Features ---
+    is_premium: Mapped[bool] = mapped_column(Boolean, default=False)
+    premium_expiry: Mapped[datetime | None] = mapped_column(DateTime(), nullable=True)
+    # ------------------------
+
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
