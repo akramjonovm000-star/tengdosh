@@ -267,6 +267,7 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
             staff.email = me.get("email")
             staff.phone = me.get("phone")
             staff.birth_date = me.get("birth_date")
+            staff.employee_id_number = me.get("employee_id_number")
             
             # Extract Department and Position
             # 1. Try 'staffPosition' object

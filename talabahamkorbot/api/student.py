@@ -34,7 +34,7 @@ async def get_my_profile(
              "role_code": student.role, # Internal code
              "image": getattr(student, 'image_url', None) or "https://ui-avatars.com/api/?name=" + student.full_name.replace(" ", "+"),
              "image_url": getattr(student, 'image_url', None) or "https://ui-avatars.com/api/?name=" + student.full_name.replace(" ", "+"),
-             "university_name": getattr(student, 'university_name', "JMCU"),
+             "university_name": "O‘zbekiston jurnalistika va ommaviy kommunikatsiyalar universiteti", # [FIX] Full Name
              # [FIX] Map Expanded Staff Data to existing Frontend Keys
              "faculty_name": getattr(student, 'department', '') or "",          # Mapped to 'Fakultet' slot -> Department
              "specialty_name": getattr(student, 'position', '') or "",          # Mapped to 'Yo'nalish' slot -> Position
@@ -43,7 +43,7 @@ async def get_my_profile(
              "semester_name": getattr(student, 'birth_date', '') or "",         # Mapped to 'Semestr' slot -> Birth Date
              "education_form": "",
              "student_status": "active" if student.is_active else "inactive",
-             "hemis_id": str(student.hemis_id) if student.hemis_id else None,
+             "hemis_id": getattr(student, 'employee_id_number', None) or str(student.hemis_id) if student.hemis_id else None,
              "hemis_login": h_login,
              "is_premium": getattr(student, 'is_premium', False),
              "premium_expiry": student.premium_expiry.isoformat() if student.premium_expiry else None,
