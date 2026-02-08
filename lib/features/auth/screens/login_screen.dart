@@ -43,12 +43,13 @@ class _LoginScreenState extends State<LoginScreen> {
      
      final uri = Uri.parse(url);
      
-     if (await canLaunchUrl(uri)) {
+     try {
+       // Direct launch is more robust on some platforms/versions
        await launchUrl(uri, mode: LaunchMode.externalApplication);
-     } else {
+     } catch (e) {
        if (mounted) {
          ScaffoldMessenger.of(context).showSnackBar(
-           const SnackBar(content: Text("Brauzerni ochib bo'lmadi"), backgroundColor: Colors.red),
+           SnackBar(content: Text("Xato: $e"), backgroundColor: Colors.red),
          );
        }
      }
