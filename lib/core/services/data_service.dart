@@ -1759,5 +1759,21 @@ class DataService {
       return "Tarmoq xatosi: $e";
     }
   }
+  }
+
+  // 45. Download Student Certificate for Management
+  Future<String?> downloadStudentCertificateForManagement(int certId) async {
+    try {
+      final response = await _post("${ApiConstants.backendUrl}/management/certificates/$certId/download");
+      final body = json.decode(response.body);
+      if (response.statusCode == 200) {
+        return body['message'] ?? "Sertifikat botga yuborildi";
+      }
+      return body['message'] ?? "Xatolik yuz berdi";
+    } catch (e) {
+      debugPrint("DataService: Error downloading certificate for management: $e");
+      return "Tarmoq xatosi";
+    }
+  }
 }
 

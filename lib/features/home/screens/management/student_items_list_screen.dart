@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:talabahamkor_mobile/core/constants/api_constants.dart';
 
+import 'package:talabahamkor_mobile/core/services/data_service.dart';
+
 class StudentItemsListScreen extends StatelessWidget {
   final List<dynamic> items;
   final String title;
@@ -66,6 +68,14 @@ class StudentItemsListScreen extends StatelessWidget {
                                 ),
                               ),
                             ),
+                            if (itemType == "Sertifikatlar" || itemType == "Sertifikat")
+                              IconButton(
+                                icon: const Icon(Icons.download, color: Colors.blue),
+                                tooltip: "Yuklab olish",
+                                onPressed: () {
+                                  _downloadCertificate(context, item['id']);
+                                },
+                              ),
                           ],
                         ),
                         const SizedBox(height: 4),
@@ -185,5 +195,24 @@ class StudentItemsListScreen extends StatelessWidget {
         },
       ),
     );
+  }
+
+  Future<void> _downloadCertificate(BuildContext context, int certId) async {
+    final DataService dataService = DataService();
+    // Show loading
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("So'rov yuborilmoqda..."), duration: Duration(seconds: 1)),
+    );
+
+    final result = await dataService.downloadStudentCertificateForManagement(certId);
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result ?? "Xatolik"),
+          backgroundColor: result != null && result.contains("yuborildi") ? Colors.green : Colors.red,
+        ),
+      );
+    }
   }
 }

@@ -455,3 +455,65 @@ async def get_mgmt_ai_report(
     ai_response = await generate_answer_by_key("management_report", custom_prompt=final_prompt)
     
     return {"success": True, "data": ai_response}
+
+@router.post("/certificates/{cert_id}/download")
+async def send_student_cert_to_management(
+    cert_id: int,
+    staff: Any = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Sends the certificate file to the management user's Telegram bot.
+    """
+    from database.models import UserCertificate
+    from bot import bot
+    
+    # Security
+    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) == 'rahbariyat'
+    if not is_mgmt:
+        raise HTTPException(status_code=403, detail="Faqat rahbariyat uchun")
+    
+    # 1. Get Certificate and Student Info
+    stmt = (
+        select(UserCertificate, Student)
+        .join(Student, UserCertificate.student_id == Student.id)
+        .where(UserCertificate.id == cert_id)
+    )
+    result = await db.execute(stmt)
+    row = result.first()
+    
+    if not row:
+        raise HTTPException(status_code=404, detail="Sertifikat topilmadi")
+        
+    cert, student = row
+    
+    # 2. Verify Management Access (University Check)
+    uni_id = getattr(staff, 'university_id', None)
+    if student.university_id != uni_id:
+        raise HTTPException(status_code=403, detail="Boshqa universitet talabasi ma'lumotlarini yuklash imkonsiz")
+
+    # 3. Get Management User's TG Account
+    # 'staff' variable can be Student or Staff model instance
+    tg_acc = await db.scalar(select(TgAccount).where(
+        (TgAccount.student_id == staff.id) | (TgAccount.staff_id == staff.id)
+    ))
+    
+    if not tg_acc:
+        # Try to find by telegram_id in token if available? No, token data is strict.
+        return {"success": False, "message": "Sizning Telegram hisobingiz ulanmagan. Iltimos, botga kiring."}
+
+    # 4. Send via Bot
+    try:
+        caption = (
+            f"🎓 <b>Talaba Sertifikati (Rahbariyat)</b>\n\n"
+            f"Talaba: <b>{student.full_name}</b>\n"
+            f"Guruh: <b>{student.group_number}</b>\n"
+            f"Sertifikat: <b>{cert.title}</b>"
+        )
+        await bot.send_document(tg_acc.telegram_id, cert.file_id, caption=caption, parse_mode="HTML")
+        return {"success": True, "message": "Sertifikat Telegramingizga yuborildi!"}
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error sending cert to management: {e}")
+        return {"success": False, "message": f"Botda xatolik yuz berdi: {str(e)}"}
