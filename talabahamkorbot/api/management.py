@@ -25,10 +25,12 @@ async def get_management_dashboard(
     """
     Get university-wide statistics for management dashboard.
     """
-    # 1. Role Check (Explicit for Rahbariyat and Tyutor)
-    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) in [StaffRole.RAHBARIYAT, StaffRole.TYUTOR]
+    # 1. Role Check (Explicit for Rahbariyat, Tyutor, Rector, and Prorektor)
+    global_mgmt_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR]
+    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) in global_mgmt_roles or getattr(staff, 'role', None) == StaffRole.TYUTOR
+    
     if not is_mgmt:
-        raise HTTPException(status_code=403, detail="Faqat rahbariyat yoki tyutorlar uchun")
+        raise HTTPException(status_code=403, detail="Faqat rahbariyat, tyutor yoki rektorat uchun")
 
     uni_id = getattr(staff, 'university_id', None)
     if not uni_id:
@@ -70,6 +72,7 @@ async def get_management_dashboard(
         ) or 0
     else:
         # Global Management
+        total_students_api = await HemisService.get_total_student_count(token)
         if total_students_api > 0:
             total_students = total_students_api
         else:
@@ -547,9 +550,10 @@ async def search_mgmt_staff(
     Search and filter university staff members with activity status.
     """
     # Security Check
-    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) in ['rahbariyat', 'tyutor']
+    global_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR]
+    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) in global_roles or getattr(staff, 'role', None) == StaffRole.TYUTOR
     if not is_mgmt:
-        raise HTTPException(status_code=403, detail="Faqat rahbariyat yoki tyutorlar uchun")
+        raise HTTPException(status_code=403, detail="Faqat rahbariyat, tyutor yoki rektorat uchun")
         
     uni_id = getattr(staff, 'university_id', None)
     f_id = getattr(staff, 'faculty_id', None)
@@ -1012,7 +1016,7 @@ async def get_mgmt_documents_archive(
         from database.models import UserCertificate
         
         # Base query for certificates
-        stmt = select(UserCertificate).join(Student).where(and_(*category_filters))
+        stmt = select(UserCertificate, Student).join(Student, UserCertificate.student_id == Student.id).where(and_(*category_filters))
         
         # Add search filter for certificates
         if query:
@@ -1022,12 +1026,15 @@ async def get_mgmt_documents_archive(
             )
             
         # Execute Query
+        stmt_count = select(func.count(UserCertificate.id)).join(Student, UserCertificate.student_id == Student.id).where(and_(*category_filters))
+        count = (await db.execute(stmt_count)).scalar()
+        
         stmt = stmt.order_by(UserCertificate.created_at.desc()).offset((page - 1) * limit).limit(limit)
         result = await db.execute(stmt)
-        certs = result.scalars().all()
+        rows = result.all()
         
         docs_data = []
-        for c in certs:
+        for c, s in rows:
             docs_data.append({
                 "id": c.id,
                 "title": c.title,
@@ -1036,13 +1043,13 @@ async def get_mgmt_documents_archive(
                 "file_type": "document", # Frontend treats as document
                 "is_certificate": True,
                 "student": {
-                    "full_name": c.student.full_name,
-                    "group_number": c.student.group_number,
-                    "faculty_name": c.student.faculty_name,
+                    "full_name": s.full_name,
+                    "group_number": s.group_number,
+                    "faculty_name": s.faculty_name,
                 }
             })
             
-        return {"success": True, "data": docs_data}
+        return {"success": True, "data": docs_data, "total_count": count}
 
     # 3. Get Documents (Standard)
     stmt = select(UserDocument).join(Student).where(and_(*category_filters))
