@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/constants/api_constants.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -34,8 +35,12 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  Future<void> _launchHemisLogin() async {
-     const url = 'https://tengdosh.uzjoku.uz/api/v1/oauth/login?source=mobile';
+  Future<void> _launchHemisLogin({bool isStaff = false}) async {
+     String url = '${ApiConstants.oauthLogin}?source=mobile';
+     if (isStaff) {
+       url += '&role=staff';
+     }
+     
      final uri = Uri.parse(url);
      
      if (await canLaunchUrl(uri)) {
@@ -191,19 +196,38 @@ class _LoginScreenState extends State<LoginScreen> {
                   
                   Consumer<AuthProvider>(
                     builder: (context, auth, _) {
-                      return ElevatedButton(
-                        onPressed: (_isPolicyAccepted && !auth.isLoading) ? _submit : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primaryBlue,
-                          disabledBackgroundColor: Colors.grey[300],
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          elevation: _isPolicyAccepted ? 2 : 0,
-                        ),
-                        child: auth.isLoading
-                            ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
-                            : const Text("Tizimga kirish", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          ElevatedButton(
+                            onPressed: (_isPolicyAccepted && !auth.isLoading) ? _submit : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.primaryBlue,
+                              disabledBackgroundColor: Colors.grey[300],
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              elevation: _isPolicyAccepted ? 2 : 0,
+                            ),
+                            child: auth.isLoading
+                                ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
+                                : const Text("Tizimga kirish", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          ),
+                          const SizedBox(height: 16),
+                          OutlinedButton.icon(
+                            onPressed: (_isPolicyAccepted && !auth.isLoading) ? () => _launchHemisLogin(isStaff: true) : null,
+                            icon: const Icon(Icons.badge_outlined, color: AppTheme.primaryBlue, size: 20),
+                            label: const Text(
+                              "OneID orqali kirish (xodimlar ucun)", 
+                              style: TextStyle(color: AppTheme.primaryBlue, fontSize: 13, fontWeight: FontWeight.bold)
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              side: BorderSide(color: _isPolicyAccepted ? AppTheme.primaryBlue : Colors.grey[300]!),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          ),
+                        ],
                       );
                     },
                   ),

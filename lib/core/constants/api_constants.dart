@@ -11,6 +11,7 @@ class ApiConstants {
   
   // Auth (Back to Backend Proxy)
   static const String authLogin = '$backendUrl/auth/hemis';
+  static const String oauthLogin = '$backendUrl/oauth/login';
   
   // Account
   // FIXED: Point back to Backend Proxy to sync DB

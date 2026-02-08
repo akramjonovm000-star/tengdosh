@@ -1,6 +1,6 @@
 import httpx
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from datetime import datetime, timedelta
 from sqlalchemy import select
 from database.db_connect import AsyncSessionLocal
@@ -179,20 +179,37 @@ class HemisService:
             return None, f"Tarmoq xatosi: {str(e)[:50]}"
 
     @staticmethod
-    def generate_auth_url(state: str = "mobile"):
+    def generate_auth_url(state: str = "mobile", role: str = "student"):
         from config import HEMIS_CLIENT_ID, HEMIS_REDIRECT_URL, HEMIS_AUTH_URL
-        return f"{HEMIS_AUTH_URL}?client_id={HEMIS_CLIENT_ID}&redirect_uri={HEMIS_REDIRECT_URL}&response_type=code&state={state}"
+        
+        domain = HEMIS_AUTH_URL
+        if role == "staff":
+            if "student.jmcu.uz" in domain:
+                domain = domain.replace("student.jmcu.uz", "hemis.jmcu.uz")
+        else: # student
+            if "hemis.jmcu.uz" in domain:
+                domain = domain.replace("hemis.jmcu.uz", "student.jmcu.uz")
+            
+        return f"{domain}?client_id={HEMIS_CLIENT_ID}&redirect_uri={HEMIS_REDIRECT_URL}&response_type=code&state={state}"
 
     @staticmethod
     def generate_oauth_url(state: str = "mobile"):
         return HemisService.generate_auth_url(state)
 
     @staticmethod
-    async def exchange_code(code: str):
+    async def exchange_code(code: str, base_url: Optional[str] = None):
         # OAuth usually requires fresh client context or we can use shared
         # Keeping shared is fine
         client = await HemisService.get_client()
         from config import HEMIS_CLIENT_ID, HEMIS_CLIENT_SECRET, HEMIS_REDIRECT_URL, HEMIS_TOKEN_URL
+        
+        # Determine token URL
+        token_url = HEMIS_TOKEN_URL
+        if base_url:
+            domain = base_url
+            if domain.endswith("/rest/v1"): domain = domain.replace("/rest/v1", "")
+            token_url = f"{domain}/oauth/access-token"
+
         try:
             # Revert to Body credentials, but FORCE Content-Type
             data = {
@@ -207,9 +224,9 @@ class HemisService:
                 "Content-Type": "application/x-www-form-urlencoded"
             }
             
-            logger.info(f"Token Exchange (Body+Form): redirect_uri={HEMIS_REDIRECT_URL}, code={code[:5]}...")
+            logger.info(f"Token Exchange (Body+Form) on {token_url}: code={code[:5]}...")
             
-            response = await client.post(HEMIS_TOKEN_URL, data=data, headers=headers)
+            response = await client.post(token_url, data=data, headers=headers)
             
             if response.status_code == 200:
                 return response.json(), None
@@ -228,25 +245,20 @@ class HemisService:
         return None, error
 
     @staticmethod
-    async def get_me(token: str):
+    async def get_me(token: str, base_url: Optional[str] = None):
         from config import HEMIS_PROFILE_URL
         
-        # --- TEST CREDENTIALS ---
-        if token == "test_token_tutor":
-            return {
-                "id": 99999,
-                "login": "test_tutor",
-                "firstname": "Test",
-                "lastname": "Tyutor",
-                "roles": [{"code": "tutor", "name": "Tyutor"}]
-            }
-        # ------------------------
+        # Determine URLs
+        domain = base_url or "https://student.jmcu.uz"
+        if domain.endswith("/rest/v1"): domain = domain.replace("/rest/v1", "")
+        
+        rest_url = f"{domain}/rest/v1/account/me"
+        oauth_profile_url = f"{domain}/oauth/api/user?fields=id,uuid,type,login,firstname,surname,patronymic,picture,email,phone,birth_date,roles"
 
         client = await HemisService.get_client()
         try:
             # 1. Try REST API Endpoint
-            url = f"{HemisService.BASE_URL}/account/me"
-            response = await HemisService.fetch_with_retry(client, "GET", url, headers=HemisService.get_headers(token))
+            response = await HemisService.fetch_with_retry(client, "GET", rest_url, headers=HemisService.get_headers(token))
             
             if response.status_code == 200:
                 data = response.json()
@@ -258,8 +270,8 @@ class HemisService:
                 return None
 
             # 2. Fallback to OAuth Endpoint
-            url_oauth = f"{HEMIS_PROFILE_URL}?fields=id,uuid,type,login,firstname,surname,patronymic,picture,email,phone,birth_date"
-            response = await HemisService.fetch_with_retry(client, "GET", url_oauth, headers=HemisService.get_headers(token))
+            logger.warning(f"REST Profile failed ({response.status_code}). Trying OAuth Profile on {oauth_profile_url}...")
+            response = await HemisService.fetch_with_retry(client, "GET", oauth_profile_url, headers=HemisService.get_headers(token))
             if response.status_code == 200:
                 return response.json()
 
