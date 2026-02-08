@@ -49,21 +49,31 @@ async def create_post(
         
     elif category == 'faculty':
         target_uni = student.university_id
-        if is_management and data.target_faculty_id:
-            target_fac = data.target_faculty_id
+        f_id = getattr(student, 'faculty_id', None)
+        if is_management:
+            if f_id:
+                # Restricted staff can only post to their own faculty
+                target_fac = f_id
+            elif data.target_faculty_id:
+                target_fac = data.target_faculty_id
+            else:
+                 target_fac = student.faculty_id
         else:
             target_fac = student.faculty_id
-            if not target_fac:
-                raise HTTPException(status_code=400, detail="Sizda fakultet biriktirilmagan")
+            
+        if not target_fac:
+            raise HTTPException(status_code=400, detail="Sizda fakultet biriktirilmagan")
             
     elif category == 'specialty':
         target_uni = student.university_id
+        f_id = getattr(student, 'faculty_id', None)
         if is_management:
-            target_fac = data.target_faculty_id # Can be None if only specialty is provided? Usually both for specialty
-            target_spec = data.target_specialty_name
-            # Fallback to student context if not provided by management
-            if not target_fac: target_fac = student.faculty_id
-            if not target_spec: target_spec = student.specialty_name
+            if f_id:
+                target_fac = f_id
+            else:
+                target_fac = data.target_faculty_id or student.faculty_id
+                
+            target_spec = data.target_specialty_name or student.specialty_name
         else:
             target_fac = student.faculty_id
             target_spec = student.specialty_name
@@ -125,7 +135,12 @@ async def get_filters_meta(
     
     # 1. Get Faculties
     from database.models import Faculty
+    f_id = getattr(student, 'faculty_id', None)
+    
     fac_query = select(Faculty.id, Faculty.name).where(Faculty.university_id == uni_id, Faculty.is_active == True)
+    if f_id:
+        fac_query = fac_query.where(Faculty.id == f_id)
+        
     fac_result = await db.execute(fac_query)
     faculties = [{"id": r[0], "name": r[1]} for r in fac_result.all()]
     
@@ -134,8 +149,11 @@ async def get_filters_meta(
         Student.university_id == uni_id, 
         Student.specialty_name.isnot(None),
         Student.specialty_name != ""
-    ).distinct()
-    spec_result = await db.execute(spec_query)
+    )
+    if f_id:
+        spec_query = spec_query.where(Student.faculty_id == f_id)
+        
+    spec_result = await db.execute(spec_query.distinct())
     specialties = [r[0] for r in spec_result.all()]
     specialties.sort()
     
@@ -168,24 +186,31 @@ async def get_posts(
         query = query.where(ChoyxonaPost.category_type == category)
         
         is_management = getattr(student, 'hemis_role', None) == 'rahbariyat' or getattr(student, 'role', None) == 'rahbariyat'
+        f_id = getattr(student, 'faculty_id', None)
         
         if category == 'university': 
              query = query.where(ChoyxonaPost.target_university_id == student.university_id)
         elif category == 'faculty':
              query = query.where(ChoyxonaPost.target_university_id == student.university_id)
              if is_management:
-                 if faculty_id:
+                 if f_id:
+                     query = query.where(ChoyxonaPost.target_faculty_id == f_id)
+                 elif faculty_id:
                      query = query.where(ChoyxonaPost.target_faculty_id == faculty_id)
-                 # Else: Show all posts within this category (Faculty level)
              else:
                  query = query.where(ChoyxonaPost.target_faculty_id == student.faculty_id)
         elif category == 'specialty':
              query = query.where(ChoyxonaPost.target_university_id == student.university_id)
              if is_management:
-                 if specialty_name:
-                     query = query.where(ChoyxonaPost.target_specialty_name == specialty_name)
-                 if faculty_id:
-                     query = query.where(ChoyxonaPost.target_faculty_id == faculty_id)
+                 if f_id:
+                     query = query.where(ChoyxonaPost.target_faculty_id == f_id)
+                     if specialty_name:
+                         query = query.where(ChoyxonaPost.target_specialty_name == specialty_name)
+                 else:
+                     if specialty_name:
+                         query = query.where(ChoyxonaPost.target_specialty_name == specialty_name)
+                     if faculty_id:
+                         query = query.where(ChoyxonaPost.target_faculty_id == faculty_id)
              else:
                  query = query.where(
                      ChoyxonaPost.target_faculty_id == student.faculty_id,
@@ -451,15 +476,22 @@ async def delete_post(
         raise HTTPException(status_code=404, detail="Post topilmadi")
         
     is_management = getattr(student, 'hemis_role', None) == 'rahbariyat' or getattr(student, 'role', None) == 'rahbariyat'
+    f_id = getattr(student, 'faculty_id', None)
     
     # Permission check:
     # 1. Author can delete their own post
-    # 2. Management can delete any post in their university
+    # 2. Management can delete any post in their university (unless restricted by faculty)
     can_delete = False
-    if post.student_id == student.id:
+    if post.student_id == student.id or post.staff_id == student.id:
         can_delete = True
     elif is_management and post.target_university_id == student.university_id:
-        can_delete = True
+        if f_id:
+            # Restricted management can only delete within their faculty
+            if post.target_faculty_id == f_id:
+                can_delete = True
+        else:
+            # Global management
+            can_delete = True
         
     if not can_delete:
         raise HTTPException(status_code=403, detail="Sizda ushbu postni o'chirish huquqi yo'q")

@@ -37,33 +37,43 @@ async def get_management_dashboard(
     from services.hemis_service import HemisService
     
     token = getattr(staff, 'hemis_token', None)
-    total_students_api = await HemisService.get_total_student_count(token)
-
-    # 2. Total Students in University
+    # 2. Filter by Faculty if restricted
+    f_id = getattr(staff, 'faculty_id', None)
+    
     # Priority: API -> DB (Fallback)
-    if total_students_api > 0:
-        total_students = total_students_api
-    else:
+    # If Dean, avoid API for now as it might return global counts or requires complex faculty-specific API calls
+    if f_id:
         total_students = await db.scalar(
-            select(func.count(Student.id)).where(Student.university_id == uni_id)
+            select(func.count(Student.id)).where(Student.university_id == uni_id, Student.faculty_id == f_id)
         ) or 0
-
-    # 3. Platform Users (Students who have logged in - have hemis_token)
-    platform_users = await db.scalar(
-        select(func.count(Student.id))
-        .where(Student.university_id == uni_id, Student.hemis_token != None)
-    ) or 0
-
-    # 4. Total Staff in University
-    # Try Public API first
-    public_employees = await HemisService.get_public_employee_count()
-    if public_employees > 0:
-        total_staff = public_employees
-    else:
-        # Fallback to DB
+        platform_users = await db.scalar(
+            select(func.count(Student.id))
+            .where(Student.university_id == uni_id, Student.faculty_id == f_id, Student.hemis_token != None)
+        ) or 0
         total_staff = await db.scalar(
-            select(func.count(Staff.id)).where(Staff.university_id == uni_id)
+            select(func.count(Staff.id)).where(Staff.university_id == uni_id, Staff.faculty_id == f_id)
         ) or 0
+    else:
+        # Global Management
+        if total_students_api > 0:
+            total_students = total_students_api
+        else:
+            total_students = await db.scalar(
+                select(func.count(Student.id)).where(Student.university_id == uni_id)
+            ) or 0
+
+        platform_users = await db.scalar(
+            select(func.count(Student.id))
+            .where(Student.university_id == uni_id, Student.hemis_token != None)
+        ) or 0
+
+        public_employees = await HemisService.get_public_employee_count()
+        if public_employees > 0:
+            total_staff = public_employees
+        else:
+            total_staff = await db.scalar(
+                select(func.count(Staff.id)).where(Staff.university_id == uni_id)
+            ) or 0
 
     # 5. Additional Metrics (Placeholders for now as per previous logic)
     # debtor_count and avg_gpa can be calculated or mocked if not yet synced university-wide
@@ -99,26 +109,37 @@ async def get_mgmt_faculties(
     from services.hemis_service import HemisService
     from config import HEMIS_ADMIN_TOKEN
     
+    f_id = getattr(staff, 'faculty_id', None)
+    
     if HEMIS_ADMIN_TOKEN:
         faculties = await HemisService.get_faculties()
         if faculties:
              # Filter only specific faculties for this University structure
-             # 4: Jurnalistika, 2: PR, 43: Xalqaro
              allowed_ids = [4, 2, 43]
              filtered = [f for f in faculties if f['id'] in allowed_ids]
-             return {"success": True, "data": filtered}
+             
+             if f_id:
+                 # Resolve if our faculty_id matches one of these
+                 # Check by name matching if id doesn't align (some IDs are internal)
+                 # But usually we map HEMIS IDs to our faculty_id during import
+                 # Let's trust local DB if f_id is set
+                 pass 
+             else:
+                 return {"success": True, "data": filtered}
 
-    # 2. Fallback: Show only faculties that have students AND a name (Local DB)
-    result = await db.execute(
+    # 2. Local DB Lookup (Respect restricted f_id)
+    stmt = (
         select(Student.faculty_id, Student.faculty_name)
         .where(
             Student.university_id == uni_id, 
             Student.faculty_id != None,
             Student.faculty_name != None
         )
-        .distinct()
-        .order_by(Student.faculty_name)
     )
+    if f_id:
+        stmt = stmt.where(Student.faculty_id == f_id)
+        
+    result = await db.execute(stmt.distinct().order_by(Student.faculty_name))
     faculties_data = result.all()
     
     return {
@@ -134,6 +155,10 @@ async def get_mgmt_levels(
 ):
     # Security: Ensure faculty belongs to staff's university
     uni_id = getattr(staff, 'university_id', None)
+    f_id = getattr(staff, 'faculty_id', None)
+    
+    if f_id and f_id != faculty_id:
+        raise HTTPException(status_code=403, detail="Sizga boshqa fakultet ma'lumotlari ruxsat berilmagan")
     
     # Unique levels for this faculty
     result = await db.execute(
@@ -154,6 +179,10 @@ async def get_mgmt_groups(
 ):
     # Security
     uni_id = getattr(staff, 'university_id', None)
+    f_id = getattr(staff, 'faculty_id', None)
+    
+    if f_id and f_id != faculty_id:
+        raise HTTPException(status_code=403, detail="Sizga boshqa fakultet ma'lumotlari ruxsat berilmagan")
 
     # Unique groups for this faculty and level
     result = await db.execute(
@@ -177,12 +206,13 @@ async def get_mgmt_group_students(
 ):
     # Security
     uni_id = getattr(staff, 'university_id', None)
+    f_id = getattr(staff, 'faculty_id', None)
 
-    result = await db.execute(
-        select(Student)
-        .where(Student.group_number == group_number, Student.university_id == uni_id)
-        .order_by(Student.full_name)
-    )
+    stmt = select(Student).where(Student.group_number == group_number, Student.university_id == uni_id)
+    if f_id:
+        stmt = stmt.where(Student.faculty_id == f_id)
+
+    result = await db.execute(stmt.order_by(Student.full_name))
     students = result.scalars().all()
     
     return {
@@ -460,8 +490,13 @@ async def search_mgmt_staff(
         raise HTTPException(status_code=403, detail="Faqat rahbariyat uchun")
         
     uni_id = getattr(staff, 'university_id', None)
+    f_id = getattr(staff, 'faculty_id', None)
     if not uni_id:
         raise HTTPException(status_code=400, detail="Universitet aniqlanmadi")
+
+    # If restricted, force search within faculty
+    if f_id:
+        faculty_id = f_id
 
     # Base query with unique constraint for scalars()
     stmt = (
@@ -975,12 +1010,18 @@ async def export_mgmt_documents_zip(
         raise HTTPException(status_code=403, detail="Faqat rahbariyat uchun")
         
     uni_id = getattr(staff, 'university_id', None)
+    f_id = getattr(staff, 'faculty_id', None)
     if not uni_id:
         raise HTTPException(status_code=400, detail="Universitet aniqlanmadi")
 
     # 2. Build Query
     category_filters = [Student.university_id == uni_id]
-    if faculty_id: category_filters.append(Student.faculty_id == faculty_id)
+    
+    # Restrict by faculty if applicable
+    if f_id:
+        category_filters.append(Student.faculty_id == f_id)
+    elif faculty_id:
+        category_filters.append(Student.faculty_id == faculty_id)
     if education_type: category_filters.append(Student.education_type == education_type)
     if education_form: category_filters.append(Student.education_form == education_form)
     if level_name: category_filters.append(Student.level_name == level_name)

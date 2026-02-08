@@ -282,7 +282,7 @@ class Staff(Base):
     department: Mapped[str | None] = mapped_column(String(255), nullable=True)
     employee_id_number: Mapped[str | None] = mapped_column(String(64), nullable=True) # [NEW]
     
-    jshshir: Mapped[str] = mapped_column(String(20), nullable=False)
+    jshshir: Mapped[str | None] = mapped_column(String(20), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
     position: Mapped[str | None] = mapped_column(String(255), nullable=True)
 

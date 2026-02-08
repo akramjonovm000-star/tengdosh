@@ -198,6 +198,11 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
             result = await db.execute(select(Staff).where(Staff.jshshir == pinfl))
             staff = result.scalar_one_or_none()
             
+        emp_id_num = me.get("employee_id_number")
+        if not staff and emp_id_num:
+            result = await db.execute(select(Staff).where(Staff.employee_id_number == emp_id_num))
+            staff = result.scalar_one_or_none()
+            
         # Determine Best Role
         hemis_roles = me.get("roles", []) or []
         # [FIX] Force Rahbariyat for ALL OneID users as per user request
