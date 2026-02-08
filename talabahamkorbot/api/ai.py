@@ -335,15 +335,19 @@ async def predict_sentiment_analysis(
     try:
         from database.models import ChoyxonaPost, ChoyxonaComment, StudentFeedback
         
-        # 2. Fetch Recent Data (Last 50 posts, 50 comments, 20 feedbacks)
+        # 2. Fetch Recent Data (Last 24 Hours)
         uni_id = getattr(student, 'university_id', None)
+        time_threshold = datetime.utcnow() - timedelta(hours=24)
         
         # Posts
         posts_stmt = (
             select(ChoyxonaPost.content)
-            .where(ChoyxonaPost.target_university_id == uni_id)
+            .where(
+                ChoyxonaPost.target_university_id == uni_id,
+                ChoyxonaPost.created_at >= time_threshold
+            )
             .order_by(ChoyxonaPost.created_at.desc())
-            .limit(50)
+            .limit(200) # Safety limit
         )
         posts = (await db.execute(posts_stmt)).scalars().all()
         
@@ -351,38 +355,44 @@ async def predict_sentiment_analysis(
         comments_stmt = (
             select(ChoyxonaComment.content)
             .join(ChoyxonaPost)
-            .where(ChoyxonaPost.target_university_id == uni_id)
+            .where(
+                ChoyxonaPost.target_university_id == uni_id,
+                ChoyxonaComment.created_at >= time_threshold
+            )
             .order_by(ChoyxonaComment.created_at.desc())
-            .limit(50)
+            .limit(200)
         )
         comments = (await db.execute(comments_stmt)).scalars().all()
         
         # Feedback (Appeals)
         feedbacks_stmt = (
             select(StudentFeedback.text)
-            .where(StudentFeedback.student_id.in_(
-                select(Student.id).where(Student.university_id == uni_id)
-            ))
+            .where(
+                StudentFeedback.student_id.in_(
+                    select(Student.id).where(Student.university_id == uni_id)
+                ),
+                StudentFeedback.created_at >= time_threshold
+            )
             .order_by(StudentFeedback.created_at.desc())
-            .limit(20)
+            .limit(50)
         )
         feedbacks = (await db.execute(feedbacks_stmt)).scalars().all()
         
         # 3. Prepare Context
-        context_text = "--- POSTLAR (Mavzular) ---\n"
+        context_text = f"--- SO'NGGI 24 SOATDAGI POSTLAR ({len(posts)} ta) ---\n"
         for p in posts:
             if len(p) > 20: context_text += f"- {p[:200]}...\n"
             
-        context_text += "\n--- IZOHLAR (Fikrlar) ---\n"
+        context_text += f"\n--- SO'NGGI 24 SOATDAGI IZOHLAR ({len(comments)} ta) ---\n"
         for c in comments:
             if len(c) > 10: context_text += f"- {c[:100]}...\n"
             
-        context_text += "\n--- MUROJAATLAR (Shikoyatlar) ---\n"
+        context_text += f"\n--- SO'NGGI 24 SOATDAGI MUROJAATLAR ({len(feedbacks)} ta) ---\n"
         for f in feedbacks:
             if len(f) > 20: context_text += f"- {f[:200]}...\n"
             
-        if len(context_text) < 100:
-            return {"success": False, "message": "Tahlil qilish uchun yetarli ma'lumot yo'q."}
+        if len(context_text) < 100 and len(posts) == 0 and len(comments) == 0 and len(feedbacks) == 0:
+            return {"success": False, "message": "So'nggi 24 soat ichida tahlil qilish uchun yetarli ma'lumot (post, izoh yoki murojaat) topilmadi."}
 
         # 4. Generate AI Response
         ai_response = await generate_answer_by_key("sentiment_analysis", custom_prompt=None)
