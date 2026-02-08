@@ -75,18 +75,8 @@ class _TalabaHamkorAppState extends State<TalabaHamkorApp> {
   Future<void> _initDeepLinks() async {
     _appLinks = AppLinks();
 
-    // 1. Handle Initial Link (Cold Start)
-    try {
-      final initialUri = await _appLinks.getInitialUri();
-      if (initialUri != null) {
-        debugPrint("Initial Deep Link: $initialUri");
-        _handleDeepLink(initialUri);
-      }
-    } catch (e) {
-      debugPrint("Initial Deep Link Error: $e");
-    }
-
-    // 2. Handle Stream (Background/Foreground Resume)
+    // Handle Stream (Background/Foreground Resume & Cold Start in v6+)
+    // app_links v6+ emits the initial link as the first event in the stream.
     _linkSubscription = _appLinks.uriLinkStream.listen((uri) {
       debugPrint("Stream Deep Link: $uri");
       _handleDeepLink(uri);
