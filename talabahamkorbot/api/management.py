@@ -215,15 +215,29 @@ async def search_mgmt_students(
     result = await db.execute(stmt)
     students = result.scalars().all()
     
-    # 4. Get Stats (using Category filters)
-    # Total Count in category
-    count_stmt = select(func.count(Student.id)).where(and_(*category_filters))
-    total_count = (await db.execute(count_stmt)).scalar() or 0
+    # 4. Get Stats
+    # If no category filters (dropdowns) are applied, use Global Stats
+    has_category_filters = any([faculty_id, education_type, education_form, level_name, specialty_name, group_number])
     
-    # App Users Count in category (Students with TG account)
-    from sqlalchemy import distinct
-    app_users_stmt = select(func.count(distinct(Student.id))).join(TgAccount).where(and_(*category_filters))
-    app_users_count = (await db.execute(app_users_stmt)).scalar() or 0
+    if not has_category_filters:
+        from services.hemis_service import HemisService
+        token = getattr(staff, 'hemis_token', None)
+        total_count = await HemisService.get_total_student_count(token)
+        app_users_count = await db.scalar(
+            select(func.count(Student.id))
+            .where(Student.university_id == uni_id, Student.hemis_token != None)
+        ) or 0
+    else:
+        # Total Count in category
+        count_stmt = select(func.count(Student.id)).where(and_(*category_filters))
+        total_count = (await db.execute(count_stmt)).scalar() or 0
+        
+        # App Users Count in category (Students who logged into app)
+        app_users_stmt = select(func.count(Student.id)).where(
+            and_(*category_filters), 
+            Student.hemis_token != None
+        )
+        app_users_count = (await db.execute(app_users_stmt)).scalar() or 0
     
     return {
         "success": True, 
