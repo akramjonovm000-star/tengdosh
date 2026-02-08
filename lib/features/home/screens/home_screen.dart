@@ -501,15 +501,21 @@ class _HomeScreenState extends State<HomeScreen> {
               child: PageView.builder(
                 controller: _pageController,
                 scrollDirection: Axis.vertical,
-                itemCount: _announcements.length + 1,
+                itemCount: _announcements.length + 1 + (_activeBanner != null && _activeBanner!.isActive ? 1 : 0),
                 itemBuilder: (context, index) {
+                  // 1. Announcements
                   if (index < _announcements.length) {
                     return _buildAnnouncementModelCard(_announcements[index]);
                   }
-                  // If Banner is active, show it. Otherwise show GPA.
-                  if (_activeBanner != null && _activeBanner!.isActive) {
-                    return _buildBannerCard(_activeBanner!);
+                  
+                  // 2. Banner (if active)
+                  // Calculate relative index for Banner
+                  // If we have 2 announcements (idx 0, 1), then idx 2 should be Banner.
+                  if (_activeBanner != null && _activeBanner!.isActive && index == _announcements.length) {
+                     return _buildBannerCard(_activeBanner!);
                   }
+                  
+                  // 3. GPA Card (Always last)
                   return _buildGpaCard();
                 },
               ),
