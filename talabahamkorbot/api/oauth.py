@@ -212,5 +212,40 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
         
     else:
         # Default: Mobile App Deep Link
-        # Redirect back to App via Deep Link
-        return RedirectResponse(url=f"talabahamkor://auth?token={internal_token}&status=success")
+        # Instead of RedirectResponse, return HTML with JS redirect + Manual Button
+        # This handles cases where browser blocks auto-redirect or if user wants to see success message
+        
+        deep_link = f"talabahamkor://auth?token={internal_token}&status=success"
+        
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Muvaffaqiyatli Kirildi</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <style>
+                body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; text-align: center; padding: 40px 20px; background-color: #f5f5f7; color: #333; }}
+                .container {{ background: white; padding: 40px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 400px; margin: 0 auto; }}
+                h1 {{ color: #2ecc71; margin-bottom: 10px; }}
+                p {{ color: #666; font-size: 16px; margin-bottom: 30px; }}
+                .btn {{ display: inline-block; background-color: #007aff; color: white; padding: 15px 30px; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px; transition: background 0.2s; }}
+                .btn:active {{ transform: scale(0.98); opacity: 0.9; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div style="font-size: 60px; margin-bottom: 20px;">✅</div>
+                <h1>Muvaffaqiyatli Kirildi</h1>
+                <p>Sizning hisobingiz tasdiqlandi. Ilovaga qaytish uchun quyidagi tugmani bosing.</p>
+                <a href="{deep_link}" class="btn">Ilovaga Qaytish</a>
+            </div>
+            <script>
+                // Try auto-redirect after 1 second
+                setTimeout(function() {{
+                    window.location.href = "{deep_link}";
+                }}, 1000);
+            </script>
+        </body>
+        </html>
+        """
+        return HTMLResponse(content=html_content)
