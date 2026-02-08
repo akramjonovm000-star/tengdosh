@@ -247,7 +247,12 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
               const SizedBox(width: 8),
               // We could load faculties dynamically but for now lets rely on text input or just "Barchasi" reset
               if (_selectedFaculty != null) 
-                 ActionChip(label: Text(_selectedFaculty!), onDeleted: () => setState(() { _selectedFaculty = null; _loadData(); })),
+                 InputChip(
+                   label: Text(_selectedFaculty!), 
+                   onDeleted: () => setState(() { _selectedFaculty = null; _loadData(); }),
+                   selected: true,
+                   showCheckmark: false,
+                 ),
               // AI Topics filter could be added similarly if we fetch unique topics
             ],
           ),
