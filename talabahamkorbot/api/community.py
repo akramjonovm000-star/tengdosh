@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import List
 
 from database.db_connect import AsyncSessionLocal
-from database.models import Student, ChoyxonaPost, ChoyxonaPostLike, ChoyxonaPostRepost, ChoyxonaComment
+from database.models import Student, Staff, ChoyxonaPost, ChoyxonaPostLike, ChoyxonaPostRepost, ChoyxonaComment
 from api.dependencies import get_current_student, get_db
 from utils.student_utils import format_name
 from api.dependencies import get_current_student, get_db
@@ -74,8 +74,10 @@ async def create_post(
          raise HTTPException(status_code=400, detail="Noto'g'ri kategoriya")
     
     # 2. Create Post
+    is_staff = isinstance(student, Staff)
     new_post = ChoyxonaPost(
-        student_id=student.id,
+        student_id=student.id if not is_staff else None,
+        staff_id=student.id if is_staff else None,
         content=data.content,
         category_type=category,
         target_university_id=target_uni,
@@ -158,7 +160,8 @@ async def get_posts(
     try:
         # Create valid query
         query = select(ChoyxonaPost).options(
-            selectinload(ChoyxonaPost.student)
+            selectinload(ChoyxonaPost.student),
+            selectinload(ChoyxonaPost.staff)
         ).order_by(desc(ChoyxonaPost.created_at))
         
         # 1. Category Filter (Tab Filter)
@@ -199,32 +202,33 @@ async def get_posts(
 
         # Optimize Access: Batch fetch liked/reposted status
         post_ids = [p.id for p in posts]
+        is_staff = isinstance(student, Staff)
         
         # Check Likes
         liked_ids = set()
         if post_ids:
-            l_result = await db.execute(
-                select(ChoyxonaPostLike.post_id)
-                .where(
-                    ChoyxonaPostLike.student_id == student.id,
-                    ChoyxonaPostLike.post_id.in_(post_ids)
-                )
-            )
+            l_query = select(ChoyxonaPostLike.post_id).where(ChoyxonaPostLike.post_id.in_(post_ids))
+            if is_staff:
+                l_query = l_query.where(ChoyxonaPostLike.staff_id == student.id)
+            else:
+                l_query = l_query.where(ChoyxonaPostLike.student_id == student.id)
+            
+            l_result = await db.execute(l_query)
             liked_ids = set(l_result.scalars().all())
 
         # Check Reposts
         reposted_ids = set()
         if post_ids:
-            r_result = await db.execute(
-                select(ChoyxonaPostRepost.post_id)
-                .where(
-                    ChoyxonaPostRepost.student_id == student.id,
-                    ChoyxonaPostRepost.post_id.in_(post_ids)
-                )
-            )
+            r_query = select(ChoyxonaPostRepost.post_id).where(ChoyxonaPostRepost.post_id.in_(post_ids))
+            if is_staff:
+                r_query = r_query.where(ChoyxonaPostRepost.staff_id == student.id)
+            else:
+                r_query = r_query.where(ChoyxonaPostRepost.student_id == student.id)
+                
+            r_result = await db.execute(r_query)
             reposted_ids = set(r_result.scalars().all())
         
-        return [_map_post_optimized(p, p.student, student.id, p.id in liked_ids, p.id in reposted_ids) for p in posts]
+        return [_map_post_optimized(p, student, p.id in liked_ids, p.id in reposted_ids) for p in posts]
     except Exception as e:
         import traceback
         import datetime
@@ -305,17 +309,27 @@ def format_name(student: Student):
     
     return "Talaba"
 
-def _map_post_optimized(post: ChoyxonaPost, author: Student, current_user_id: int, is_liked: bool, is_reposted: bool):
+def _map_post_optimized(post: ChoyxonaPost, current_user, is_liked: bool, is_reposted: bool):
+    author = post.student or post.staff
+    current_user_id = getattr(current_user, 'id', 0)
+    is_staff_user = isinstance(current_user, Staff)
+    
+    is_mine = False
+    if post.staff_id and is_staff_user and post.staff_id == current_user_id:
+        is_mine = True
+    elif post.student_id and not is_staff_user and post.student_id == current_user_id:
+        is_mine = True
+
     return PostResponseSchema(
         id=post.id,
         content=post.content,
         category_type=post.category_type,
         author_id=author.id if author else 0,
         author_name=format_name(author) if author else "Unknown",
-        author_username=author.username if author else None,
-        author_avatar=author.image_url if author else None,
-        author_image=author.image_url if author else None,
-        image=author.image_url if author else None,
+        author_username=getattr(author, 'username', None),
+        author_avatar=getattr(author, 'image_url', None),
+        author_image=getattr(author, 'image_url', None),
+        image=getattr(author, 'image_url', None),
         author_role=(getattr(author, 'hemis_role', None) or getattr(author, 'role', 'student')) if author else "student",
         author_is_premium=getattr(author, 'is_premium', False) if author else False,
         author_custom_badge=getattr(author, 'custom_badge', None) if author else None,
@@ -330,7 +344,7 @@ def _map_post_optimized(post: ChoyxonaPost, author: Student, current_user_id: in
         
         is_liked_by_me=is_liked,
         is_reposted_by_me=is_reposted,
-        is_mine=(post.student_id == current_user_id)
+        is_mine=is_mine
     )
 
 def _map_post(post: ChoyxonaPost, author: Student, current_user_id: int):
@@ -465,15 +479,27 @@ async def toggle_like(
     if not post:
         raise HTTPException(status_code=404, detail="Post topilmadi")
 
+    is_staff = isinstance(student, Staff)
+    
     # Check for existing like
-    existing_like = await db.scalar(select(ChoyxonaPostLike).where(ChoyxonaPostLike.post_id == post_id, ChoyxonaPostLike.student_id == student.id))
+    l_query = select(ChoyxonaPostLike).where(ChoyxonaPostLike.post_id == post_id)
+    if is_staff:
+        l_query = l_query.where(ChoyxonaPostLike.staff_id == student.id)
+    else:
+        l_query = l_query.where(ChoyxonaPostLike.student_id == student.id)
+        
+    existing_like = await db.scalar(l_query)
     
     if existing_like:
         await db.delete(existing_like)
-        post.likes_count = max(0, post.likes_count - 1) # Atomic-ish in app logic, better to use SQL expression if high concurrency, but OK for now
+        post.likes_count = max(0, post.likes_count - 1) 
         liked = False
     else:
-        new_like = ChoyxonaPostLike(post_id=post_id, student_id=student.id)
+        new_like = ChoyxonaPostLike(
+            post_id=post_id, 
+            student_id=student.id if not is_staff else None,
+            staff_id=student.id if is_staff else None
+        )
         db.add(new_like)
         post.likes_count += 1
         liked = True
@@ -493,15 +519,27 @@ async def toggle_repost(
     if not post:
         raise HTTPException(status_code=404, detail="Post topilmadi")
 
+    is_staff = isinstance(student, Staff)
+    
     # Check for existing repost
-    existing_repost = await db.scalar(select(ChoyxonaPostRepost).where(ChoyxonaPostRepost.post_id == post_id, ChoyxonaPostRepost.student_id == student.id))
+    r_query = select(ChoyxonaPostRepost).where(ChoyxonaPostRepost.post_id == post_id)
+    if is_staff:
+        r_query = r_query.where(ChoyxonaPostRepost.staff_id == student.id)
+    else:
+        r_query = r_query.where(ChoyxonaPostRepost.student_id == student.id)
+        
+    existing_repost = await db.scalar(r_query)
     
     if existing_repost:
         await db.delete(existing_repost)
         post.reposts_count = max(0, post.reposts_count - 1)
         reposted = False
     else:
-        new_repost = ChoyxonaPostRepost(post_id=post_id, student_id=student.id)
+        new_repost = ChoyxonaPostRepost(
+            post_id=post_id, 
+            student_id=student.id if not is_staff else None,
+            staff_id=student.id if is_staff else None
+        )
         db.add(new_repost)
         post.reposts_count += 1
         reposted = True
@@ -553,14 +591,19 @@ async def create_comment(
         
         # Track who we are effectively replying to (The user who wrote the comment we clicked on)
         reply_to_user_id = parent_comment.student_id
-        notification_recipient_id = parent_comment.student_id
+        reply_to_staff_id = parent_comment.staff_id
+        notification_recipient_id = parent_comment.student_id # Staff notification support TBD
+        notification_recipient_staff_id = parent_comment.staff_id
 
+    is_staff = isinstance(student, Staff)
     new_comment = ChoyxonaComment(
         post_id=post_id,
-        student_id=student.id,
+        student_id=student.id if not is_staff else None,
+        staff_id=student.id if is_staff else None,
         content=data.content,
         reply_to_comment_id=final_reply_to_id,
-        reply_to_user_id=reply_to_user_id
+        reply_to_user_id=reply_to_user_id,
+        reply_to_staff_id=reply_to_staff_id
     )
     
     db.add(new_comment)
@@ -621,10 +664,12 @@ async def get_comments(
         # Eager load student, parent, likes, and post (for owner check)
         query = select(ChoyxonaComment).options(
             selectinload(ChoyxonaComment.student),
+            selectinload(ChoyxonaComment.staff),
             selectinload(ChoyxonaComment.parent_comment).selectinload(ChoyxonaComment.student),
+            selectinload(ChoyxonaComment.parent_comment).selectinload(ChoyxonaComment.staff),
             selectinload(ChoyxonaComment.reply_to_user),
+            selectinload(ChoyxonaComment.reply_to_staff),
             selectinload(ChoyxonaComment.post)
-            # Removed eager loading of likes
         ).where(ChoyxonaComment.post_id == post_id)
         
         result = await db.execute(query)
@@ -638,34 +683,38 @@ async def get_comments(
 
         # Optimize Access: Batch fetch liked status
         comment_ids = [c.id for c in all_comments]
+        is_staff = isinstance(student, Staff)
         liked_ids = set()
         liked_by_author_ids = set()
         
         if comment_ids:
-            from database.models import ChoyxonaCommentLike # Import here or at top
+            from database.models import ChoyxonaCommentLike
             
             # 1. Liked by Current User?
-            l_result = await db.execute(
-                select(ChoyxonaCommentLike.comment_id)
-                .where(
-                    ChoyxonaCommentLike.student_id == student.id,
-                    ChoyxonaCommentLike.comment_id.in_(comment_ids)
-                )
-            )
-            liked_ids = set(l_result.scalars().all())
+            cl_query = select(ChoyxonaCommentLike.comment_id).where(ChoyxonaCommentLike.comment_id.in_(comment_ids))
+            if is_staff:
+                cl_query = cl_query.where(ChoyxonaCommentLike.staff_id == student.id)
+            else:
+                cl_query = cl_query.where(ChoyxonaCommentLike.student_id == student.id)
+                
+            cl_result = await db.execute(cl_query)
+            liked_ids = set(cl_result.scalars().all())
             
             # 2. Liked by Post Author? (Hearted)
-            if post and post.student_id:
-                 a_result = await db.execute(
-                    select(ChoyxonaCommentLike.comment_id)
-                    .where(
-                        ChoyxonaCommentLike.student_id == post.student_id,
-                        ChoyxonaCommentLike.comment_id.in_(comment_ids)
-                    )
-                )
-                 liked_by_author_ids = set(a_result.scalars().all())
+            pa_sid = post.student_id
+            pa_fid = post.staff_id
+            
+            if pa_sid or pa_fid:
+                hla_query = select(ChoyxonaCommentLike.comment_id).where(ChoyxonaCommentLike.comment_id.in_(comment_ids))
+                if pa_fid:
+                    hla_query = hla_query.where(ChoyxonaCommentLike.staff_id == pa_fid)
+                else:
+                    hla_query = hla_query.where(ChoyxonaCommentLike.student_id == pa_sid)
+                    
+                hla_result = await db.execute(hla_query)
+                liked_by_author_ids = set(hla_result.scalars().all())
 
-        return [_map_comment_optimized(c, c.student, student.id, c.id in liked_ids, c.id in liked_by_author_ids) for c in all_comments]
+        return [_map_comment_optimized(c, student, c.id in liked_ids, c.id in liked_by_author_ids) for c in all_comments]
     except Exception as e:
         import traceback
         with open("api_debug.log", "a") as f:
@@ -685,7 +734,16 @@ async def toggle_comment_like(
     if not comment:
         raise HTTPException(status_code=404, detail="Komment topilmadi")
 
-    existing_like = await db.scalar(select(ChoyxonaCommentLike).where(ChoyxonaCommentLike.comment_id == comment_id, ChoyxonaCommentLike.student_id == student.id))
+    is_staff = isinstance(student, Staff)
+    
+    # Check for existing like
+    cl_query = select(ChoyxonaCommentLike).where(ChoyxonaCommentLike.comment_id == comment_id)
+    if is_staff:
+        cl_query = cl_query.where(ChoyxonaCommentLike.staff_id == student.id)
+    else:
+        cl_query = cl_query.where(ChoyxonaCommentLike.student_id == student.id)
+        
+    existing_like = await db.scalar(cl_query)
     
     if existing_like:
         await db.delete(existing_like)
@@ -693,7 +751,11 @@ async def toggle_comment_like(
         comment.likes_count = ChoyxonaComment.likes_count - 1
         liked = False
     else:
-        new_like = ChoyxonaCommentLike(comment_id=comment_id, student_id=student.id)
+        new_like = ChoyxonaCommentLike(
+            comment_id=comment_id, 
+            student_id=student.id if not is_staff else None,
+            staff_id=student.id if is_staff else None
+        )
         db.add(new_like)
         # Atomic Increment
         comment.likes_count = ChoyxonaComment.likes_count + 1
@@ -800,23 +862,31 @@ async def edit_comment(
 
 
 
-def _map_comment_optimized(comment: "ChoyxonaComment", author: Student, current_user_id: int, is_liked: bool, is_liked_by_author: bool = False):
+def _map_comment_optimized(comment: "ChoyxonaComment", current_user, is_liked: bool, is_liked_by_author: bool = False):
     """
     Map ChoyxonaComment model to CommentResponseSchema.
     """
     from api.schemas import CommentResponseSchema
+    author = comment.student or comment.staff
+    current_user_id = getattr(current_user, 'id', 0)
+    is_staff_user = isinstance(current_user, Staff)
     
     # Reply info
     reply_user = None
     reply_content = None
     if comment.parent_comment:
-        reply_user = f"@{comment.parent_comment.student.username}" if comment.parent_comment.student and comment.parent_comment.student.username else (format_name(comment.parent_comment.student) if comment.parent_comment.student else "Noma'lum")
+        p_author = comment.parent_comment.student or comment.parent_comment.staff
+        reply_user = f"@{p_author.username}" if p_author and getattr(p_author, 'username', None) else (format_name(p_author) if p_author else "Noma'lum")
         reply_content = comment.parent_comment.content[:50] + "..." if len(comment.parent_comment.content) > 50 else comment.parent_comment.content
-    elif comment.reply_to_user:
-         reply_user = f"@{comment.reply_to_user.username}" if comment.reply_to_user.username else format_name(comment.reply_to_user)
+    elif comment.reply_to_user or comment.reply_to_staff:
+         r_author = comment.reply_to_user or comment.reply_to_staff
+         reply_user = f"@{getattr(r_author, 'username', None)}" if getattr(r_author, 'username', None) else format_name(r_author)
     
-    # Check if post author (for hearted status)
-    # Passed as arg now
+    is_mine = False
+    if comment.staff_id and is_staff_user and comment.staff_id == current_user_id:
+        is_mine = True
+    elif comment.student_id and not is_staff_user and comment.student_id == current_user_id:
+        is_mine = True
 
     return CommentResponseSchema(
         id=comment.id,
@@ -824,10 +894,10 @@ def _map_comment_optimized(comment: "ChoyxonaComment", author: Student, current_
         content=comment.content,
         author_id=author.id if author else 0,
         author_name=format_name(author) if author else "Noma'lum",
-        author_username=author.username if author else None,
-        author_avatar=author.image_url if author else None,
-        author_image=author.image_url if author else None,
-        image=author.image_url if author else None,
+        author_username=getattr(author, 'username', None),
+        author_avatar=getattr(author, 'image_url', None),
+        author_image=getattr(author, 'image_url', None),
+        image=getattr(author, 'image_url', None),
         author_role=(getattr(author, 'hemis_role', None) or getattr(author, 'role', 'student')) if author else "student",
         author_is_premium=getattr(author, 'is_premium', False) if author else False,
         author_custom_badge=getattr(author, 'custom_badge', None) if author else None,
@@ -835,15 +905,22 @@ def _map_comment_optimized(comment: "ChoyxonaComment", author: Student, current_
         likes_count=comment.likes_count or 0,
         is_liked=is_liked,
         is_liked_by_author=is_liked_by_author,
-        is_mine=(comment.student_id == current_user_id),
+        is_mine=is_mine,
         reply_to_comment_id=comment.reply_to_comment_id,
         reply_to_username=reply_user,
         reply_to_content=reply_content
     )
 
-def _map_comment(comment: "ChoyxonaComment", author: Student, current_user_id: int):
+def _map_comment(comment: "ChoyxonaComment", current_user):
     # Fallback
     is_liked = False
+    current_user_id = getattr(current_user, 'id', 0)
+    is_staff = isinstance(current_user, Staff)
+    
     if comment.likes:
-        is_liked = any(l.student_id == current_user_id for l in comment.likes)
-    return _map_comment_optimized(comment, author, current_user_id, is_liked)
+        if is_staff:
+             is_liked = any(l.staff_id == current_user_id for l in comment.likes)
+        else:
+             is_liked = any(l.student_id == current_user_id for l in comment.likes)
+             
+    return _map_comment_optimized(comment, current_user, is_liked)

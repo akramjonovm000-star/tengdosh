@@ -443,6 +443,72 @@ async def get_mgmt_specialties(
     
     return {"success": True, "data": specialties}
 
+@router.get("/staff/search")
+async def search_mgmt_staff(
+    query: str = None,
+    faculty_id: int = None,
+    role: str = None,
+    staff: Any = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Search and filter university staff members with activity status.
+    """
+    # Security Check
+    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) == 'rahbariyat'
+    if not is_mgmt:
+        raise HTTPException(status_code=403, detail="Faqat rahbariyat uchun")
+        
+    uni_id = getattr(staff, 'university_id', None)
+    if not uni_id:
+        raise HTTPException(status_code=400, detail="Universitet aniqlanmadi")
+
+    # Base query with unique constraint for scalars()
+    stmt = (
+        select(Staff)
+        .where(Staff.university_id == uni_id)
+        .options(selectinload(Staff.tg_accounts))
+        .options(selectinload(Staff.faculty)) # Loading faculty name if needed
+    )
+    
+    # Filters
+    if faculty_id:
+        stmt = stmt.where(Staff.faculty_id == faculty_id)
+    if role:
+        stmt = stmt.where(Staff.role == role)
+    if query:
+        stmt = stmt.where(
+            (Staff.full_name.ilike(f"%{query}%")) | 
+            (Staff.position.ilike(f"%{query}%")) |
+            (Staff.department.ilike(f"%{query}%"))
+        )
+    
+    stmt = stmt.order_by(Staff.full_name)
+
+    result = await db.execute(stmt)
+    staff_items = result.scalars().unique().all()
+    
+    def get_last_active(s: Staff):
+        if not s.tg_accounts: return None
+        actives = [t.last_active for t in s.tg_accounts if t.last_active]
+        return max(actives).isoformat() if actives else None
+
+    return {
+        "success": True,
+        "data": [
+            {
+                "id": s.id,
+                "full_name": s.full_name,
+                "role": s.role,
+                "position": s.position,
+                "department": s.department,
+                "faculty_name": s.faculty.name if s.faculty else None,
+                "image_url": s.image_url,
+                "last_active": get_last_active(s)
+            } for s in staff_items
+        ]
+    }
+
 @router.get("/groups")
 async def get_mgmt_groups(
     faculty_id: int = None,

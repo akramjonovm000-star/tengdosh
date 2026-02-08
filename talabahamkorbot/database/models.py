@@ -931,7 +931,8 @@ class ChoyxonaPost(Base):
 
     # ID va User
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    student_id: Mapped[int] = mapped_column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    student_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=True)
+    staff_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("staff.id", ondelete="CASCADE"), nullable=True)
 
     # Content
     content: Mapped[str] = mapped_column(Text, nullable=False)
@@ -953,7 +954,8 @@ class ChoyxonaPost(Base):
     reposts_count: Mapped[int] = mapped_column(Integer, default=0)
 
     # Relationships
-    student: Mapped["Student"] = relationship("Student")
+    student: Mapped["Student | None"] = relationship("Student")
+    staff: Mapped["Staff | None"] = relationship("Staff")
     university: Mapped["University"] = relationship("University")
     faculty: Mapped["Faculty"] = relationship("Faculty")
     
@@ -970,19 +972,23 @@ class ChoyxonaComment(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     post_id: Mapped[int] = mapped_column(Integer, ForeignKey("choyxona_posts.id", ondelete="CASCADE"), nullable=False, index=True)
-    student_id: Mapped[int] = mapped_column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
+    student_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=True, index=True)
+    staff_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("staff.id", ondelete="CASCADE"), nullable=True, index=True)
     
     content: Mapped[str] = mapped_column(Text, nullable=False)
     reply_to_comment_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("choyxona_comments.id", ondelete="SET NULL"), nullable=True)
     reply_to_user_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("students.id", ondelete="SET NULL"), nullable=True)
+    reply_to_staff_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("staff.id", ondelete="SET NULL"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow, index=True)
     
     likes_count: Mapped[int] = mapped_column(Integer, default=0)
 
     # Relationships
     post: Mapped["ChoyxonaPost"] = relationship("ChoyxonaPost", back_populates="comments")
-    student: Mapped["Student"] = relationship("Student", foreign_keys=[student_id])
-    reply_to_user: Mapped["Student"] = relationship("Student", foreign_keys=[reply_to_user_id])
+    student: Mapped["Student | None"] = relationship("Student", foreign_keys=[student_id])
+    staff: Mapped["Staff | None"] = relationship("Staff", foreign_keys=[staff_id])
+    reply_to_user: Mapped["Student | None"] = relationship("Student", foreign_keys=[reply_to_user_id])
+    reply_to_staff: Mapped["Staff | None"] = relationship("Staff", foreign_keys=[reply_to_staff_id])
     parent_comment: Mapped["ChoyxonaComment"] = relationship("ChoyxonaComment", remote_side=[id], backref="replies", foreign_keys=[reply_to_comment_id])
     likes: Mapped[list["ChoyxonaCommentLike"]] = relationship("ChoyxonaCommentLike", back_populates="comment", cascade="all, delete-orphan")
 
@@ -996,7 +1002,8 @@ class ChoyxonaCommentLike(Base):
     
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     comment_id: Mapped[int] = mapped_column(Integer, ForeignKey("choyxona_comments.id", ondelete="CASCADE"), nullable=False)
-    student_id: Mapped[int] = mapped_column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    student_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=True)
+    staff_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("staff.id", ondelete="CASCADE"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
     
     comment: Mapped["ChoyxonaComment"] = relationship("ChoyxonaComment", back_populates="likes")
@@ -1034,7 +1041,8 @@ class ChoyxonaPostLike(Base):
     
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     post_id: Mapped[int] = mapped_column(Integer, ForeignKey("choyxona_posts.id", ondelete="CASCADE"), nullable=False)
-    student_id: Mapped[int] = mapped_column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    student_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=True)
+    staff_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("staff.id", ondelete="CASCADE"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
     
     post: Mapped["ChoyxonaPost"] = relationship("ChoyxonaPost", back_populates="likes")
@@ -1048,7 +1056,8 @@ class ChoyxonaPostRepost(Base):
     
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     post_id: Mapped[int] = mapped_column(Integer, ForeignKey("choyxona_posts.id", ondelete="CASCADE"), nullable=False)
-    student_id: Mapped[int] = mapped_column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    student_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=True)
+    staff_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("staff.id", ondelete="CASCADE"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
     
     post: Mapped["ChoyxonaPost"] = relationship("ChoyxonaPost", back_populates="reposts")

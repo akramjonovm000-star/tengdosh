@@ -307,6 +307,33 @@ class DataService {
     return {"success": false, "data": [], "total_count": 0, "app_users_count": 0};
   }
 
+  Future<List<dynamic>> searchStaff({
+    String? query,
+    int? facultyId,
+    String? role,
+  }) async {
+    try {
+      final queryParams = <String>[];
+      if (query != null && query.isNotEmpty) queryParams.add("query=${Uri.encodeComponent(query)}");
+      if (facultyId != null) queryParams.add("faculty_id=$facultyId");
+      if (role != null) queryParams.add("role=${Uri.encodeComponent(role)}");
+
+      String url = "${ApiConstants.managementStaff}/search";
+      if (queryParams.isNotEmpty) {
+        url += "?${queryParams.join("&")}";
+      }
+
+      final response = await _get(url);
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) return body['data'];
+      }
+    } catch (e) {
+      debugPrint("DataService: Error searching staff: $e");
+    }
+    return [];
+  }
+
   Future<List<dynamic>> getManagementSpecialties({int? facultyId}) async {
     try {
       String url = "${ApiConstants.backendUrl}/management/specialties";

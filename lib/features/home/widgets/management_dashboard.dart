@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../screens/management/student_search_screen.dart';
+import '../screens/management/staff_search_screen.dart';
 import '../../student_module/widgets/student_dashboard_widgets.dart';
 import '../../../../core/services/data_service.dart';
 import '../../management/screens/management_archive_screen.dart';
@@ -47,11 +48,20 @@ class ManagementDashboard extends StatelessWidget {
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: _StatCard(
-                title: "Xodimlar",
-                value: staffCount.toString(),
-                icon: Icons.business_center_rounded,
-                color: Colors.orange,
+              child: InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const StaffSearchScreen()),
+                  );
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: _StatCard(
+                  title: "Xodimlar",
+                  value: staffCount.toString(),
+                  icon: Icons.business_center_rounded,
+                  color: Colors.orange,
+                ),
               ),
             ),
           ],
@@ -145,7 +155,7 @@ class ManagementDashboard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                "Platforma Aktivligi",
+                "Platforma aktivligi",
                 style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
               ),
               Container(

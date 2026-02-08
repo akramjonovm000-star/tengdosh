@@ -23,6 +23,7 @@ class ApiConstants {
   static const String managementFaculties = '$backendUrl/management/faculties';
   static const String managementStudents = '$backendUrl/management/students';
   static const String managementGroups = '$backendUrl/management/groups';
+  static const String managementStaff = '$backendUrl/management/staff';
   static const String managementAppealsStats = '$backendUrl/management/appeals/stats';
   static const String managementAppealsList = '$backendUrl/management/appeals/list';
   static const String managementAppealsResolve = '$backendUrl/management/appeals'; // + /{id}/resolve
