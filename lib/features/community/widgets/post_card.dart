@@ -7,6 +7,8 @@ import '../../../../core/utils/role_mapper.dart';
 import '../models/community_models.dart';
 import '../services/community_service.dart';
 import '../screens/user_profile_screen.dart'; 
+import 'package:provider/provider.dart';
+import '../../../../core/providers/auth_provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'edit_post_sheet.dart';
 import 'comment_sheet.dart';
