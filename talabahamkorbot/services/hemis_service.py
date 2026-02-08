@@ -149,7 +149,7 @@ class HemisService:
             logger.info(f"Authenticating User: {safe_login}...")
             
             response = await HemisService.fetch_with_retry(
-                client, "POST", url, json=json_payload
+                client, "POST", url, data=json_payload
             )
             
             logger.info(f"Auth Response: {response.status_code}")
