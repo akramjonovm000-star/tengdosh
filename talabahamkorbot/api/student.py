@@ -24,13 +24,24 @@ async def get_my_profile(
         # Allow hemis_login fallback
         h_login = getattr(student, 'hemis_login', '')
         
+        # [FIX] Role Label Mapping
+        role_label = "Xodim"
+        if student.role == "rahbariyat":
+            role_label = "Rahbariyat"
+        elif student.role == "teacher":
+            role_label = "O'qituvchi"
+        elif student.role == "tutor":
+            role_label = "Tyutor"
+        elif student.role == "dekan":
+            role_label = "Dekan"
+            
         return {
              "id": student.id,
              "full_name": student.full_name,
              "first_name": student.full_name.split()[0] if student.full_name else "",
              "last_name": student.full_name.split()[-1] if student.full_name and len(student.full_name.split()) > 1 else "",
              "short_name": student.full_name, # Fallback
-             "role": "Xodim", # Generic staff label or specific
+             "role": role_label, # Dynamic Label
              "role_code": student.role, # Internal code
              "image": getattr(student, 'image_url', None) or "https://ui-avatars.com/api/?name=" + student.full_name.replace(" ", "+"),
              "image_url": getattr(student, 'image_url', None) or "https://ui-avatars.com/api/?name=" + student.full_name.replace(" ", "+"),
