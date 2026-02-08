@@ -43,7 +43,7 @@ class HemisDashboardScreen extends StatelessWidget {
             const SizedBox(height: 16),
             _buildHemisCard(
               context,
-              title: "Yotoqxona",
+              title: "Turarjoy",
               icon: Icons.bedroom_parent_rounded,
               color: Colors.blue,
               onTap: () {

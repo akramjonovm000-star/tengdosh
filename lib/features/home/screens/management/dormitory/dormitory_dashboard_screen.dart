@@ -140,7 +140,7 @@ class DormitoryDashboardScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              "Xona: ${100 + index} • 2-Korp",
+                              "Turar joyi: TTJ, 2-bino, ${100 + index}-xona",
                               style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                             ),
                           ],
