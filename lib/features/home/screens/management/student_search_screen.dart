@@ -82,173 +82,6 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
     });
   }
 
-  void _showFilterSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => StatefulBuilder(
-        builder: (context, setSheetState) {
-          return Padding(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
-              left: 20,
-              right: 20,
-              top: 20,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      "Filterlar",
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        setState(() {
-                          _selectedEducationType = null;
-                          _selectedCourse = null;
-                          _selectedFacultyId = null;
-                          _selectedSpecialty = null;
-                        });
-                        setSheetState(() {});
-                        _handleSearch();
-                      },
-                      child: const Text("Tozalash"),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                
-                // 1. Education Type
-                _buildFilterLabel("Ta'lim turi"),
-                DropdownButtonFormField<String>(
-                  value: _selectedEducationType,
-                  decoration: _filterInputDecoration(),
-                  items: ["Bakalavr", "Magistr"].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                  onChanged: (val) {
-                    setSheetState(() {
-                      _selectedEducationType = val;
-                      _selectedCourse = null; // Reset course when type changes
-                    });
-                    setState(() {
-                      _selectedEducationType = val;
-                      _selectedCourse = null;
-                    });
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // 2. Course (Dynamic)
-                if (_selectedEducationType != null) ...[
-                  _buildFilterLabel("Kurslar"),
-                  DropdownButtonFormField<String>(
-                    value: _selectedCourse,
-                    decoration: _filterInputDecoration(),
-                    items: (_selectedEducationType == "Bakalavr" ? ["1", "2", "3", "4"] : ["1", "2"])
-                        .map((e) => DropdownMenuItem(value: e, child: Text("$e-kurs"))).toList(),
-                    onChanged: (val) {
-                      setSheetState(() => _selectedCourse = val);
-                      setState(() => _selectedCourse = val);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                ],
-
-                // 3. Faculty
-                _buildFilterLabel("Fakultet"),
-                DropdownButtonFormField<int>(
-                  value: _selectedFacultyId,
-                  decoration: _filterInputDecoration(),
-                  isExpanded: true,
-                  items: _faculties.map((f) => DropdownMenuItem<int>(
-                    value: f['id'],
-                    child: Text(f['name'] ?? "", overflow: TextOverflow.ellipsis),
-                  )).toList(),
-                  onChanged: (val) {
-                    setSheetState(() {
-                      _selectedFacultyId = val;
-                      _selectedSpecialty = null; // Reset specialty
-                    });
-                    setState(() {
-                      _selectedFacultyId = val;
-                      _selectedSpecialty = null;
-                    });
-                    _loadSpecialties(); // Refresh specialties list
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // 4. Specialty
-                _buildFilterLabel("Yo'nalish"),
-                DropdownButtonFormField<String>(
-                  value: _selectedSpecialty,
-                  decoration: _filterInputDecoration(),
-                  isExpanded: true,
-                  items: _specialties.map((s) => DropdownMenuItem(
-                    value: s,
-                    child: Text(s, overflow: TextOverflow.ellipsis),
-                  )).toList(),
-                  onChanged: (val) {
-                    setSheetState(() => _selectedSpecialty = val);
-                    setState(() => _selectedSpecialty = val);
-                  },
-                ),
-                const SizedBox(height: 24),
-
-                // Apply Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _handleSearch();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: const Text("Qo'llash", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  ),
-                ),
-                const SizedBox(height: 32),
-              ],
-            ),
-          );
-        }
-      ),
-    );
-  }
-
-  Widget _buildFilterLabel(String label) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(label, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
-    );
-  }
-
-  InputDecoration _filterInputDecoration() {
-    return InputDecoration(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade200),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade200),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -259,51 +92,118 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
         foregroundColor: Colors.black,
         elevation: 0,
         actions: [
-          IconButton(
-            icon: Stack(
-              children: [
-                const Icon(Icons.filter_list),
-                if (_selectedEducationType != null || _selectedCourse != null || _selectedFacultyId != null || _selectedSpecialty != null)
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                      constraints: const BoxConstraints(minWidth: 8, minHeight: 8),
-                    ),
-                  ),
-              ],
+          if (_selectedEducationType != null || _selectedCourse != null || _selectedFacultyId != null || _selectedSpecialty != null || _searchController.text.isNotEmpty)
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _selectedEducationType = null;
+                  _selectedCourse = null;
+                  _selectedFacultyId = null;
+                  _selectedSpecialty = null;
+                  _searchController.clear();
+                });
+                _handleSearch();
+              },
+              child: const Text("Tozalash", style: TextStyle(color: Colors.red)),
             ),
-            onPressed: _showFilterSheet,
-          ),
         ],
       ),
       body: Column(
         children: [
-          // Search Bar
-          Padding(
+          // 1. Search & Filters Container
+          Container(
+            color: Colors.white,
             padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (val) => _handleSearch(),
-              decoration: InputDecoration(
-                hintText: "Ism yoki Hemis ID...",
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade200),
+            child: Column(
+              children: [
+                // Search Field
+                TextField(
+                  controller: _searchController,
+                  onChanged: (val) => _handleSearch(),
+                  decoration: InputDecoration(
+                    hintText: "Ism yoki Hemis ID...",
+                    prefixIcon: const Icon(Icons.search),
+                    filled: true,
+                    fillColor: Colors.grey[50],
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey.shade200),
+                const SizedBox(height: 12),
+                
+                // Row for Education Type and Course
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildInlineDropdown<String>(
+                        hint: "Ta'lim turi",
+                        value: _selectedEducationType,
+                        items: ["Bakalavr", "Magistr"].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                        onChanged: (val) {
+                          setState(() {
+                            _selectedEducationType = val;
+                            _selectedCourse = null;
+                          });
+                          _handleSearch();
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildInlineDropdown<String>(
+                        hint: "Kurs",
+                        value: _selectedCourse,
+                        items: (_selectedEducationType == "Magistr" ? ["1", "2"] : ["1", "2", "3", "4"])
+                            .map((e) => DropdownMenuItem(value: e, child: Text("$e-kurs"))).toList(),
+                        onChanged: (val) {
+                          setState(() => _selectedCourse = val);
+                          _handleSearch();
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-              ),
+                const SizedBox(height: 12),
+                
+                // Faculty Dropdown
+                _buildInlineDropdown<int>(
+                  hint: "Fakultetni tanlang",
+                  value: _selectedFacultyId,
+                  items: _faculties.map((f) => DropdownMenuItem<int>(
+                    value: f['id'],
+                    child: Text(f['name'] ?? "", overflow: TextOverflow.ellipsis),
+                  )).toList(),
+                  onChanged: (val) {
+                    setState(() {
+                      _selectedFacultyId = val;
+                      _selectedSpecialty = null;
+                    });
+                    _loadSpecialties();
+                    _handleSearch();
+                  },
+                ),
+                const SizedBox(height: 12),
+
+                // Specialty Dropdown
+                _buildInlineDropdown<String>(
+                  hint: "Yo'nalishni tanlang",
+                  value: _selectedSpecialty,
+                  items: _specialties.map((s) => DropdownMenuItem(
+                    value: s,
+                    child: Text(s, overflow: TextOverflow.ellipsis),
+                  )).toList(),
+                  onChanged: (val) {
+                    setState(() => _selectedSpecialty = val);
+                    _handleSearch();
+                  },
+                ),
+              ],
             ),
           ),
 
+          // 2. Results or Default View
           Expanded(
             child: (_searchController.text.isNotEmpty || 
                     _selectedEducationType != null || 
@@ -318,30 +218,72 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
     );
   }
 
+  Widget _buildInlineDropdown<T>({
+    required String hint,
+    required T? value,
+    required List<DropdownMenuItem<T>> items,
+    required ValueChanged<T?> onChanged,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<T>(
+          isExpanded: true,
+          hint: Text(hint, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+          value: value,
+          items: items,
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+
   Widget _buildSearchResults() {
     if (_isSearching) return const Center(child: CircularProgressIndicator());
-    if (_searchResults.isEmpty) return const Center(child: Text("Talaba topilmadi"));
+    if (_searchResults.isEmpty) return const Center(child: Text("Ma'lumot topilmadi"));
 
     return ListView.builder(
       itemCount: _searchResults.length,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       itemBuilder: (context, index) {
         final s = _searchResults[index];
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: Colors.grey.shade200),
+          ),
           child: ListTile(
+            contentPadding: const EdgeInsets.all(12),
             leading: CircleAvatar(
+              radius: 28,
               backgroundImage: s['image_url'] != null ? NetworkImage(s['image_url']) : null,
-              child: s['image_url'] == null ? const Icon(Icons.person) : null,
+              child: s['image_url'] == null ? const Icon(Icons.person, size: 30) : null,
             ),
-            title: Text(s['full_name'] ?? ""),
+            title: Text(
+              s['full_name'] ?? "",
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("ID: ${s['hemis_login'] ?? s['hemis_id'] ?? ""} • ${s['group_number'] ?? ""}"),
+                const SizedBox(height: 4),
+                Text(
+                  "ID: ${s['hemis_login'] ?? s['hemis_id'] ?? ""} • ${s['group_number'] ?? ""}",
+                  style: TextStyle(color: Colors.grey[700]),
+                ),
                 if (s['faculty_name'] != null)
-                  Text(s['faculty_name'], style: TextStyle(fontSize: 12, color: Colors.grey[600]), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  Text(
+                    s['faculty_name'],
+                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
               ],
             ),
             onTap: () {
@@ -374,7 +316,7 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
           ),
           child: ListTile(
             title: Text(f['name'] ?? "Noma'lum fakultet"),
-            trailing: const Icon(Icons.chevron_right),
+            trailing: const Icon(Icons.chevron_right, color: Colors.grey),
             onTap: () {
               Navigator.push(
                 context,
