@@ -267,7 +267,7 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
                 const SizedBox(width: 8),
               if (_selectedRole != null)
                  InputChip(
-                   label: Text("To: $_selectedRole"), 
+                   label: Text("Kimga: $_selectedRole"), 
                    onDeleted: () => setState(() { _selectedRole = null; _loadData(); }),
                    selected: true,
                    showCheckmark: false,
@@ -291,6 +291,13 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
   }
   
   Widget _buildFilterChip(String label, String? selectedValue, List<String> options, Function(String?) onSelected) {
+    final Map<String, String> translations = {
+      'pending': 'KUTILMOQDA',
+      'processing': 'JARAYONDA',
+      'resolved': 'HAL QILINDI',
+      'replied': 'JAVOB BERILDI',
+    };
+
     return DropdownButtonHideUnderline(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
@@ -306,7 +313,7 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
           onChanged: onSelected,
           items: [
             const DropdownMenuItem(value: null, child: Text("Barchasi")),
-            ...options.map((o) => DropdownMenuItem(value: o, child: Text(o.toUpperCase()))),
+            ...options.map((o) => DropdownMenuItem(value: o, child: Text(translations[o] ?? o.toUpperCase()))),
           ],
         ),
       ),
@@ -315,9 +322,18 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
 
   Widget _buildAppealCard(Appeal appeal) {
     Color statusColor = Colors.grey;
-    if (appeal.status == 'pending') statusColor = Colors.orange;
-    if (appeal.status == 'processing') statusColor = Colors.blue;
-    if (appeal.status == 'resolved' || appeal.status == 'replied') statusColor = Colors.green;
+    String statusLabel = appeal.status.toUpperCase();
+    
+    if (appeal.status == 'pending') {
+      statusColor = Colors.orange;
+      statusLabel = "KUTILMOQDA";
+    } else if (appeal.status == 'processing') {
+      statusColor = Colors.blue;
+      statusLabel = "JARAYONDA";
+    } else if (appeal.status == 'resolved' || appeal.status == 'replied') {
+      statusColor = Colors.green;
+      statusLabel = appeal.status == 'resolved' ? "HAL QILINDI" : "JAVOB BERILDI";
+    }
     
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -343,7 +359,7 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
-                child: Text(appeal.status.toUpperCase(), style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold)),
+                child: Text(statusLabel, style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -355,7 +371,7 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("To: ${appeal.assignedRole}", style: TextStyle(fontSize: 12, color: Colors.grey[600], fontStyle: FontStyle.italic)),
+              Text("Kimga: ${appeal.assignedRole}", style: TextStyle(fontSize: 12, color: Colors.grey[600], fontStyle: FontStyle.italic)),
               if (appeal.status != 'resolved' && appeal.status != 'replied')
                 TextButton(
                   onPressed: () => _resolveAppeal(appeal.id),
