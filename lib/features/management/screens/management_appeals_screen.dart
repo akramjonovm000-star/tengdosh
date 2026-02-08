@@ -121,12 +121,6 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
                     _buildListTab(),
                   ],
                 ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _clusterAppeals,
-        backgroundColor: AppTheme.primaryBlue,
-        icon: const Icon(Icons.auto_awesome, color: Colors.white),
-        label: const Text("AI Saralash", style: TextStyle(color: Colors.white)),
-      ),
     );
   }
 
@@ -260,11 +254,39 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
         
         Expanded(
           child: ListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             itemCount: _appeals.length,
             itemBuilder: (context, index) {
               return _buildAppealCard(_appeals[index]);
             },
+          ),
+        ),
+
+        // AI Clustering Button
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, -4),
+              )
+            ],
+          ),
+          child: ElevatedButton.icon(
+            onPressed: _clusterAppeals,
+            icon: const Icon(Icons.auto_awesome),
+            label: const Text("AI BILAN MAVZULARGA AJRATISH", style: TextStyle(fontWeight: FontWeight.bold)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryBlue,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
+            ),
           ),
         ),
       ],
