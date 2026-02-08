@@ -35,11 +35,12 @@ async def get_my_profile(
              "image": getattr(student, 'image_url', None) or "https://ui-avatars.com/api/?name=" + student.full_name.replace(" ", "+"),
              "image_url": getattr(student, 'image_url', None) or "https://ui-avatars.com/api/?name=" + student.full_name.replace(" ", "+"),
              "university_name": getattr(student, 'university_name', "JMCU"),
-             "faculty_name": "",
-             "specialty_name": student.position,
-             "group_number": "",
-             "level_name": "",
-             "semester_name": "",
+             # [FIX] Map Expanded Staff Data to existing Frontend Keys
+             "faculty_name": getattr(student, 'department', '') or "",          # Mapped to 'Fakultet' slot -> Department
+             "specialty_name": getattr(student, 'position', '') or "",          # Mapped to 'Yo'nalish' slot -> Position
+             "group_number": getattr(student, 'phone', '') or "",               # Mapped to 'Guruh' slot -> Phone
+             "level_name": getattr(student, 'email', '') or "",                 # Mapped to 'Bosqich' slot -> Email
+             "semester_name": getattr(student, 'birth_date', '') or "",         # Mapped to 'Semestr' slot -> Birth Date
              "education_form": "",
              "student_status": "active" if student.is_active else "inactive",
              "hemis_id": str(student.hemis_id) if student.hemis_id else None,

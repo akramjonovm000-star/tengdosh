@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../screens/management/student_search_screen.dart';
 import '../../student_module/widgets/student_dashboard_widgets.dart';
 import '../../../../core/services/data_service.dart';
+import '../../management/screens/management_appeals_screen.dart';
 
 class ManagementDashboard extends StatelessWidget {
   final Map<String, dynamic>? stats;
@@ -86,7 +87,12 @@ class ManagementDashboard extends StatelessWidget {
               title: "Murojaatlar (Umumiy)",
               icon: Icons.all_inbox_rounded,
               color: Colors.teal,
-              onTap: () => _showNotImplemented(context, "Murojaatlar"),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ManagementAppealsScreen()),
+                );
+              },
             ),
             DashboardCard(
               title: "Hujjatlar Arshivi",

@@ -150,8 +150,10 @@ async def get_posts(
              query = query.where(ChoyxonaPost.target_university_id == student.university_id)
         elif category == 'faculty':
              query = query.where(ChoyxonaPost.target_university_id == student.university_id)
-             if is_management and faculty_id:
-                 query = query.where(ChoyxonaPost.target_faculty_id == faculty_id)
+             if is_management:
+                 if faculty_id:
+                     query = query.where(ChoyxonaPost.target_faculty_id == faculty_id)
+                 # Else: Show all posts within this category (Faculty level)
              else:
                  query = query.where(ChoyxonaPost.target_faculty_id == student.faculty_id)
         elif category == 'specialty':

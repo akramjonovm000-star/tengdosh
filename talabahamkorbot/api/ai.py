@@ -10,8 +10,11 @@ from services.analytics_service import get_ai_analytics_summary
 from services.context_builder import build_student_context
 from services.grant_service import calculate_grant_score
 from services.hemis_service import HemisService
-from database.models import Student, AiMessage
+from database.models import Student, AiMessage, StudentFeedback
 from database.db_connect import get_session
+import logging
+
+logger = logging.getLogger(__name__)
 from api.dependencies import get_current_student, get_premium_student
 from config import OPENAI_MODEL_CHAT, OPENAI_MODEL_OWNER, ADMIN_ACCESS_ID
 
@@ -421,3 +424,88 @@ async def predict_sentiment_analysis(
         import traceback
         traceback.print_exc()
         return {"success": False, "message": f"Tahlil xatosi: {str(e)}"}
+
+@router.post("/cluster-appeals")
+async def cluster_appeals_ai(
+    student: Student = Depends(get_premium_student),
+    db: AsyncSession = Depends(get_session)
+):
+    """
+    Rahbariyat uchun: Pending murojaatlarni AI yordamida mavzularga (topic) ajratish.
+    """
+    # Auth Check
+    is_mgmt = getattr(student, 'hemis_role', None) == 'rahbariyat' or getattr(student, 'role', None) in ['rahbariyat', 'admin', 'owner']
+    if not is_mgmt:
+        return {"success": False, "message": "Faqat rahbariyat uchun"}
+
+    # Fetch pending appeals with NULL ai_topic
+    stmt = select(StudentFeedback).where(
+        StudentFeedback.ai_topic == None,
+        StudentFeedback.status.in_(['pending', 'processing'])
+    ).limit(20) # Batch size
+    
+    appeals = (await db.execute(stmt)).scalars().all()
+    
+    if not appeals:
+        return {"success": True, "message": "Tahlil qilish uchun yangi murojaatlar yo'q", "count": 0}
+        
+    # Prepare text
+    text_data = ""
+    for a in appeals:
+        text_data += f"[ID: {a.id}] {a.text[:150]}\n"
+        
+    prompt = (
+        "Quyidagi talabalar murojaatlarini umumiy mazmuniga ko'ra qisqa mavzularga (topic) ajrat.\n"
+        "Mavzular ro'yxati: Hemis, Kontrakt, Yotoqxona, Stipendiya, Dars Jadvali, Baholar, Dekanat, Tizim, Boshqa.\n"
+        "Har bir ID uchun bitta mos mavzuni tanla.\n\n"
+        f"MA'LUMOTLAR:\n{text_data}\n\n"
+        "JAVOB FORMATI (Faqat JSON):\n"
+        "{\n"
+        '  "ID_RAQAM": "Mavzu",\n'
+        '  "101": "Hemis"\n'
+        "}"
+    )
+    
+    try:
+        # Call AI
+        # model=OPENAI_MODEL_TASKS is usually gpt-4o-mini
+        from config import OPENAI_MODEL_TASKS
+        ai_response = await generate_response(prompt, model=OPENAI_MODEL_TASKS)
+        
+        # Parse JSON
+        import json
+        import re
+        
+        json_str = ai_response
+        # Extract JSON from code blocks if present
+        if "```" in json_str:
+             match = re.search(r"```(?:json)?(.*?)```", json_str, re.DOTALL)
+             if match:
+                 json_str = match.group(1).strip()
+        
+        # Cleanup
+        if "{" not in json_str and "}" not in json_str: 
+             # AI might respond with text if failed to follow instructions
+             raise ValueError("AI Valid JSON qaytarmadi")
+
+        data = json.loads(json_str)
+        
+        updated_count = 0
+        for appeal in appeals:
+            topic = data.get(str(appeal.id))
+            if topic:
+                appeal.ai_topic = topic
+                updated_count += 1
+                
+        await db.commit()
+        
+        return {
+            "success": True, 
+            "message": f"{updated_count} ta murojaat mavzusi aniqlandi", 
+            "count": updated_count
+        }
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"success": False, "message": "AI tahlilida xatolik", "error": str(e)}

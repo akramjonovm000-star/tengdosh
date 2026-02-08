@@ -263,6 +263,32 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
             if not staff.hemis_id and h_id:
                 staff.hemis_id = int(h_id)
             
+            # [NEW] Expanded Profile Data (From OneID)
+            staff.email = me.get("email")
+            staff.phone = me.get("phone")
+            staff.birth_date = me.get("birth_date")
+            
+            # Extract Department and Position
+            # 1. Try 'staffPosition' object
+            staff_position_obj = me.get("staffPosition")
+            if staff_position_obj and isinstance(staff_position_obj, dict):
+                staff.position = staff_position_obj.get("name")
+            
+            # 2. Try 'departments' array (First verified department)
+            departments = me.get("departments", [])
+            if departments and isinstance(departments, list):
+                first_dept = departments[0]
+                if isinstance(first_dept, dict):
+                     dept_info = first_dept.get("department", {})
+                     if isinstance(dept_info, dict):
+                         staff.department = dept_info.get("name")
+                         
+                     # Fallback position if not set
+                     if not staff.position:
+                         sp = first_dept.get("staffPosition", {})
+                         if isinstance(sp, dict):
+                             staff.position = sp.get("name")
+
             # ALWAYS update role to ensure highest privilege
             if staff.role != user_role:
                  logger.info(f"Updating Staff Role from {staff.role} to {user_role}")

@@ -277,6 +277,10 @@ class Staff(Base):
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
     short_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
     image_url: Mapped[str | None] = mapped_column(String(255), nullable=True) # [NEW] Added for OneID
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    birth_date: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    department: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    
     jshshir: Mapped[str] = mapped_column(String(20), nullable=False)
     phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
     position: Mapped[str | None] = mapped_column(String(255), nullable=True)

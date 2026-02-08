@@ -57,6 +57,11 @@ class DataService {
     _handleAuthError(response);
     return response;
   }
+  
+  // Public Accessors for Management Services
+  Future<http.Response> authGet(String url) => _get(url);
+  Future<http.Response> authPost(String url, {Object? body}) => _post(url, body: body);
+
 
 
 
