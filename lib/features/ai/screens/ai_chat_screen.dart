@@ -7,7 +7,8 @@ import '../../../../core/providers/auth_provider.dart';
 
 class AiChatScreen extends StatefulWidget {
   final String? initialQuery;
-  const AiChatScreen({super.key, this.initialQuery});
+  final bool isGrantAnalysis;
+  const AiChatScreen({super.key, this.initialQuery, this.isGrantAnalysis = false});
 
   @override
   State<AiChatScreen> createState() => _AiChatScreenState();
@@ -50,11 +51,47 @@ class _AiChatScreenState extends State<AiChatScreen> {
     }
 
     // Auto-send initial query if provided
-    if (widget.initialQuery != null && widget.initialQuery!.isNotEmpty) {
+    if (widget.isGrantAnalysis) {
+       Future.delayed(const Duration(milliseconds: 500), () {
+           if (mounted) _sendGrantAnalysis();
+       });
+    } else if (widget.initialQuery != null && widget.initialQuery!.isNotEmpty) {
        // Allow UI to render first
        Future.delayed(const Duration(milliseconds: 500), () {
            if (mounted) _sendMessage(customText: widget.initialQuery);
        });
+    }
+  }
+
+  Future<void> _sendGrantAnalysis() async {
+    setState(() {
+      _messages.add({"role": "user", "content": "🎓 Grant taqsimotini hisoblash"});
+      _isTyping = true;
+    });
+    _scrollToBottom();
+    
+    try {
+      final response = await _dataService.predictGrant();
+      if (mounted) {
+        setState(() {
+          _isTyping = false;
+          if (response != null) {
+            _messages.add({"role": "assistant", "content": response});
+          } else {
+             _messages.add({"role": "assistant", "content": "⚠️ Kechirasiz, Grant tahlilini tayyorlashda xatolik yuz berdi."});
+          }
+        });
+        _scrollToBottom();
+      }
+    } catch (e) {
+      if (e.toString().contains("PREMIUM_REQUIRED")) {
+        if (mounted) {
+          await Provider.of<AuthProvider>(context, listen: false).loadUser();
+          Navigator.pop(context);
+        }
+      } else {
+        if (mounted) setState(() => _isTyping = false);
+      }
     }
   }
 

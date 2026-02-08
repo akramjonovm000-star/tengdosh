@@ -876,6 +876,25 @@ class DataService {
     }
   }
 
+  // 17.5 Predict Grant
+  Future<String?> predictGrant() async {
+    try {
+      final response = await _post('${ApiConstants.backendUrl}/ai/predict-grant');
+
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) {
+          return body['data'];
+        }
+      }
+      return null;
+    } catch (e) {
+      if (e.toString().contains("PREMIUM_REQUIRED")) rethrow;
+      print("DataService: Error predicting grant: $e");
+      return null;
+    }
+  }
+
   // 18. Get AI History
   Future<List<dynamic>?> getAiHistory() async {
     try {

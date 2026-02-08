@@ -5,9 +5,11 @@ from sqlalchemy import select, delete
 
 from fastapi.responses import StreamingResponse
 from datetime import datetime, timedelta
-from services.ai_service import generate_response
+from services.ai_service import generate_response, generate_answer_by_key
 from services.analytics_service import get_ai_analytics_summary
 from services.context_builder import build_student_context
+from services.grant_service import calculate_grant_score
+from services.hemis_service import HemisService
 from database.models import Student, AiMessage
 from database.db_connect import get_session
 from api.dependencies import get_current_student, get_premium_student
@@ -234,3 +236,75 @@ async def summarize_content(
         return {"success": True, "data": summary}
     except Exception as e:
         return {"success": False, "message": f"AI xatolik: {str(e)}"}
+
+@router.post("/predict-grant")
+async def predict_grant_analysis(
+    student: Student = Depends(get_premium_student),
+    db: AsyncSession = Depends(get_session)
+):
+    """
+    Personalized AI Grant Analysis (Mirroring Telegram Bot).
+    """
+    try:
+        # 1. Fetch Latest Data & Calculate Stats
+        hemis_service = HemisService()
+        stats = await calculate_grant_score(student, db, hemis_service)
+        
+        # 2. Build Detailed Prompt
+        prompt = (
+            f"Talaba ismi: {student.full_name}\n"
+            f"GPA: {stats['gpa']} (Maksimum 5.0)\n"
+            f"Akademik Ball (GPA x 16): {stats['academic_score']} / 80\n"
+            f"Ijtimoiy Faollik Ball (Raw/5): {stats['social_score']} / 20\n"
+            f"YAKUNIY BALL: {stats['total_score']} / 100\n\n"
+            "FAOLLIKLAR TABLE BO'YICHA HOLAT:\n"
+        )
+        
+        cat_names = {
+            "togarak": "To'garaklar (5 tashabbus)",
+            "yutuqlar": "Yutuqlar (Olimpiada/Sport)",
+            "marifat": "Ma'rifat darslari",
+            "volontyorlik": "Volontyorlik",
+            "madaniy": "Madaniy tashriflar",
+            "sport": "Sport",
+            "boshqa": "Boshqa"
+        }
+        
+        for detail in stats['details']:
+            cat_key = detail['category']
+            name = cat_names.get(cat_key, cat_key.capitalize())
+            prompt += f"- {name}: {detail['count']} ta tasdiqlangan. Berilgan ball: {round(detail['earned'], 1)} (Max {detail['max_points']})\n"
+            
+        prompt += """
+        
+        SENING VAZIFANG:
+        Yuqoridagi ma'lumotlar asosida talabaga Grant olish imkoniyatini "Grant Taqsimoti va Reglamenti" asosida tushuntirib berish.
+        
+        ⚠️ QOIDALAR:
+        1. Murojaat: "Hurmatli talaba" deb murojaat qil.
+        2. Ohang: Muloyim, lekin kuchli motivatsiya beruvchi. Rasmiyatchilik kamroq bo'lsin.
+        3. Hech qachon "Aniq olasiz" dema. "Taxminiy", "Imkoniyat yuqori/past" deb ayt.
+        4. Javob strukturasi:
+           - 🎯 Taxminiy ball (Jami xx / 100)
+           - 📘 Akademik (GPA) hissasi
+           - 🤝 Ijtimoiy faollik hissasi
+           - 🔥 Motivatsiya va Harakatga chaqiruv
+           - 💡 Aniq Reja (Action Plan)
+        """
+        
+        # 3. Generate AI Response
+        ai_response = await generate_answer_by_key("grant_calc", prompt)
+        
+        if not ai_response:
+             return {"success": False, "message": "AI javob bera olmadi."}
+
+        # 4. Save History (Optional but good for consistency)
+        ai_msg = AiMessage(student_id=student.id, role="assistant", content=ai_response)
+        db.add(ai_msg)
+        await db.commit()
+        
+        return {"success": True, "data": ai_response}
+        
+    except Exception as e:
+        await db.rollback()
+        return {"success": False, "message": f"Xatolik: {str(e)}"}
