@@ -1,5 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/providers/auth_provider.dart';
+import '../models/community_models.dart';
+import '../services/community_service.dart';
 
 class CreatePostScreen extends StatefulWidget {
   final String? initialScope;
@@ -244,6 +248,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         ),
       ),
     );
+  }
   Widget _buildTargetFilters() {
     if (_isLoadingFilters) {
       return const Center(child: LinearProgressIndicator());
