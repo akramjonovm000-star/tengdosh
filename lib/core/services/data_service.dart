@@ -1889,9 +1889,9 @@ class DataService {
   }
 
   // 46. Download Student Document for Management
-  Future<String?> downloadStudentDocumentForManagement(int docId) async {
+  Future<String?> downloadStudentDocumentForManagement(int docId, {String type = "document"}) async {
     try {
-      final response = await _post("${ApiConstants.backendUrl}/management/documents/$docId/download");
+      final response = await _post("${ApiConstants.backendUrl}/management/documents/$docId/download?type=$type");
       final body = json.decode(response.body);
       if (response.statusCode == 200) {
         return body['message'] ?? "Hujjat botga yuborildi";

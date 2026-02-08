@@ -8,7 +8,7 @@ import io
 import aiohttp
 
 from api.dependencies import get_current_student, get_db
-from database.models import Student, Staff, TgAccount, UserActivity
+from database.models import Student, Staff, TgAccount, UserActivity, TutorGroup
 from database.models import StaffRole
 from services.analytics_service import get_management_analytics
 from services.ai_service import generate_answer_by_key
@@ -25,10 +25,10 @@ async def get_management_dashboard(
     """
     Get university-wide statistics for management dashboard.
     """
-    # 1. Role Check (Explicit for Rahbariyat)
-    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) == 'rahbariyat'
+    # 1. Role Check (Explicit for Rahbariyat and Tyutor)
+    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) in [StaffRole.RAHBARIYAT, StaffRole.TYUTOR]
     if not is_mgmt:
-        raise HTTPException(status_code=403, detail="Faqat rahbariyat uchun")
+        raise HTTPException(status_code=403, detail="Faqat rahbariyat yoki tyutorlar uchun")
 
     uni_id = getattr(staff, 'university_id', None)
     if not uni_id:
@@ -37,12 +37,27 @@ async def get_management_dashboard(
     from services.hemis_service import HemisService
     
     token = getattr(staff, 'hemis_token', None)
-    # 2. Filter by Faculty if restricted
+    # 2. Filter by Faculty (Dean) or Group (Tutor) if restricted
     f_id = getattr(staff, 'faculty_id', None)
+    s_role = getattr(staff, 'role', None)
     
     # Priority: API -> DB (Fallback)
-    # If Dean, avoid API for now as it might return global counts or requires complex faculty-specific API calls
-    if f_id:
+    # If Dean or Tutor, avoid API for now as it might return global counts
+    if s_role == 'tyutor':
+        # 1. Get Tutor groups
+        tg_stmt = select(TutorGroup.group_number).where(TutorGroup.tutor_id == staff.id)
+        group_numbers = (await db.execute(tg_stmt)).scalars().all()
+        
+        total_students = await db.scalar(
+            select(func.count(Student.id)).where(Student.university_id == uni_id, Student.group_number.in_(group_numbers))
+        ) or 0
+        platform_users = await db.scalar(
+            select(func.count(Student.id))
+            .where(Student.university_id == uni_id, Student.group_number.in_(group_numbers), Student.hemis_token != None)
+        ) or 0
+        total_staff = 1 # Just the tutor themselves or 0 if counting others
+        
+    elif f_id:
         total_students = await db.scalar(
             select(func.count(Student.id)).where(Student.university_id == uni_id, Student.faculty_id == f_id)
         ) or 0
@@ -156,14 +171,24 @@ async def get_mgmt_levels(
     # Security: Ensure faculty belongs to staff's university
     uni_id = getattr(staff, 'university_id', None)
     f_id = getattr(staff, 'faculty_id', None)
+    s_role = getattr(staff, 'role', None)
     
     if f_id and f_id != faculty_id:
         raise HTTPException(status_code=403, detail="Sizga boshqa fakultet ma'lumotlari ruxsat berilmagan")
     
+    # Base filter
+    filters = [Student.faculty_id == faculty_id, Student.university_id == uni_id]
+    
+    # Tutor specific filter
+    if s_role == 'tyutor':
+        tg_stmt = select(TutorGroup.group_number).where(TutorGroup.tutor_id == staff.id)
+        group_numbers = (await db.execute(tg_stmt)).scalars().all()
+        filters.append(Student.group_number.in_(group_numbers))
+
     # Unique levels for this faculty
     result = await db.execute(
         select(Student.level_name)
-        .where(Student.faculty_id == faculty_id, Student.university_id == uni_id)
+        .where(*filters)
         .distinct()
         .order_by(Student.level_name)
     )
@@ -180,18 +205,33 @@ async def get_mgmt_groups(
     # Security
     uni_id = getattr(staff, 'university_id', None)
     f_id = getattr(staff, 'faculty_id', None)
+    s_role = getattr(staff, 'role', None)
     
     if f_id and f_id != faculty_id:
         raise HTTPException(status_code=403, detail="Sizga boshqa fakultet ma'lumotlari ruxsat berilmagan")
 
+    with open("mgmt_debug.log", "a") as f:
+        f.write(f"DEBUG: get_mgmt_groups - staff_id: {getattr(staff, 'id', 'N/A')}, role: {s_role}, type: {type(s_role)}\n")
+
+    # Base filter
+    filters = [
+        Student.faculty_id == faculty_id, 
+        Student.level_name == level_name,
+        Student.university_id == uni_id
+    ]
+    
+    # Tutor specific filter
+    if str(s_role) == 'tyutor' or s_role == StaffRole.TYUTOR:
+        tg_stmt = select(TutorGroup.group_number).where(TutorGroup.tutor_id == staff.id)
+        group_numbers = (await db.execute(tg_stmt)).scalars().all()
+        with open("mgmt_debug.log", "a") as f:
+            f.write(f"DEBUG: Found {len(group_numbers)} groups for tutor {staff.id}\n")
+        filters.append(Student.group_number.in_(group_numbers))
+
     # Unique groups for this faculty and level
     result = await db.execute(
         select(Student.group_number)
-        .where(
-            Student.faculty_id == faculty_id, 
-            Student.level_name == level_name,
-            Student.university_id == uni_id
-        )
+        .where(*filters)
         .distinct()
         .order_by(Student.group_number)
     )
@@ -207,9 +247,18 @@ async def get_mgmt_group_students(
     # Security
     uni_id = getattr(staff, 'university_id', None)
     f_id = getattr(staff, 'faculty_id', None)
+    s_role = getattr(staff, 'role', None)
 
     stmt = select(Student).where(Student.group_number == group_number, Student.university_id == uni_id)
-    if f_id:
+    
+    # Role-based restriction
+    if s_role == 'tyutor':
+        # Verify group belongs to tutor
+        tg_stmt = select(TutorGroup).where(TutorGroup.tutor_id == staff.id, TutorGroup.group_number == group_number)
+        tg_exists = (await db.execute(tg_stmt)).scalar_one_or_none()
+        if not tg_exists:
+            raise HTTPException(status_code=403, detail="Bu guruh sizga biriktirilmagan")
+    elif f_id:
         stmt = stmt.where(Student.faculty_id == f_id)
 
     result = await db.execute(stmt.order_by(Student.full_name))
@@ -314,6 +363,19 @@ async def search_mgmt_students(
     if level_name: category_filters.append(Student.level_name == level_name)
     if specialty_name: category_filters.append(Student.specialty_name == specialty_name)
     if group_number: category_filters.append(Student.group_number == group_number)
+
+    # 1a. Tutor and Dean specific restrictions
+    s_role = getattr(staff, 'role', None)
+    f_id = getattr(staff, 'faculty_id', None)
+    
+    if s_role == 'tyutor':
+        tg_stmt = select(TutorGroup.group_number).where(TutorGroup.tutor_id == staff.id)
+        tg_res = await db.execute(tg_stmt)
+        allowed_groups = tg_res.scalars().all()
+        category_filters.append(Student.group_number.in_(allowed_groups))
+    elif f_id:
+        # Deans are restricted to their faculty
+        category_filters.append(Student.faculty_id == f_id)
 
     # 2. Search filters (Dropdowns + Query)
     search_filters = list(category_filters)
@@ -485,17 +547,26 @@ async def search_mgmt_staff(
     Search and filter university staff members with activity status.
     """
     # Security Check
-    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) == 'rahbariyat'
+    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) in ['rahbariyat', 'tyutor']
     if not is_mgmt:
-        raise HTTPException(status_code=403, detail="Faqat rahbariyat uchun")
+        raise HTTPException(status_code=403, detail="Faqat rahbariyat yoki tyutorlar uchun")
         
     uni_id = getattr(staff, 'university_id', None)
     f_id = getattr(staff, 'faculty_id', None)
+    s_role = getattr(staff, 'role', None)
+    
     if not uni_id:
         raise HTTPException(status_code=400, detail="Universitet aniqlanmadi")
 
-    # If restricted, force search within faculty
-    if f_id:
+    # If restricted, force search within faculty (Dean)
+    if s_role == 'rahbariyat' and f_id:
+        faculty_id = f_id
+        
+    # If Tutor, restrict to assigned groups
+    # Note: This endpoint returns faculties. For tutors, we still return the faculty list 
+    # but maybe only their own faculty? 
+    # Actually, tutors usually belong to one faculty.
+    if s_role == 'tyutor' and f_id:
         faculty_id = f_id
 
     # Base query with unique constraint for scalars()
@@ -544,24 +615,34 @@ async def search_mgmt_staff(
         ]
     }
 
-@router.get("/groups")
-async def get_mgmt_groups(
+@router.get("/groups/all")
+async def get_mgmt_groups_simple(
     faculty_id: int = None,
     level_name: str = None,
     staff: Any = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
 ):
     uni_id = getattr(staff, 'university_id', None)
+    f_id = getattr(staff, 'faculty_id', None)
+    s_role = getattr(staff, 'role', None)
     
-    stmt = select(Student.group_number).where(
+    filters = [
         Student.university_id == uni_id, 
         Student.group_number != None
-    )
+    ]
     
-    if faculty_id: stmt = stmt.where(Student.faculty_id == faculty_id)
-    if level_name: stmt = stmt.where(Student.level_name == level_name)
+    # Role-based restriction
+    if s_role == 'tyutor':
+        tg_stmt = select(TutorGroup.group_number).where(TutorGroup.tutor_id == staff.id)
+        group_numbers = (await db.execute(tg_stmt)).scalars().all()
+        filters.append(Student.group_number.in_(group_numbers))
+    elif f_id:
+        filters.append(Student.faculty_id == f_id)
         
-    result = await db.execute(stmt.distinct().order_by(Student.group_number))
+    if faculty_id: filters.append(Student.faculty_id == faculty_id)
+    if level_name: filters.append(Student.level_name == level_name)
+        
+    result = await db.execute(select(Student.group_number).where(and_(*filters)).distinct().order_by(Student.group_number))
     groups = result.scalars().all()
     
     return {"success": True, "data": groups}
@@ -798,26 +879,35 @@ async def send_student_cert_to_management(
 @router.post("/documents/{doc_id}/download")
 async def send_student_doc_to_management(
     doc_id: int,
+    type: str = "document",
     staff: Any = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
 ):
     """
     Sends the document file to the management user's Telegram bot.
     """
-    from database.models import UserDocument
+    from database.models import UserDocument, UserCertificate
     from bot import bot
     
     # Security
-    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) == 'rahbariyat'
+    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) in ['rahbariyat', 'tyutor']
     if not is_mgmt:
-        raise HTTPException(status_code=403, detail="Faqat rahbariyat uchun")
+        raise HTTPException(status_code=403, detail="Faqat rahbariyat yoki tyutorlar uchun")
     
-    # 1. Get Document and Student Info
-    stmt = (
-        select(UserDocument, Student)
-        .join(Student, UserDocument.student_id == Student.id)
-        .where(UserDocument.id == doc_id)
-    )
+    # 1. Get Document/Certificate and Student Info
+    if type == "certificate":
+        stmt = (
+            select(UserCertificate, Student)
+            .join(Student, UserCertificate.student_id == Student.id)
+            .where(UserCertificate.id == doc_id)
+        )
+    else:
+        stmt = (
+            select(UserDocument, Student)
+            .join(Student, UserDocument.student_id == Student.id)
+            .where(UserDocument.id == doc_id)
+        )
+        
     result = await db.execute(stmt)
     row = result.first()
     
@@ -841,24 +931,34 @@ async def send_student_doc_to_management(
 
     # 4. Send via Bot
     try:
-        print(f"DEBUG: Attempting to send document {doc.id} to user 7476703866")
+        # Determine caption and file type safely
+        category = getattr(doc, 'category', 'Sertifikat')
+        file_type = getattr(doc, 'file_type', 'document')
+        
         caption = (
             f"📄 <b>Talaba Hujjati (Rahbariyat)</b>\n\n"
             f"Talaba: <b>{student.full_name}</b>\n"
             f"Guruh: <b>{student.group_number}</b>\n"
             f"Hujjat: <b>{doc.title}</b>\n"
-            f"Kategoriya: <b>{doc.category}</b>"
+            f"Kategoriya: <b>{category}</b>"
         )
-        # TEST: Hardcoded ID 7476703866
-        if doc.file_type == 'photo':
-             print(f"DEBUG: Sending photo {doc.file_id}")
-             await bot.send_photo(7476703866, doc.file_id, caption=caption, parse_mode="HTML")
+        
+        if file_type == 'photo':
+            await bot.send_photo(
+                chat_id=tg_acc.chat_id,
+                photo=doc.file_id,
+                caption=caption,
+                parse_mode='HTML'
+            )
         else:
-             print(f"DEBUG: Sending document {doc.file_id}")
-             await bot.send_document(7476703866, doc.file_id, caption=caption, parse_mode="HTML")
-             
-        print("DEBUG: Successfully sent document")
-        return {"success": True, "message": "Hujjat Telegramingizga yuborildi (TEST ID: 7476703866)!"}
+             await bot.send_document(
+                chat_id=tg_acc.chat_id,
+                document=doc.file_id,
+                caption=caption,
+                parse_mode='HTML'
+            )
+            
+        return {"success": True, "message": "Hujjat botga yuborildi"}
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -907,25 +1007,77 @@ async def get_mgmt_documents_archive(
     if group_number: category_filters.append(Student.group_number == group_number)
 
     # 2. Build Query for Documents
-    stmt = (
-        select(UserDocument, Student)
-        .join(Student, UserDocument.student_id == Student.id)
-        .where(and_(*category_filters))
-    )
+    # If title is "Sertifikatlar", fetch from UserCertificate table
+    if title == "Sertifikatlar":
+        from database.models import UserCertificate
+        
+        # Base query for certificates
+        stmt = select(UserCertificate).join(Student).where(and_(*category_filters))
+        
+        # Add search filter for certificates
+        if query:
+            stmt = stmt.where(
+                (UserCertificate.title.ilike(f"%{query}%")) |
+                (Student.full_name.ilike(f"%{query}%"))
+            )
+            
+        # Execute Query
+        stmt = stmt.order_by(UserCertificate.created_at.desc()).offset((page - 1) * limit).limit(limit)
+        result = await db.execute(stmt)
+        certs = result.scalars().all()
+        
+        docs_data = []
+        for c in certs:
+            docs_data.append({
+                "id": c.id,
+                "title": c.title,
+                "created_at": c.created_at.isoformat() if c.created_at else None,
+                "file_id": c.file_id,
+                "file_type": "document", # Frontend treats as document
+                "is_certificate": True,
+                "student": {
+                    "full_name": c.student.full_name,
+                    "group_number": c.student.group_number,
+                    "faculty_name": c.student.faculty_name,
+                }
+            })
+            
+        return {"success": True, "data": docs_data}
 
+    # 3. Get Documents (Standard)
+    stmt = select(UserDocument).join(Student).where(and_(*category_filters))
+    
+    # 4. Filter by Title (Category) if specified and NOT "Sertifikatlar"
     if title:
         stmt = stmt.where(UserDocument.title == title)
-        
+
+    # 5. Search in Title or Student Name
     if query:
         stmt = stmt.where(
-            (Student.full_name.ilike(f"%{query}%")) |
-            (UserDocument.title.ilike(f"%{query}%"))
+            (UserDocument.title.ilike(f"%{query}%")) |
+            (Student.full_name.ilike(f"%{query}%"))
         )
-
-    # 3. Pagination & Execution
+        
     stmt = stmt.order_by(UserDocument.created_at.desc()).offset((page - 1) * limit).limit(limit)
+    
     result = await db.execute(stmt)
-    rows = result.all()
+    docs = result.scalars().all()
+    
+    docs_data = []
+    for d in docs:
+        docs_data.append({
+            "id": d.id,
+            "title": d.title,
+            "created_at": d.created_at.isoformat() if d.created_at else None,
+            "file_id": d.file_id,
+            "student": {
+                "full_name": d.student.full_name,
+                "group_number": d.student.group_number,
+                "faculty_name": d.student.faculty_name,
+            }
+        })
+        
+    return {"success": True, "data": docs_data}
 
     # 4. Get Stats (Matching Student Search logic)
     has_backend_filters = any([faculty_id, specialty_name, group_number])
@@ -1015,36 +1167,58 @@ async def export_mgmt_documents_zip(
         raise HTTPException(status_code=400, detail="Universitet aniqlanmadi")
 
     # 2. Build Query
-    category_filters = [Student.university_id == uni_id]
-    
-    # Restrict by faculty if applicable
-    if f_id:
-        category_filters.append(Student.faculty_id == f_id)
-    elif faculty_id:
-        category_filters.append(Student.faculty_id == faculty_id)
-    if education_type: category_filters.append(Student.education_type == education_type)
-    if education_form: category_filters.append(Student.education_form == education_form)
-    if level_name: category_filters.append(Student.level_name == level_name)
-    if specialty_name: category_filters.append(Student.specialty_name == specialty_name)
-    if group_number: category_filters.append(Student.group_number == group_number)
-
-    stmt = (
-        select(UserDocument, Student)
-        .join(Student, UserDocument.student_id == Student.id)
-        .where(and_(*category_filters))
-    )
-
-    if title:
-        stmt = stmt.where(UserDocument.title == title)
+    # If title is "Sertifikatlar", fetch from UserCertificate table
+    if title == "Sertifikatlar":
+        from database.models import UserCertificate
         
-    if query:
-        stmt = stmt.where(
-            (Student.full_name.ilike(f"%{query}%")) |
-            (UserDocument.title.ilike(f"%{query}%"))
+        category_filters = [Student.university_id == uni_id]
+        if f_id: category_filters.append(Student.faculty_id == f_id)
+        elif faculty_id: category_filters.append(Student.faculty_id == faculty_id)
+        # Note: Certificates might not have strict education/group filters but we apply what we can if joined logic allows
+        # For simplicity, we filter by student relation
+        
+        stmt = (
+            select(UserCertificate, Student)
+            .join(Student, UserCertificate.student_id == Student.id)
+            .where(and_(*category_filters))
         )
-
-    # Order by date
-    stmt = stmt.order_by(UserDocument.created_at.desc())
+        
+        if query:
+             stmt = stmt.where(
+                (UserCertificate.title.ilike(f"%{query}%")) |
+                (Student.full_name.ilike(f"%{query}%"))
+            )
+        
+        stmt = stmt.order_by(UserCertificate.created_at.desc())
+        
+    else:
+        # Standard Documents Query
+        category_filters = [Student.university_id == uni_id]
+        
+        if f_id: category_filters.append(Student.faculty_id == f_id)
+        elif faculty_id: category_filters.append(Student.faculty_id == faculty_id)
+        if education_type: category_filters.append(Student.education_type == education_type)
+        if education_form: category_filters.append(Student.education_form == education_form)
+        if level_name: category_filters.append(Student.level_name == level_name)
+        if specialty_name: category_filters.append(Student.specialty_name == specialty_name)
+        if group_number: category_filters.append(Student.group_number == group_number)
+    
+        stmt = (
+            select(UserDocument, Student)
+            .join(Student, UserDocument.student_id == Student.id)
+            .where(and_(*category_filters))
+        )
+    
+        if title:
+            stmt = stmt.where(UserDocument.title == title)
+            
+        if query:
+            stmt = stmt.where(
+                (Student.full_name.ilike(f"%{query}%")) |
+                (UserDocument.title.ilike(f"%{query}%"))
+            )
+            
+        stmt = stmt.order_by(UserDocument.created_at.desc())
     
     result = await db.execute(stmt)
     rows = result.all()
@@ -1072,7 +1246,9 @@ async def export_mgmt_documents_zip(
                             
                             # Determine Extension
                             ext = "jpg"
-                            if doc.file_type == "document":
+                            f_type = getattr(doc, 'file_type', 'document') # Default to document behavior if missing (likely has path ext)
+                            
+                            if f_type == "document" or "." in file_path:
                                 if "." in file_path:
                                     ext = file_path.split(".")[-1]
                                 else:

@@ -38,6 +38,7 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
     {"id": "Diplom", "name": "Diplom", "icon": Icons.school_rounded},
     {"id": "Rezyume", "name": "Rezyume", "icon": Icons.work_outline_rounded},
     {"id": "Obyektivka", "name": "Obyektivka", "icon": Icons.assignment_ind_rounded},
+    {"id": "Sertifikatlar", "name": "Sertifikatlar", "icon": Icons.workspace_premium_rounded},
     {"id": "Boshqa", "name": "Boshqa", "icon": Icons.folder_shared_rounded},
   ];
 
@@ -516,9 +517,10 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
     );
   }
 
-  Future<void> _downloadDoc(int docId) async {
+  Future<void> _downloadDoc(dynamic doc) async {
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Telegramga yuborilmoqda...")));
-    final result = await _dataService.downloadStudentDocumentForManagement(docId);
+    final type = doc['is_certificate'] == true ? "certificate" : "document";
+    final result = await _dataService.downloadStudentDocumentForManagement(doc['id'], type: type);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
