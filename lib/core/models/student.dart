@@ -111,13 +111,13 @@ class Student {
       imageUrl: json['image'] ?? json['image_url'],
       username: json['username'], 
       missedHours: json['missed_hours'] ?? 0,
-      role: json['role'] ?? json['user_role'],
+      role: json['role_code'] ?? json['role'] ?? json['user_role'],
       isPremium: json['is_premium'] ?? false,
       balance: json['balance'] ?? 0,
       trialUsed: json['trial_used'] ?? false,
       premiumExpiry: json['premium_expiry']?.toString(),
       customBadge: json['custom_badge'],
-      staffRole: json['staff_role'] ?? json['role'], // Map generic role to staffRole if needed, or specific field
+      staffRole: json['staff_role'] ?? json['role_code'] ?? json['role'], // Map generic role to staffRole if needed, or specific field
     );
   }
 
