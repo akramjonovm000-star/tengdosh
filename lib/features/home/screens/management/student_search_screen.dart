@@ -16,15 +16,18 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
   List<dynamic> _faculties = [];
   List<dynamic> _searchResults = [];
   List<String> _specialties = [];
+  List<String> _groups = [];
   
   bool _isLoading = true;
   bool _isSearching = false;
 
   // Filter States
   String? _selectedEducationType;
+  String? _selectedEducationForm;
   String? _selectedCourse;
   int? _selectedFacultyId;
   String? _selectedSpecialty;
+  String? _selectedGroup;
 
   @override
   void initState() {
@@ -39,6 +42,7 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
       _isLoading = false;
     });
     _loadSpecialties();
+    _loadGroups();
   }
 
   Future<void> _loadSpecialties() async {
@@ -48,14 +52,25 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
     });
   }
 
+  Future<void> _loadGroups() async {
+    final groups = await _dataService.getManagementGroups(
+      facultyId: _selectedFacultyId,
+      levelName: _selectedCourse != null ? "${_selectedCourse}-kurs" : null,
+    );
+    setState(() {
+      _groups = List<String>.from(groups);
+    });
+  }
+
   Future<void> _handleSearch() async {
     final query = _searchController.text;
     
-    // Check if we have any filters or query
     bool hasFilters = _selectedEducationType != null || 
+                      _selectedEducationForm != null ||
                       _selectedCourse != null || 
                       _selectedFacultyId != null || 
-                      _selectedSpecialty != null;
+                      _selectedSpecialty != null ||
+                      _selectedGroup != null;
 
     if (query.isEmpty && !hasFilters) {
       setState(() {
@@ -71,8 +86,10 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
       query: query.isNotEmpty ? query : null,
       facultyId: _selectedFacultyId,
       educationType: _selectedEducationType,
+      educationForm: _selectedEducationForm,
       levelName: _selectedCourse != null ? "${_selectedCourse}-kurs" : null,
       specialtyName: _selectedSpecialty,
+      groupNumber: _selectedGroup,
     );
     
     setState(() {
@@ -91,14 +108,16 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
         foregroundColor: Colors.black,
         elevation: 0,
         actions: [
-          if (_selectedEducationType != null || _selectedCourse != null || _selectedFacultyId != null || _selectedSpecialty != null || _searchController.text.isNotEmpty)
+          if (_selectedEducationType != null || _selectedEducationForm != null || _selectedCourse != null || _selectedFacultyId != null || _selectedSpecialty != null || _selectedGroup != null || _searchController.text.isNotEmpty)
             TextButton(
               onPressed: () {
                 setState(() {
                   _selectedEducationType = null;
+                  _selectedEducationForm = null;
                   _selectedCourse = null;
                   _selectedFacultyId = null;
                   _selectedSpecialty = null;
+                  _selectedGroup = null;
                   _searchController.clear();
                 });
                 _handleSearch();
@@ -112,7 +131,7 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
           // 1. Search & Filters Container
           Container(
             color: Colors.white,
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: Column(
               children: [
                 // Search Field
@@ -124,23 +143,23 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
                     prefixIcon: const Icon(Icons.search),
                     filled: true,
                     fillColor: Colors.grey[50],
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 
-                // Row 1: Education Type and Course
+                // Row 1: Type, Form, Course
                 Row(
                   children: [
                     Expanded(
-                      flex: 3,
                       child: _buildInlineDropdown<String>(
-                        hint: "Ta'lim turi",
+                        hint: "Turi",
                         value: _selectedEducationType,
-                        items: ["Bakalavr", "Magistr"].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 13)))).toList(),
+                        items: ["Bakalavr", "Magistr"].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 12)))).toList(),
                         onChanged: (val) {
                           setState(() {
                             _selectedEducationType = val;
@@ -152,14 +171,26 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      flex: 2,
+                      child: _buildInlineDropdown<String>(
+                        hint: "Shakli",
+                        value: _selectedEducationForm,
+                        items: ["Kunduzgi", "Masofaviy", "Kechki", "Sirtqi"].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 12)))).toList(),
+                        onChanged: (val) {
+                          setState(() => _selectedEducationForm = val);
+                          _handleSearch();
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
                       child: _buildInlineDropdown<String>(
                         hint: "Kurs",
                         value: _selectedCourse,
                         items: (_selectedEducationType == "Magistr" ? ["1", "2"] : ["1", "2", "3", "4"])
-                            .map((e) => DropdownMenuItem(value: e, child: Text("$e-kurs", style: const TextStyle(fontSize: 13)))).toList(),
+                            .map((e) => DropdownMenuItem(value: e, child: Text("$e-kurs", style: const TextStyle(fontSize: 12)))).toList(),
                         onChanged: (val) {
                           setState(() => _selectedCourse = val);
+                          _loadGroups();
                           _handleSearch();
                         },
                       ),
@@ -168,7 +199,7 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
                 ),
                 const SizedBox(height: 8),
                 
-                // Row 2: Faculty and Specialty
+                // Row 2: Faculty, Specialty, Group
                 Row(
                   children: [
                     Expanded(
@@ -177,14 +208,16 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
                         value: _selectedFacultyId,
                         items: _faculties.map((f) => DropdownMenuItem<int>(
                           value: f['id'],
-                          child: Text(f['name'] ?? "", overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13)),
+                          child: Text(f['name'] ?? "", overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
                         )).toList(),
                         onChanged: (val) {
                           setState(() {
                             _selectedFacultyId = val;
                             _selectedSpecialty = null;
+                            _selectedGroup = null;
                           });
                           _loadSpecialties();
+                          _loadGroups();
                           _handleSearch();
                         },
                       ),
@@ -196,10 +229,25 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
                         value: _selectedSpecialty,
                         items: _specialties.map((s) => DropdownMenuItem(
                           value: s,
-                          child: Text(s, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13)),
+                          child: Text(s, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
                         )).toList(),
                         onChanged: (val) {
                           setState(() => _selectedSpecialty = val);
+                          _handleSearch();
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildInlineDropdown<String>(
+                        hint: "Guruh",
+                        value: _selectedGroup,
+                        items: _groups.map((g) => DropdownMenuItem(
+                          value: g,
+                          child: Text(g, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
+                        )).toList(),
+                        onChanged: (val) {
+                          setState(() => _selectedGroup = val);
                           _handleSearch();
                         },
                       ),
@@ -210,7 +258,7 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
             ),
           ),
 
-          // 2. Results or Default View
+          // 2. Results
           Expanded(
             child: _buildSearchResults(),
           ),
@@ -226,24 +274,51 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
     required ValueChanged<T?> onChanged,
   }) {
     return Container(
+      height: 40,
       decoration: BoxDecoration(
         color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<T>(
           isExpanded: true,
-          hint: Text(hint, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+          hint: Text(hint, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
           value: value,
           items: items,
           onChanged: onChanged,
+          icon: const Icon(Icons.arrow_drop_down, size: 20),
         ),
       ),
     );
   }
 
   Widget _buildSearchResults() {
+    bool hasFilters = _searchController.text.isNotEmpty || 
+                      _selectedEducationType != null || 
+                      _selectedEducationForm != null ||
+                      _selectedCourse != null || 
+                      _selectedFacultyId != null || 
+                      _selectedSpecialty != null ||
+                      _selectedGroup != null;
+
+    if (!hasFilters) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.person_search, size: 64, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
+              "Talabalarni qidirish uchun\nfilterlarni tanlang yoki ismni yozing",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey, fontSize: 16),
+            ),
+          ],
+        ),
+      );
+    }
+
     if (_isSearching) return const Center(child: CircularProgressIndicator());
     if (_searchResults.isEmpty) return const Center(child: Text("Ma'lumot topilmadi"));
 
@@ -268,23 +343,22 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
             ),
             title: Text(
               s['full_name'] ?? "",
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 4),
                 Text(
-                  "ID: ${s['hemis_login'] ?? s['hemis_id'] ?? ""} • ${s['group_number'] ?? ""}",
-                  style: TextStyle(color: Colors.grey[700]),
+                  "Guruh: ${s['group_number'] ?? ""} • ${s['education_form'] ?? ""}",
+                  style: TextStyle(color: Colors.grey[700], fontSize: 13),
                 ),
-                if (s['faculty_name'] != null)
-                  Text(
-                    s['faculty_name'],
-                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                Text(
+                  "Fakultet: ${s['faculty_name'] ?? "Noma'lum"}",
+                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
             ),
             onTap: () {

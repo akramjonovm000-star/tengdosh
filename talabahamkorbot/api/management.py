@@ -168,8 +168,10 @@ async def search_mgmt_students(
     query: str = None,
     faculty_id: int = None,
     education_type: str = None,
+    education_form: str = None,
     level_name: str = None,
     specialty_name: str = None,
+    group_number: str = None,
     staff: Any = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
 ):
@@ -190,10 +192,14 @@ async def search_mgmt_students(
         stmt = stmt.where(Student.faculty_id == faculty_id)
     if education_type:
         stmt = stmt.where(Student.education_type == education_type)
+    if education_form:
+        stmt = stmt.where(Student.education_form == education_form)
     if level_name:
         stmt = stmt.where(Student.level_name == level_name)
     if specialty_name:
         stmt = stmt.where(Student.specialty_name == specialty_name)
+    if group_number:
+        stmt = stmt.where(Student.group_number == group_number)
 
     stmt = stmt.order_by(Student.full_name).limit(50)
     
@@ -212,7 +218,8 @@ async def search_mgmt_students(
                 "group_number": s.group_number,
                 "faculty_name": s.faculty_name,
                 "specialty_name": s.specialty_name,
-                "level_name": s.level_name
+                "level_name": s.level_name,
+                "education_form": s.education_form
             } for s in students
         ]
     }
@@ -237,6 +244,28 @@ async def get_mgmt_specialties(
     specialties = result.scalars().all()
     
     return {"success": True, "data": specialties}
+
+@router.get("/groups")
+async def get_mgmt_groups(
+    faculty_id: int = None,
+    level_name: str = None,
+    staff: Any = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    uni_id = getattr(staff, 'university_id', None)
+    
+    stmt = select(Student.group_number).where(
+        Student.university_id == uni_id, 
+        Student.group_number != None
+    )
+    
+    if faculty_id: stmt = stmt.where(Student.faculty_id == faculty_id)
+    if level_name: stmt = stmt.where(Student.level_name == level_name)
+        
+    result = await db.execute(stmt.distinct().order_by(Student.group_number))
+    groups = result.scalars().all()
+    
+    return {"success": True, "data": groups}
 
 @router.get("/students/{student_id}/full-details")
 async def get_mgmt_student_details(
