@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../../core/services/data_service.dart';
-import 'faculty_levels_screen.dart';
 import 'student_detail_view.dart';
 
 class StudentSearchScreen extends StatefulWidget {
@@ -205,13 +204,7 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
 
           // 2. Results or Default View
           Expanded(
-            child: (_searchController.text.isNotEmpty || 
-                    _selectedEducationType != null || 
-                    _selectedCourse != null || 
-                    _selectedFacultyId != null || 
-                    _selectedSpecialty != null)
-                ? _buildSearchResults()
-                : _buildFacultyList(),
+            child: _buildSearchResults(),
           ),
         ],
       ),
@@ -290,42 +283,6 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => StudentDetailView(studentId: s['id'])),
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildFacultyList() {
-    if (_isLoading) return const Center(child: CircularProgressIndicator());
-    if (_faculties.isEmpty) return const Center(child: Text("Fakultetlar topilmadi"));
-
-    return ListView.builder(
-      itemCount: _faculties.length,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemBuilder: (context, index) {
-        final f = _faculties[index];
-        return Card(
-          elevation: 0,
-          margin: const EdgeInsets.only(bottom: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: Colors.grey.shade200),
-          ),
-          child: ListTile(
-            title: Text(f['name'] ?? "Noma'lum fakultet"),
-            trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => FacultyLevelsScreen(
-                    facultyId: f['id'] ?? 0,
-                    facultyName: f['name'] ?? "Noma'lum fakultet",
-                  ),
-                ),
               );
             },
           ),
