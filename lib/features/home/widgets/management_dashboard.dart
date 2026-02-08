@@ -95,10 +95,10 @@ class ManagementDashboard extends StatelessWidget {
               onTap: () => _showNotImplemented(context, "Arxiv"),
             ),
             DashboardCard(
-              title: "KPI Reytinglari",
+              title: "HEMIS",
               icon: Icons.military_tech_rounded,
               color: Colors.amber,
-              onTap: () => _showNotImplemented(context, "KPI"),
+              onTap: () => _showNotImplemented(context, "HEMIS"),
             ),
             DashboardCard(
               title: "Moliyaviy Holat",
