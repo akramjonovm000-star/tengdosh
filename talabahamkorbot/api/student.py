@@ -30,7 +30,8 @@ async def get_my_profile(
              "first_name": student.full_name.split()[0] if student.full_name else "",
              "last_name": student.full_name.split()[-1] if student.full_name and len(student.full_name.split()) > 1 else "",
              "short_name": student.full_name, # Fallback
-             "role": student.role, # tyutor
+             "role": "Xodim", # Generic staff label or specific
+             "role_code": student.role, # Internal code
              "image": getattr(student, 'image_url', None) or "https://ui-avatars.com/api/?name=" + student.full_name.replace(" ", "+"),
              "image_url": getattr(student, 'image_url', None) or "https://ui-avatars.com/api/?name=" + student.full_name.replace(" ", "+"),
              "university_name": getattr(student, 'university_name', "JMCU"),
@@ -65,7 +66,24 @@ async def get_my_profile(
     data['university_name'] = student.university_name
     
     data['university_name'] = student.university_name
-    data['role'] = student.hemis_role or "student" # Populate role for Mobile UI
+    
+    # [FIX] Role Mapping
+    role_map = {
+        "student": "Talaba",
+        "teacher": "O'qituvchi", 
+        "tyutor": "Tyutor",
+        "rahbariyat": "Rahbariyat",
+        "admin": "Admin",
+        "staff": "Xodim",
+        "owner": "Tizim Egasi"
+    }
+    
+    raw_role = student.hemis_role or "student"
+    data['role'] = role_map.get(raw_role, "Foydalanuvchi")
+    
+    # Override for specific cases if needed
+    if raw_role == "student":
+        data['role'] = "Talaba"
     
     # Force 'image' key for frontend compatibility
     # Ensure HTTPS

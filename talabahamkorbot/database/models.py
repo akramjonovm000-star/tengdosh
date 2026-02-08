@@ -275,6 +275,8 @@ class Staff(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    short_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    image_url: Mapped[str | None] = mapped_column(String(255), nullable=True) # [NEW] Added for OneID
     jshshir: Mapped[str] = mapped_column(String(20), nullable=False)
     phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
     position: Mapped[str | None] = mapped_column(String(255), nullable=True)
