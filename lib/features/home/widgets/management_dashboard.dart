@@ -87,7 +87,12 @@ class ManagementDashboard extends StatelessWidget {
               title: "HEMIS",
               icon: Icons.military_tech_rounded,
               color: Colors.amber,
-              onTap: () => _showHemisSubmenu(context),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HemisDashboardScreen()),
+                );
+              },
             ),
             DashboardCard(
               title: "Xodimlar Monitoringi",
