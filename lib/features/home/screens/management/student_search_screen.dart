@@ -276,7 +276,7 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
           ),
 
           // 1.5 Stats Section
-          if (_searchResults.isNotEmpty || _isSearching)
+          if (_selectedEducationType != null || _selectedEducationForm != null || _selectedCourse != null || _selectedFacultyId != null || _selectedSpecialty != null || _selectedGroup != null || _searchController.text.isNotEmpty || _isSearching)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
@@ -287,7 +287,7 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
                 children: [
                   Expanded(
                     child: _buildStatItem(
-                      label: "Umumiy talabalar soni",
+                      label: "Jami talabalar",
                       value: _totalCount,
                       icon: Icons.people_outline,
                       color: Colors.blue,

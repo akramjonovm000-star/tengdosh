@@ -195,7 +195,7 @@ async def search_mgmt_students(
     if group_number: filters.append(Student.group_number == group_number)
 
     # 1. Get Students
-    stmt = select(Student).where(and_(*filters)).order_by(Student.full_name).limit(50)
+    stmt = select(Student).where(and_(*filters)).order_by(Student.full_name).limit(200)
     result = await db.execute(stmt)
     students = result.scalars().all()
     
