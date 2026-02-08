@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../screens/management/hemis/hemis_dashboard_screen.dart';
+import '../screens/management/student_search_screen.dart';
 import '../screens/management/staff_search_screen.dart';
 import '../../student_module/widgets/student_dashboard_widgets.dart';
 import '../../../../core/services/data_service.dart';
