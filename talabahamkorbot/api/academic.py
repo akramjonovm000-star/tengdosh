@@ -8,6 +8,7 @@ from api.dependencies import get_current_student
 from database.models import Student, TgAccount
 import asyncio
 from datetime import datetime
+from database.models import Student, Staff, TgAccount
 
 router = APIRouter()
 
@@ -47,6 +48,10 @@ async def get_grades(
     db: AsyncSession = Depends(get_session)
 ):
     token = getattr(student, 'hemis_token', None)
+
+    if isinstance(student, Staff):
+         return {"success": True, "data": []}
+
     if not token:
          return {"success": False, "message": "No Token", "data": []}
 
@@ -90,6 +95,10 @@ async def get_semesters(
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_session)
 ):
+    if isinstance(student, Staff):
+        # Staff don't have semesters in Student API
+        return {"success": True, "data": []}
+
     if not student.hemis_token:
         return {"success": False, "message": "No Token"}
 
@@ -170,6 +179,9 @@ async def get_subjects(
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_session)
 ):
+    if isinstance(student, Staff):
+         return {"success": True, "data": []}
+
     if not getattr(student, 'hemis_token', None):
         return {"success": False, "message": "No Token"}
 
@@ -243,6 +255,9 @@ async def get_schedule(
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_session)
 ):
+    if isinstance(student, Staff):
+        return {"success": True, "data": []}
+
     token = getattr(student, 'hemis_token', None)
     if not token:
         return {"success": False, "message": "No Token"}
@@ -313,6 +328,9 @@ async def get_attendance(
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_session)
 ):
+    if isinstance(student, Staff):
+        return {"success": True, "data": {"total": 0, "excused": 0, "unexcused": 0, "items": []}}
+
     token = getattr(student, 'hemis_token', None)
     if not token:
         return {"success": False, "message": "No Token"}
@@ -347,6 +365,9 @@ async def get_attendance(
 
 @router.get("/resources/{subject_id}")
 async def get_resources(subject_id: str, student: Student = Depends(get_current_student)):
+    if isinstance(student, Staff):
+        return {"success": True, "data": []}
+
     token = getattr(student, 'hemis_token', None)
     if not token or await HemisService.check_auth_status(token) == "AUTH_ERROR":
         raise HTTPException(status_code=401, detail="HEMIS_AUTH_ERROR")
@@ -364,6 +385,9 @@ async def get_resources(subject_id: str, student: Student = Depends(get_current_
 
 @router.get("/subject/{subject_id}/details")
 async def get_subject_details_endpoint(subject_id: str, semester: str = None, student: Student = Depends(get_current_student)):
+    if isinstance(student, Staff):
+        return {"success": False, "message": "Xodimlar uchun mavjud emas"}
+
     token = getattr(student, 'hemis_token', None)
     if not token or await HemisService.check_auth_status(token) == "AUTH_ERROR":
         raise HTTPException(status_code=401, detail="HEMIS_AUTH_ERROR")

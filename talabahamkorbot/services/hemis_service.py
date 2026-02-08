@@ -136,7 +136,9 @@ class HemisService:
             return "test_token_tutor", None
         # ------------------------
 
-        url = f"{HemisService.BASE_URL}/auth/login"
+        # [MODIFIED] User requested specific login URL for this test bot
+        # url = f"{HemisService.BASE_URL}/auth/login"
+        url = "https://talaba.tsue.uz/rest/v1/auth/login"
         try:
             safe_login = int(str(login))
         except:
@@ -261,7 +263,7 @@ class HemisService:
         return None, error
 
     @staticmethod
-    async def get_me(token: str, base_url: Optional[str] = None):
+    async def get_me(token: str, base_url: Optional[str] = None, use_oauth_endpoint: bool = False):
         from config import HEMIS_PROFILE_URL
         
         # Determine URLs
@@ -269,11 +271,22 @@ class HemisService:
         if domain.endswith("/rest/v1"): domain = domain.replace("/rest/v1", "")
         
         rest_url = f"{domain}/rest/v1/account/me"
-        oauth_profile_url = f"{domain}/oauth/api/user?fields=id,uuid,type,login,firstname,surname,patronymic,picture,email,phone,birth_date,roles"
+        # Updated fields per user snippet + roles
+        oauth_profile_url = f"{domain}/oauth/api/user?fields=id,uuid,type,login,custom_role,firstname,surname,patronymic,picture,email,phone,birth_date,university_id,roles"
 
         client = await HemisService.get_client()
         try:
-            # 1. Try REST API Endpoint
+            # 1. If forced or preferred, use OAuth Endpoint directly
+            if use_oauth_endpoint:
+                logger.info(f"Fetching OAuth Profile directly from {oauth_profile_url}")
+                response = await HemisService.fetch_with_retry(client, "GET", oauth_profile_url, headers=HemisService.get_headers(token))
+                if response.status_code == 200:
+                    return response.json()
+                logger.warning(f"OAuth Profile failed: {response.status_code}")
+                # Don't fallback to REST if this was explicitly requested regarding OneID
+                return None
+
+            # 2. Try REST API Endpoint (Standard Flow)
             response = await HemisService.fetch_with_retry(client, "GET", rest_url, headers=HemisService.get_headers(token))
             
             if response.status_code == 200:

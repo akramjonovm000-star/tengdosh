@@ -86,7 +86,8 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
     
     # 2. Get User Profile with this Token (CRITICAL STEP)
     logger.info(f"AuthLog: Fetching profile for token {access_token[:10]} using {base_url}...")
-    me = await HemisService.get_me(access_token, base_url=base_url)
+    # Explicitly use OAuth endpoint as per instruction
+    me = await HemisService.get_me(access_token, base_url=base_url, use_oauth_endpoint=True)
     t2 = time.time()
     logger.info(f"AuthLog: Get Me took {t2 - t1:.2f}s")
     
@@ -106,7 +107,9 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
         result = await db.execute(select(Student).where(Student.hemis_login == h_login))
         student = result.scalar_one_or_none()
         
-        full_name = f"{me.get('firstname', '')} {me.get('lastname', '')} {me.get('fathername', '')}".strip()
+        # OAuth endpoint returns 'surname', REST might return 'lastname'. But with use_oauth_endpoint=True, it's 'surname'.
+        full_name = f"{me.get('firstname', '')} {me.get('surname', '')} {me.get('fathername', '')}".strip()
+        university_id = me.get("university_id")
         
         if not student:
             student = Student(
@@ -121,9 +124,10 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
             await db.commit()
             await db.refresh(student)
 
-            # [NEW] Prefetch Data
-            import asyncio
-            asyncio.create_task(HemisService.prefetch_data(student.hemis_token, student.id))
+            db.add(student)
+            await db.commit()
+            await db.refresh(student)
+
         else:
             student.hemis_token = access_token
             student.hemis_refresh_token = refresh_token
@@ -205,6 +209,8 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
             
             # [NEW] Save Token
             staff.hemis_token = access_token
+            if me.get("university_id"):
+                staff.university_id = me.get("university_id")
                  
             await db.commit()
             internal_token = f"staff_id_{staff.id}"
@@ -219,7 +225,8 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
                 role=user_role,
                 phone=me.get("phone"),
                 is_active=True,
-                hemis_token=access_token # [NEW]
+                hemis_token=access_token, # [NEW]
+                university_id=me.get("university_id")
             )
             db.add(staff)
             await db.commit()
