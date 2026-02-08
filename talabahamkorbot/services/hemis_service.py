@@ -804,25 +804,51 @@ class HemisService:
             logger.error(f"Prefetch error: {e}")
 
     @staticmethod
-    async def get_total_student_count(token: str) -> int:
+    async def get_public_student_total() -> int:
         """
-        Fetches the total number of students visible to the staff member.
-        Used for Management Dashboard.
-        Attempts /data/student-count-by-shift (User Priority) then fallbacks.
+        Fetches total student count from public statistics API.
+        No token required.
         """
         client = await HemisService.get_client()
+        url = f"{HemisService.BASE_URL}/public/stat-student"
+        try:
+            response = await client.get(url, timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("success"):
+                    stats = data.get("data", {})
+                    # Aggregate from 'education_type' -> 'Jami'
+                    jami = stats.get("education_type", {}).get("Jami", {})
+                    total = jami.get("Erkak", 0) + jami.get("Ayol", 0)
+                    if total > 0:
+                        return total
+        except Exception as e:
+            logger.warning(f"Public stats fetch failed: {e}")
+        return 0
+
+    @staticmethod
+    async def get_total_student_count(token: Optional[str] = None) -> int:
+        """
+        Fetches the total number of students.
+        Attempts Public API first, then falls back to shift-based or list-based counts with token.
+        """
+        # Try Public API first (most accurate general stat)
+        try:
+            public_total = await HemisService.get_public_student_total()
+            if public_total > 0:
+                return public_total
+        except Exception:
+            pass
+
+        if not token:
+            return 0
+
+        client = await HemisService.get_client()
         
-        # Priority 1: /data/student-count-by-shift (Specific User Request)
-        # This endpoint defaults to Nov 1 of Current Year. If today is Feb 2026, default is Nov 2026 (Future) -> 0 results.
-        # We must pass current week/month to get actual data.
-        
+        # Fallback 1: /data/student-count-by-shift
         today = datetime.now()
-        # Start of academic year (roughly Sept 1st of previous year if currently Jan-Aug, else Sept 1st of current year)
-        # But for "active students", maybe just "today" or "this week" is safer?
-        # The API counts students based on SCHEDULE. So we need a period with a schedule.
-        # Let's pick CURRENT WEEK.
-        start_of_week = today - timedelta(days=today.weekday()) # Monday
-        end_of_week = start_of_week + timedelta(days=6) # Sunday
+        start_of_week = today - timedelta(days=today.weekday())
+        end_of_week = start_of_week + timedelta(days=6)
         
         params = {
             "start_date": start_of_week.strftime("%Y-%m-%d"),
@@ -831,23 +857,17 @@ class HemisService:
 
         url_shift = f"{HemisService.BASE_URL}/data/student-count-by-shift"
         try:
-             logger.info(f"Fetching Student Count from {url_shift} with params {params}")
              response = await client.get(url_shift, headers=HemisService.get_headers(token), params=params)
-             
              if response.status_code == 200:
                  data = response.json()
-                 logger.info(f"Student Count Response: {data}")
-                 # Structure: { "success": true, "data": { "total": 5000, ... } }
                  if "data" in data and isinstance(data["data"], dict):
                      total = data["data"].get("total")
                      if total is not None:
                          return int(total)
-             else:
-                 logger.warning(f"Student Count API Failed: {response.status_code} - {response.text}")
-        except Exception as e:
-             logger.warning(f"Failed to fetch student count from {url_shift}: {e}")
+        except Exception:
+             pass
 
-        # Priority 2: education/student-list (standard), then data/student-list
+        # Fallback 2: student-list counters
         endpoints = [
             f"{HemisService.BASE_URL}/education/student-list",
             f"{HemisService.BASE_URL}/data/student-list"
@@ -855,23 +875,16 @@ class HemisService:
         
         for url in endpoints:
             try:
-                # Fetch only 1 item to get metadata count
                 response = await client.get(url, headers=HemisService.get_headers(token), params={"limit": 1, "page": 1})
-                
                 if response.status_code == 200:
                     data = response.json()
-                    
-                    # Structure 1: { "success": true, "data": { "items": [...], "_meta": { "totalCount": 123 } } }
                     if "data" in data and isinstance(data["data"], dict):
                         meta = data["data"].get("_meta")
                         if meta and "totalCount" in meta:
                             return int(meta["totalCount"])
-                            
-                    # Structure 2: { "data": { "pagination": { "totalCount": 123 } } }
-                    if "data" in data and isinstance(data["data"], dict) and "pagination" in data["data"]:
-                         return int(data["data"]["pagination"].get("totalCount", 0))
-
-            except Exception as e:
-                logger.warning(f"Failed to fetch student count from {url}: {e}")
+                        if "pagination" in data["data"]:
+                             return int(data["data"]["pagination"].get("totalCount", 0))
+            except Exception:
+                pass
                 
         return 0

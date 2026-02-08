@@ -11,6 +11,7 @@ router = APIRouter()
 from typing import Optional
 from services.sync_service import sync_student_data
 from utils.student_utils import get_election_info
+from services.hemis_service import HemisService
 from sqlalchemy import and_
 from datetime import datetime
 
@@ -38,6 +39,7 @@ async def get_dashboard_stats(
     
     # [FIX] Skip student-specific queries for Staff
     if isinstance(student, Staff):
+        total_st = await HemisService.get_total_student_count(student.hemis_token)
         return {
             "full_name": student.full_name,
             "role": student.role,
@@ -48,7 +50,8 @@ async def get_dashboard_stats(
             "missed_hours_excused": 0,
             "missed_hours_unexcused": 0,
             "has_active_election": False,
-            "active_election_id": None
+            "active_election_id": None,
+            "total_students": total_st
         }
 
     # 2. Approved Activities Count

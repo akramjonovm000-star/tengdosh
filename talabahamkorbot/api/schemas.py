@@ -88,6 +88,9 @@ class StudentDashboardSchema(BaseModel):
     # Election Info
     has_active_election: bool = False
     active_election_id: Optional[int] = None
+    
+    # Management Info
+    total_students: Optional[int] = None
 
 class ClubSchema(BaseModel):
     id: int
