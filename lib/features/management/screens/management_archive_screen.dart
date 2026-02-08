@@ -428,7 +428,7 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
     );
   }
 
-  }
+
 
   Widget _buildDocumentCard(dynamic doc) {
     final student = doc['student'] ?? {};
