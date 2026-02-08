@@ -213,15 +213,11 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
           // Faculty Dropdown
           DropdownButtonFormField<int>(
             value: _selectedFacultyId,
-            decoration: InputDecoration(
-              hintText: "Fakultetni tanlang",
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[300]!)),
-            ),
             items: [
-              const DropdownMenuItem(value: null, child: Text("Barcha fakultetlar")),
-              ..._faculties.map((f) => DropdownMenuItem(value: f['id'], child: Text(f['name']))),
+              const DropdownMenuItem(value: null, child: Text("Barcha fakultetlar", overflow: TextOverflow.ellipsis)),
+              ..._faculties.map((f) => DropdownMenuItem(value: f['id'], child: Text(f['name'], overflow: TextOverflow.ellipsis))),
             ],
+            isExpanded: true,
             onChanged: (val) {
               setState(() => _selectedFacultyId = val);
               _loadDocuments(refresh: true);
@@ -263,6 +259,8 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
                       Text(
                         "${student['full_name'] ?? 'Noma\'lum talaba'}",
                         style: TextStyle(color: AppTheme.primaryBlue, fontSize: 13, fontWeight: FontWeight.w500),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -278,12 +276,19 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("Guruh", style: TextStyle(color: Colors.grey[500], fontSize: 11)),
-                    Text(student['group_number'] ?? '-', style: const TextStyle(fontSize: 13)),
-                  ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Guruh", style: TextStyle(color: Colors.grey[500], fontSize: 11)),
+                      Text(
+                        student['group_number'] ?? '-',
+                        style: const TextStyle(fontSize: 13),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -299,6 +304,8 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
               Text(
                 student['faculty_name'],
                 style: TextStyle(color: Colors.grey[600], fontSize: 11, fontStyle: FontStyle.italic),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ],
