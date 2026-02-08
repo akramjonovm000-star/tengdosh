@@ -4,7 +4,7 @@ from sqlalchemy import select, func
 
 from api.dependencies import get_current_student, get_db
 from api.schemas import StudentDashboardSchema
-from database.models import Student, UserActivity, ClubMembership, Election
+from database.models import Student, Staff, UserActivity, ClubMembership, Election
 
 router = APIRouter()
 
@@ -36,6 +36,21 @@ async def get_dashboard_stats(
         .where(UserActivity.student_id == student.id)
     ) or 0
     
+    # [FIX] Skip student-specific queries for Staff
+    if isinstance(student, Staff):
+        return {
+            "full_name": student.full_name,
+            "role": student.role,
+            "activities_count": 0,
+            "clubs_count": 0,
+            "gpa": 0.0,
+            "missed_hours": 0,
+            "missed_hours_excused": 0,
+            "missed_hours_unexcused": 0,
+            "has_active_election": False,
+            "active_election_id": None
+        }
+
     # 2. Approved Activities Count
     approved_count = await db.scalar(
         select(func.count(UserActivity.id))

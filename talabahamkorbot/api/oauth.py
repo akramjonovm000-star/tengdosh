@@ -187,7 +187,7 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
         # Staff
         role = "staff" # Generic
         from database.models import Staff
-        pinfl = me.get("pinfl") or me.get("jshshir")
+        pinfl = me.get("pinfl") or me.get("jshshir") or me.get("passport_pin")
         
         staff = None
         if h_id:
@@ -255,17 +255,8 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
                          if isinstance(sp, dict):
                              staff.position = sp.get("name")
 
-            # ALWAYS update role to ensure highest privilege
-            # But prevent downgrading a 'rahbariyat' or 'teacher' to 'student' accidentally
-            current_role_priority = role_priority.get(staff.role, 0)
-            new_role_priority = role_priority.get(user_role, 0)
-            
-            if new_role_priority >= current_role_priority:
-                 if staff.role != user_role:
-                      logger.info(f"Updating Staff Role from {staff.role} to {user_role}")
-                      staff.role = user_role
-            else:
-                 logger.warning(f"Prevented role downgrade for {staff.full_name}: {staff.role} -> {user_role}")
+            # [FIX] Force Rahbariyat for ALL Staff users as per user request
+            staff.role = StaffRole.RAHBARIYAT
 
             # Force Rahbariyat for specific employee_id if needed (Safety Net)
             if staff.employee_id_number == "3952111037": # User's specific ID
