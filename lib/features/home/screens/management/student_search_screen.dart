@@ -132,14 +132,15 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
                 ),
                 const SizedBox(height: 12),
                 
-                // Row for Education Type and Course
+                // Row 1: Education Type and Course
                 Row(
                   children: [
                     Expanded(
+                      flex: 3,
                       child: _buildInlineDropdown<String>(
                         hint: "Ta'lim turi",
                         value: _selectedEducationType,
-                        items: ["Bakalavr", "Magistr"].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                        items: ["Bakalavr", "Magistr"].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 13)))).toList(),
                         onChanged: (val) {
                           setState(() {
                             _selectedEducationType = val;
@@ -149,13 +150,14 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
                         },
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     Expanded(
+                      flex: 2,
                       child: _buildInlineDropdown<String>(
                         hint: "Kurs",
                         value: _selectedCourse,
                         items: (_selectedEducationType == "Magistr" ? ["1", "2"] : ["1", "2", "3", "4"])
-                            .map((e) => DropdownMenuItem(value: e, child: Text("$e-kurs"))).toList(),
+                            .map((e) => DropdownMenuItem(value: e, child: Text("$e-kurs", style: const TextStyle(fontSize: 13)))).toList(),
                         onChanged: (val) {
                           setState(() => _selectedCourse = val);
                           _handleSearch();
@@ -164,39 +166,45 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 
-                // Faculty Dropdown
-                _buildInlineDropdown<int>(
-                  hint: "Fakultetni tanlang",
-                  value: _selectedFacultyId,
-                  items: _faculties.map((f) => DropdownMenuItem<int>(
-                    value: f['id'],
-                    child: Text(f['name'] ?? "", overflow: TextOverflow.ellipsis),
-                  )).toList(),
-                  onChanged: (val) {
-                    setState(() {
-                      _selectedFacultyId = val;
-                      _selectedSpecialty = null;
-                    });
-                    _loadSpecialties();
-                    _handleSearch();
-                  },
-                ),
-                const SizedBox(height: 12),
-
-                // Specialty Dropdown
-                _buildInlineDropdown<String>(
-                  hint: "Yo'nalishni tanlang",
-                  value: _selectedSpecialty,
-                  items: _specialties.map((s) => DropdownMenuItem(
-                    value: s,
-                    child: Text(s, overflow: TextOverflow.ellipsis),
-                  )).toList(),
-                  onChanged: (val) {
-                    setState(() => _selectedSpecialty = val);
-                    _handleSearch();
-                  },
+                // Row 2: Faculty and Specialty
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildInlineDropdown<int>(
+                        hint: "Fakultet",
+                        value: _selectedFacultyId,
+                        items: _faculties.map((f) => DropdownMenuItem<int>(
+                          value: f['id'],
+                          child: Text(f['name'] ?? "", overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13)),
+                        )).toList(),
+                        onChanged: (val) {
+                          setState(() {
+                            _selectedFacultyId = val;
+                            _selectedSpecialty = null;
+                          });
+                          _loadSpecialties();
+                          _handleSearch();
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildInlineDropdown<String>(
+                        hint: "Yo'nalish",
+                        value: _selectedSpecialty,
+                        items: _specialties.map((s) => DropdownMenuItem(
+                          value: s,
+                          child: Text(s, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13)),
+                        )).toList(),
+                        onChanged: (val) {
+                          setState(() => _selectedSpecialty = val);
+                          _handleSearch();
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
