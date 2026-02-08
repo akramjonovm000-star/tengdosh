@@ -1,6 +1,7 @@
 from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
-from database.models import User, Student, University, Faculty, UserAppeal, StudentFeedback, UserActivity, UserDocument, UserCertificate
+from database.models import User, Student, University, Faculty, UserAppeal, StudentFeedback, UserActivity, UserDocument, UserCertificate, ChoyxonaPost, ChoyxonaComment, AiMessage
+from datetime import datetime, timedelta
 
 async def get_ai_analytics_summary(session: AsyncSession) -> str:
     """
@@ -78,3 +79,79 @@ async def get_ai_analytics_summary(session: AsyncSession) -> str:
     )
     
     return summary
+
+async def get_management_analytics(session: AsyncSession) -> dict:
+    """
+    Computes detailed analytics for the Management Dashboard.
+    """
+    now = datetime.utcnow()
+    last_24h = now - timedelta(hours=24)
+    last_7d = now - timedelta(days=7)
+    last_30d = now - timedelta(days=30)
+    
+    # 1. TALABALAR UMUMIY HOLATI
+    # Total Students
+    total_students = await session.scalar(select(func.count(Student.id)))
+    # Premium (Active proxy)
+    premium_students = await session.scalar(select(func.count(Student.id)).where(Student.is_premium == True))
+    # Active in last 24h (UserActivity as proxy)
+    active_24h = await session.scalar(select(func.count(UserActivity.id)).where(UserActivity.created_at >= last_24h))
+    
+    # 2. TALABALAR KAYFIYATI (SENTIMENT)
+    recent_posts_count = await session.scalar(select(func.count(ChoyxonaPost.id)).where(ChoyxonaPost.created_at >= last_7d))
+    recent_comments_count = await session.scalar(select(func.count(ChoyxonaComment.id)).where(ChoyxonaComment.created_at >= last_7d))
+    recent_ai_chats = await session.scalar(select(func.count(AiMessage.id)).where(AiMessage.created_at >= last_7d))
+    
+    # Sentiment Heuristic (Simple Mock)
+    sentiment_score = 50 
+    if recent_posts_count > 5: sentiment_score += 10
+    if recent_comments_count > 10: sentiment_score += 10
+    sentiment_score = min(100, sentiment_score)
+
+    # 3. FAKULTETLAR STATISTIKASI (Most Active)
+    fac_activity_stmt = (
+        select(Student.faculty_name, func.count(UserActivity.id).label('cnt'))
+        .join(UserActivity, UserActivity.student_id == Student.id)
+        .where(UserActivity.created_at >= last_30d)
+        .group_by(Student.faculty_name)
+        .order_by(desc('cnt'))
+        .limit(5)
+    )
+    fac_act_res = await session.execute(fac_activity_stmt)
+    top_faculties = [{"name": row.faculty_name or "Noma'lum", "count": row.cnt} for row in fac_act_res]
+    
+    # 4. ILOVA FAOLLIGI (DAU Proxy)
+    actions_24h = (
+        (active_24h or 0) + 
+        (await session.scalar(select(func.count(ChoyxonaPost.id)).where(ChoyxonaPost.created_at >= last_24h)) or 0) +
+        (await session.scalar(select(func.count(ChoyxonaComment.id)).where(ChoyxonaComment.created_at >= last_24h)) or 0) +
+        (await session.scalar(select(func.count(AiMessage.id)).where(AiMessage.created_at >= last_24h)) or 0)
+    )
+
+    # 5. MUAMMOLAR VA XAVF (Most Appeals)
+    risk_stmt = (
+         select(Student.faculty_name, func.count(UserAppeal.id).label('cnt'))
+        .join(UserAppeal, UserAppeal.student_id == Student.id)
+        .where(UserAppeal.created_at >= last_30d)
+        .group_by(Student.faculty_name)
+        .order_by(desc('cnt'))
+        .limit(3)
+    )
+    risk_res = await session.execute(risk_stmt)
+    risk_faculties = [{"name": row.faculty_name or "Noma'lum", "count": row.cnt} for row in risk_res]
+
+    return {
+        "students": {
+            "total": total_students,
+            "active": premium_students, 
+            "actions_24h": actions_24h
+        },
+        "sentiment": {
+            "posts_7d": recent_posts_count,
+            "comments_7d": recent_comments_count,
+            "ai_chats_7d": recent_ai_chats,
+            "score": sentiment_score
+        },
+        "faculties": top_faculties,
+        "risks": risk_faculties
+    }

@@ -18,8 +18,8 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 # 🧠 --- OpenAI Sozlamalari --- 🧠
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 OPENAI_API_KEY_OWNER = os.environ.get("OPENAI_API_KEY_OWNER")
-OPENAI_MODEL_TASKS = "gpt-4.1-mini"    # Konspekt va senariylar uchun (User: 4.1 mini)
-OPENAI_MODEL_CHAT = "gpt-4.1-mini"     # Shunchaki suhbat uchun (User: Nano O'zbekchada yaxshi emas -> Mini ga qaytarildi)
+OPENAI_MODEL_TASKS = "gpt-4o-mini"    # Konspekt va senariylar uchun (User: 4.1 mini)
+OPENAI_MODEL_CHAT = "gpt-4o-mini"     # Shunchaki suhbat uchun (User: Nano O'zbekchada yaxshi emas -> Mini ga qaytarildi)
 OPENAI_MODEL_OWNER = "gpt-4o"        # Owner va Admin uchun maxsus model
 
 # 🐘 --- PostgreSQL Sozlamalari --- 🐘

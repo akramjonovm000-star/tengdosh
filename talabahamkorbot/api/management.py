@@ -7,6 +7,10 @@ from typing import Dict, Any
 from api.dependencies import get_current_student, get_db
 from database.models import Student, Staff, TgAccount, UserActivity
 from database.models import StaffRole
+from services.analytics_service import get_management_analytics
+from services.ai_service import generate_answer_by_key
+from data.ai_prompts import AI_PROMPTS
+import json
 
 router = APIRouter(prefix="/management", tags=["Management"])
 
@@ -391,8 +395,54 @@ async def get_mgmt_student_details(
                 ]
             }
         }
-    except Exception as e:
-        import traceback
         print(f"ERROR in get_mgmt_student_details: {e}")
         traceback.print_exc()
         return {"success": False, "message": str(e)}
+
+@router.get("/analytics")
+async def get_mgmt_analytics(
+    staff: Any = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get holistic analytics for the Rahbariyat dashboard.
+    """
+    # Security
+    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) == 'rahbariyat'
+    if not is_mgmt:
+        raise HTTPException(status_code=403, detail="Faqat rahbariyat uchun")
+        
+    stats = await get_management_analytics(db)
+    return {"success": True, "data": stats}
+
+@router.get("/ai-report")
+async def get_mgmt_ai_report(
+    staff: Any = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Generate an AI report based on current university stats.
+    """
+    # Security
+    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) == 'rahbariyat'
+    if not is_mgmt:
+        raise HTTPException(status_code=403, detail="Faqat rahbariyat uchun")
+    
+    # 1. Get Stats
+    stats = await get_management_analytics(db)
+    
+    # 2. Format Context
+    stats_str = json.dumps(stats, indent=2, ensure_ascii=False)
+    
+    # 3. Generate Report
+    prompt_template = AI_PROMPTS.get("management_report")
+    if not prompt_template:
+        return {"success": False, "message": "AI buyrug'i (prompt) topilmadi"}
+        
+    final_prompt = prompt_template.format(stats_context=stats_str)
+    
+    # We use 'management_report' key to maybe select model if logic changes, 
+    # but we pass custom_prompt so it overrides the default lookup.
+    ai_response = await generate_answer_by_key("management_report", custom_prompt=final_prompt)
+    
+    return {"success": True, "data": ai_response}

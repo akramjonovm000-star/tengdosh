@@ -22,7 +22,6 @@ async def get_semester_gpa(
     semester_id_provided = semester_id is not None
     token = getattr(student, 'hemis_token', None)
     if not token:
-
         # Return empty / zero 
         return {
             "gpa": 0.0,
@@ -32,6 +31,16 @@ async def get_semester_gpa(
         }
 
     # 0. Check Auth Status
+    # [FIX] Skip for Staff (Management) to prevent 401 on Student API
+    from database.models import Staff
+    if isinstance(student, Staff):
+        return {
+            "gpa": 0.0,
+            "total_credits": 0.0,
+            "total_points": 0.0,
+            "subjects": []
+        }
+
     if await HemisService.check_auth_status(token) == "AUTH_ERROR":
         from fastapi import HTTPException
         raise HTTPException(status_code=401, detail="HEMIS_AUTH_ERROR")
@@ -54,8 +63,6 @@ async def get_semester_gpa(
     result = GPACalculator.calculate_gpa(subjects)
     
     # FALLBACK LOGIC:
-    # If using current semester (auto-detected) AND result is empty (0 credits),
-    # try to fetch the previous semester. This handles "Start of Semester" cases.
     if result.total_credits == 0 and not semester_id_provided:
         try:
             prev_code = str(int(semester_id) - 1)
@@ -82,7 +89,6 @@ async def get_cumulative_gpa(
     """
     token = getattr(student, 'hemis_token', None)
     if not token:
-
         return {
             "gpa": 0.0,
             "total_credits": 0.0,
@@ -91,14 +97,22 @@ async def get_cumulative_gpa(
         }
 
     # 0. Check Auth Status
+    # [FIX] Skip for Staff
+    from database.models import Staff
+    if isinstance(student, Staff):
+        return {
+            "gpa": 0.0,
+            "total_credits": 0.0,
+            "total_points": 0.0,
+            "subjects": []
+        }
+
     if await HemisService.check_auth_status(token) == "AUTH_ERROR":
         from fastapi import HTTPException
         raise HTTPException(status_code=401, detail="HEMIS_AUTH_ERROR")
 
     # We need to fetch ALL semesters subjects.
-    # Since HemisService.get_student_subject_list takes semester_code, 
-    # we need to iterate all semesters or finding an endpoint that returns all?
-    # Usually HEMIS has `education/result-list` or similar, but let's stick to safe iteration.
+    import asyncio
     
     # 1. Get Me to find current semester
     me_data = await HemisService.get_me(token)
@@ -112,9 +126,6 @@ async def get_cumulative_gpa(
     if current_sem_code < 11: current_sem_code = 11
 
     # 2. Iterate from 11 to current
-    # Ideally optimize this to be parallel
-    import asyncio
-    
     tasks = []
     for code in range(11, current_sem_code + 2): # Check +1 just in case
         tasks.append(HemisService.get_student_subject_list(token, semester_code=str(code), student_id=student.id))
