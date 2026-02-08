@@ -216,10 +216,18 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(height: 16),
                           OutlinedButton.icon(
                             onPressed: (_isPolicyAccepted && !auth.isLoading) ? () => _launchHemisLogin(isStaff: true) : null,
-                            icon: const Icon(Icons.badge_outlined, color: AppTheme.primaryBlue, size: 20),
-                            label: const Text(
+                            icon: Icon(
+                              Icons.badge_outlined, 
+                              color: _isPolicyAccepted ? AppTheme.primaryBlue : Colors.grey, 
+                              size: 20
+                            ),
+                            label: Text(
                               "OneID orqali kirish (xodimlar ucun)", 
-                              style: TextStyle(color: AppTheme.primaryBlue, fontSize: 13, fontWeight: FontWeight.bold)
+                              style: TextStyle(
+                                color: _isPolicyAccepted ? AppTheme.primaryBlue : Colors.grey, 
+                                fontSize: 13, 
+                                fontWeight: FontWeight.bold
+                              )
                             ),
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 12),
