@@ -1774,6 +1774,22 @@ class DataService {
       debugPrint("DataService: Error downloading certificate for management: $e");
       return "Tarmoq xatosi";
     }
+    }
+
+  // 46. Download Student Document for Management
+  Future<String?> downloadStudentDocumentForManagement(int docId) async {
+    try {
+      final response = await _post("${ApiConstants.backendUrl}/management/documents/$docId/download");
+      final body = json.decode(response.body);
+      if (response.statusCode == 200) {
+        return body['message'] ?? "Hujjat botga yuborildi";
+      }
+      return body['message'] ?? "Xatolik yuz berdi";
+    } catch (e) {
+      debugPrint("DataService: Error downloading document for management: $e");
+      return "Tarmoq xatosi";
+    }
   }
+}
 }
 

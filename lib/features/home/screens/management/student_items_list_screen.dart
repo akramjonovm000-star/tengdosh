@@ -76,6 +76,14 @@ class StudentItemsListScreen extends StatelessWidget {
                                   _downloadCertificate(context, item['id']);
                                 },
                               ),
+                            if (itemType == "Hujjatlar" || itemType == "Hujjat")
+                              IconButton(
+                                icon: const Icon(Icons.download, color: Colors.blue),
+                                tooltip: "Yuklab olish",
+                                onPressed: () {
+                                  _downloadDocument(context, item['id']);
+                                },
+                              ),
                           ],
                         ),
                         const SizedBox(height: 4),
@@ -199,12 +207,29 @@ class StudentItemsListScreen extends StatelessWidget {
 
   Future<void> _downloadCertificate(BuildContext context, int certId) async {
     final DataService dataService = DataService();
-    // Show loading
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("So'rov yuborilmoqda..."), duration: Duration(seconds: 1)),
     );
 
     final result = await dataService.downloadStudentCertificateForManagement(certId);
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result ?? "Xatolik"),
+          backgroundColor: result != null && result.contains("yuborildi") ? Colors.green : Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _downloadDocument(BuildContext context, int docId) async {
+    final DataService dataService = DataService();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("So'rov yuborilmoqda..."), duration: Duration(seconds: 1)),
+    );
+
+    final result = await dataService.downloadStudentDocumentForManagement(docId);
 
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

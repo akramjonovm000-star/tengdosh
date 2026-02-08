@@ -517,3 +517,68 @@ async def send_student_cert_to_management(
         logger = logging.getLogger(__name__)
         logger.error(f"Error sending cert to management: {e}")
         return {"success": False, "message": f"Botda xatolik yuz berdi: {str(e)}"}
+
+@router.post("/documents/{doc_id}/download")
+async def send_student_doc_to_management(
+    doc_id: int,
+    staff: Any = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Sends the document file to the management user's Telegram bot.
+    """
+    from database.models import UserDocument
+    from bot import bot
+    
+    # Security
+    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) == 'rahbariyat'
+    if not is_mgmt:
+        raise HTTPException(status_code=403, detail="Faqat rahbariyat uchun")
+    
+    # 1. Get Document and Student Info
+    stmt = (
+        select(UserDocument, Student)
+        .join(Student, UserDocument.student_id == Student.id)
+        .where(UserDocument.id == doc_id)
+    )
+    result = await db.execute(stmt)
+    row = result.first()
+    
+    if not row:
+        raise HTTPException(status_code=404, detail="Hujjat topilmadi")
+        
+    doc, student = row
+    
+    # 2. Verify Management Access (University Check)
+    uni_id = getattr(staff, 'university_id', None)
+    if student.university_id != uni_id:
+        raise HTTPException(status_code=403, detail="Boshqa universitet talabasi ma'lumotlarini yuklash imkonsiz")
+
+    # 3. Get Management User's TG Account
+    tg_acc = await db.scalar(select(TgAccount).where(
+        (TgAccount.student_id == staff.id) | (TgAccount.staff_id == staff.id)
+    ))
+    
+    if not tg_acc:
+        return {"success": False, "message": "Sizning Telegram hisobingiz ulanmagan. Iltimos, botga kiring."}
+
+    # 4. Send via Bot
+    try:
+        caption = (
+            f"📄 <b>Talaba Hujjati (Rahbariyat)</b>\n\n"
+            f"Talaba: <b>{student.full_name}</b>\n"
+            f"Guruh: <b>{student.group_number}</b>\n"
+            f"Hujjat: <b>{doc.title}</b>\n"
+            f"Kategoriya: <b>{doc.category}</b>"
+        )
+        if doc.file_type == 'photo':
+             await bot.send_photo(tg_acc.telegram_id, doc.file_id, caption=caption, parse_mode="HTML")
+        else:
+             await bot.send_document(tg_acc.telegram_id, doc.file_id, caption=caption, parse_mode="HTML")
+             
+        return {"success": True, "message": "Hujjat Telegramingizga yuborildi!"}
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error sending doc to management: {e}")
+        return {"success": False, "message": f"Botda xatolik yuz berdi: {str(e)}"}
