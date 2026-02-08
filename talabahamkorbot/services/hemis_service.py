@@ -795,3 +795,41 @@ class HemisService:
             logger.info(f"Prefetch complete for student {student_id}")
         except Exception as e:
             logger.error(f"Prefetch error: {e}")
+
+    @staticmethod
+    async def get_total_student_count(token: str) -> int:
+        """
+        Fetches the total number of students visible to the staff member.
+        Used for Management Dashboard.
+        Attempts /education/student-list and /data/student-list.
+        """
+        client = await HemisService.get_client()
+        
+        # Priority: education/student-list (standard), then data/student-list
+        endpoints = [
+            f"{HemisService.BASE_URL}/education/student-list",
+            f"{HemisService.BASE_URL}/data/student-list"
+        ]
+        
+        for url in endpoints:
+            try:
+                # Fetch only 1 item to get metadata count
+                response = await client.get(url, headers=HemisService.get_headers(token), params={"limit": 1, "page": 1})
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    
+                    # Structure 1: { "success": true, "data": { "items": [...], "_meta": { "totalCount": 123 } } }
+                    if "data" in data and isinstance(data["data"], dict):
+                        meta = data["data"].get("_meta")
+                        if meta and "totalCount" in meta:
+                            return int(meta["totalCount"])
+                            
+                    # Structure 2: { "data": { "pagination": { "totalCount": 123 } } }
+                    if "data" in data and isinstance(data["data"], dict) and "pagination" in data["data"]:
+                         return int(data["data"]["pagination"].get("totalCount", 0))
+
+            except Exception as e:
+                logger.warning(f"Failed to fetch student count from {url}: {e}")
+                
+        return 0

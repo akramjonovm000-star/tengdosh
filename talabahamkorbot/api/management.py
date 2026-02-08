@@ -27,10 +27,21 @@ async def get_management_dashboard(
     if not uni_id:
         raise HTTPException(status_code=400, detail="Universitet aniqlanmadi")
 
+    from services.hemis_service import HemisService
+    
+    token = getattr(staff, 'hemis_token', None)
+    total_students_api = 0
+    if token:
+        total_students_api = await HemisService.get_total_student_count(token)
+
     # 2. Total Students in University
-    total_students = await db.scalar(
-        select(func.count(Student.id)).where(Student.university_id == uni_id)
-    ) or 0
+    # Priority: API -> DB (Fallback)
+    if total_students_api > 0:
+        total_students = total_students_api
+    else:
+        total_students = await db.scalar(
+            select(func.count(Student.id)).where(Student.university_id == uni_id)
+        ) or 0
 
     # 3. Platform Users (Students who have logged in - have hemis_token)
     platform_users = await db.scalar(
