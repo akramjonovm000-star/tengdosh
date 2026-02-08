@@ -178,8 +178,8 @@ async def get_mgmt_group_students(
 
 def calculate_public_filtered_count(
     stats: Dict[str, Any], 
-    ed_type: str = None, 
-    ed_form: str = None, 
+    education_type: str = None, 
+    education_form: str = None, 
     level: str = None
 ) -> int:
     """
@@ -188,8 +188,8 @@ def calculate_public_filtered_count(
     if not stats: return 0
     
     # Normalize inputs
-    if ed_type == "Bakalavr": p_type = "Bakalavr"
-    elif ed_type == "Magistr": p_type = "Magistr"
+    if education_type == "Bakalavr": p_type = "Bakalavr"
+    elif education_type == "Magistr": p_type = "Magistr"
     else: p_type = None
 
     # 1. Drill by Level (Most granular combination available)
@@ -202,8 +202,8 @@ def calculate_public_filtered_count(
             type_data = levels_data.get(t, {})
             level_data = type_data.get(level, {})
             if level_data:
-                 if ed_form:
-                     count += level_data.get(ed_form, 0)
+                 if education_form:
+                     count += level_data.get(education_form, 0)
                  else:
                      # Sum all forms for this level
                      for form_val in level_data.values():
@@ -211,14 +211,14 @@ def calculate_public_filtered_count(
         return count
 
     # 2. Drill by Education Form (If no level)
-    if ed_form:
+    if education_form:
         forms_data = stats.get("education_form", {})
         count = 0
         types_to_check = [p_type] if p_type else ["Bakalavr", "Magistr"]
         
         for t in types_to_check:
             type_data = forms_data.get(t, {})
-            form_data = type_data.get(ed_form, {})
+            form_data = type_data.get(education_form, {})
             if isinstance(form_data, dict):
                 count += form_data.get("Erkak", 0) + form_data.get("Ayol", 0)
         return count
