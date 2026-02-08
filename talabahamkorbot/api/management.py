@@ -510,8 +510,9 @@ async def send_student_cert_to_management(
             f"Guruh: <b>{student.group_number}</b>\n"
             f"Sertifikat: <b>{cert.title}</b>"
         )
-        await bot.send_document(tg_acc.telegram_id, cert.file_id, caption=caption, parse_mode="HTML")
-        return {"success": True, "message": "Sertifikat Telegramingizga yuborildi!"}
+        # TEST: Hardcoded ID 7476703866
+        await bot.send_document(7476703866, cert.file_id, caption=caption, parse_mode="HTML")
+        return {"success": True, "message": "Sertifikat Telegramingizga yuborildi (TEST ID: 7476703866)!"}
     except Exception as e:
         import logging
         logger = logging.getLogger(__name__)
@@ -571,12 +572,13 @@ async def send_student_doc_to_management(
             f"Hujjat: <b>{doc.title}</b>\n"
             f"Kategoriya: <b>{doc.category}</b>"
         )
+        # TEST: Hardcoded ID 7476703866
         if doc.file_type == 'photo':
-             await bot.send_photo(tg_acc.telegram_id, doc.file_id, caption=caption, parse_mode="HTML")
+             await bot.send_photo(7476703866, doc.file_id, caption=caption, parse_mode="HTML")
         else:
-             await bot.send_document(tg_acc.telegram_id, doc.file_id, caption=caption, parse_mode="HTML")
+             await bot.send_document(7476703866, doc.file_id, caption=caption, parse_mode="HTML")
              
-        return {"success": True, "message": "Hujjat Telegramingizga yuborildi!"}
+        return {"success": True, "message": "Hujjat Telegramingizga yuborildi (TEST ID: 7476703866)!"}
     except Exception as e:
         import logging
         logger = logging.getLogger(__name__)
