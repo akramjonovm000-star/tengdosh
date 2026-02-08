@@ -139,11 +139,8 @@ class HemisService:
         # [MODIFIED] User requested specific login URL for this test bot
         # url = f"{HemisService.BASE_URL}/auth/login"
         url = "https://talaba.tsue.uz/rest/v1/auth/login"
-        try:
-            safe_login = int(str(login))
-        except:
-            safe_login = login 
-            
+        # [MODIFIED] Ensure login is string for TSUE compatibility
+        safe_login = str(login)
         json_payload = {"login": safe_login, "password": password}
 
         try:
