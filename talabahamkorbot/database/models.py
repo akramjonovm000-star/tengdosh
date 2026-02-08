@@ -1280,3 +1280,20 @@ class AnnouncementRead(Base):
     announcement_id: Mapped[int] = mapped_column(Integer, ForeignKey("announcements.id", ondelete="CASCADE"), nullable=False, index=True)
     
     read_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
+
+# ============================================================
+# HOME SCREEN BANNER
+# ============================================================
+
+class Banner(Base):
+    __tablename__ = "banners"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    image_file_id: Mapped[str] = mapped_column(String(255), nullable=False) # Telegram File ID
+    link: Mapped[str | None] = mapped_column(String(512), nullable=True) # Optional Action Link
+    
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<Banner {self.id} - Active: {self.is_active}>"

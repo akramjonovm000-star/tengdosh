@@ -25,6 +25,7 @@ class ApiConstants {
   
   // Announcements
   static const String announcements = '$backendUrl/announcements';
+  static const String banner = '$backendUrl/banner/active';
 
   static const String gpaList = '$baseUrl/data/student-gpa-list';
   static const String taskList = '$baseUrl/data/subject-task-student-list';

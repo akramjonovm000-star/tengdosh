@@ -8,6 +8,7 @@ import 'package:talabahamkor_mobile/core/providers/auth_provider.dart';
 import 'package:talabahamkor_mobile/features/profile/screens/profile_screen.dart';
 import 'package:talabahamkor_mobile/features/community/screens/community_screen.dart';
 import 'package:talabahamkor_mobile/features/home/models/announcement_model.dart';
+import 'package:talabahamkor_mobile/features/home/models/banner_model.dart'; // [NEW]
 import 'package:talabahamkor_mobile/features/student_module/screens/student_module_screen.dart';
 import 'package:talabahamkor_mobile/features/ai/screens/ai_screen.dart';
 import 'package:talabahamkor_mobile/features/student_module/widgets/student_dashboard_widgets.dart';
@@ -45,7 +46,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, dynamic>? _dashboard;
   bool _isLoading = true;
   Timer? _refreshTimer;
+  Timer? _refreshTimer;
   List<AnnouncementModel> _announcements = [];
+  BannerModel? _activeBanner; // [NEW]
   final PageController _pageController = PageController();
   
   // Semester Handling
@@ -94,15 +97,17 @@ class _HomeScreenState extends State<HomeScreen> {
       } else if (auth.isManagement) {
          _dashboard = await _dataService.getManagementDashboard();
       } else {
-         final dashResult = await _dataService.getDashboardStats(refresh: refresh);
-         final announcements = await _dataService.getAnnouncementModels();
-         
-         if (mounted) {
-           setState(() {
-              _dashboard = dashResult;
-              _announcements = announcements;
-           });
-         }
+          final dashResult = await _dataService.getDashboardStats(refresh: refresh);
+          final announcements = await _dataService.getAnnouncementModels();
+          final banner = await _dataService.getActiveBanner(); // [NEW]
+
+          if (mounted) {
+            setState(() {
+               _dashboard = dashResult;
+               _announcements = announcements;
+               _activeBanner = banner;
+            });
+          }
          
          // AUTO-FIX: If GPA is 0.0, it might be stale cache or previous semester issue.
          if (!refresh && (_dashboard?['gpa'] == 0 || _dashboard?['gpa'] == 0.0)) {
@@ -501,7 +506,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   if (index < _announcements.length) {
                     return _buildAnnouncementModelCard(_announcements[index]);
                   }
-                  return _buildGpaCard(); // Always last
+                  // If Banner is active, show it. Otherwise show GPA.
+                  if (_activeBanner != null && _activeBanner!.isActive) {
+                    return _buildBannerCard(_activeBanner!);
+                  }
+                  return _buildGpaCard();
                 },
               ),
             ),
@@ -761,6 +770,32 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBannerCard(BannerModel banner) {
+    return GestureDetector(
+      onTap: () async {
+        if (banner.link != null && banner.link!.isNotEmpty) {
+           final uri = Uri.parse(banner.link!);
+           await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          image: DecorationImage(
+            image: CachedNetworkImageProvider(banner.imageUrl),
+            fit: BoxFit.cover,
+          ),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+          ],
         ),
       ),
     );

@@ -182,6 +182,10 @@ class OwnerStates(StatesGroup):
     # Developerlik boshqaruvi
     waiting_dev_tg_id = State()
 
+    # Banner Sozlash
+    waiting_banner_image = State()
+    waiting_banner_link = State()
+
 class OwnerGifts(StatesGroup):
     waiting_user_id = State()
     selecting_duration = State()

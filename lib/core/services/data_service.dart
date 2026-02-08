@@ -9,6 +9,7 @@ import '../models/attendance.dart';
 import '../models/lesson.dart';
 import 'package:talabahamkor_mobile/features/social/models/social_activity.dart';
 import 'package:talabahamkor_mobile/features/home/models/announcement_model.dart';
+import 'package:talabahamkor_mobile/features/home/models/banner_model.dart'; // [NEW]
 import 'local_database_service.dart';
 import '../../features/academic/models/survey_models.dart';
 
@@ -408,6 +409,22 @@ class DataService {
       debugPrint("Error fetching announcements: $e");
     }
     return [];
+  }
+
+  // Banner
+  Future<BannerModel?> getActiveBanner() async {
+    try {
+      final response = await _get(ApiConstants.banner);
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['active'] == true) {
+           return BannerModel.fromJson(body);
+        }
+      }
+    } catch (e) {
+      debugPrint("Error fetching banner: $e");
+    }
+    return null;
   }
 
   Future<bool> markAnnouncementModelAsRead(int id) async {

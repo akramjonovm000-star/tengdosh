@@ -79,6 +79,12 @@ def get_owner_main_menu_inline_kb() -> InlineKeyboardMarkup:
             ],
             [
                 InlineKeyboardButton(
+                    text="🖼 Banner Sozlash",
+                    callback_data="owner_banner_setup",
+                )
+            ],
+            [
+                InlineKeyboardButton(
                     text="👨‍💻 Developerlar boshqaruvi",
                     callback_data="owner_dev",
                 )

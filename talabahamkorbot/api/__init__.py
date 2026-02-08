@@ -30,6 +30,7 @@ from .chat import router as chat_router
 from .gpa import router as gpa_router
 from .plans import router as plans_router
 from .management import router as management_router
+from .banner import router as banner_router
 
 # 1. CORE & AUTH
 router.include_router(auth_router, prefix="/auth", tags=["Auth"])
@@ -57,6 +58,7 @@ router.include_router(documents_router, prefix="/documents", tags=["Documents (L
 router.include_router(community_router, prefix="/community", tags=["Community"])
 router.include_router(subscription_router, prefix="/community", tags=["Subscription"])
 router.include_router(chat_router, prefix="/chat", tags=["Chat"])
+router.include_router(banner_router, tags=["Banner"])
 
 # 5. OTHER SERVICES
 router.include_router(ai_router, prefix="/ai", tags=["AI"])

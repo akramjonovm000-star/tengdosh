@@ -25,6 +25,7 @@ from database.models import (
     University,
     Faculty,
     Student,
+    Banner,
 )
 
 from models.states import OwnerStates
@@ -1301,3 +1302,79 @@ async def owner_add_uni_code(message: Message, state: FSMContext, session: Async
 
 
 
+
+# -------------------------------------------------------------
+#                 BANNER SOZLAMALARI
+# -------------------------------------------------------------
+@router.callback_query(F.data == "owner_banner_setup")
+async def cb_owner_banner_setup(call: CallbackQuery, state: FSMContext, session: AsyncSession):
+    staff = await _ensure_owner(call, session)
+    if not staff:
+        return
+
+    await state.set_state(OwnerStates.waiting_banner_image)
+    await call.message.edit_text(
+        "🖼 <b>Banner Sozlash</b>\n\n"
+        "Ilovadagi bosh sahifa bannerini o'zgartirish.\n"
+        "Iltimos, banner uchun <b>rasm (photo)</b> yuboring.\n"
+        "O'lcham: 16:9 yoki shunga yaqin bo'lishi tavsiya etiladi.",
+        reply_markup=get_back_inline_kb("owner_menu"),
+        parse_mode="HTML"
+    )
+    await call.answer()
+
+@router.message(OwnerStates.waiting_banner_image, F.photo)
+async def owner_process_banner_image(message: Message, state: FSMContext):
+    # Eng katta rasmni olamiz
+    photo = message.photo[-1]
+    file_id = photo.file_id
+    
+    await state.update_data(banner_file_id=file_id)
+    await state.set_state(OwnerStates.waiting_banner_link)
+    
+    await message.answer(
+        "✅ Rasm qabul qilindi.\n\n"
+        "Endi banner bosilganda ochiladigan <b>havola (link)</b>ni yuboring.\n"
+        "Agar havola kerak bo'lmasa, '0' yoki 'yoq' deb yozing.",
+        reply_markup=get_back_inline_kb("owner_menu")
+    )
+
+@router.message(OwnerStates.waiting_banner_link)
+async def owner_process_banner_link(message: Message, state: FSMContext, session: AsyncSession):
+    link_text = message.text.strip()
+    
+    data = await state.get_data()
+    file_id = data.get("banner_file_id")
+    
+    final_link = None
+    if link_text.lower() not in ['0', 'yoq', 'yo\'q', 'no', 'none']:
+        if not link_text.startswith("http"):
+             # Agar http bo'lmasa, qo'shib qo'yamiz yoki shunday qoldiramiz (client handle qiladi)
+             pass
+        final_link = link_text
+        
+    # Oldingi bannerlarni nofaol qilish
+    await session.execute(
+        select(Banner).where(Banner.is_active == True)
+    )
+    # Update logic is tricky with select, better to update directly
+    # Or just set all to False
+    from sqlalchemy import update
+    await session.execute(update(Banner).where(Banner.is_active == True).values(is_active=False))
+    
+    # Yangi bannerni saqlash
+    new_banner = Banner(
+        image_file_id=file_id,
+        link=final_link,
+        is_active=True
+    )
+    session.add(new_banner)
+    await session.commit()
+    
+    await message.answer(
+        "✅ <b>Banner muvaffaqiyatli o'rnatildi!</b>\n\n"
+        "Endi ilovada yangi banner ko'rinadi.",
+        reply_markup=get_back_inline_kb("owner_menu"),
+        parse_mode="HTML"
+    )
+    await state.clear()
