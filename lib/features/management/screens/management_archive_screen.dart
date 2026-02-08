@@ -32,10 +32,6 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
   int _currentPage = 1;
   bool _hasMore = true;
 
-  // Stats
-  int _totalCount = 0;
-  int _appUsersCount = 0;
-
   final List<Map<String, dynamic>> _categories = [
     {"id": null, "name": "Hammasi", "icon": Icons.all_inclusive_rounded},
     {"id": "Passport", "name": "Passport", "icon": Icons.credit_card_rounded},
@@ -116,8 +112,6 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
       } else {
         _documents.addAll(result['data'] ?? []);
       }
-      _totalCount = result['total_count'] ?? 0;
-      _appUsersCount = result['app_users_count'] ?? 0;
       _isLoading = false;
       _hasMore = (result['data'] as List).length >= 50;
     });
@@ -152,8 +146,6 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
                   _selectedGroup = null;
                   _selectedTitle = null;
                   _searchController.clear();
-                  _totalCount = 0;
-                  _appUsersCount = 0;
                 });
                 _loadDocuments(refresh: true);
               },
@@ -170,36 +162,6 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
       body: Column(
         children: [
           _buildFilters(),
-          
-          // Stats Section
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(top: BorderSide(color: Colors.grey.shade100)),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildStatItem(
-                    label: "Jami talabalar",
-                    value: _totalCount,
-                    icon: Icons.people_outline,
-                    color: Colors.blue,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildStatItem(
-                    label: "Ilova foydalanuvchilari",
-                    value: _appUsersCount,
-                    icon: Icons.smartphone_rounded,
-                    color: Colors.green,
-                  ),
-                ),
-              ],
-            ),
-          ),
 
           Expanded(
             child: _isLoading && _currentPage == 1
@@ -466,40 +428,6 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
     );
   }
 
-  Widget _buildStatItem({
-    required String label,
-    required int value,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.1)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 14, color: color),
-              const SizedBox(width: 4),
-              Text(
-                label,
-                style: TextStyle(fontSize: 10, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value.toString(),
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildDocumentCard(dynamic doc) {
