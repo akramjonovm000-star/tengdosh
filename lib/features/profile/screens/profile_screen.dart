@@ -448,21 +448,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             child: Column(
               children: [
-                _buildInfoRow(Icons.account_balance_rounded, "Universitet", student.universityName ?? "Topilmadi"),
+                _buildInfoRow(
+                  Icons.account_balance_rounded,
+                  "Universitet",
+                  student.universityName ?? "Topilmadi",
+                ),
                 const Divider(height: 1),
-                _buildInfoRow(Icons.school_rounded, "Fakultet", student.facultyName ?? "-"),
+                _buildInfoRow(
+                  Icons.school_rounded,
+                  student.role == 'rahbariyat' ? "Bo'lim" : "Fakultet",
+                  student.facultyName ?? "-",
+                ),
                 const Divider(height: 1),
-                _buildInfoRow(Icons.menu_book_rounded, "Yo'nalish", student.specialtyName ?? "-"),
+                _buildInfoRow(
+                  Icons.menu_book_rounded,
+                  student.role == 'rahbariyat' ? "Lavozim" : "Yo'nalish",
+                  student.specialtyName ?? "-",
+                ),
                 const Divider(height: 1),
                 _buildInfoRow(
                   Icons.groups_rounded,
-                  "Guruh",
-                  (student.groupNumber != null && student.groupNumber!.length > 5)
+                  student.role == 'rahbariyat' ? "Telefon" : "Guruh",
+                  (student.role != 'rahbariyat' &&
+                          student.groupNumber != null &&
+                          student.groupNumber!.length > 5)
                       ? student.groupNumber!.substring(0, 5)
                       : (student.groupNumber ?? "-"),
                 ),
                 const Divider(height: 1),
-                _buildInfoRow(Icons.calendar_today_rounded, "Semestr", student.semesterName ?? "-"),
+                _buildInfoRow(
+                  Icons.calendar_today_rounded,
+                  student.role == 'rahbariyat' ? "Tug'ilgan sana" : "Semestr",
+                  student.semesterName ?? "-",
+                ),
               ],
             ),
           ),
