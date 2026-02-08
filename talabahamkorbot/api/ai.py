@@ -275,21 +275,29 @@ async def predict_grant_analysis(
             name = cat_names.get(cat_key, cat_key.capitalize())
             prompt += f"- {name}: {detail['count']} ta tasdiqlangan. Berilgan ball: {round(detail['earned'], 1)} (Max {detail['max_points']})\n"
             
-        prompt += """
+        prompt += f"""
         
         SENING VAZIFANG:
         Yuqoridagi ma'lumotlar asosida talabaga Grant olish imkoniyatini "Grant Taqsimoti va Reglamenti" asosida tushuntirib berish.
         
         ⚠️ QOIDALAR:
-        1. Murojaat: "Hurmatli talaba" deb murojaat qil.
-        2. Ohang: Muloyim, lekin kuchli motivatsiya beruvchi. Rasmiyatchilik kamroq bo'lsin.
+        1. Murojaat: "Hurmatli {student.full_name}" deb murojaat qil. (Boshqa ism yoki shablon ishlatma!).
+        2. Ohang: Muloyim, lekin kuchli motivatsiya beruvchi. Rasmiyatchilik kamroq bo'lsin, samimiy yordamchi kabi gapir.
         3. Hech qachon "Aniq olasiz" dema. "Taxminiy", "Imkoniyat yuqori/past" deb ayt.
         4. Javob strukturasi:
            - 🎯 Taxminiy ball (Jami xx / 100)
            - 📘 Akademik (GPA) hissasi
            - 🤝 Ijtimoiy faollik hissasi
-           - 🔥 Motivatsiya va Harakatga chaqiruv
-           - 💡 Aniq Reja (Action Plan)
+           - 🔥 Motivatsiya va Harakatga chaqiruv (Qisqa tushuntirish O'RNIGA): Talabaning kuchli tomonini maqtab, kuchsiz tomonini to'g'irlash uchun aniq harakatga unda. "Sizda imkon bor, faqat mana bu narsani qiling" degan ma'noda.
+           - 💡 Aniq Reja (Action Plan): Ballni oshirish uchun bajarilishi shart bo'lgan 2-3 ta aniq qadam (masalan: "Ertadan boshlab 'Zakovat' to'garagiga yoziling").
+        
+        Javobni O'zbek tilida, chiroyli va tushunarli formatda yoz.
+        
+        FORMATLASH QOIDALARI:
+        - Markdown ("**") ishlatma! Faqat HTML teglaridan foydalan:
+        - Qalin yozish uchun: <b>matn</b>
+        - Kursiv yozish uchun: <i>matn</i>
+        - Emojilarni erkin ishlat.
         """
         
         # 3. Generate AI Response
