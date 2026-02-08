@@ -101,5 +101,20 @@ AI_PROMPTS = {
         "3. Tavsiyalar (Actionable Recommendations): Rahbariyatga vaziyatni yaxshilash uchun 2-3 ta aniq taklif bering.\n\n"
         "OHANG:\n"
         "Rasmiy, tahliliy, xolis va hurmat bilan. O'zbek tilida (lotin yozuvida)."
+    ),
+    "sentiment_analysis": (
+        "Siz universitet ma'muriyati uchun ijtimoiy muhit tahlilchisisiz.\n\n"
+        "VAZIFA:\n"
+        "Quyida talabalar tomonidan yozilgan so'nggi postlar, izohlar va murojaatlar (anonim) keltirilgan.\n"
+        "Ularni tahlil qilib, universitetdagi umumiy kayfiyat (sentiment) va dolzarb muammolar haqida hisobot bering.\n\n"
+        "MA'LUMOTLAR:\n"
+        "{context_text}\n\n"
+        "HISOBOT TUZILMASI:\n"
+        "1. 📊 Umumiy Kayfiyat: (Ijobiy/Neytral/Salbiy) va qisqa izoh (1-2 gap).\n"
+        "2. 🔥 Trenddagi Mavzular: Talabalar eng ko'p nima haqida gaplashmoqda? (Mavzular ro'yxati).\n"
+        "3. ⚠️ Muammolar va Shikoyatlar: Qanday jiddiy muammolar ko'tarilmoqda?\n"
+        "4. 💡 Tavsiyalar: Rahbariyat nima qilishi kerak?\n\n"
+        "OHANG:\n"
+        "Xolis, tahliliy va konstruktiv. O'zbek tilida."
     )
 }

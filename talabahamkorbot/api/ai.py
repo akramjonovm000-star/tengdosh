@@ -316,3 +316,98 @@ async def predict_grant_analysis(
     except Exception as e:
         await db.rollback()
         return {"success": False, "message": f"Xatolik: {str(e)}"}
+
+
+@router.post("/predict-sentiment")
+async def predict_sentiment_analysis(
+    student: Student = Depends(get_premium_student),
+    db: AsyncSession = Depends(get_session)
+):
+    """
+    AI yordamida talabalarning umumiy kayfiyatini tahlil qilish.
+    Manbalar: ChoyxonaPost, ChoyxonaComment, StudentFeedback
+    """
+    # 1. Security Check: Rahbariyat or Admin only
+    is_mgmt = getattr(student, 'hemis_role', None) == 'rahbariyat' or getattr(student, 'role', None) in ['rahbariyat', 'owner', 'admin']
+    if not is_mgmt:
+         return {"success": False, "message": "Bu funksiya faqat rahbariyat uchun."}
+
+    try:
+        from database.models import ChoyxonaPost, ChoyxonaComment, StudentFeedback
+        
+        # 2. Fetch Recent Data (Last 50 posts, 50 comments, 20 feedbacks)
+        uni_id = getattr(student, 'university_id', None)
+        
+        # Posts
+        posts_stmt = (
+            select(ChoyxonaPost.content)
+            .where(ChoyxonaPost.target_university_id == uni_id)
+            .order_by(ChoyxonaPost.created_at.desc())
+            .limit(50)
+        )
+        posts = (await db.execute(posts_stmt)).scalars().all()
+        
+        # Comments
+        comments_stmt = (
+            select(ChoyxonaComment.content)
+            .join(ChoyxonaPost)
+            .where(ChoyxonaPost.target_university_id == uni_id)
+            .order_by(ChoyxonaComment.created_at.desc())
+            .limit(50)
+        )
+        comments = (await db.execute(comments_stmt)).scalars().all()
+        
+        # Feedback (Appeals)
+        feedbacks_stmt = (
+            select(StudentFeedback.text)
+            .where(StudentFeedback.student_id.in_(
+                select(Student.id).where(Student.university_id == uni_id)
+            ))
+            .order_by(StudentFeedback.created_at.desc())
+            .limit(20)
+        )
+        feedbacks = (await db.execute(feedbacks_stmt)).scalars().all()
+        
+        # 3. Prepare Context
+        context_text = "--- POSTLAR (Mavzular) ---\n"
+        for p in posts:
+            if len(p) > 20: context_text += f"- {p[:200]}...\n"
+            
+        context_text += "\n--- IZOHLAR (Fikrlar) ---\n"
+        for c in comments:
+            if len(c) > 10: context_text += f"- {c[:100]}...\n"
+            
+        context_text += "\n--- MUROJAATLAR (Shikoyatlar) ---\n"
+        for f in feedbacks:
+            if len(f) > 20: context_text += f"- {f[:200]}...\n"
+            
+        if len(context_text) < 100:
+            return {"success": False, "message": "Tahlil qilish uchun yetarli ma'lumot yo'q."}
+
+        # 4. Generate AI Response
+        ai_response = await generate_answer_by_key("sentiment_analysis", custom_prompt=None)
+        
+        # Replace placeholder in prompt manually or use updated service? 
+        # Actually generate_answer_by_key takes key. But prompt has {context_text}.
+        # We need to format the prompt first.
+        from data.ai_prompts import AI_PROMPTS
+        base_prompt = AI_PROMPTS.get("sentiment_analysis")
+        final_prompt = base_prompt.format(context_text=context_text)
+        
+        # Call directly
+        ai_response = await generate_answer_by_key("sentiment_analysis", custom_prompt=final_prompt)
+        
+        if not ai_response:
+             return {"success": False, "message": "AI tahlil qila olmadi."}
+
+        # 5. Save History
+        ai_msg = AiMessage(student_id=student.id, role="assistant", content=ai_response)
+        db.add(ai_msg)
+        await db.commit()
+        
+        return {"success": True, "data": ai_response}
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"success": False, "message": f"Tahlil xatosi: {str(e)}"}

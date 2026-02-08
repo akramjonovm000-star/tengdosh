@@ -8,7 +8,14 @@ import '../../../../core/providers/auth_provider.dart';
 class AiChatScreen extends StatefulWidget {
   final String? initialQuery;
   final bool isGrantAnalysis;
-  const AiChatScreen({super.key, this.initialQuery, this.isGrantAnalysis = false});
+  final bool isSentimentAnalysis;
+
+  const AiChatScreen({
+    super.key, 
+    this.initialQuery, 
+    this.isGrantAnalysis = false,
+    this.isSentimentAnalysis = false,
+  });
 
   @override
   State<AiChatScreen> createState() => _AiChatScreenState();
@@ -55,6 +62,10 @@ class _AiChatScreenState extends State<AiChatScreen> {
        Future.delayed(const Duration(milliseconds: 500), () {
            if (mounted) _sendGrantAnalysis();
        });
+    } else if (widget.isSentimentAnalysis) {
+       Future.delayed(const Duration(milliseconds: 500), () {
+           if (mounted) _sendSentimentAnalysis();
+       });
     } else if (widget.initialQuery != null && widget.initialQuery!.isNotEmpty) {
        // Allow UI to render first
        Future.delayed(const Duration(milliseconds: 500), () {
@@ -84,15 +95,44 @@ class _AiChatScreenState extends State<AiChatScreen> {
         _scrollToBottom();
       }
     } catch (e) {
+      _handleError(e);
+    }
+  }
+
+  Future<void> _sendSentimentAnalysis() async {
+    setState(() {
+      _messages.add({"role": "user", "content": "📊 Talabalar kayfiyati tahlili"});
+      _isTyping = true;
+    });
+    _scrollToBottom();
+    
+    try {
+      final response = await _dataService.predictSentiment();
+      if (mounted) {
+        setState(() {
+          _isTyping = false;
+          if (response != null) {
+            _messages.add({"role": "assistant", "content": response});
+          } else {
+             _messages.add({"role": "assistant", "content": "⚠️ Kechirasiz, Tahlil qilishda xatolik yuz berdi."});
+          }
+        });
+        _scrollToBottom();
+      }
+    } catch (e) {
+      _handleError(e);
+    }
+  }
+
+  void _handleError(dynamic e) {
       if (e.toString().contains("PREMIUM_REQUIRED")) {
         if (mounted) {
-          await Provider.of<AuthProvider>(context, listen: false).loadUser();
+          Provider.of<AuthProvider>(context, listen: false).loadUser();
           Navigator.pop(context);
         }
       } else {
         if (mounted) setState(() => _isTyping = false);
       }
-    }
   }
 
   Future<void> _clearHistory() async {

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/data_service.dart';
 
+import 'ai_chat_screen.dart';
+
 class ManagementAiScreen extends StatefulWidget {
   const ManagementAiScreen({super.key});
 
@@ -130,29 +132,6 @@ class _ManagementAiScreenState extends State<ManagementAiScreen> {
             _buildStatRow("Jami talabalar", "${_analytics!['students']['total']}", Icons.people, Colors.blue),
             _buildStatRow("Premium (Faol)", "${_analytics!['students']['active']}", Icons.star, Colors.amber),
             _buildStatRow("24 soatda faol", "${_analytics!['students']['actions_24h']}", Icons.access_time, Colors.green),
-          ],
-        );
-      case "Talabalar kayfiyati tahlili":
-        final score = _analytics!['sentiment']['score'];
-        return Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: _getColorForSentiment(score).withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Text(
-                "$score",
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: _getColorForSentiment(score)),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text("Umumiy Kayfiyat Indeksi", style: TextStyle(color: Colors.grey[600])),
-            const SizedBox(height: 20),
-            _buildStatRow("So'nggi 7 kunlik postlar", "${_analytics!['sentiment']['posts_7d']}", Icons.article, Colors.blueGrey),
-            _buildStatRow("So'nggi 7 kunlik izohlar", "${_analytics!['sentiment']['comments_7d']}", Icons.comment, Colors.blueGrey),
-            _buildStatRow("AI bilan suhbatlar", "${_analytics!['sentiment']['ai_chats_7d']}", Icons.smart_toy, Colors.purple),
           ],
         );
       case "Fakultetlar bo‘yicha statistika":
@@ -296,7 +275,13 @@ class _ManagementAiScreenState extends State<ManagementAiScreen> {
             const SizedBox(height: 20),
 
             _buildAiButton("Talabalar umumiy holati", Icons.people_alt, () => _showDetail("Talabalar umumiy holati")),
-            _buildAiButton("Talabalar kayfiyati tahlili", Icons.sentiment_satisfied_alt, () => _showDetail("Talabalar kayfiyati tahlili")),
+            _buildAiButton("Talabalar kayfiyati tahlili", Icons.sentiment_satisfied_alt, () {
+               // Navigate to AI Chat
+               Navigator.push(
+                 context, 
+                 MaterialPageRoute(builder: (_) => const AiChatScreen(isSentimentAnalysis: true))
+               );
+            }),
             _buildAiButton("Fakultetlar bo‘yicha statistika", Icons.school, () => _showDetail("Fakultetlar bo‘yicha statistika")),
             _buildAiButton("Ilova faolligi", Icons.touch_app, () => _showDetail("Ilova faolligi")),
             _buildAiButton("Muammolar va xavf signallari", Icons.warning_amber_rounded, () => _showDetail("Muammolar va xavf signallari")),

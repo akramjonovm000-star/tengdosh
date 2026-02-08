@@ -1789,4 +1789,19 @@ class DataService {
       return "Tarmoq xatosi";
     }
   }
+
+  // 47. Predict Sentiment Analysis
+  Future<String?> predictSentiment() async {
+    try {
+      final response = await _post("${ApiConstants.backendUrl}/ai/predict-sentiment");
+      final body = json.decode(utf8.decode(response.bodyBytes));
+      if (response.statusCode == 200 && body['success'] == true) {
+        return body['data'];
+      }
+      return body['message'] ?? "Tahlil jarayonida xatolik.";
+    } catch (e) {
+      debugPrint("DataService: Error predicting sentiment: $e");
+      return "Tarmoq xatosi yoki server ishlamayapti.";
+    }
+  }
 }
