@@ -413,7 +413,21 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: _categories.map((cat) {
-...
+                final isSelected = _selectedTitle == cat['id'];
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: FilterChip(
+                    label: Text(cat['name']),
+                    selected: isSelected,
+                    onSelected: (val) {
+                      setState(() => _selectedTitle = val ? cat['id'] : null);
+                      _loadDocuments(refresh: true);
+                    },
+                    selectedColor: AppTheme.primaryBlue.withOpacity(0.2),
+                    checkmarkColor: AppTheme.primaryBlue,
+                    labelStyle: TextStyle(
+                      color: isSelected ? AppTheme.primaryBlue : Colors.black87,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                     ),
                   ),
                 );
@@ -449,6 +463,7 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
           icon: const Icon(Icons.arrow_drop_down, size: 18),
         ),
       ),
+    );
   }
 
   Widget _buildStatItem({
