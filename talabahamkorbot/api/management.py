@@ -395,6 +395,8 @@ async def get_mgmt_student_details(
                 ]
             }
         }
+    except Exception as e:
+        import traceback
         print(f"ERROR in get_mgmt_student_details: {e}")
         traceback.print_exc()
         return {"success": False, "message": str(e)}
