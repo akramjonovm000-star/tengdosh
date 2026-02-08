@@ -114,11 +114,18 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
           ? const Center(child: CircularProgressIndicator())
           : _error != null 
               ? Center(child: Text("Xatolik: $_error"))
-              : TabBarView(
-                  controller: _tabController,
+              : Column(
                   children: [
-                    _buildStatsTab(),
-                    _buildListTab(),
+                    Expanded(
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _buildStatsTab(),
+                          _buildListTab(),
+                        ],
+                      ),
+                    ),
+                    _buildAiClusteringButton(),
                   ],
                 ),
     );
@@ -160,17 +167,17 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
           const SizedBox(height: 24),
           
           // 3. Top Targets
-           const Text("Murojaat Yo'nalishlari", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-           const SizedBox(height: 12),
-           Wrap(
-             spacing: 8,
-             runSpacing: 8,
-             children: _stats!.topTargets.map((t) => Chip(
-               label: Text("${t.role}: ${t.count}"),
-               backgroundColor: Colors.grey[200],
-             )).toList(),
-           ),
-           const SizedBox(height: 80), // Fab space
+          const Text("Murojaat Yo'nalishlari", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _stats!.topTargets.map((t) => Chip(
+              label: Text("${t.role}: ${t.count}"),
+              backgroundColor: Colors.grey[200],
+            )).toList(),
+          ),
+          const SizedBox(height: 16),
         ],
       ),
     );
@@ -259,34 +266,6 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
             itemBuilder: (context, index) {
               return _buildAppealCard(_appeals[index]);
             },
-          ),
-        ),
-
-        // AI Clustering Button
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, -4),
-              )
-            ],
-          ),
-          child: ElevatedButton.icon(
-            onPressed: _clusterAppeals,
-            icon: const Icon(Icons.auto_awesome),
-            label: const Text("AI BILAN MAVZULARGA AJRATISH", style: TextStyle(fontWeight: FontWeight.bold)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryBlue,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              elevation: 0,
-            ),
           ),
         ),
       ],
@@ -379,5 +358,34 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Xatolik: $e"), backgroundColor: Colors.red));
     }
+  }
+
+  Widget _buildAiClusteringButton() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -4),
+          )
+        ],
+      ),
+      child: ElevatedButton.icon(
+        onPressed: _clusterAppeals,
+        icon: const Icon(Icons.auto_awesome),
+        label: const Text("AI BILAN MAVZULARGA AJRATISH", style: TextStyle(fontWeight: FontWeight.bold)),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppTheme.primaryBlue,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          elevation: 0,
+        ),
+      ),
+    );
   }
 }
