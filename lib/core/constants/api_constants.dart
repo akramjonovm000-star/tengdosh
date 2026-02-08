@@ -26,6 +26,7 @@ class ApiConstants {
   static const String managementAppealsStats = '$backendUrl/management/appeals/stats';
   static const String managementAppealsList = '$backendUrl/management/appeals/list';
   static const String managementAppealsResolve = '$backendUrl/management/appeals'; // + /{id}/resolve
+  static const String managementDocumentsArchive = '$backendUrl/management/documents/archive';
   static const String aiClusterAppeals = '$backendUrl/ai/cluster-appeals';
   
   // Announcements

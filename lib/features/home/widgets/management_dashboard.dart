@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../screens/management/student_search_screen.dart';
 import '../../student_module/widgets/student_dashboard_widgets.dart';
 import '../../../../core/services/data_service.dart';
+import '../../management/screens/management_archive_screen.dart';
 import '../../management/screens/management_appeals_screen.dart';
 
 class ManagementDashboard extends StatelessWidget {
@@ -98,7 +99,12 @@ class ManagementDashboard extends StatelessWidget {
               title: "Hujjatlar Arshivi",
               icon: Icons.inventory_2_rounded,
               color: Colors.blueGrey,
-              onTap: () => _showNotImplemented(context, "Arxiv"),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ManagementArchiveScreen()),
+                );
+              },
             ),
             DashboardCard(
               title: "HEMIS",

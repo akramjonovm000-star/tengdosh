@@ -664,3 +664,76 @@ async def send_student_doc_to_management(
         logger = logging.getLogger(__name__)
         logger.error(f"Error sending doc to management: {e}")
         return {"success": False, "message": f"Botda xatolik yuz berdi: {str(e)}"}
+
+@router.get("/documents/archive")
+async def get_mgmt_documents_archive(
+    query: str = None,
+    faculty_id: int = None,
+    title: str = None,
+    page: int = 1,
+    limit: int = 50,
+    staff: Any = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get a list of all student documents for management with filtering.
+    """
+    from database.models import UserDocument
+    
+    # 1. Security Check
+    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) == 'rahbariyat'
+    if not is_mgmt:
+        raise HTTPException(status_code=403, detail="Faqat rahbariyat uchun")
+        
+    uni_id = getattr(staff, 'university_id', None)
+    if not uni_id:
+        raise HTTPException(status_code=400, detail="Universitet aniqlanmadi")
+
+    # 2. Build Query
+    stmt = (
+        select(UserDocument, Student)
+        .join(Student, UserDocument.student_id == Student.id)
+        .where(Student.university_id == uni_id)
+    )
+
+    if faculty_id:
+        stmt = stmt.where(Student.faculty_id == faculty_id)
+    
+    if title:
+        stmt = stmt.where(UserDocument.title == title)
+        
+    if query:
+        stmt = stmt.where(
+            (Student.full_name.ilike(f"%{query}%")) |
+            (UserDocument.title.ilike(f"%{query}%"))
+        )
+
+    # 3. Pagination & Execution
+    stmt = stmt.order_by(UserDocument.created_at.desc()).offset((page - 1) * limit).limit(limit)
+    result = await db.execute(stmt)
+    rows = result.all()
+
+    def safe_isoformat(dt):
+        if not dt: return None
+        try: return dt.isoformat()
+        except: return str(dt)
+
+    return {
+        "success": True,
+        "data": [
+            {
+                "id": doc.id,
+                "title": doc.title,
+                "created_at": safe_isoformat(doc.created_at),
+                "file_type": doc.file_type,
+                "status": doc.status,
+                "student": {
+                    "id": student.id,
+                    "full_name": student.full_name,
+                    "group_number": student.group_number,
+                    "faculty_name": student.faculty_name
+                }
+            } for doc, student in rows
+        ]
+    }
+

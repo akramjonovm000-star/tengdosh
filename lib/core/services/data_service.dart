@@ -346,6 +346,37 @@ class DataService {
     return [];
   }
 
+  Future<Map<String, dynamic>> getManagementDocuments({
+    String? query,
+    int? facultyId,
+    String? title,
+    int page = 1,
+    int limit = 50,
+  }) async {
+    try {
+      final queryParams = <String>[];
+      if (query != null && query.isNotEmpty) queryParams.add("query=${Uri.encodeComponent(query)}");
+      if (facultyId != null) queryParams.add("faculty_id=$facultyId");
+      if (title != null && title.isNotEmpty) queryParams.add("title=${Uri.encodeComponent(title)}");
+      queryParams.add("page=$page");
+      queryParams.add("limit=$limit");
+
+      String url = ApiConstants.managementDocumentsArchive;
+      if (queryParams.isNotEmpty) {
+        url += "?${queryParams.join("&")}";
+      }
+
+      final response = await _get(url);
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) return body;
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching management documents: $e");
+    }
+    return {"success": false, "data": []};
+  }
+
   Future<Map<String, dynamic>> getStudentFullDetails(int studentId) async {
     try {
       final response = await _get("${ApiConstants.managementStudents}/$studentId/full-details");
