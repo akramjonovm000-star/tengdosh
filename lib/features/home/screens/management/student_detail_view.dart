@@ -163,7 +163,8 @@ class _StudentDetailViewState extends State<StudentDetailView> {
         ),
         const SizedBox(height: 8),
         Text(
-          "ID: ${profile['hemis_id']} • ${profile['group_number']}",
+          "ID: ${profile['hemis_login'] ?? profile['hemis_id'] ?? ""} • ${profile['group_number'] ?? ""}",
+          textAlign: TextAlign.center,
           style: TextStyle(color: Colors.grey[600], fontSize: 14),
         ),
         const SizedBox(height: 4),

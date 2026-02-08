@@ -227,6 +227,7 @@ async def get_mgmt_student_details(
                     "id": student.id,
                     "full_name": student.full_name,
                     "hemis_id": getattr(student, 'hemis_id', None),
+                    "hemis_login": getattr(student, 'hemis_login', None),
                     "faculty_name": getattr(student, 'faculty_name', None),
                     "group_number": getattr(student, 'group_number', None),
                     "image_url": getattr(student, 'image_url', None),
