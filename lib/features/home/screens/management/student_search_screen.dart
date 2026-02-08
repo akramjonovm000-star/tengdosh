@@ -173,7 +173,10 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
                         onChanged: (val) {
                           setState(() {
                             _selectedEducationType = val;
+                            _selectedCourse = null; // Important: reset course
+                            _selectedGroup = null;  // reset group
                           });
+                          _loadGroups();
                           _handleSearch();
                         },
                       ),
@@ -182,7 +185,7 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
                     Expanded(
                       child: _buildInlineDropdown<int>(
                         hint: "Fakultet",
-                        value: _selectedFacultyId,
+                        value: _faculties.any((f) => f['id'] == _selectedFacultyId) ? _selectedFacultyId : null,
                         items: _faculties.map((f) => DropdownMenuItem<int>(
                           value: f['id'],
                           child: Text(f['name'] ?? "", overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11)),
@@ -221,10 +224,12 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
                     Expanded(
                       child: _buildInlineDropdown<String>(
                         hint: "Kurs",
-                        value: _selectedCourse != null ? "${_selectedEducationType}_$_selectedCourse" : null,
+                        value: (_selectedCourse != null && _selectedEducationType != null) ? "${_selectedEducationType}_$_selectedCourse" : null,
                         items: [
-                          ...["1", "2", "3", "4"].map((e) => DropdownMenuItem(value: "Bakalavr_$e", child: Text("$e-kurs", style: const TextStyle(fontSize: 11)))),
-                          ...["1", "2"].map((e) => DropdownMenuItem(value: "Magistr_$e", child: Text("$e-kurs (M)", style: const TextStyle(fontSize: 11)))),
+                          if (_selectedEducationType == null || _selectedEducationType == "Bakalavr")
+                            ...["1", "2", "3", "4"].map((e) => DropdownMenuItem(value: "Bakalavr_$e", child: Text("$e-kurs", style: const TextStyle(fontSize: 11)))),
+                          if (_selectedEducationType == null || _selectedEducationType == "Magistr")
+                            ...["1", "2"].map((e) => DropdownMenuItem(value: "Magistr_$e", child: Text("$e-kurs (M)", style: const TextStyle(fontSize: 11)))),
                         ],
                         onChanged: (val) {
                           if (val != null) {
@@ -243,7 +248,7 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
                     Expanded(
                       child: _buildInlineDropdown<String>(
                         hint: "Yo'nalish",
-                        value: _selectedSpecialty,
+                        value: _specialties.contains(_selectedSpecialty) ? _selectedSpecialty : null,
                         items: _specialties.map((s) => DropdownMenuItem(
                           value: s,
                           child: Text(s, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11)),
@@ -258,7 +263,7 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
                     Expanded(
                       child: _buildInlineDropdown<String>(
                         hint: "Guruh",
-                        value: _selectedGroup,
+                        value: _groups.contains(_selectedGroup) ? _selectedGroup : null,
                         items: _groups.map((g) => DropdownMenuItem(
                           value: g,
                           child: Text(g, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11)),

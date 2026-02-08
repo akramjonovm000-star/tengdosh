@@ -176,6 +176,8 @@ async def search_mgmt_students(
     db: AsyncSession = Depends(get_db)
 ):
     uni_id = getattr(staff, 'university_id', None)
+    if uni_id is None:
+        return {"success": True, "total_count": 0, "app_users_count": 0, "data": []}
     
     # Base filters
     filters = [Student.university_id == uni_id]
@@ -195,7 +197,7 @@ async def search_mgmt_students(
     if group_number: filters.append(Student.group_number == group_number)
 
     # 1. Get Students
-    stmt = select(Student).where(and_(*filters)).order_by(Student.full_name).limit(200)
+    stmt = select(Student).where(and_(*filters)).order_by(Student.full_name).limit(500)
     result = await db.execute(stmt)
     students = result.scalars().all()
     
