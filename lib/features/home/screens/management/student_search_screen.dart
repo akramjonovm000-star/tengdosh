@@ -47,45 +47,33 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
     });
     _loadSpecialties();
     _loadGroups();
+    _handleSearch(); // Get initial uni-wide stats
   }
 
   Future<void> _loadSpecialties() async {
-    final specs = await _dataService.getManagementSpecialties(facultyId: _selectedFacultyId);
-    setState(() {
-      _specialties = List<String>.from(specs);
-    });
+    try {
+      final specs = await _dataService.getManagementSpecialties(facultyId: _selectedFacultyId);
+      setState(() {
+        _specialties = List<String>.from(specs);
+      });
+    } catch (_) {}
   }
 
   Future<void> _loadGroups() async {
-    final groups = await _dataService.getManagementGroups(
-      facultyId: _selectedFacultyId,
-      levelName: _selectedCourse != null ? "${_selectedCourse}-kurs" : null,
-    );
-    setState(() {
-      _groups = List<String>.from(groups);
-    });
+    try {
+      final groups = await _dataService.getManagementGroups(
+        facultyId: _selectedFacultyId,
+        levelName: _selectedCourse != null ? "${_selectedCourse}-kurs" : null,
+      );
+      setState(() {
+        _groups = List<String>.from(groups);
+      });
+    } catch (_) {}
   }
 
   Future<void> _handleSearch() async {
     final query = _searchController.text;
     
-    bool hasFilters = _selectedEducationType != null || 
-                      _selectedEducationForm != null ||
-                      _selectedCourse != null || 
-                      _selectedFacultyId != null || 
-                      _selectedSpecialty != null ||
-                      _selectedGroup != null;
-
-    if (query.isEmpty && !hasFilters) {
-      setState(() {
-        _isSearching = false;
-        _searchResults = [];
-        _totalCount = 0;
-        _appUsersCount = 0;
-      });
-      return;
-    }
-
     setState(() => _isSearching = true);
     
     final result = await _dataService.searchStudents(
@@ -281,35 +269,34 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
           ),
 
           // 1.5 Stats Section
-          if (_selectedEducationType != null || _selectedEducationForm != null || _selectedCourse != null || _selectedFacultyId != null || _selectedSpecialty != null || _selectedGroup != null || _searchController.text.isNotEmpty || _isSearching)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(top: BorderSide(color: Colors.grey.shade100)),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _buildStatItem(
-                      label: "Jami talabalar",
-                      value: _totalCount,
-                      icon: Icons.people_outline,
-                      color: Colors.blue,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildStatItem(
-                      label: "Ilova foydalanuvchilari",
-                      value: _appUsersCount,
-                      icon: Icons.smartphone_rounded,
-                      color: Colors.green,
-                    ),
-                  ),
-                ],
-              ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border(top: BorderSide(color: Colors.grey.shade100)),
             ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _buildStatItem(
+                    label: "Jami talabalar",
+                    value: _totalCount,
+                    icon: Icons.people_outline,
+                    color: Colors.blue,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildStatItem(
+                    label: "Ilova foydalanuvchilari",
+                    value: _appUsersCount,
+                    icon: Icons.smartphone_rounded,
+                    color: Colors.green,
+                  ),
+                ),
+              ],
+            ),
+          ),
 
           // 2. Results
           Expanded(

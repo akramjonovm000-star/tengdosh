@@ -179,36 +179,37 @@ async def search_mgmt_students(
     if uni_id is None:
         return {"success": True, "total_count": 0, "app_users_count": 0, "data": []}
     
-    # Base filters
-    filters = [Student.university_id == uni_id]
-    
+    # 1. Base category filters (University + Dropdowns)
+    category_filters = [Student.university_id == uni_id]
+    if faculty_id: category_filters.append(Student.faculty_id == faculty_id)
+    if education_type: category_filters.append(Student.education_type == education_type)
+    if education_form: category_filters.append(Student.education_form == education_form)
+    if level_name: category_filters.append(Student.level_name == level_name)
+    if specialty_name: category_filters.append(Student.specialty_name == specialty_name)
+    if group_number: category_filters.append(Student.group_number == group_number)
+
+    # 2. Search filters (Dropdowns + Query)
+    search_filters = list(category_filters)
     if query:
-        filters.append(
+        search_filters.append(
             (Student.full_name.ilike(f"%{query}%")) | 
             (Student.hemis_id.ilike(f"%{query}%")) |
             (Student.hemis_login.ilike(f"%{query}%"))
         )
-    
-    if faculty_id: filters.append(Student.faculty_id == faculty_id)
-    if education_type: filters.append(Student.education_type == education_type)
-    if education_form: filters.append(Student.education_form == education_form)
-    if level_name: filters.append(Student.level_name == level_name)
-    if specialty_name: filters.append(Student.specialty_name == specialty_name)
-    if group_number: filters.append(Student.group_number == group_number)
 
-    # 1. Get Students
-    stmt = select(Student).where(and_(*filters)).order_by(Student.full_name).limit(500)
+    # 3. Get Students (using Search filters)
+    stmt = select(Student).where(and_(*search_filters)).order_by(Student.full_name).limit(500)
     result = await db.execute(stmt)
     students = result.scalars().all()
     
-    # 2. Get Stats
-    # Total Count
-    count_stmt = select(func.count(Student.id)).where(and_(*filters))
+    # 4. Get Stats (using Category filters)
+    # Total Count in category
+    count_stmt = select(func.count(Student.id)).where(and_(*category_filters))
     total_count = (await db.execute(count_stmt)).scalar() or 0
     
-    # App Users Count (Students with TG account)
+    # App Users Count in category (Students with TG account)
     from sqlalchemy import distinct
-    app_users_stmt = select(func.count(distinct(Student.id))).join(TgAccount).where(and_(*filters))
+    app_users_stmt = select(func.count(distinct(Student.id))).join(TgAccount).where(and_(*category_filters))
     app_users_count = (await db.execute(app_users_stmt)).scalar() or 0
     
     return {
