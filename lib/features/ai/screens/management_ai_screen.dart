@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/data_service.dart';
-// Import DashboardCard - assuming it's accessible or we redefine it locally for independence
-import '../../student_module/widgets/student_dashboard_widgets.dart'; 
 
 class ManagementAiScreen extends StatefulWidget {
   const ManagementAiScreen({super.key});
@@ -37,15 +35,12 @@ class _ManagementAiScreenState extends State<ManagementAiScreen> {
 
   Future<void> _generateReport() async {
     setState(() => _isReportLoading = true);
-    // If opened in modal, we might need state management there, but for now we keep state here
-    // and show result in a new dialog/sheet.
     final report = await _dataService.getManagementAiReport();
     if (mounted) {
       setState(() {
         _aiReport = report;
         _isReportLoading = false;
       });
-      // Auto-show report if it was triggered
       _showReportResult();
     }
   }
@@ -177,7 +172,6 @@ class _ManagementAiScreenState extends State<ManagementAiScreen> {
       case "Muammolar va xavf signallari":
          return _buildListContent(_analytics!['risks'], Icons.warning_amber_rounded, Colors.redAccent);
       case "Rahbariyat uchun AI hisobot":
-         // Should not happen as button handles logic, but placeholder
          return const SizedBox(); 
       default:
         return const Center(child: Text("Ma'lumot yo'q"));
@@ -201,7 +195,6 @@ class _ManagementAiScreenState extends State<ManagementAiScreen> {
   }
 
   Widget _buildListContent(List<dynamic> items, IconData icon, Color color) {
-    // ignore: unnecessary_null_comparison
     if (items == null || items.isEmpty) return const Center(child: Text("Ma'lumot yo'q"));
     return ListView.separated(
       itemCount: items.length,
@@ -221,12 +214,60 @@ class _ManagementAiScreenState extends State<ManagementAiScreen> {
   }
 
   Color _getColorForSentiment(dynamic score) {
-    // ignore: unnecessary_type_check
     if (score is! int && score is! double) return Colors.grey;
     final s = score is int ? score : int.tryParse("$score") ?? 50;
     if (s >= 70) return Colors.green;
     if (s <= 40) return Colors.red;
     return Colors.amber;
+  }
+
+  // Exact Copy of UI Widget from AiScreen.dart
+  Widget _buildAiButton(String text, IconData icon, VoidCallback onTap, {bool isPrimary = false}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              color: isPrimary ? AppTheme.primaryBlue : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isPrimary ? AppTheme.primaryBlue : Colors.grey.withOpacity(0.1),
+              ),
+              boxShadow: isPrimary 
+                  ? [BoxShadow(color: AppTheme.primaryBlue.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))]
+                  : [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 4, offset: const Offset(0, 2))],
+            ),
+            child: Row(
+              children: [
+                Icon(icon, color: isPrimary ? Colors.white : AppTheme.primaryBlue, size: 24),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    text,
+                    style: TextStyle(
+                      color: isPrimary ? Colors.white : Colors.black87,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                if (_isLoading && !isPrimary) // Show loader only for stats if loading
+                   const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                else if (isPrimary && _isReportLoading)
+                   const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                else
+                   Icon(Icons.chevron_right, color: isPrimary ? Colors.white54 : Colors.grey, size: 20),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -242,86 +283,33 @@ class _ManagementAiScreenState extends State<ManagementAiScreen> {
           IconButton(icon: const Icon(Icons.refresh), onPressed: _loadData)
         ],
       ),
-      body: _isLoading 
-          ? const Center(child: CircularProgressIndicator())
-          : _analytics == null 
-              ? Center(child: Text("Ma'lumot yuklashda xatolik", style: const TextStyle(color: Colors.red)))
-              : Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: GridView.count(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 1.1,
-                    children: [
-                      DashboardCard(
-                        title: "Talabalar umumiy holati",
-                        icon: Icons.people_alt,
-                        color: Colors.blue,
-                        onTap: () => _showDetail("Talabalar umumiy holati"),
-                      ),
-                      DashboardCard(
-                        title: "Talabalar kayfiyati tahlili",
-                        icon: Icons.sentiment_satisfied_alt,
-                        color: Colors.green,
-                        onTap: () => _showDetail("Talabalar kayfiyati tahlili"),
-                      ),
-                      DashboardCard(
-                        title: "Fakultetlar bo‘yicha statistika",
-                        icon: Icons.school,
-                        color: Colors.orange,
-                        onTap: () => _showDetail("Fakultetlar bo‘yicha statistika"),
-                      ),
-                      DashboardCard(
-                        title: "Ilova faolligi",
-                        icon: Icons.touch_app,
-                        color: Colors.purple,
-                        onTap: () => _showDetail("Ilova faolligi"),
-                      ),
-                      DashboardCard(
-                        title: "Muammolar va xavf signallari",
-                        icon: Icons.warning_amber_rounded,
-                        color: Colors.redAccent,
-                        onTap: () => _showDetail("Muammolar va xavf signallari"),
-                      ),
-                      _buildReportButton(),
-                    ],
-                  ),
-                ),
-    );
-  }
-
-  Widget _buildReportButton() {
-     return InkWell(
-      onTap: _isReportLoading ? null : () {
-        if (_aiReport != null) {
-          _showReportResult();
-        } else {
-          _generateReport();
-        }
-      },
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(colors: [Color(0xFF6C5CE7), Color(0xFFA29BFE)]),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(color: const Color(0xFF6C5CE7).withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4)),
-          ],
-        ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (_isReportLoading)
-               const CircularProgressIndicator(color: Colors.white)
-            else
-               const Icon(Icons.auto_awesome, size: 32, color: Colors.white),
-            const SizedBox(height: 12),
-            const Text(
-              "Rahbariyat uchun AI hisobot",
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+            Text(
+              "Universitet bo'yicha tahliliy ma'lumotlar va AI hisoboti:",
+              style: TextStyle(color: Colors.grey[600], fontSize: 15),
+              textAlign: TextAlign.start,
             ),
+            const SizedBox(height: 20),
+
+            _buildAiButton("Talabalar umumiy holati", Icons.people_alt, () => _showDetail("Talabalar umumiy holati")),
+            _buildAiButton("Talabalar kayfiyati tahlili", Icons.sentiment_satisfied_alt, () => _showDetail("Talabalar kayfiyati tahlili")),
+            _buildAiButton("Fakultetlar bo‘yicha statistika", Icons.school, () => _showDetail("Fakultetlar bo‘yicha statistika")),
+            _buildAiButton("Ilova faolligi", Icons.touch_app, () => _showDetail("Ilova faolligi")),
+            _buildAiButton("Muammolar va xavf signallari", Icons.warning_amber_rounded, () => _showDetail("Muammolar va xavf signallari")),
+            
+            const Divider(height: 30),
+            
+            _buildAiButton("Rahbariyat uchun AI hisobot", Icons.auto_awesome, () {
+               if (_aiReport != null) {
+                 _showReportResult();
+               } else {
+                 _generateReport();
+               }
+            }, isPrimary: true),
           ],
         ),
       ),
