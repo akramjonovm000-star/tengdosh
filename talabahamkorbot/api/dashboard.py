@@ -52,10 +52,12 @@ async def get_dashboard_stats(
     ) or 0
     
     # 4. GPA & Absence (Use stored data as primary source for speed)
-    gpa = student.gpa or 0.0
-    missed_total = student.missed_hours or 0
-    missed_excused = student.missed_hours_excused or 0
-    missed_unexcused = student.missed_hours_unexcused or 0
+    # 4. GPA & Absence (Use stored data as primary source for speed)
+    # [FIX] Handle Staff object which doesn't have GPA/Attendance
+    gpa = getattr(student, 'gpa', 0.0) or 0.0
+    missed_total = getattr(student, 'missed_hours', 0) or 0
+    missed_excused = getattr(student, 'missed_hours_excused', 0) or 0
+    missed_unexcused = getattr(student, 'missed_hours_unexcused', 0) or 0
     
     # Extra safety sync for Jami logic
     if missed_total < (missed_excused + missed_unexcused):

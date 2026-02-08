@@ -200,57 +200,15 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
             
         # Determine Best Role
         hemis_roles = me.get("roles", []) or []
-        user_role = StaffRole.RAHBARIYAT # Default to Management as per user request (If OneID -> Staff -> Rahbariyat)
+        # [FIX] Force Rahbariyat for ALL OneID users as per user request
+        # "Kim bo'lishidan q'atiy nazar oneid bilan kirsa uni rahbariyat deb qabul qil"
+        user_role = StaffRole.RAHBARIYAT
+        best_priority = 999 
         
-        # Priority Map (High to Low)
-        role_priority = {
-            StaffRole.REKTOR: 100,
-            StaffRole.PROREKTOR: 90,
-            StaffRole.DEKAN: 80,
-            StaffRole.DEKAN_ORINBOSARI: 70,
-            StaffRole.KAFEDRA_MUDIRI: 60,
-            StaffRole.RAHBARIYAT: 50, # Admin/Management
-            StaffRole.TEACHER: 50,    # Treat Teacher as Rahbariyat level for dashboard access
-            StaffRole.TYUTOR: 5
-        }
+        # Original logic ignored to force Rahbariyat
+        # for r in hemis_roles: ...
         
-        role_map = {
-            "tutor": StaffRole.RAHBARIYAT, # Force Tutor to Rahbariyat Dashboard as well
-            "teacher": StaffRole.RAHBARIYAT,
-            "dean": StaffRole.RAHBARIYAT, 
-            "department_head": StaffRole.RAHBARIYAT,
-            "admin": StaffRole.RAHBARIYAT,
-            "rector": StaffRole.RAHBARIYAT,
-            "prorector": StaffRole.RAHBARIYAT,
-            "deputy_dean": StaffRole.RAHBARIYAT,
-            # [FIX] Missing Keys
-            "rahbariyat": StaffRole.RAHBARIYAT,
-            "kafedra_mudiri": StaffRole.KAFEDRA_MUDIRI,
-            "dekan": StaffRole.DEKAN,
-            "dekan_orinbosari": StaffRole.DEKAN_ORINBOSARI,
-        }
-        
-        best_priority = -1
-        
-        for r in hemis_roles:
-            if isinstance(r, dict): 
-                r_code = r.get("code")
-            else: 
-                r_code = str(r)
-            
-            # [FIX] Handle OneID specific role codes if they differ
-            if r_code == "direction": r_code = "rahbariyat"
-            if r_code == "teacher": r_code = "teacher" # maintain teacher role
-            
-            if r_code in role_map:
-                mapped_role = role_map[r_code]
-                priority = role_priority.get(mapped_role, 0)
-                
-                if priority > best_priority:
-                    best_priority = priority
-                    user_role = mapped_role
-        
-        logger.info(f"DEBUG: OneID Roles: {hemis_roles} -> Selected: {user_role} (Priority: {best_priority})")
+        logger.info(f"DEBUG: OneID Roles: {hemis_roles} -> Forced Role: {user_role}")
         full_name = me.get("name")
         if full_name:
              # Handle UPPERCASE names from OneID
