@@ -46,7 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, dynamic>? _dashboard;
   bool _isLoading = true;
   Timer? _refreshTimer;
-  Timer? _refreshTimer;
+
   List<AnnouncementModel> _announcements = [];
   BannerModel? _activeBanner; // [NEW]
   final PageController _pageController = PageController();

@@ -22,7 +22,7 @@ class BannerModel {
       isActive: json['active'] ?? false,
       imageFileId: json['image_file_id'],
       link: json['link'],
-      created_at: json['created_at'],
+      createdAt: json['created_at'],
     );
   }
 }
