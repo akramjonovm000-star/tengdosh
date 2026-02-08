@@ -214,9 +214,13 @@ class DataService {
   }
 
   // Management Dashboard
-  Future<Map<String, dynamic>> getManagementDashboard() async {
+  Future<Map<String, dynamic>> getManagementDashboard({bool refresh = false}) async {
     try {
-      final response = await _get(ApiConstants.managementDashboard);
+      String url = ApiConstants.managementDashboard;
+      if (refresh) {
+        url += (url.contains('?') ? '&' : '?') + 'refresh=true';
+      }
+      final response = await _get(url);
       if (response.statusCode == 200) {
         final body = json.decode(response.body);
         if (body['success'] == true) {

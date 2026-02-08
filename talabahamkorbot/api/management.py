@@ -34,9 +34,7 @@ async def get_management_dashboard(
     from services.hemis_service import HemisService
     
     token = getattr(staff, 'hemis_token', None)
-    total_students_api = 0
-    if token:
-        total_students_api = await HemisService.get_total_student_count(token)
+    total_students_api = await HemisService.get_total_student_count(token)
 
     # 2. Total Students in University
     # Priority: API -> DB (Fallback)

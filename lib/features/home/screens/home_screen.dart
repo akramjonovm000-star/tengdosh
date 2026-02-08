@@ -96,7 +96,12 @@ class _HomeScreenState extends State<HomeScreen> {
       if (isTutor) {
          _dashboard = await _dataService.getTutorDashboard();
       } else if (auth.isManagement) {
-         _dashboard = await _dataService.getManagementDashboard();
+         final dash = await _dataService.getManagementDashboard(refresh: refresh);
+         if (mounted) {
+           setState(() {
+             _dashboard = dash;
+           });
+         }
       } else {
           final dashResult = await _dataService.getDashboardStats(refresh: refresh);
           final announcements = await _dataService.getAnnouncementModels();
@@ -362,7 +367,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 24),
 
             if (auth.isManagement)
-               const ManagementDashboard()
+               ManagementDashboard(stats: _dashboard)
             else if (isTutor) 
                _buildTutorDashboard()
             else
