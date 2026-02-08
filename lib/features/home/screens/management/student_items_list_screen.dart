@@ -139,7 +139,8 @@ class StudentItemsListScreen extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         itemCount: fileIds.length,
         itemBuilder: (context, index) {
-          final url = "${ApiConstants.fileProxy}/${fileIds[index]}";
+          final fileId = fileIds[index];
+          final url = fileId.startsWith('http') ? fileId : "${ApiConstants.fileProxy}/$fileId";
           return GestureDetector(
             onTap: () {
               showDialog(

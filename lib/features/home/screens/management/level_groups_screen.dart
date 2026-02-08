@@ -30,7 +30,7 @@ class _LevelGroupsScreenState extends State<LevelGroupsScreen> {
   }
 
   Future<void> _loadGroups() async {
-    final groups = await _dataService.getManagementGroups(widget.facultyId, widget.levelName);
+    final groups = await _dataService.getManagementGroups(facultyId: widget.facultyId, levelName: widget.levelName);
     setState(() {
       _groups = groups;
       _isLoading = false;

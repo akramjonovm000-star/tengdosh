@@ -250,19 +250,6 @@ class DataService {
     return [];
   }
 
-  Future<List<dynamic>> getManagementGroups(int facultyId, String levelName) async {
-    try {
-      final response = await _get("${ApiConstants.managementFaculties}/$facultyId/levels/$levelName/groups");
-      if (response.statusCode == 200) {
-        final body = json.decode(response.body);
-        if (body['success'] == true) return body['data'];
-      }
-    } catch (e) {
-      debugPrint("DataService: Error fetching management groups: $e");
-    }
-    return [];
-  }
-
   Future<List<dynamic>> getManagementGroupStudents(String groupNumber) async {
     try {
       final response = await _get("${ApiConstants.managementGroups}/$groupNumber/students");
