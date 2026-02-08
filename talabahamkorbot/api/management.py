@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
+from sqlalchemy.orm import selectinload
 from typing import Dict, Any
 
 from api.dependencies import get_current_student, get_db
@@ -67,6 +68,11 @@ async def get_mgmt_faculties(
     staff: Any = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
 ):
+    # Security & Context
+    uni_id = getattr(staff, 'university_id', None)
+    if not uni_id:
+        raise HTTPException(status_code=400, detail="Universitet aniqlanmadi")
+
     # Show only faculties that have students AND a name
     result = await db.execute(
         select(Student.faculty_id, Student.faculty_name)
@@ -91,10 +97,13 @@ async def get_mgmt_levels(
     staff: Any = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
 ):
+    # Security: Ensure faculty belongs to staff's university
+    uni_id = getattr(staff, 'university_id', None)
+    
     # Unique levels for this faculty
     result = await db.execute(
         select(Student.level_name)
-        .where(Student.faculty_id == faculty_id)
+        .where(Student.faculty_id == faculty_id, Student.university_id == uni_id)
         .distinct()
         .order_by(Student.level_name)
     )
@@ -108,10 +117,17 @@ async def get_mgmt_groups(
     staff: Any = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
 ):
+    # Security
+    uni_id = getattr(staff, 'university_id', None)
+
     # Unique groups for this faculty and level
     result = await db.execute(
         select(Student.group_number)
-        .where(Student.faculty_id == faculty_id, Student.level_name == level_name)
+        .where(
+            Student.faculty_id == faculty_id, 
+            Student.level_name == level_name,
+            Student.university_id == uni_id
+        )
         .distinct()
         .order_by(Student.group_number)
     )
@@ -124,9 +140,12 @@ async def get_mgmt_group_students(
     staff: Any = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
 ):
+    # Security
+    uni_id = getattr(staff, 'university_id', None)
+
     result = await db.execute(
         select(Student)
-        .where(Student.group_number == group_number)
+        .where(Student.group_number == group_number, Student.university_id == uni_id)
         .order_by(Student.full_name)
     )
     students = result.scalars().all()
@@ -190,15 +209,22 @@ async def get_mgmt_student_details(
         student = await db.get(Student, student_id)
         if not student: raise HTTPException(status_code=404, detail="Talaba topilmadi")
 
-        # 1. Appeales (Feedbacks)
+        # Security: Ensure student belongs to staff's university
+        uni_id = getattr(staff, 'university_id', None)
+        if student.university_id != uni_id:
+            raise HTTPException(status_code=403, detail="Boshqa universitet talabasi ma'lumotlarini ko'rish imkonsiz")
+
+        # 1. Appeals (Feedbacks) - parent_id=None are top-level threads
         appeals_result = await db.execute(
             select(StudentFeedback).where(StudentFeedback.student_id == student_id, StudentFeedback.parent_id == None)
         )
         appeals = appeals_result.scalars().all()
 
-        # 2. Activities
+        # 2. Activities (With Images Eagerly Loaded)
         activities_result = await db.execute(
-            select(UserActivity).where(UserActivity.student_id == student_id)
+            select(UserActivity)
+            .where(UserActivity.student_id == student_id)
+            .options(selectinload(UserActivity.images))
         )
         activities = activities_result.scalars().all()
 
