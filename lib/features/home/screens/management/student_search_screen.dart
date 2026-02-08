@@ -163,7 +163,6 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
                         onChanged: (val) {
                           setState(() {
                             _selectedEducationType = val;
-                            _selectedCourse = null;
                           });
                           _handleSearch();
                         },
@@ -185,13 +184,21 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
                     Expanded(
                       child: _buildInlineDropdown<String>(
                         hint: "Kurs",
-                        value: _selectedCourse,
-                        items: (_selectedEducationType == "Magistr" ? ["1", "2"] : ["1", "2", "3", "4"])
-                            .map((e) => DropdownMenuItem(value: e, child: Text("$e-kurs", style: const TextStyle(fontSize: 12)))).toList(),
+                        value: _selectedCourse != null ? "${_selectedEducationType}_$_selectedCourse" : null,
+                        items: [
+                          ...["1", "2", "3", "4"].map((e) => DropdownMenuItem(value: "Bakalavr_$e", child: Text("$e-kurs", style: const TextStyle(fontSize: 12)))),
+                          ...["1", "2"].map((e) => DropdownMenuItem(value: "Magistr_$e", child: Text("$e-kurs (Magistr)", style: const TextStyle(fontSize: 12)))),
+                        ],
                         onChanged: (val) {
-                          setState(() => _selectedCourse = val);
-                          _loadGroups();
-                          _handleSearch();
+                          if (val != null) {
+                            final parts = val.split('_');
+                            setState(() {
+                              _selectedEducationType = parts[0];
+                              _selectedCourse = parts[1];
+                            });
+                            _loadGroups();
+                            _handleSearch();
+                          }
                         },
                       ),
                     ),
