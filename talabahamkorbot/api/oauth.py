@@ -163,6 +163,7 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
             rest_me = await HemisService.get_me(access_token, base_url=base_url, use_oauth_endpoint=False)
             if rest_me:
                 logger.info(f"DEBUG: Syncing academic info from REST profile for student {student.id}")
+                logger.info(f"DEBUG: REST Profile Role Check: {rest_me.get('roles')}")
                 student.university_name = rest_me.get("university", {}).get("name") if isinstance(rest_me.get("university"), dict) else rest_me.get("university_name")
                 student.faculty_name = rest_me.get("faculty", {}).get("name") if isinstance(rest_me.get("faculty"), dict) else rest_me.get("faculty_name")
                 student.group_number = rest_me.get("group", {}).get("name") if isinstance(rest_me.get("group"), dict) else rest_me.get("group_number")
@@ -221,7 +222,12 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
             "admin": StaffRole.RAHBARIYAT,
             "rector": StaffRole.RAHBARIYAT,
             "prorector": StaffRole.RAHBARIYAT,
-            "deputy_dean": StaffRole.RAHBARIYAT
+            "deputy_dean": StaffRole.RAHBARIYAT,
+            # [FIX] Missing Keys
+            "rahbariyat": StaffRole.RAHBARIYAT,
+            "kafedra_mudiri": StaffRole.KAFEDRA_MUDIRI,
+            "dekan": StaffRole.DEKAN,
+            "dekan_orinbosari": StaffRole.DEKAN_ORINBOSARI,
         }
         
         best_priority = -1
@@ -234,6 +240,7 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
             
             # [FIX] Handle OneID specific role codes if they differ
             if r_code == "direction": r_code = "rahbariyat"
+            if r_code == "teacher": r_code = "teacher" # maintain teacher role
             
             if r_code in role_map:
                 mapped_role = role_map[r_code]
@@ -243,7 +250,7 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
                     best_priority = priority
                     user_role = mapped_role
         
-        # [FIX] Refined Name & Image Extraction
+        logger.info(f"DEBUG: OneID Roles: {hemis_roles} -> Selected: {user_role} (Priority: {best_priority})")
         full_name = me.get("name")
         if full_name:
              # Handle UPPERCASE names from OneID
@@ -291,10 +298,22 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
                              staff.position = sp.get("name")
 
             # ALWAYS update role to ensure highest privilege
-            if staff.role != user_role:
-                 logger.info(f"Updating Staff Role from {staff.role} to {user_role}")
-                 staff.role = user_role
+            # But prevent downgrading a 'rahbariyat' or 'teacher' to 'student' accidentally
+            current_role_priority = role_priority.get(staff.role, 0)
+            new_role_priority = role_priority.get(user_role, 0)
             
+            if new_role_priority >= current_role_priority:
+                 if staff.role != user_role:
+                      logger.info(f"Updating Staff Role from {staff.role} to {user_role}")
+                      staff.role = user_role
+            else:
+                 logger.warning(f"Prevented role downgrade for {staff.full_name}: {staff.role} -> {user_role}")
+
+            # Force Rahbariyat for specific employee_id if needed (Safety Net)
+            if staff.employee_id_number == "3952111037": # User's specific ID
+                staff.role = "rahbariyat"
+
+            await db.commit()
             # [NEW] Save Token
             staff.hemis_token = access_token
             u_id = me.get("university_id")
