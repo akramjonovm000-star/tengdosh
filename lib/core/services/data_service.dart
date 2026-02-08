@@ -377,6 +377,32 @@ class DataService {
     return {"success": false, "data": []};
   }
 
+  Future<Map<String, dynamic>> exportManagementDocumentsZip({
+    String? query,
+    int? facultyId,
+    String? title,
+  }) async {
+    try {
+      final queryParams = <String>[];
+      if (query != null && query.isNotEmpty) queryParams.add("query=${Uri.encodeComponent(query)}");
+      if (facultyId != null) queryParams.add("faculty_id=$facultyId");
+      if (title != null && title.isNotEmpty) queryParams.add("title=${Uri.encodeComponent(title)}");
+
+      String url = "${ApiConstants.backendUrl}/management/documents/export-zip";
+      if (queryParams.isNotEmpty) {
+        url += "?${queryParams.join("&")}";
+      }
+
+      final response = await _post(url);
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      debugPrint("DataService: Error exporting documents zip: $e");
+    }
+    return {"success": false, "message": "Xatolik yuz berdi"};
+  }
+
   Future<Map<String, dynamic>> getStudentFullDetails(int studentId) async {
     try {
       final response = await _get("${ApiConstants.managementStudents}/$studentId/full-details");

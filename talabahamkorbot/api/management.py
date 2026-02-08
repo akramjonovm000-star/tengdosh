@@ -2,7 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 from sqlalchemy.orm import selectinload
-from typing import Dict, Any
+from typing import Dict, Any, List
+import zipfile
+import io
+import aiohttp
 
 from api.dependencies import get_current_student, get_db
 from database.models import Student, Staff, TgAccount, UserActivity
@@ -736,4 +739,117 @@ async def get_mgmt_documents_archive(
             } for doc, student in rows
         ]
     }
+
+@router.post("/documents/export-zip")
+async def export_mgmt_documents_zip(
+    query: str = None,
+    faculty_id: int = None,
+    title: str = None,
+    staff: Any = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Download filtered documents, zip them and send to management user via Telegram.
+    """
+    from database.models import UserDocument
+    from bot import bot
+    from config import BOT_TOKEN
+    from aiogram.types import BufferedInputFile
+    
+    # 1. Security Check
+    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) == 'rahbariyat'
+    if not is_mgmt:
+        raise HTTPException(status_code=403, detail="Faqat rahbariyat uchun")
+        
+    uni_id = getattr(staff, 'university_id', None)
+    if not uni_id:
+        raise HTTPException(status_code=400, detail="Universitet aniqlanmadi")
+
+    # 2. Build Query
+    stmt = (
+        select(UserDocument, Student)
+        .join(Student, UserDocument.student_id == Student.id)
+        .where(Student.university_id == uni_id)
+    )
+
+    if faculty_id:
+        stmt = stmt.where(Student.faculty_id == faculty_id)
+    
+    if title:
+        stmt = stmt.where(UserDocument.title == title)
+        
+    if query:
+        stmt = stmt.where(
+            (Student.full_name.ilike(f"%{query}%")) |
+            (UserDocument.title.ilike(f"%{query}%"))
+        )
+
+    # Order by date
+    stmt = stmt.order_by(UserDocument.created_at.desc())
+    
+    result = await db.execute(stmt)
+    rows = result.all()
+
+    if not rows:
+        return {"success": False, "message": "Hujjatlar topilmadi"}
+
+    # 3. Create ZIP in memory
+    zip_buffer = io.BytesIO()
+    count = 0
+    
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        async with aiohttp.ClientSession() as session:
+            for doc, student in rows:
+                try:
+                    # Get File Info from Telegram
+                    tg_file = await bot.get_file(doc.file_id)
+                    file_path = tg_file.file_path
+                    download_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}"
+                    
+                    # Download File
+                    async with session.get(download_url) as resp:
+                        if resp.status == 200:
+                            file_bytes = await resp.read()
+                            
+                            # Determine Extension
+                            ext = "jpg"
+                            if doc.file_type == "document":
+                                if "." in file_path:
+                                    ext = file_path.split(".")[-1]
+                                else:
+                                    ext = "bin"
+                            
+                            # Filename: StudentName_DocTitle_ID.ext
+                            clean_name = student.full_name.replace(" ", "_").replace("'", "").replace('"', "")
+                            clean_title = doc.title.replace(" ", "_").replace("'", "").replace('"', "")
+                            filename = f"{clean_name}_{clean_title}_{doc.id}.{ext}"
+                            
+                            zip_file.writestr(filename, file_bytes)
+                            count += 1
+                except Exception as e:
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Error zipping doc {doc.id}: {e}")
+
+    if count == 0:
+        return {"success": False, "message": "Hech qanday fayl yuklab olinmadi"}
+
+    zip_buffer.seek(0)
+    
+    # 4. Send ZIP via Bot
+    # Use TEST ID: 7476703866
+    try:
+        input_file = BufferedInputFile(zip_buffer.read(), filename="hujjatlar_arxivi.zip")
+        caption = (
+            f"📦 <b>Hujjatlar Arxivi (ZIP)</b>\n\n"
+            f"Soni: <b>{count} ta</b>\n"
+            f"Filtr: <b>{title or 'Barchasi'}</b>"
+        )
+        await bot.send_document(7476703866, input_file, caption=caption)
+        return {"success": True, "message": f"ZIP fayl yuborildi ({count} ta hujjat). TEST ID: 7476703866"}
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error sending ZIP: {e}")
+        return {"success": False, "message": f"ZIP yuborishda xatolik yuz berdi: {str(e)}"}
 

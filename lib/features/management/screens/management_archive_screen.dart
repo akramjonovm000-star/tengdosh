@@ -88,6 +88,14 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.archive_outlined, color: Colors.blue),
+            onPressed: _isLoading ? null : _exportZip,
+            tooltip: "ZIP yuklab olish",
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Column(
         children: [
@@ -116,6 +124,42 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _exportZip() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("ZIP Export"),
+        content: Text("Tanlangan filtrlar bo'yicha barcha hujjatlarni ZIP arxiv ko'rinishida Telegramingizga yuborilsinmi?\n\nFiltr: ${_selectedTitle ?? 'Barchasi'}"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Bekor qilish")),
+          ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text("Yuborish")),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _isLoading = true);
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("ZIP arxiv tayyorlanmoqda, kuting...")));
+
+    final result = await _dataService.exportManagementDocumentsZip(
+      query: _searchController.text,
+      facultyId: _selectedFacultyId,
+      title: _selectedTitle,
+    );
+
+    setState(() => _isLoading = false);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message'] ?? "Xatolik"),
+          backgroundColor: result['success'] == true ? Colors.green : Colors.red,
+        ),
+      );
+    }
   }
 
   Widget _buildFilters() {
