@@ -28,6 +28,14 @@ async def create_post(
     """
     Create a new post with strict context binding.
     """
+    # Fix for Staff who use this endpoint
+    student_id = getattr(student, 'id', None)
+    full_name = getattr(student, 'full_name', "System User")
+    username = getattr(student, 'username', None)
+    image_url = getattr(student, 'image_url', None)
+    is_premium = getattr(student, 'is_premium', False)
+    custom_badge = getattr(student, 'custom_badge', None)
+
     # 1. Determine Context based on Category
     target_uni = student.university_id
     target_fac = None
@@ -86,19 +94,19 @@ async def create_post(
         id=new_post.id,
         content=new_post.content,
         category_type=new_post.category_type,
-        author_id=student.id, # Fixed: Missing field
-        author_name=student.full_name if student.full_name else "Talaba",
-        author_username=student.username, # Also add username for consistency
-        author_avatar=student.image_url, # Also add avatar for consistency
-        author_role="Talaba",
+        author_id=student.id,
+        author_name=full_name,
+        author_username=username,
+        author_avatar=image_url,
+        author_role=getattr(student, 'hemis_role', None) or getattr(student, 'role', 'Talaba'),
         created_at=new_post.created_at,
         target_university_id=new_post.target_university_id,
         target_faculty_id=new_post.target_faculty_id,
         target_specialty_name=new_post.target_specialty_name,
         likes_count=0,
         is_liked_by_me=False,
-        author_is_premium=student.is_premium, # NEW
-        author_custom_badge=student.custom_badge # NEW
+        author_is_premium=is_premium,
+        author_custom_badge=custom_badge
     )
 
 @router.get("/filters/meta")
@@ -156,6 +164,7 @@ async def get_posts(
         # 1. Category Filter (Tab Filter)
         query = query.where(ChoyxonaPost.category_type == category)
         
+    try:
         is_management = getattr(student, 'hemis_role', None) == 'rahbariyat' or getattr(student, 'role', None) == 'rahbariyat'
         
         if category == 'university': 
@@ -308,9 +317,9 @@ def _map_post_optimized(post: ChoyxonaPost, author: Student, current_user_id: in
         author_avatar=author.image_url if author else None,
         author_image=author.image_url if author else None,
         image=author.image_url if author else None,
-        author_role=(author.hemis_role or "student") if author else "student",
-        author_is_premium=author.is_premium if author else False,
-        author_custom_badge=author.custom_badge if author else None,
+        author_role=(getattr(author, 'hemis_role', None) or getattr(author, 'role', 'student')) if author else "student",
+        author_is_premium=getattr(author, 'is_premium', False) if author else False,
+        author_custom_badge=getattr(author, 'custom_badge', None) if author else None,
         created_at=post.created_at,
         target_university_id=post.target_university_id,
         target_faculty_id=post.target_faculty_id,
@@ -428,7 +437,8 @@ async def delete_post(
     if not post:
         raise HTTPException(status_code=404, detail="Post topilmadi")
         
-    is_management = getattr(student, 'hemis_role', None) == 'rahbariyat' or getattr(student, 'role', None) == 'rahbariyat'
+    try:
+        is_management = getattr(student, 'hemis_role', None) == 'rahbariyat' or getattr(student, 'role', None) == 'rahbariyat'
     
     # Permission check:
     # 1. Author can delete their own post
@@ -820,9 +830,9 @@ def _map_comment_optimized(comment: "ChoyxonaComment", author: Student, current_
         author_avatar=author.image_url if author else None,
         author_image=author.image_url if author else None,
         image=author.image_url if author else None,
-        author_role=(author.hemis_role or "student") if author else "student",
-        author_is_premium=author.is_premium if author else False,
-        author_custom_badge=author.custom_badge if author else None,
+        author_role=(getattr(author, 'hemis_role', None) or getattr(author, 'role', 'student')) if author else "student",
+        author_is_premium=getattr(author, 'is_premium', False) if author else False,
+        author_custom_badge=getattr(author, 'custom_badge', None) if author else None,
         created_at=comment.created_at,
         likes_count=comment.likes_count or 0,
         is_liked=is_liked,
