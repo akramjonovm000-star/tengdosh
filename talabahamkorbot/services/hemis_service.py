@@ -801,11 +801,26 @@ class HemisService:
         """
         Fetches the total number of students visible to the staff member.
         Used for Management Dashboard.
-        Attempts /education/student-list and /data/student-list.
+        Attempts /data/student-count-by-shift (User Priority) then fallbacks.
         """
         client = await HemisService.get_client()
         
-        # Priority: education/student-list (standard), then data/student-list
+        # Priority 1: /data/student-count-by-shift (Specific User Request)
+        # This endpoint returns aggregated data including "total": 5000
+        url_shift = f"{HemisService.BASE_URL}/data/student-count-by-shift"
+        try:
+             response = await client.get(url_shift, headers=HemisService.get_headers(token))
+             if response.status_code == 200:
+                 data = response.json()
+                 # Structure: { "success": true, "data": { "total": 5000, ... } }
+                 if "data" in data and isinstance(data["data"], dict):
+                     total = data["data"].get("total")
+                     if total is not None:
+                         return int(total)
+        except Exception as e:
+             logger.warning(f"Failed to fetch student count from {url_shift}: {e}")
+
+        # Priority 2: education/student-list (standard), then data/student-list
         endpoints = [
             f"{HemisService.BASE_URL}/education/student-list",
             f"{HemisService.BASE_URL}/data/student-list"
