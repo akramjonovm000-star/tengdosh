@@ -353,9 +353,23 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   margin: const EdgeInsets.only(right: 8),
                   decoration: BoxDecoration(color: AppTheme.primaryBlue.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
-                  child: Text(appeal.aiTopic!, style: TextStyle(color: AppTheme.primaryBlue, fontSize: 10, fontWeight: FontWeight.bold)),
                 ),
-              Expanded(child: Text(appeal.studentName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14))),
+              Expanded(
+                child: Row(
+                  children: [
+                    Expanded(child: Text(appeal.studentName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14))),
+                    if (appeal.isAnonymous)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text("ANONIM", style: TextStyle(color: Colors.grey, fontSize: 9, fontWeight: FontWeight.bold)),
+                      ),
+                  ],
+                ),
+              ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),

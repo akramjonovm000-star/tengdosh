@@ -153,7 +153,8 @@ async def get_appeals_list(
             "student_phone": a.student_phone,
             "ai_topic": a.ai_topic,
             "created_at": a.created_at.isoformat(),
-            "assigned_role": a.assigned_role or "Umumiy"
+            "assigned_role": a.assigned_role or "Umumiy",
+            "is_anonymous": a.is_anonymous
         } for a in appeals
     ]
 

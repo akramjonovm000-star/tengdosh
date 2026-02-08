@@ -78,6 +78,7 @@ class Appeal {
   final String? aiTopic;
   final String createdAt;
   final String assignedRole;
+  final bool isAnonymous;
 
   Appeal({
     required this.id,
@@ -90,6 +91,7 @@ class Appeal {
     this.aiTopic,
     required this.createdAt,
     required this.assignedRole,
+    this.isAnonymous = false,
   });
 
   factory Appeal.fromJson(Map<String, dynamic> json) {
@@ -104,6 +106,7 @@ class Appeal {
       aiTopic: json['ai_topic'],
       createdAt: json['created_at'] ?? "",
       assignedRole: json['assigned_role'] ?? "",
+      isAnonymous: json['is_anonymous'] ?? false,
     );
   }
 }
