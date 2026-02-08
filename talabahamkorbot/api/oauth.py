@@ -5,6 +5,7 @@ import httpx
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
+import time
 
 from database.db_connect import get_session
 from database.models import Student, Staff, StaffRole
@@ -45,6 +46,7 @@ async def oauth_login(
 @authlog_router.get("/authlog")
 @authlog_router.get("/oauth/login")
 async def authlog_callback(code: Optional[str] = None, error: Optional[str] = None, state: str = "mobile", db: AsyncSession = Depends(get_session)):
+    t0 = time.time()
     """
     Handles the callback from HEMIS (redirected via Nginx /authlog OR Root)
     """
