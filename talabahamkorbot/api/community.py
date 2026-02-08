@@ -416,8 +416,19 @@ async def delete_post(
     if not post:
         raise HTTPException(status_code=404, detail="Post topilmadi")
         
-    if post.student_id != student.id:
-        raise HTTPException(status_code=403, detail="Siz faqat o'zingizning postingizni o'chira olasiz")
+    is_management = getattr(student, 'hemis_role', None) == 'rahbariyat' or getattr(student, 'role', None) == 'rahbariyat'
+    
+    # Permission check:
+    # 1. Author can delete their own post
+    # 2. Management can delete any post in their university
+    can_delete = False
+    if post.student_id == student.id:
+        can_delete = True
+    elif is_management and post.target_university_id == student.university_id:
+        can_delete = True
+        
+    if not can_delete:
+        raise HTTPException(status_code=403, detail="Sizda ushbu postni o'chirish huquqi yo'q")
         
     await db.delete(post)
     await db.commit()
