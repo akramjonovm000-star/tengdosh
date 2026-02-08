@@ -111,7 +111,7 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
               child: s['image_url'] == null ? const Icon(Icons.person) : null,
             ),
             title: Text(s['full_name'] ?? ""),
-            subtitle: Text("ID: ${s['hemis_id']} • ${s['group_number']}"),
+            subtitle: Text("ID: ${s['hemis_login'] ?? s['hemis_id'] ?? ""} • ${s['group_number'] ?? ""}"),
             onTap: () {
               Navigator.push(
                 context,

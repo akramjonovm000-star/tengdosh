@@ -65,7 +65,7 @@ class _GroupStudentsScreenState extends State<GroupStudentsScreen> {
                           child: s['image_url'] == null ? const Icon(Icons.person) : null,
                         ),
                         title: Text(s['full_name'] ?? ""),
-                        subtitle: Text("ID: ${s['hemis_id']}"),
+                        subtitle: Text("ID: ${s['hemis_login'] ?? s['hemis_id'] ?? ""}"),
                         trailing: const Icon(Icons.chevron_right),
                         onTap: () {
                           Navigator.push(

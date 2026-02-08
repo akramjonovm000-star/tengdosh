@@ -138,6 +138,7 @@ async def get_mgmt_group_students(
                 "id": s.id, 
                 "full_name": s.full_name, 
                 "hemis_id": s.hemis_id,
+                "hemis_login": s.hemis_login,
                 "image_url": s.image_url
             } for s in students
         ]
@@ -170,6 +171,7 @@ async def search_mgmt_students(
                 "id": s.id, 
                 "full_name": s.full_name, 
                 "hemis_id": s.hemis_id,
+                "hemis_login": s.hemis_login,
                 "image_url": s.image_url,
                 "group_number": s.group_number
             } for s in students
