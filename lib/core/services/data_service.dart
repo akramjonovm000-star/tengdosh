@@ -350,6 +350,11 @@ class DataService {
     String? query,
     int? facultyId,
     String? title,
+    String? educationType,
+    String? educationForm,
+    String? levelName,
+    String? specialtyName,
+    String? groupNumber,
     int page = 1,
     int limit = 50,
   }) async {
@@ -358,6 +363,11 @@ class DataService {
       if (query != null && query.isNotEmpty) queryParams.add("query=${Uri.encodeComponent(query)}");
       if (facultyId != null) queryParams.add("faculty_id=$facultyId");
       if (title != null && title.isNotEmpty) queryParams.add("title=${Uri.encodeComponent(title)}");
+      if (educationType != null) queryParams.add("education_type=${Uri.encodeComponent(educationType)}");
+      if (educationForm != null) queryParams.add("education_form=${Uri.encodeComponent(educationForm)}");
+      if (levelName != null) queryParams.add("level_name=${Uri.encodeComponent(levelName)}");
+      if (specialtyName != null) queryParams.add("specialty_name=${Uri.encodeComponent(specialtyName)}");
+      if (groupNumber != null) queryParams.add("group_number=${Uri.encodeComponent(groupNumber)}");
       queryParams.add("page=$page");
       queryParams.add("limit=$limit");
 
@@ -381,12 +391,22 @@ class DataService {
     String? query,
     int? facultyId,
     String? title,
+    String? educationType,
+    String? educationForm,
+    String? levelName,
+    String? specialtyName,
+    String? groupNumber,
   }) async {
     try {
       final queryParams = <String>[];
       if (query != null && query.isNotEmpty) queryParams.add("query=${Uri.encodeComponent(query)}");
       if (facultyId != null) queryParams.add("faculty_id=$facultyId");
       if (title != null && title.isNotEmpty) queryParams.add("title=${Uri.encodeComponent(title)}");
+      if (educationType != null) queryParams.add("education_type=${Uri.encodeComponent(educationType)}");
+      if (educationForm != null) queryParams.add("education_form=${Uri.encodeComponent(educationForm)}");
+      if (levelName != null) queryParams.add("level_name=${Uri.encodeComponent(levelName)}");
+      if (specialtyName != null) queryParams.add("specialty_name=${Uri.encodeComponent(specialtyName)}");
+      if (groupNumber != null) queryParams.add("group_number=${Uri.encodeComponent(groupNumber)}");
 
       String url = "${ApiConstants.backendUrl}/management/documents/export-zip";
       if (queryParams.isNotEmpty) {

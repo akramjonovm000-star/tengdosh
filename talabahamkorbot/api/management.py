@@ -293,49 +293,9 @@ async def search_mgmt_students(
             level=level_name
         )
     else:
-        # 5. Faculty Filter Logic
-        # Try to find "Real" total from public structure stats if only Faculty is selected (and not Group/Specialty)
-        # Because we want to show "Jami talabalar" as the university total, not just DB total.
-        
-        real_total = 0
-        if faculty_id and not (specialty_name or group_number):
-            try:
-                # 5.1 Get Faculty Name
-                fac_stmt = select(Student.faculty_name).where(Student.faculty_id == faculty_id).limit(1)
-                fac_name = (await db.execute(fac_stmt)).scalar()
-                
-                if fac_name:
-                    from services.hemis_service import HemisService
-                    # This endpoint returns XML/JSON with counts by department/faculty
-                    # structure = await HemisService.get_public_structure_stats()
-                    # But we need to implement get_public_structure_stats first or do it ad-hoc here.
-                    # Let's do ad-hoc for now to fix the bug quickly.
-                    
-                    async with aiohttp.ClientSession() as session:
-                        async with session.get("https://student.jmcu.uz/rest/v1/public/stat-structure") as resp:
-                            if resp.status == 200:
-                                data = await resp.json()
-                                # Structure: data -> departments -> item -> {name, count}
-                                # We need to correct "Jurnalistika fakulteti" vs "Jurnalistika" etc matching.
-                                # Let's try exact match first.
-                                departments = data.get("data", {}).get("departments", [])
-                                for dept in departments:
-                                    if isinstance(dept, dict) and dept.get("name") == fac_name:
-                                        real_total = int(dept.get("count", 0))
-                                        break
-            except Exception as e:
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.error(f"Failed to fetch public faculty stats: {e}")
-
-        # 5.2 Calculate DB Count (App Users)
+        # Use DB Count for specific filters
         count_stmt = select(func.count(Student.id)).where(and_(*category_filters))
-        db_count = (await db.execute(count_stmt)).scalar() or 0
-        
-        # 5.3 Set Total
-        # If we found a real total from public API, and it's greater than DB count, use it.
-        # Otherwise fallback to DB count.
-        total_count = max(real_total, db_count)
+        total_count = (await db.execute(count_stmt)).scalar() or 0
 
     # App Users Count (Students who logged into app - always DB)
     app_users_stmt = select(func.count(Student.id)).where(
@@ -744,16 +704,22 @@ async def get_mgmt_documents_archive(
     if not uni_id:
         raise HTTPException(status_code=400, detail="Universitet aniqlanmadi")
 
-    # 2. Build Query
+    # 1. Base category filters (University + Dropdowns)
+    category_filters = [Student.university_id == uni_id]
+    if faculty_id: category_filters.append(Student.faculty_id == faculty_id)
+    if education_type: category_filters.append(Student.education_type == education_type)
+    if education_form: category_filters.append(Student.education_form == education_form)
+    if level_name: category_filters.append(Student.level_name == level_name)
+    if specialty_name: category_filters.append(Student.specialty_name == specialty_name)
+    if group_number: category_filters.append(Student.group_number == group_number)
+
+    # 2. Build Query for Documents
     stmt = (
         select(UserDocument, Student)
         .join(Student, UserDocument.student_id == Student.id)
-        .where(Student.university_id == uni_id)
+        .where(and_(*category_filters))
     )
 
-    if faculty_id:
-        stmt = stmt.where(Student.faculty_id == faculty_id)
-    
     if title:
         stmt = stmt.where(UserDocument.title == title)
         
@@ -763,21 +729,40 @@ async def get_mgmt_documents_archive(
             (UserDocument.title.ilike(f"%{query}%"))
         )
 
-    if education_type:
-        stmt = stmt.where(Student.education_type == education_type)
-    if education_form:
-        stmt = stmt.where(Student.education_form == education_form)
-    if level_name:
-        stmt = stmt.where(Student.level_name == level_name)
-    if specialty_name:
-        stmt = stmt.where(Student.specialty_name == specialty_name)
-    if group_number:
-        stmt = stmt.where(Student.group_number == group_number)
-
     # 3. Pagination & Execution
     stmt = stmt.order_by(UserDocument.created_at.desc()).offset((page - 1) * limit).limit(limit)
     result = await db.execute(stmt)
     rows = result.all()
+
+    # 4. Get Stats (Matching Student Search logic)
+    has_backend_filters = any([faculty_id, specialty_name, group_number])
+    
+    if not has_backend_filters:
+        from services.hemis_service import HemisService
+        public_stats = await HemisService.get_public_stats()
+        
+        total_count = calculate_public_filtered_count(
+            public_stats,
+            education_type=education_type,
+            education_form=education_form,
+            level=level_name
+        )
+    else:
+        # Use DB Count for specific filters
+        count_stmt = select(func.count(Student.id)).where(and_(*category_filters))
+        total_count = (await db.execute(count_stmt)).scalar() or 0
+
+    # App Users Count (Students who logged into app - always DB)
+    app_users_stmt = select(func.count(Student.id)).where(
+        and_(*category_filters),
+        Student.hemis_token != None
+    )
+    app_users_count = (await db.execute(app_users_stmt)).scalar() or 0
+    
+    # Fallback for total_count
+    if total_count == 0:
+        count_stmt = select(func.count(Student.id)).where(and_(*category_filters))
+        total_count = (await db.execute(count_stmt)).scalar() or 0
 
     def safe_isoformat(dt):
         if not dt: return None
@@ -786,6 +771,8 @@ async def get_mgmt_documents_archive(
 
     return {
         "success": True,
+        "total_count": total_count,
+        "app_users_count": app_users_count,
         "data": [
             {
                 "id": doc.id,
@@ -834,15 +821,20 @@ async def export_mgmt_documents_zip(
         raise HTTPException(status_code=400, detail="Universitet aniqlanmadi")
 
     # 2. Build Query
+    category_filters = [Student.university_id == uni_id]
+    if faculty_id: category_filters.append(Student.faculty_id == faculty_id)
+    if education_type: category_filters.append(Student.education_type == education_type)
+    if education_form: category_filters.append(Student.education_form == education_form)
+    if level_name: category_filters.append(Student.level_name == level_name)
+    if specialty_name: category_filters.append(Student.specialty_name == specialty_name)
+    if group_number: category_filters.append(Student.group_number == group_number)
+
     stmt = (
         select(UserDocument, Student)
         .join(Student, UserDocument.student_id == Student.id)
-        .where(Student.university_id == uni_id)
+        .where(and_(*category_filters))
     )
 
-    if faculty_id:
-        stmt = stmt.where(Student.faculty_id == faculty_id)
-    
     if title:
         stmt = stmt.where(UserDocument.title == title)
         
@@ -851,17 +843,6 @@ async def export_mgmt_documents_zip(
             (Student.full_name.ilike(f"%{query}%")) |
             (UserDocument.title.ilike(f"%{query}%"))
         )
-
-    if education_type:
-        stmt = stmt.where(Student.education_type == education_type)
-    if education_form:
-        stmt = stmt.where(Student.education_form == education_form)
-    if level_name:
-        stmt = stmt.where(Student.level_name == level_name)
-    if specialty_name:
-        stmt = stmt.where(Student.specialty_name == specialty_name)
-    if group_number:
-        stmt = stmt.where(Student.group_number == group_number)
 
     # Order by date
     stmt = stmt.order_by(UserDocument.created_at.desc())

@@ -16,11 +16,25 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
   
   List<dynamic> _documents = [];
   List<dynamic> _faculties = [];
+  List<String> _specialties = [];
+  List<String> _groups = [];
+  
+  // Filter States
+  String? _selectedEducationType;
+  String? _selectedEducationForm;
+  String? _selectedCourse;
   int? _selectedFacultyId;
+  String? _selectedSpecialty;
+  String? _selectedGroup;
   String? _selectedTitle;
+  
   bool _isLoading = true;
   int _currentPage = 1;
   bool _hasMore = true;
+
+  // Stats
+  int _totalCount = 0;
+  int _appUsersCount = 0;
 
   final List<Map<String, dynamic>> _categories = [
     {"id": null, "name": "Hammasi", "icon": Icons.all_inclusive_rounded},
@@ -51,6 +65,29 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
       _isLoading = false;
       _hasMore = _documents.length >= 50;
     });
+    _loadSpecialties();
+    _loadGroups();
+  }
+
+  Future<void> _loadSpecialties() async {
+    try {
+      final specs = await _dataService.getManagementSpecialties(facultyId: _selectedFacultyId);
+      setState(() {
+        _specialties = List<String>.from(specs);
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _loadGroups() async {
+    try {
+      final groups = await _dataService.getManagementGroups(
+        facultyId: _selectedFacultyId,
+        levelName: _selectedCourse != null ? "${_selectedCourse}-kurs" : null,
+      );
+      setState(() {
+        _groups = List<String>.from(groups);
+      });
+    } catch (_) {}
   }
 
   Future<void> _loadDocuments({bool refresh = false}) async {
@@ -65,6 +102,11 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
       query: _searchController.text,
       facultyId: _selectedFacultyId,
       title: _selectedTitle,
+      educationType: _selectedEducationType,
+      educationForm: _selectedEducationForm,
+      levelName: _selectedCourse != null ? "${_selectedCourse}-kurs" : null,
+      specialtyName: _selectedSpecialty,
+      groupNumber: _selectedGroup,
       page: _currentPage,
     );
 
@@ -74,6 +116,8 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
       } else {
         _documents.addAll(result['data'] ?? []);
       }
+      _totalCount = result['total_count'] ?? 0;
+      _appUsersCount = result['app_users_count'] ?? 0;
       _isLoading = false;
       _hasMore = (result['data'] as List).length >= 50;
     });
@@ -89,6 +133,32 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
         foregroundColor: Colors.black,
         elevation: 0,
         actions: [
+          if (_selectedEducationType != null || 
+              _selectedEducationForm != null || 
+              _selectedCourse != null || 
+              _selectedFacultyId != null || 
+              _selectedSpecialty != null || 
+              _selectedGroup != null || 
+              _selectedTitle != null ||
+              _searchController.text.isNotEmpty)
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _selectedEducationType = null;
+                  _selectedEducationForm = null;
+                  _selectedCourse = null;
+                  _selectedFacultyId = null;
+                  _selectedSpecialty = null;
+                  _selectedGroup = null;
+                  _selectedTitle = null;
+                  _searchController.clear();
+                  _totalCount = 0;
+                  _appUsersCount = 0;
+                });
+                _loadDocuments(refresh: true);
+              },
+              child: const Text("Tozalash", style: TextStyle(color: Colors.red, fontSize: 13)),
+            ),
           IconButton(
             icon: const Icon(Icons.archive_outlined, color: Colors.blue),
             onPressed: _isLoading ? null : _exportZip,
@@ -100,6 +170,37 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
       body: Column(
         children: [
           _buildFilters(),
+          
+          // Stats Section
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border(top: BorderSide(color: Colors.grey.shade100)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _buildStatItem(
+                    label: "Jami talabalar",
+                    value: _totalCount,
+                    icon: Icons.people_outline,
+                    color: Colors.blue,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildStatItem(
+                    label: "Ilova foydalanuvchilari",
+                    value: _appUsersCount,
+                    icon: Icons.smartphone_rounded,
+                    color: Colors.green,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
           Expanded(
             child: _isLoading && _currentPage == 1
                 ? const Center(child: CircularProgressIndicator())
@@ -148,6 +249,11 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
       query: _searchController.text,
       facultyId: _selectedFacultyId,
       title: _selectedTitle,
+      educationType: _selectedEducationType,
+      educationForm: _selectedEducationForm,
+      levelName: _selectedCourse != null ? "${_selectedCourse}-kurs" : null,
+      specialtyName: _selectedSpecialty,
+      groupNumber: _selectedGroup,
     );
 
     setState(() => _isLoading = false);
@@ -164,64 +270,217 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
 
   Widget _buildFilters() {
     return Container(
-      padding: const EdgeInsets.all(16),
       color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Column(
         children: [
-          // Search
+          // Search Field
           TextField(
             controller: _searchController,
+            onSubmitted: (val) => _loadDocuments(refresh: true),
             decoration: InputDecoration(
-              hintText: "Talaba ismi yoki hujjat nomi...",
+              hintText: "Ism yoki hujjat nomi...",
               prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
               filled: true,
-              fillColor: Colors.grey[100],
+              fillColor: Colors.grey[50],
+              contentPadding: const EdgeInsets.symmetric(vertical: 0),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
             ),
-            onSubmitted: (_) => _loadDocuments(refresh: true),
           ),
-          const SizedBox(height: 12),
-          
+          const SizedBox(height: 8),
+
+          // Row 1: Turi | Fakultet | Shakli
+          Row(
+            children: [
+              Expanded(
+                child: _buildInlineDropdown<String>(
+                  hint: "Turi",
+                  value: _selectedEducationType,
+                  items: ["Bakalavr", "Magistr"].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 11)))).toList(),
+                  onChanged: (val) {
+                    setState(() {
+                      _selectedEducationType = val;
+                      _selectedCourse = null;
+                      _selectedGroup = null;
+                    });
+                    _loadGroups();
+                    _loadDocuments(refresh: true);
+                  },
+                ),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: _buildInlineDropdown<int>(
+                  hint: "Fakultet",
+                  value: _faculties.any((f) => f['id'] == _selectedFacultyId) ? _selectedFacultyId : null,
+                  items: _faculties.map((f) => DropdownMenuItem<int>(
+                    value: f['id'],
+                    child: Text(f['name'] ?? "", overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11)),
+                  )).toList(),
+                  onChanged: (val) {
+                    setState(() {
+                      _selectedFacultyId = val;
+                      _selectedSpecialty = null;
+                      _selectedGroup = null;
+                    });
+                    _loadSpecialties();
+                    _loadGroups();
+                    _loadDocuments(refresh: true);
+                  },
+                ),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: _buildInlineDropdown<String>(
+                  hint: "Shakli",
+                  value: _selectedEducationForm,
+                  items: ["Kunduzgi", "Masofaviy", "Kechki", "Sirtqi"].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 11)))).toList(),
+                  onChanged: (val) {
+                    setState(() => _selectedEducationForm = val);
+                    _loadDocuments(refresh: true);
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Row 2: Kurs | Yo'nalish | Guruh
+          Row(
+            children: [
+              Expanded(
+                child: _buildInlineDropdown<String>(
+                  hint: "Kurs",
+                  value: (_selectedCourse != null && _selectedEducationType != null) ? "${_selectedEducationType}_$_selectedCourse" : null,
+                  items: [
+                    if (_selectedEducationType == null || _selectedEducationType == "Bakalavr")
+                      ...["1", "2", "3", "4"].map((e) => DropdownMenuItem(value: "Bakalavr_$e", child: Text("$e-kurs", style: const TextStyle(fontSize: 11)))),
+                    if (_selectedEducationType == null || _selectedEducationType == "Magistr")
+                      ...["1", "2"].map((e) => DropdownMenuItem(value: "Magistr_$e", child: Text("$e-kurs (M)", style: const TextStyle(fontSize: 11)))),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) {
+                      final parts = val.split('_');
+                      setState(() {
+                        _selectedEducationType = parts[0];
+                        _selectedCourse = parts[1];
+                      });
+                      _loadGroups();
+                      _loadDocuments(refresh: true);
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: _buildInlineDropdown<String>(
+                  hint: "Yo'nalish",
+                  value: _specialties.contains(_selectedSpecialty) ? _selectedSpecialty : null,
+                  items: _specialties.map((s) => DropdownMenuItem(
+                    value: s,
+                    child: Text(s, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11)),
+                  )).toList(),
+                  onChanged: (val) {
+                    setState(() => _selectedSpecialty = val);
+                    _loadDocuments(refresh: true);
+                  },
+                ),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: _buildInlineDropdown<String>(
+                  hint: "Guruh",
+                  value: _groups.contains(_selectedGroup) ? _selectedGroup : null,
+                  items: _groups.map((g) => DropdownMenuItem(
+                    value: g,
+                    child: Text(g, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11)),
+                  )).toList(),
+                  onChanged: (val) {
+                    setState(() => _selectedGroup = val);
+                    _loadDocuments(refresh: true);
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
           // Category Chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: _categories.map((cat) {
-                final isSelected = _selectedTitle == cat['id'];
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: FilterChip(
-                    label: Text(cat['name']),
-                    selected: isSelected,
-                    onSelected: (val) {
-                      setState(() => _selectedTitle = val ? cat['id'] : null);
-                      _loadDocuments(refresh: true);
-                    },
-                    selectedColor: AppTheme.primaryBlue.withOpacity(0.2),
-                    checkmarkColor: AppTheme.primaryBlue,
-                    labelStyle: TextStyle(
-                      color: isSelected ? AppTheme.primaryBlue : Colors.black87,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+...
                     ),
                   ),
                 );
               }).toList(),
             ),
           ),
-          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
 
-          // Faculty Dropdown
-          DropdownButtonFormField<int>(
-            value: _selectedFacultyId,
-            items: [
-              const DropdownMenuItem(value: null, child: Text("Barcha fakultetlar", overflow: TextOverflow.ellipsis)),
-              ..._faculties.map((f) => DropdownMenuItem(value: f['id'], child: Text(f['name'], overflow: TextOverflow.ellipsis))),
+  Widget _buildInlineDropdown<T>({
+    required String hint,
+    required T? value,
+    required List<DropdownMenuItem<T>> items,
+    required ValueChanged<T?> onChanged,
+  }) {
+    return Container(
+      height: 36,
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<T>(
+          isExpanded: true,
+          hint: Text(hint, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+          value: value,
+          items: items,
+          onChanged: onChanged,
+          icon: const Icon(Icons.arrow_drop_down, size: 18),
+        ),
+      ),
+  }
+
+  Widget _buildStatItem({
+    required String label,
+    required int value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 14, color: color),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(fontSize: 10, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+              ),
             ],
-            isExpanded: true,
-            onChanged: (val) {
-              setState(() => _selectedFacultyId = val);
-              _loadDocuments(refresh: true);
-            },
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value.toString(),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color),
           ),
         ],
       ),
