@@ -156,7 +156,7 @@ class StudentItemsListScreen extends StatelessWidget {
               width: 120,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                border: BorderSide(color: Colors.grey.shade200),
+                border: Border.all(color: Colors.grey.shade200),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
