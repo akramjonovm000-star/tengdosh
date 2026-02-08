@@ -1759,7 +1759,6 @@ class DataService {
       return "Tarmoq xatosi: $e";
     }
   }
-  }
 
   // 45. Download Student Certificate for Management
   Future<String?> downloadStudentCertificateForManagement(int certId) async {
@@ -1774,7 +1773,7 @@ class DataService {
       debugPrint("DataService: Error downloading certificate for management: $e");
       return "Tarmoq xatosi";
     }
-    }
+  }
 
   // 46. Download Student Document for Management
   Future<String?> downloadStudentDocumentForManagement(int docId) async {
@@ -1791,5 +1790,3 @@ class DataService {
     }
   }
 }
-}
-
