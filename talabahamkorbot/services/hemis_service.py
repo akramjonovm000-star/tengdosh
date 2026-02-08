@@ -15,7 +15,6 @@ class HemisService:
     # BASE_URL = "https://195.158.26.100/rest/v1"
     BASE_URL = "https://student.jmcu.uz/rest/v1"
     HEADERS = {
-        "Content-Type": "application/json",
         "Accept": "application/json"
     }
     
