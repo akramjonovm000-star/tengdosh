@@ -115,7 +115,7 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
         else:
             full_name = full_name.title().strip()
             
-        image_url = me.get("picture") or me.get("image") or me.get("image_url")
+        image_url = me.get("picture") or me.get("picture_full") or me.get("image") or me.get("image_url")
         university_id = me.get("university_id")
         
         if not student:
@@ -227,8 +227,13 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
         best_priority = -1
         
         for r in hemis_roles:
-            if isinstance(r, dict): r_code = r.get("code")
-            else: r_code = str(r)
+            if isinstance(r, dict): 
+                r_code = r.get("code")
+            else: 
+                r_code = str(r)
+            
+            # [FIX] Handle OneID specific role codes if they differ
+            if r_code == "direction": r_code = "rahbariyat"
             
             if r_code in role_map:
                 mapped_role = role_map[r_code]
@@ -238,13 +243,15 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
                     best_priority = priority
                     user_role = mapped_role
         
+        # [FIX] Refined Name & Image Extraction
         full_name = me.get("name")
-        if not full_name:
-            full_name = f"{me.get('surname', '')} {me.get('firstname', '')} {me.get('patronymic', '')}".title().strip()
+        if full_name:
+             # Handle UPPERCASE names from OneID
+             full_name = full_name.title().strip()
         else:
-            full_name = full_name.title().strip()
+             full_name = f"{me.get('surname', '')} {me.get('firstname', '')} {me.get('patronymic', '')}".title().strip()
             
-        image_url = me.get("picture") or me.get("image") or me.get("image_url")
+        image_url = me.get("picture") or me.get("picture_full") or me.get("image") or me.get("image_url")
         logger.info(f"Selected Best Role: {user_role} (Priority: {best_priority}) from {hemis_roles}")
 
         if staff:
