@@ -29,6 +29,10 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
   String? _selectedSpecialty;
   String? _selectedGroup;
 
+  // Stats
+  int _totalCount = 0;
+  int _appUsersCount = 0;
+
   @override
   void initState() {
     super.initState();
@@ -76,13 +80,15 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
       setState(() {
         _isSearching = false;
         _searchResults = [];
+        _totalCount = 0;
+        _appUsersCount = 0;
       });
       return;
     }
 
     setState(() => _isSearching = true);
     
-    final results = await _dataService.searchStudents(
+    final result = await _dataService.searchStudents(
       query: query.isNotEmpty ? query : null,
       facultyId: _selectedFacultyId,
       educationType: _selectedEducationType,
@@ -93,7 +99,9 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
     );
     
     setState(() {
-      _searchResults = results;
+      _searchResults = result['data'] ?? [];
+      _totalCount = result['total_count'] ?? 0;
+      _appUsersCount = result['app_users_count'] ?? 0;
       _isSearching = false;
     });
   }
@@ -119,6 +127,8 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
                   _selectedSpecialty = null;
                   _selectedGroup = null;
                   _searchController.clear();
+                  _totalCount = 0;
+                  _appUsersCount = 0;
                 });
                 _handleSearch();
               },
@@ -152,14 +162,14 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
                 ),
                 const SizedBox(height: 8),
                 
-                // Row 1: Type, Form, Course
+                // Row 1: Turi | Fakultet | Shakli
                 Row(
                   children: [
                     Expanded(
                       child: _buildInlineDropdown<String>(
                         hint: "Turi",
                         value: _selectedEducationType,
-                        items: ["Bakalavr", "Magistr"].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 12)))).toList(),
+                        items: ["Bakalavr", "Magistr"].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 11)))).toList(),
                         onChanged: (val) {
                           setState(() {
                             _selectedEducationType = val;
@@ -168,26 +178,53 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
                         },
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: _buildInlineDropdown<int>(
+                        hint: "Fakultet",
+                        value: _selectedFacultyId,
+                        items: _faculties.map((f) => DropdownMenuItem<int>(
+                          value: f['id'],
+                          child: Text(f['name'] ?? "", overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11)),
+                        )).toList(),
+                        onChanged: (val) {
+                          setState(() {
+                            _selectedFacultyId = val;
+                            _selectedSpecialty = null;
+                            _selectedGroup = null;
+                          });
+                          _loadSpecialties();
+                          _loadGroups();
+                          _handleSearch();
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 4),
                     Expanded(
                       child: _buildInlineDropdown<String>(
                         hint: "Shakli",
                         value: _selectedEducationForm,
-                        items: ["Kunduzgi", "Masofaviy", "Kechki", "Sirtqi"].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 12)))).toList(),
+                        items: ["Kunduzgi", "Masofaviy", "Kechki", "Sirtqi"].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 11)))).toList(),
                         onChanged: (val) {
                           setState(() => _selectedEducationForm = val);
                           _handleSearch();
                         },
                       ),
                     ),
-                    const SizedBox(width: 8),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                
+                // Row 2: Kurs | Yo'nalish | Guruh
+                Row(
+                  children: [
                     Expanded(
                       child: _buildInlineDropdown<String>(
                         hint: "Kurs",
                         value: _selectedCourse != null ? "${_selectedEducationType}_$_selectedCourse" : null,
                         items: [
-                          ...["1", "2", "3", "4"].map((e) => DropdownMenuItem(value: "Bakalavr_$e", child: Text("$e-kurs", style: const TextStyle(fontSize: 12)))),
-                          ...["1", "2"].map((e) => DropdownMenuItem(value: "Magistr_$e", child: Text("$e-kurs (Magistr)", style: const TextStyle(fontSize: 12)))),
+                          ...["1", "2", "3", "4"].map((e) => DropdownMenuItem(value: "Bakalavr_$e", child: Text("$e-kurs", style: const TextStyle(fontSize: 11)))),
+                          ...["1", "2"].map((e) => DropdownMenuItem(value: "Magistr_$e", child: Text("$e-kurs (M)", style: const TextStyle(fontSize: 11)))),
                         ],
                         onChanged: (val) {
                           if (val != null) {
@@ -202,41 +239,14 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
                         },
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                
-                // Row 2: Faculty, Specialty, Group
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildInlineDropdown<int>(
-                        hint: "Fakultet",
-                        value: _selectedFacultyId,
-                        items: _faculties.map((f) => DropdownMenuItem<int>(
-                          value: f['id'],
-                          child: Text(f['name'] ?? "", overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
-                        )).toList(),
-                        onChanged: (val) {
-                          setState(() {
-                            _selectedFacultyId = val;
-                            _selectedSpecialty = null;
-                            _selectedGroup = null;
-                          });
-                          _loadSpecialties();
-                          _loadGroups();
-                          _handleSearch();
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 4),
                     Expanded(
                       child: _buildInlineDropdown<String>(
                         hint: "Yo'nalish",
                         value: _selectedSpecialty,
                         items: _specialties.map((s) => DropdownMenuItem(
                           value: s,
-                          child: Text(s, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
+                          child: Text(s, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11)),
                         )).toList(),
                         onChanged: (val) {
                           setState(() => _selectedSpecialty = val);
@@ -244,14 +254,14 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
                         },
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 4),
                     Expanded(
                       child: _buildInlineDropdown<String>(
                         hint: "Guruh",
                         value: _selectedGroup,
                         items: _groups.map((g) => DropdownMenuItem(
                           value: g,
-                          child: Text(g, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
+                          child: Text(g, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11)),
                         )).toList(),
                         onChanged: (val) {
                           setState(() => _selectedGroup = val);
@@ -265,12 +275,66 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
             ),
           ),
 
+          // 1.5 Stats Section
+          if (_searchResults.isNotEmpty || _isSearching)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(top: BorderSide(color: Colors.grey.shade100)),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildStatItem(
+                      label: "Umumiy talabalar soni",
+                      value: _totalCount,
+                      icon: Icons.people_outline,
+                      color: Colors.blue,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildStatItem(
+                      label: "Ilova foydalanuvchilari",
+                      value: _appUsersCount,
+                      icon: Icons.smartphone_rounded,
+                      color: Colors.green,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
           // 2. Results
           Expanded(
             child: _buildSearchResults(),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildStatItem({required String label, required int value, required IconData icon, required Color color}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(fontSize: 10, color: Colors.grey[600], fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value.toString(),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+      ],
     );
   }
 
@@ -281,20 +345,20 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
     required ValueChanged<T?> onChanged,
   }) {
     return Container(
-      height: 40,
+      height: 36,
       decoration: BoxDecoration(
         color: Colors.grey[50],
         borderRadius: BorderRadius.circular(8),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 6),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<T>(
           isExpanded: true,
-          hint: Text(hint, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+          hint: Text(hint, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
           value: value,
           items: items,
           onChanged: onChanged,
-          icon: const Icon(Icons.arrow_drop_down, size: 20),
+          icon: const Icon(Icons.arrow_drop_down, size: 18),
         ),
       ),
     );

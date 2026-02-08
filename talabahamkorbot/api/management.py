@@ -177,37 +177,42 @@ async def search_mgmt_students(
 ):
     uni_id = getattr(staff, 'university_id', None)
     
-    stmt = select(Student).where(Student.university_id == uni_id)
+    # Base filters
+    filters = [Student.university_id == uni_id]
     
-    # 1. Query Search (Name, Hemis ID, Login)
     if query:
-        stmt = stmt.where(
+        filters.append(
             (Student.full_name.ilike(f"%{query}%")) | 
             (Student.hemis_id.ilike(f"%{query}%")) |
             (Student.hemis_login.ilike(f"%{query}%"))
         )
     
-    # 2. Filters
-    if faculty_id:
-        stmt = stmt.where(Student.faculty_id == faculty_id)
-    if education_type:
-        stmt = stmt.where(Student.education_type == education_type)
-    if education_form:
-        stmt = stmt.where(Student.education_form == education_form)
-    if level_name:
-        stmt = stmt.where(Student.level_name == level_name)
-    if specialty_name:
-        stmt = stmt.where(Student.specialty_name == specialty_name)
-    if group_number:
-        stmt = stmt.where(Student.group_number == group_number)
+    if faculty_id: filters.append(Student.faculty_id == faculty_id)
+    if education_type: filters.append(Student.education_type == education_type)
+    if education_form: filters.append(Student.education_form == education_form)
+    if level_name: filters.append(Student.level_name == level_name)
+    if specialty_name: filters.append(Student.specialty_name == specialty_name)
+    if group_number: filters.append(Student.group_number == group_number)
 
-    stmt = stmt.order_by(Student.full_name).limit(50)
-    
+    # 1. Get Students
+    stmt = select(Student).where(and_(*filters)).order_by(Student.full_name).limit(50)
     result = await db.execute(stmt)
     students = result.scalars().all()
     
+    # 2. Get Stats
+    # Total Count
+    count_stmt = select(func.count(Student.id)).where(and_(*filters))
+    total_count = (await db.execute(count_stmt)).scalar() or 0
+    
+    # App Users Count (Students with TG account)
+    from sqlalchemy import distinct
+    app_users_stmt = select(func.count(distinct(Student.id))).join(TgAccount).where(and_(*filters))
+    app_users_count = (await db.execute(app_users_stmt)).scalar() or 0
+    
     return {
         "success": True, 
+        "total_count": total_count,
+        "app_users_count": app_users_count,
         "data": [
             {
                 "id": s.id, 

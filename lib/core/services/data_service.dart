@@ -263,7 +263,7 @@ class DataService {
     return [];
   }
 
-  Future<List<dynamic>> searchStudents({
+  Future<Map<String, dynamic>> searchStudents({
     String? query,
     int? facultyId,
     String? educationType,
@@ -290,12 +290,12 @@ class DataService {
       final response = await _get(url);
       if (response.statusCode == 200) {
         final body = json.decode(response.body);
-        if (body['success'] == true) return body['data'];
+        if (body['success'] == true) return body;
       }
     } catch (e) {
       debugPrint("DataService: Error searching students: $e");
     }
-    return [];
+    return {"success": false, "data": [], "total_count": 0, "app_users_count": 0};
   }
 
   Future<List<dynamic>> getManagementSpecialties({int? facultyId}) async {
