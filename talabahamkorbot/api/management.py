@@ -176,6 +176,62 @@ async def get_mgmt_group_students(
         ]
     }
 
+def calculate_public_filtered_count(
+    stats: Dict[str, Any], 
+    ed_type: str = None, 
+    ed_form: str = None, 
+    level: str = None
+) -> int:
+    """
+    Calculates the total student count from public stats JSON based on filters.
+    """
+    if not stats: return 0
+    
+    # Normalize inputs
+    if ed_type == "Bakalavr": p_type = "Bakalavr"
+    elif ed_type == "Magistr": p_type = "Magistr"
+    else: p_type = None
+
+    # 1. Drill by Level (Most granular combination available)
+    if level:
+        levels_data = stats.get("level", {})
+        count = 0
+        types_to_check = [p_type] if p_type else ["Bakalavr", "Magistr"]
+        
+        for t in types_to_check:
+            type_data = levels_data.get(t, {})
+            level_data = type_data.get(level, {})
+            if level_data:
+                 if ed_form:
+                     count += level_data.get(ed_form, 0)
+                 else:
+                     # Sum all forms for this level
+                     for form_val in level_data.values():
+                         if isinstance(form_val, int): count += form_val
+        return count
+
+    # 2. Drill by Education Form (If no level)
+    if ed_form:
+        forms_data = stats.get("education_form", {})
+        count = 0
+        types_to_check = [p_type] if p_type else ["Bakalavr", "Magistr"]
+        
+        for t in types_to_check:
+            type_data = forms_data.get(t, {})
+            form_data = type_data.get(ed_form, {})
+            if isinstance(form_data, dict):
+                count += form_data.get("Erkak", 0) + form_data.get("Ayol", 0)
+        return count
+
+    # 3. Drill by Education Type only
+    if p_type:
+        type_stats = stats.get("education_type", {}).get(p_type, {})
+        return type_stats.get("Erkak", 0) + type_stats.get("Ayol", 0)
+
+    # 4. Fallback: Total
+    jami = stats.get("education_type", {}).get("Jami", {})
+    return jami.get("Erkak", 0) + jami.get("Ayol", 0)
+
 @router.get("/students/search")
 async def search_mgmt_students(
     query: str = None,
@@ -216,29 +272,34 @@ async def search_mgmt_students(
     students = result.scalars().all()
     
     # 4. Get Stats
-    # If no category filters (dropdowns) are applied, use Global Stats
-    has_category_filters = any([faculty_id, education_type, education_form, level_name, specialty_name, group_number])
+    # If standard public filters are applied, use Public API for Jami
+    # (Even if Faculty/Specialty/Group are set, showing the Jami for the wider category is better than 1)
+    # But if Faculty/Group are set, we prefer the DB count if it's non-zero? 
+    # USER says "public api da hamma ma'lumotni olsa bo'ladi", so let's trust it for Jami.
     
-    if not has_category_filters:
-        from services.hemis_service import HemisService
-        token = getattr(staff, 'hemis_token', None)
-        total_count = await HemisService.get_total_student_count(token)
-        app_users_count = await db.scalar(
-            select(func.count(Student.id))
-            .where(Student.university_id == uni_id, Student.hemis_token != None)
-        ) or 0
-    else:
-        # Total Count in category
-        count_stmt = select(func.count(Student.id)).where(and_(*category_filters))
+    from services.hemis_service import HemisService
+    public_stats = await HemisService.get_public_stats()
+    
+    total_count = calculate_public_filtered_count(
+        public_stats,
+        education_type=education_type,
+        education_form=education_form,
+        level=level_name
+    )
+
+    # App Users Count (Students who logged into app - always DB)
+    app_users_stmt = select(func.count(Student.id)).where(
+        and_(*search_filters), # Use exact search filters for app users
+        Student.hemis_token != None
+    )
+    app_users_count = (await db.execute(app_users_stmt)).scalar() or 0
+    
+    # Final check: if total_count is 0 but we have students in DB, use DB count
+    # (Happens for extremely granular queries that public stats don't cover)
+    if total_count == 0:
+        count_stmt = select(func.count(Student.id)).where(and_(*search_filters))
         total_count = (await db.execute(count_stmt)).scalar() or 0
-        
-        # App Users Count in category (Students who logged into app)
-        app_users_stmt = select(func.count(Student.id)).where(
-            and_(*category_filters), 
-            Student.hemis_token != None
-        )
-        app_users_count = (await db.execute(app_users_stmt)).scalar() or 0
-    
+
     return {
         "success": True, 
         "total_count": total_count,

@@ -804,10 +804,9 @@ class HemisService:
             logger.error(f"Prefetch error: {e}")
 
     @staticmethod
-    async def get_public_student_total() -> int:
+    async def get_public_stats() -> Dict[str, Any]:
         """
-        Fetches total student count from public statistics API.
-        No token required.
+        Fetches the full public statistics JSON.
         """
         client = await HemisService.get_client()
         url = f"{HemisService.BASE_URL}/public/stat-student"
@@ -816,15 +815,27 @@ class HemisService:
             if response.status_code == 200:
                 data = response.json()
                 if data.get("success"):
-                    stats = data.get("data", {})
-                    # Aggregate from 'education_type' -> 'Jami'
-                    jami = stats.get("education_type", {}).get("Jami", {})
-                    total = jami.get("Erkak", 0) + jami.get("Ayol", 0)
-                    if total > 0:
-                        return total
+                    return data.get("data", {})
         except Exception as e:
             logger.warning(f"Public stats fetch failed: {e}")
-        return 0
+        return {}
+
+    @staticmethod
+    async def get_public_student_total() -> int:
+        """
+        Fetches total student count from public statistics API.
+        No token required.
+        """
+        stats = await HemisService.get_public_stats()
+        if not stats:
+            return 0
+        try:
+            # Aggregate from 'education_type' -> 'Jami'
+            jami = stats.get("education_type", {}).get("Jami", {})
+            total = jami.get("Erkak", 0) + jami.get("Ayol", 0)
+            return total
+        except Exception:
+            return 0
 
     @staticmethod
     async def get_total_student_count(token: Optional[str] = None) -> int:
