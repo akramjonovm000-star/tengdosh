@@ -275,20 +275,27 @@ async def search_mgmt_students(
     students = result.scalars().all()
     
     # 4. Get Stats
-    # If standard public filters are applied, use Public API for Jami
-    # (Even if Faculty/Specialty/Group are set, showing the Jami for the wider category is better than 1)
-    # But if Faculty/Group are set, we prefer the DB count if it's non-zero? 
-    # USER says "public api da hamma ma'lumotni olsa bo'ladi", so let's trust it for Jami.
+    # Logic: 
+    # - If we have specific backend-only filters (Faculty, Specialty, Group), we MUST use DB counts 
+    #   because Public API does not support filtering by ID for these (as verified).
+    # - If we only have global public filters (Type, Form, Level), we use Public API for live data.
     
-    from services.hemis_service import HemisService
-    public_stats = await HemisService.get_public_stats()
+    has_backend_filters = any([faculty_id, specialty_name, group_number])
     
-    total_count = calculate_public_filtered_count(
-        public_stats,
-        education_type=education_type,
-        education_form=education_form,
-        level=level_name
-    )
+    if not has_backend_filters:
+        from services.hemis_service import HemisService
+        public_stats = await HemisService.get_public_stats()
+        
+        total_count = calculate_public_filtered_count(
+            public_stats,
+            education_type=education_type,
+            education_form=education_form,
+            level=level_name
+        )
+    else:
+        # Use DB Count for specific filters
+        count_stmt = select(func.count(Student.id)).where(and_(*category_filters))
+        total_count = (await db.execute(count_stmt)).scalar() or 0
 
     # App Users Count (Students who logged into app - always DB)
     app_users_stmt = select(func.count(Student.id)).where(
@@ -673,6 +680,11 @@ async def get_mgmt_documents_archive(
     query: str = None,
     faculty_id: int = None,
     title: str = None,
+    education_type: str = None,
+    education_form: str = None,
+    level_name: str = None,
+    specialty_name: str = None,
+    group_number: str = None,
     page: int = 1,
     limit: int = 50,
     staff: Any = Depends(get_current_student),
@@ -711,6 +723,17 @@ async def get_mgmt_documents_archive(
             (UserDocument.title.ilike(f"%{query}%"))
         )
 
+    if education_type:
+        stmt = stmt.where(Student.education_type == education_type)
+    if education_form:
+        stmt = stmt.where(Student.education_form == education_form)
+    if level_name:
+        stmt = stmt.where(Student.level_name == level_name)
+    if specialty_name:
+        stmt = stmt.where(Student.specialty_name == specialty_name)
+    if group_number:
+        stmt = stmt.where(Student.group_number == group_number)
+
     # 3. Pagination & Execution
     stmt = stmt.order_by(UserDocument.created_at.desc()).offset((page - 1) * limit).limit(limit)
     result = await db.execute(stmt)
@@ -745,6 +768,11 @@ async def export_mgmt_documents_zip(
     query: str = None,
     faculty_id: int = None,
     title: str = None,
+    education_type: str = None,
+    education_form: str = None,
+    level_name: str = None,
+    specialty_name: str = None,
+    group_number: str = None,
     staff: Any = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
 ):
@@ -783,6 +811,17 @@ async def export_mgmt_documents_zip(
             (Student.full_name.ilike(f"%{query}%")) |
             (UserDocument.title.ilike(f"%{query}%"))
         )
+
+    if education_type:
+        stmt = stmt.where(Student.education_type == education_type)
+    if education_form:
+        stmt = stmt.where(Student.education_form == education_form)
+    if level_name:
+        stmt = stmt.where(Student.level_name == level_name)
+    if specialty_name:
+        stmt = stmt.where(Student.specialty_name == specialty_name)
+    if group_number:
+        stmt = stmt.where(Student.group_number == group_number)
 
     # Order by date
     stmt = stmt.order_by(UserDocument.created_at.desc())
