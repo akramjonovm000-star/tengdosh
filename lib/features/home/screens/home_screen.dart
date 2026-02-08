@@ -11,6 +11,7 @@ import 'package:talabahamkor_mobile/features/home/models/announcement_model.dart
 import 'package:talabahamkor_mobile/features/home/models/banner_model.dart'; // [NEW]
 import 'package:talabahamkor_mobile/features/student_module/screens/student_module_screen.dart';
 import 'package:talabahamkor_mobile/features/ai/screens/ai_screen.dart';
+import 'package:talabahamkor_mobile/features/ai/screens/management_ai_screen.dart'; // [NEW]
 import 'package:talabahamkor_mobile/features/student_module/widgets/student_dashboard_widgets.dart';
 import 'package:talabahamkor_mobile/features/student_module/screens/academic_screen.dart';
 import 'package:talabahamkor_mobile/features/student_module/screens/election_screen.dart';
@@ -162,9 +163,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     // Screens for BottomNav
     final List<Widget> screens = [
-      _buildHomeContent(),           // 0: Home (Dashboard) - Tutor/Student Logic inside
-      const StudentModuleScreen(),   // 1: Yangiliklar (Ex-Talaba)
-      const AiScreen(),              // 2: AI
+      _buildHomeContent(),           // 0: Home (Dashboard)
+      const StudentModuleScreen(),   // 1: Yangiliklar
+      auth.isManagement ? const ManagementAiScreen() : const AiScreen(), // 2: AI (Different for Management)
       const CommunityScreen(),       // 3: Choyxona
       const ProfileScreen(),         // 4: Profile
     ];
@@ -208,7 +209,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     }
 
                     // Guard AI (2)
-                    if (index == 2 && !isPremium) {
+                    if (index == 2 && !auth.isManagement && !isPremium) {
                       _showPremiumDialog();
                       return;
                     }

@@ -1727,5 +1727,37 @@ class DataService {
       return "Tarmoq xatosi";
     }
   }
+  // 43. Management Analytics
+  Future<Map<String, dynamic>?> getManagementAnalytics() async {
+    try {
+      final response = await _get("${ApiConstants.backendUrl}/management/analytics");
+      if (response.statusCode == 200) {
+        final body = json.decode(utf8.decode(response.bodyBytes));
+        if (body['success'] == true) {
+          return body['data'];
+        }
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching management analytics: $e");
+    }
+    return null;
+  }
+
+  // 44. Management AI Report
+  Future<String?> getManagementAiReport() async {
+    try {
+      final response = await _get("${ApiConstants.backendUrl}/management/ai-report", timeout: const Duration(seconds: 45));
+      if (response.statusCode == 200) {
+        final body = json.decode(utf8.decode(response.bodyBytes));
+        if (body['success'] == true) {
+          return body['data'];
+        }
+      }
+      return "Hisobotni yuklashda xatolik";
+    } catch (e) {
+      debugPrint("DataService: Error fetching management AI report: $e");
+      return "Tarmoq xatosi: $e";
+    }
+  }
 }
 
