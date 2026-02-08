@@ -293,9 +293,49 @@ async def search_mgmt_students(
             level=level_name
         )
     else:
-        # Use DB Count for specific filters
+        # 5. Faculty Filter Logic
+        # Try to find "Real" total from public structure stats if only Faculty is selected (and not Group/Specialty)
+        # Because we want to show "Jami talabalar" as the university total, not just DB total.
+        
+        real_total = 0
+        if faculty_id and not (specialty_name or group_number):
+            try:
+                # 5.1 Get Faculty Name
+                fac_stmt = select(Student.faculty_name).where(Student.faculty_id == faculty_id).limit(1)
+                fac_name = (await db.execute(fac_stmt)).scalar()
+                
+                if fac_name:
+                    from services.hemis_service import HemisService
+                    # This endpoint returns XML/JSON with counts by department/faculty
+                    # structure = await HemisService.get_public_structure_stats()
+                    # But we need to implement get_public_structure_stats first or do it ad-hoc here.
+                    # Let's do ad-hoc for now to fix the bug quickly.
+                    
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get("https://student.jmcu.uz/rest/v1/public/stat-structure") as resp:
+                            if resp.status == 200:
+                                data = await resp.json()
+                                # Structure: data -> departments -> item -> {name, count}
+                                # We need to correct "Jurnalistika fakulteti" vs "Jurnalistika" etc matching.
+                                # Let's try exact match first.
+                                departments = data.get("data", {}).get("departments", [])
+                                for dept in departments:
+                                    if isinstance(dept, dict) and dept.get("name") == fac_name:
+                                        real_total = int(dept.get("count", 0))
+                                        break
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to fetch public faculty stats: {e}")
+
+        # 5.2 Calculate DB Count (App Users)
         count_stmt = select(func.count(Student.id)).where(and_(*category_filters))
-        total_count = (await db.execute(count_stmt)).scalar() or 0
+        db_count = (await db.execute(count_stmt)).scalar() or 0
+        
+        # 5.3 Set Total
+        # If we found a real total from public API, and it's greater than DB count, use it.
+        # Otherwise fallback to DB count.
+        total_count = max(real_total, db_count)
 
     # App Users Count (Students who logged into app - always DB)
     app_users_stmt = select(func.count(Student.id)).where(
