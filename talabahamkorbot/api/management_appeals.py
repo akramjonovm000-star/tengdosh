@@ -98,6 +98,7 @@ async def get_appeals_list(
     status: Optional[str] = None,
     faculty: Optional[str] = None,
     ai_topic: Optional[str] = None,
+    assigned_role: Optional[str] = None,
     staff: Any = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
 ):
@@ -127,6 +128,9 @@ async def get_appeals_list(
         
     if ai_topic:
         query = query.where(StudentFeedback.ai_topic == ai_topic)
+
+    if assigned_role:
+        query = query.where(StudentFeedback.assigned_role == assigned_role)
         
     # Order by newest
     query = query.order_by(StudentFeedback.created_at.desc())

@@ -22,12 +22,14 @@ class AppealService {
     int page = 1, 
     String? status, 
     String? faculty, 
-    String? aiTopic
+    String? aiTopic,
+    String? assignedRole
   }) async {
     String url = '${ApiConstants.managementAppealsList}?page=$page&limit=20';
     if (status != null) url += '&status=$status';
     if (faculty != null) url += '&faculty=$faculty';
     if (aiTopic != null) url += '&ai_topic=$aiTopic';
+    if (assignedRole != null) url += '&assigned_role=$assignedRole';
     
     final response = await _dataService.authGet(url);
     

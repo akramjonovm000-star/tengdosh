@@ -23,6 +23,7 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
   String? _selectedStatus; // pending, processing, resolved
   String? _selectedFaculty;
   String? _selectedTopic;
+  String? _selectedRole;
   
   late TabController _tabController;
 
@@ -44,7 +45,8 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
       final appeals = await _service.getAppeals(
         status: _selectedStatus,
         faculty: _selectedFaculty,
-        aiTopic: _selectedTopic
+        aiTopic: _selectedTopic,
+        assignedRole: _selectedRole,
       );
       
       if (mounted) {
@@ -172,9 +174,16 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: _stats!.topTargets.map((t) => Chip(
+            children: _stats!.topTargets.map((t) => ActionChip(
               label: Text("${t.role}: ${t.count}"),
-              backgroundColor: Colors.grey[200],
+              backgroundColor: _selectedRole == t.role ? AppTheme.primaryBlue.withOpacity(0.1) : Colors.grey[200],
+              onPressed: () {
+                setState(() {
+                  _selectedRole = t.role;
+                });
+                _tabController.animateTo(1);
+                _loadData();
+              },
             )).toList(),
           ),
           const SizedBox(height: 16),
@@ -251,6 +260,15 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
                  InputChip(
                    label: Text(_selectedFaculty!), 
                    onDeleted: () => setState(() { _selectedFaculty = null; _loadData(); }),
+                   selected: true,
+                   showCheckmark: false,
+                 ),
+              if (_selectedRole != null)
+                const SizedBox(width: 8),
+              if (_selectedRole != null)
+                 InputChip(
+                   label: Text("To: $_selectedRole"), 
+                   onDeleted: () => setState(() { _selectedRole = null; _loadData(); }),
                    selected: true,
                    showCheckmark: false,
                  ),
