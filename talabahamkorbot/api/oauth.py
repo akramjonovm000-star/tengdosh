@@ -108,7 +108,8 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
         student = result.scalar_one_or_none()
         
         # OAuth endpoint returns 'surname', REST might return 'lastname'. But with use_oauth_endpoint=True, it's 'surname'.
-        full_name = f"{me.get('firstname', '')} {me.get('surname', '')} {me.get('fathername', '')}".strip()
+        full_name = f"{me.get('surname', '')} {me.get('firstname', '')} {me.get('fathername', '')}".title().strip()
+        image_url = me.get("picture") or me.get("image") or me.get("image_url")
         university_id = me.get("university_id")
         
         if not student:
@@ -118,23 +119,38 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
                 hemis_id=h_id,
                 hemis_token=access_token,
                 hemis_refresh_token=refresh_token,
-                token_expires_at=token_expires_at
+                token_expires_at=token_expires_at,
+                image_url=image_url
             )
             db.add(student)
             await db.commit()
             await db.refresh(student)
-
-            db.add(student)
-            await db.commit()
-            await db.refresh(student)
-
         else:
             student.hemis_token = access_token
             student.hemis_refresh_token = refresh_token
             student.token_expires_at = token_expires_at
             # FORCE UPDATE info
             student.full_name = full_name
-            # Also update other fields if needed, e.g. if we add university_name here later
+            if image_url:
+                student.image_url = image_url
+            
+            # [FIX] Map external university_id to local university_id safely
+            u_id = me.get("university_id")
+            if u_id:
+                try:
+                    u_id_int = int(u_id)
+                    if u_id_int == 395 or "jmcu" in base_url:
+                        student.university_id = 1
+                    else:
+                        # Only assign if it exists in our DB to avoid IntegrityError
+                        exists = await db.scalar(select(University.id).where(University.id == u_id_int))
+                        if exists:
+                            student.university_id = u_id_int
+                        else:
+                            logger.warning(f"University ID {u_id_int} not found in local DB. Skipping FK assignment.")
+                except (ValueError, TypeError):
+                    logger.warning(f"Invalid university_id format for student: {u_id}")
+            
             await db.commit()
             
         internal_token = f"student_id_{student.id}"
@@ -195,10 +211,16 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
                     best_priority = priority
                     user_role = mapped_role
         
+        full_name = f"{me.get('surname', '')} {me.get('firstname', '')} {me.get('patronymic', '')}".title().strip()
+        image_url = me.get("picture") or me.get("image") or me.get("image_url")
         logger.info(f"Selected Best Role: {user_role} (Priority: {best_priority}) from {hemis_roles}")
 
         if staff:
-            # Update existing staff role if needed
+            # Update existing staff info
+            staff.full_name = full_name
+            if image_url:
+                staff.image_url = image_url
+            
             if not staff.hemis_id and h_id:
                 staff.hemis_id = int(h_id)
             
@@ -209,8 +231,22 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
             
             # [NEW] Save Token
             staff.hemis_token = access_token
-            if me.get("university_id"):
-                staff.university_id = me.get("university_id")
+            u_id = me.get("university_id")
+            if u_id:
+                try:
+                    u_id_int = int(u_id)
+                    # Map JMCU (395) -> 1
+                    if u_id_int == 395 or "jmcu" in base_url:
+                        staff.university_id = 1
+                    else:
+                        # Only assign if it exists in our DB to avoid IntegrityError
+                        exists = await db.scalar(select(University.id).where(University.id == u_id_int))
+                        if exists:
+                            staff.university_id = u_id_int
+                        else:
+                            logger.warning(f"University ID {u_id_int} not found in local DB for staff. Skipping.")
+                except (ValueError, TypeError):
+                    logger.warning(f"Invalid university_id format for staff: {u_id}")
                  
             await db.commit()
             internal_token = f"staff_id_{staff.id}"
@@ -218,15 +254,29 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
             # Auto-register Staff
             logger.info(f"Auto-registering new staff: {h_id} - {me.get('firstname')} {me.get('surname')}")
             
+            uni_id_final = None
+            u_id_raw = me.get("university_id")
+            if u_id_raw:
+                try:
+                    u_id_int = int(u_id_raw)
+                    if u_id_int == 395 or "jmcu" in base_url:
+                        uni_id_final = 1
+                    else:
+                        # Verify existence
+                        exists = await db.scalar(select(University.id).where(University.id == u_id_int))
+                        if exists: uni_id_final = u_id_int
+                except: pass
+
             staff = Staff(
                 hemis_id=int(h_id) if h_id else None,
-                full_name=f"{me.get('surname', '')} {me.get('firstname', '')} {me.get('patronymic', '')}".strip(),
+                full_name=full_name,
+                image_url=image_url,
                 jshshir=pinfl or "",
                 role=user_role,
                 phone=me.get("phone"),
                 is_active=True,
                 hemis_token=access_token, # [NEW]
-                university_id=me.get("university_id")
+                university_id=uni_id_final
             )
             db.add(staff)
             await db.commit()

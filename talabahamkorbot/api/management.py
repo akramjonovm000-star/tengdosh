@@ -565,6 +565,7 @@ async def send_student_doc_to_management(
 
     # 4. Send via Bot
     try:
+        print(f"DEBUG: Attempting to send document {doc.id} to user 7476703866")
         caption = (
             f"📄 <b>Talaba Hujjati (Rahbariyat)</b>\n\n"
             f"Talaba: <b>{student.full_name}</b>\n"
@@ -574,12 +575,18 @@ async def send_student_doc_to_management(
         )
         # TEST: Hardcoded ID 7476703866
         if doc.file_type == 'photo':
+             print(f"DEBUG: Sending photo {doc.file_id}")
              await bot.send_photo(7476703866, doc.file_id, caption=caption, parse_mode="HTML")
         else:
+             print(f"DEBUG: Sending document {doc.file_id}")
              await bot.send_document(7476703866, doc.file_id, caption=caption, parse_mode="HTML")
              
+        print("DEBUG: Successfully sent document")
         return {"success": True, "message": "Hujjat Telegramingizga yuborildi (TEST ID: 7476703866)!"}
     except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"DEBUG: Error sending doc: {e}")
         import logging
         logger = logging.getLogger(__name__)
         logger.error(f"Error sending doc to management: {e}")
