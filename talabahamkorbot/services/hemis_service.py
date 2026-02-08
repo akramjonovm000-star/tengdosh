@@ -806,17 +806,37 @@ class HemisService:
         client = await HemisService.get_client()
         
         # Priority 1: /data/student-count-by-shift (Specific User Request)
-        # This endpoint returns aggregated data including "total": 5000
+        # This endpoint defaults to Nov 1 of Current Year. If today is Feb 2026, default is Nov 2026 (Future) -> 0 results.
+        # We must pass current week/month to get actual data.
+        
+        today = datetime.now()
+        # Start of academic year (roughly Sept 1st of previous year if currently Jan-Aug, else Sept 1st of current year)
+        # But for "active students", maybe just "today" or "this week" is safer?
+        # The API counts students based on SCHEDULE. So we need a period with a schedule.
+        # Let's pick CURRENT WEEK.
+        start_of_week = today - timedelta(days=today.weekday()) # Monday
+        end_of_week = start_of_week + timedelta(days=6) # Sunday
+        
+        params = {
+            "start_date": start_of_week.strftime("%Y-%m-%d"),
+            "end_date": end_of_week.strftime("%Y-%m-%d")
+        }
+
         url_shift = f"{HemisService.BASE_URL}/data/student-count-by-shift"
         try:
-             response = await client.get(url_shift, headers=HemisService.get_headers(token))
+             logger.info(f"Fetching Student Count from {url_shift} with params {params}")
+             response = await client.get(url_shift, headers=HemisService.get_headers(token), params=params)
+             
              if response.status_code == 200:
                  data = response.json()
+                 logger.info(f"Student Count Response: {data}")
                  # Structure: { "success": true, "data": { "total": 5000, ... } }
                  if "data" in data and isinstance(data["data"], dict):
                      total = data["data"].get("total")
                      if total is not None:
                          return int(total)
+             else:
+                 logger.warning(f"Student Count API Failed: {response.status_code} - {response.text}")
         except Exception as e:
              logger.warning(f"Failed to fetch student count from {url_shift}: {e}")
 
