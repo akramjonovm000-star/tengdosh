@@ -55,9 +55,15 @@ async def get_management_dashboard(
     ) or 0
 
     # 4. Total Staff in University
-    total_staff = await db.scalar(
-        select(func.count(Staff.id)).where(Staff.university_id == uni_id)
-    ) or 0
+    # Try Public API first
+    public_employees = await HemisService.get_public_employee_count()
+    if public_employees > 0:
+        total_staff = public_employees
+    else:
+        # Fallback to DB
+        total_staff = await db.scalar(
+            select(func.count(Staff.id)).where(Staff.university_id == uni_id)
+        ) or 0
 
     # 5. Additional Metrics (Placeholders for now as per previous logic)
     # debtor_count and avg_gpa can be calculated or mocked if not yet synced university-wide
@@ -89,7 +95,20 @@ async def get_mgmt_faculties(
     if not uni_id:
         raise HTTPException(status_code=400, detail="Universitet aniqlanmadi")
 
-    # Show only faculties that have students AND a name
+    # 1. Try to fetch official faculties from HEMIS (Admin Token)
+    from services.hemis_service import HemisService
+    from config import HEMIS_ADMIN_TOKEN
+    
+    if HEMIS_ADMIN_TOKEN:
+        faculties = await HemisService.get_faculties()
+        if faculties:
+             # Filter only specific faculties for this University structure
+             # 4: Jurnalistika, 2: PR, 43: Xalqaro
+             allowed_ids = [4, 2, 43]
+             filtered = [f for f in faculties if f['id'] in allowed_ids]
+             return {"success": True, "data": filtered}
+
+    # 2. Fallback: Show only faculties that have students AND a name (Local DB)
     result = await db.execute(
         select(Student.faculty_id, Student.faculty_name)
         .where(
@@ -253,7 +272,13 @@ async def search_mgmt_students(
     
     # 1. Base category filters (University + Dropdowns)
     category_filters = [Student.university_id == uni_id]
-    if faculty_id: category_filters.append(Student.faculty_id == faculty_id)
+    # Custom Faculty ID Mapping for Local DB (Admin to Local)
+    db_faculty_id = faculty_id
+    if faculty_id == 4: db_faculty_id = 36   # Jurnalistika
+    elif faculty_id == 2: db_faculty_id = 34 # PR
+    elif faculty_id == 43: db_faculty_id = 35 # Xalqaro
+    
+    if db_faculty_id: category_filters.append(Student.faculty_id == db_faculty_id)
     if education_type: category_filters.append(Student.education_type == education_type)
     if education_form: category_filters.append(Student.education_form == education_form)
     if level_name: category_filters.append(Student.level_name == level_name)
@@ -275,27 +300,94 @@ async def search_mgmt_students(
     students = result.scalars().all()
     
     # 4. Get Stats
-    # Logic: 
-    # - If we have specific backend-only filters (Faculty, Specialty, Group), we MUST use DB counts 
-    #   because Public API does not support filtering by ID for these (as verified).
-    # - If we only have global public filters (Type, Form, Level), we use Public API for live data.
+    from services.hemis_service import HemisService
     
-    has_backend_filters = any([faculty_id, specialty_name, group_number])
+    # Check if we have Admin Token configured
+    from config import HEMIS_ADMIN_TOKEN
     
-    if not has_backend_filters:
-        from services.hemis_service import HemisService
-        public_stats = await HemisService.get_public_stats()
+    if HEMIS_ADMIN_TOKEN:
+        # Use Admin API for ALL filters if token is available (most accurate method)
+        admin_filters = {}
         
-        total_count = calculate_public_filtered_count(
-            public_stats,
-            education_type=education_type,
-            education_form=education_form,
-            level=level_name
-        )
+        # --- CUSTOM LOGIC FOR THIS UNIVERSITY ---
+        # 1. Handle Magistr -> Department 36 (Magistratura bo'limi)
+        start_dept_override = False
+        if education_type and "Magistr" in education_type:
+             admin_filters["_department"] = 36
+             start_dept_override = True
+             
+        # 2. Handle Sirtqi -> Department 35 (Sirtqi bo'limi)
+        # Note: If both Magistr and Sirtqi are selected (unlikely combo), Sirtqi overrides here or vice versa.
+        # Let's prioritize Magistr if present, else Sirtqi.
+        if not start_dept_override and education_form and "Sirtqi" in education_form:
+             admin_filters["_department"] = 35
+             start_dept_override = True
+
+        # 3. Standard Faculty Filter (only if not overridden)
+        if not start_dept_override and faculty_id:
+            admin_filters["_department"] = faculty_id
+            
+        if education_type and not start_dept_override:
+            # Standard Education Type mapping
+            if "Bakalavr" in education_type:
+                admin_filters["_education_type"] = 11
+            elif "Magistr" in education_type:
+                admin_filters["_education_type"] = 12
+            else:
+                # Fallback: try to pass as is or map other types if known
+                # But for now, user only complained about Bakalavr.
+                pass
+
+        if specialty_name:
+            # Resolve ID from DB
+            spec_stmt = select(Student.specialty_id).where(Student.specialty_name == specialty_name).limit(1)
+            spec_id = (await db.execute(spec_stmt)).scalar()
+            if spec_id:
+                admin_filters["_specialty"] = spec_id
+                
+        if group_number:
+            # Resolve ID from DB
+            grp_stmt = select(Student.group_id).where(Student.group_number == group_number).limit(1)
+            grp_id = (await db.execute(grp_stmt)).scalar()
+            if grp_id:
+                admin_filters["_group"] = grp_id
+        
+        # Fetch from Admin API
+        # Note: If no filters are passed, it returns total university count (which is good)
+        total_count = await HemisService.get_admin_student_count(admin_filters)
+        
+        # If Admin API fails (cnt=0) and we have no filters, it might be an error or just empty.
+        # If it returns 0 but DB has users, we might want to fallback to DB count?
+        # But valid answer could be 0 (e.g. empty group).
+        # Let's trust Admin API if it returns success (handled in service), but if 0, maybe check DB?
+        # The service returns 0 on error.
+        
+        if total_count == 0:
+             # Fallback to DB if API failed or returned 0 (and we suspect it's wrong)
+             # But if it's a specific filter, 0 might be correct.
+             # Let's assume if it's 0, we fallback to DB count just in case API token is bad.
+             count_stmt = select(func.count(Student.id)).where(and_(*category_filters))
+             db_count = (await db.execute(count_stmt)).scalar() or 0
+             total_count = max(total_count, db_count)
+
     else:
-        # Use DB Count for specific filters
-        count_stmt = select(func.count(Student.id)).where(and_(*category_filters))
-        total_count = (await db.execute(count_stmt)).scalar() or 0
+        # Fallback to Old Logic (Public API + DB)
+        has_backend_filters = any([faculty_id, specialty_name, group_number])
+        
+        if not has_backend_filters:
+            public_stats = await HemisService.get_public_stats()
+            total_count = calculate_public_filtered_count(
+                public_stats,
+                education_type=education_type,
+                education_form=education_form,
+                level=level_name
+            )
+        else:
+            # Use DB Count for specific filters
+            count_stmt = select(func.count(Student.id)).where(and_(*category_filters))
+            total_count = (await db.execute(count_stmt)).scalar() or 0
+
+    # App Users Count (Students who logged into app - always DB)
 
     # App Users Count (Students who logged into app - always DB)
     app_users_stmt = select(func.count(Student.id)).where(

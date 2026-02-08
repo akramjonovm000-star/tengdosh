@@ -164,7 +164,6 @@ async def get_posts(
         # 1. Category Filter (Tab Filter)
         query = query.where(ChoyxonaPost.category_type == category)
         
-    try:
         is_management = getattr(student, 'hemis_role', None) == 'rahbariyat' or getattr(student, 'role', None) == 'rahbariyat'
         
         if category == 'university': 
@@ -437,8 +436,7 @@ async def delete_post(
     if not post:
         raise HTTPException(status_code=404, detail="Post topilmadi")
         
-    try:
-        is_management = getattr(student, 'hemis_role', None) == 'rahbariyat' or getattr(student, 'role', None) == 'rahbariyat'
+    is_management = getattr(student, 'hemis_role', None) == 'rahbariyat' or getattr(student, 'role', None) == 'rahbariyat'
     
     # Permission check:
     # 1. Author can delete their own post

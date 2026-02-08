@@ -40,6 +40,7 @@ async def get_dashboard_stats(
     # [FIX] Skip student-specific queries for Staff
     if isinstance(student, Staff):
         total_st = await HemisService.get_total_student_count(student.hemis_token)
+        total_emp = await HemisService.get_public_employee_count()
         return {
             "full_name": student.full_name,
             "role": student.role,
@@ -51,7 +52,8 @@ async def get_dashboard_stats(
             "missed_hours_unexcused": 0,
             "has_active_election": False,
             "active_election_id": None,
-            "total_students": total_st
+            "total_students": total_st,
+            "total_employees": total_emp
         }
 
     # 2. Approved Activities Count

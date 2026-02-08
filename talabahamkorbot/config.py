@@ -59,6 +59,7 @@ HEMIS_STAFF_REDIRECT_URL = os.environ.get("HEMIS_STAFF_REDIRECT_URL", "https://t
 HEMIS_AUTH_URL = "https://hemis.jmcu.uz/oauth/authorize" # User facing
 HEMIS_TOKEN_URL = "https://student.jmcu.uz/oauth/access-token" # Internal
 HEMIS_PROFILE_URL = "https://student.jmcu.uz/oauth/api/user" # Internal
+HEMIS_ADMIN_TOKEN = os.environ.get("HEMIS_ADMIN_TOKEN") # Token for backend data fetching
 
 # 💳 --- Payme Sozlamalari --- 💳
 PAYME_MERCHANT_ID = os.environ.get("PAYME_MERCHANT_ID", "65b8...") # Placeholder: replace with real ID

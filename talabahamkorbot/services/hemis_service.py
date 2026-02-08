@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import select
 from database.db_connect import AsyncSessionLocal
 from database.models import StudentCache
+from config import HEMIS_ADMIN_TOKEN
 
 
 
@@ -833,9 +834,111 @@ class HemisService:
             # Aggregate from 'education_type' -> 'Jami'
             jami = stats.get("education_type", {}).get("Jami", {})
             total = jami.get("Erkak", 0) + jami.get("Ayol", 0)
-            return total
+            if total > 0:
+                return total
         except Exception:
+            pass
+        return 0
+
+    @staticmethod
+    async def get_public_employee_count() -> int:
+        """
+        Fetches total employee count from public statistics API.
+        No token required.
+        """
+        client = await HemisService.get_client()
+        url = f"{HemisService.BASE_URL}/public/stat-employee"
+        try:
+            response = await client.get(url, timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("success"):
+                    stats = data.get("data", {})
+                    # Aggregate from 'employment_form' (shows total unique contracts/people usually)
+                    # "Asosiy ish joy", "O‘rindoshlik", etc.
+                    # Or 'gender' -> 'Jami'? 
+                    # Let's check 'gender' -> 'Jami' which is usually the simplest total.
+                    # In sample: gender: { Erkak: 56, Ayol: 139, Jami: 195 }
+                    
+                    gender_stats = stats.get("gender", {})
+                    if "Jami" in gender_stats:
+                        return int(gender_stats["Jami"])
+                    
+                    # Fallback: Sum of employment forms if Jami is missing
+                    emp_form = stats.get("employment_form", {})
+                    return sum(emp_form.values()) if emp_form else 0
+        except Exception as e:
+            logger.warning(f"Public employee stats fetch failed: {e}")
+        return 0
+
+
+    @staticmethod
+    async def get_admin_student_count(filters: Dict[str, Any]) -> int:
+        """
+        Fetches total student count using HEMIS_ADMIN_TOKEN and /data/student-list.
+        Allows filtering by any parameter (e.g., _department, _specialty, _group, _education_type).
+        """
+        if not HEMIS_ADMIN_TOKEN:
             return 0
+            
+        client = await HemisService.get_client()
+        url = f"{HemisService.BASE_URL}/data/student-list"
+        
+        # Prepare params
+        params = {"limit": 1} # We only need the totalCount
+        params.update(filters)
+        
+        headers = {"Authorization": f"Bearer {HEMIS_ADMIN_TOKEN}"}
+        
+        try:
+            response = await client.get(url, headers=headers, params=params, timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                # Check pagination or _meta
+                if "data" in data:
+                    inner = data["data"]
+                    if "pagination" in inner:
+                        return int(inner["pagination"].get("totalCount", 0))
+                    elif "_meta" in inner:
+                        return int(inner["_meta"].get("totalCount", 0))
+        except Exception as e:
+            logger.warning(f"Admin student count fetch failed: {e}")
+        return 0
+
+    @staticmethod
+    async def get_faculties(token: str = None) -> list:
+        """
+        Fetches list of faculties (structureType="Fakultet") from /data/department-list.
+        Requires Admin Token or a user token with access.
+        """
+        auth_token = token or HEMIS_ADMIN_TOKEN
+        if not auth_token:
+            return []
+            
+        client = await HemisService.get_client()
+        url = f"{HemisService.BASE_URL}/data/department-list"
+        params = {"limit": 200}
+        headers = {"Authorization": f"Bearer {auth_token}"}
+        
+        try:
+            response = await client.get(url, headers=headers, params=params, timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                items = data.get("data", {}).get("items", [])
+                
+                faculties = []
+                for item in items:
+                    stype = item.get("structureType", {}).get("name")
+                    if stype == "Fakultet":
+                        faculties.append({
+                            "id": item.get("id"),
+                            "name": item.get("name"),
+                            "code": item.get("code")
+                        })
+                return faculties
+        except Exception as e:
+            logger.warning(f"Faculties fetch failed: {e}")
+        return []
 
     @staticmethod
     async def get_total_student_count(token: Optional[str] = None) -> int:
