@@ -123,19 +123,21 @@ async def get_election_info(student: Student, session: AsyncSession) -> tuple[bo
     if not student:
         return False, False
         
-    is_election_admin = student.is_election_admin
+    # [FIX] Handle Staff object
+    is_election_admin = getattr(student, 'is_election_admin', False)
     has_active_election = False
     
     # Check for active election
     # Optimization: We only check if the student belongs to a university
-    if student.university_id:
+    university_id = getattr(student, 'university_id', None)
+    if university_id:
         from database.models import Election
         from sqlalchemy import and_
         
         active_election = await session.scalar(
             select(Election).where(
                 and_(
-                    Election.university_id == student.university_id,
+                    Election.university_id == university_id,
                     Election.status == "active"
                 )
             ).order_by(Election.created_at.desc())
