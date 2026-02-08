@@ -202,6 +202,9 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
             if staff.role != user_role:
                  logger.info(f"Updating Staff Role from {staff.role} to {user_role}")
                  staff.role = user_role
+            
+            # [NEW] Save Token
+            staff.hemis_token = access_token
                  
             await db.commit()
             internal_token = f"staff_id_{staff.id}"
@@ -215,7 +218,8 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
                 jshshir=pinfl or "",
                 role=user_role,
                 phone=me.get("phone"),
-                is_active=True
+                is_active=True,
+                hemis_token=access_token # [NEW]
             )
             db.add(staff)
             await db.commit()

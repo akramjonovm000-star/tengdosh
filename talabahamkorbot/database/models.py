@@ -282,6 +282,7 @@ class Staff(Base):
     role: Mapped[StaffRole] = mapped_column(String(32), nullable=False)
     telegram_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     hemis_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True, index=True) # HEMIS ID
+    hemis_token: Mapped[str | None] = mapped_column(String(1024), nullable=True) # [NEW] Authorization Token
 
     university_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("universities.id", ondelete="SET NULL"), nullable=True
