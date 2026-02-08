@@ -164,9 +164,42 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
                  
             internal_token = f"staff_id_{staff.id}"
         else:
-             # AUTO-REGISTER STAFF if strict policy allows?
-             # For now, if not in DB (neither pre-loaded nor lazy-created), we deny.
-             return HTMLResponse(content="<h1>Tizimda xodim topilmadi</h1>", status_code=403)
+             # Auto-register Staff
+             logger.info(f"Auto-registering new staff: {h_id} - {me.get('firstname')} {me.get('surname')}")
+             
+             # Map roles
+             hemis_roles = me.get("roles", []) or []
+             user_role = StaffRole.TEACHER
+             
+             # Simple mapping (expand as needed)
+             role_map = {
+                 "tutor": StaffRole.TYUTOR,
+                 "teacher": StaffRole.TEACHER,
+                 "dean": StaffRole.DEKAN,
+                 "department_head": StaffRole.KAFEDRA_MUDIRI
+             }
+             
+             for r in hemis_roles:
+                 if isinstance(r, dict): r_code = r.get("code")
+                 else: r_code = str(r)
+                 
+                 if r_code in role_map:
+                     user_role = role_map[r_code]
+                     break
+             
+             staff = Staff(
+                 hemis_id=int(h_id) if h_id else None,
+                 full_name=f"{me.get('surname', '')} {me.get('firstname', '')} {me.get('patronymic', '')}".strip(),
+                 jshshir=pinfl or "",
+                 role=user_role,
+                 phone=me.get("phone"),
+                 is_active=True
+             )
+             db.add(staff)
+             await db.commit()
+             await db.refresh(staff)
+             
+             internal_token = f"staff_id_{staff.id}"
 
     # 4. Return HTML
     
