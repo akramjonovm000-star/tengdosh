@@ -294,6 +294,7 @@ class Staff(Base):
     # --- Premium Features ---
     is_premium: Mapped[bool] = mapped_column(Boolean, default=False)
     premium_expiry: Mapped[datetime | None] = mapped_column(DateTime(), nullable=True)
+    custom_badge: Mapped[str | None] = mapped_column(String(64), nullable=True)
     # ------------------------
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
