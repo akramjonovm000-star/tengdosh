@@ -165,7 +165,11 @@ async def get_mgmt_group_students(
 
 @router.get("/students/search")
 async def search_mgmt_students(
-    query: str,
+    query: str = None,
+    faculty_id: int = None,
+    education_type: str = None,
+    level_name: str = None,
+    specialty_name: str = None,
     staff: Any = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
 ):
@@ -173,12 +177,25 @@ async def search_mgmt_students(
     
     stmt = select(Student).where(Student.university_id == uni_id)
     
-    # Simple search by Name, Hemis ID or Hemis Login
-    stmt = stmt.where(
-        (Student.full_name.ilike(f"%{query}%")) | 
-        (Student.hemis_id.ilike(f"%{query}%")) |
-        (Student.hemis_login.ilike(f"%{query}%"))
-    ).limit(50)
+    # 1. Query Search (Name, Hemis ID, Login)
+    if query:
+        stmt = stmt.where(
+            (Student.full_name.ilike(f"%{query}%")) | 
+            (Student.hemis_id.ilike(f"%{query}%")) |
+            (Student.hemis_login.ilike(f"%{query}%"))
+        )
+    
+    # 2. Filters
+    if faculty_id:
+        stmt = stmt.where(Student.faculty_id == faculty_id)
+    if education_type:
+        stmt = stmt.where(Student.education_type == education_type)
+    if level_name:
+        stmt = stmt.where(Student.level_name == level_name)
+    if specialty_name:
+        stmt = stmt.where(Student.specialty_name == specialty_name)
+
+    stmt = stmt.order_by(Student.full_name).limit(50)
     
     result = await db.execute(stmt)
     students = result.scalars().all()
@@ -192,10 +209,34 @@ async def search_mgmt_students(
                 "hemis_id": s.hemis_id,
                 "hemis_login": s.hemis_login,
                 "image_url": s.image_url,
-                "group_number": s.group_number
+                "group_number": s.group_number,
+                "faculty_name": s.faculty_name,
+                "specialty_name": s.specialty_name,
+                "level_name": s.level_name
             } for s in students
         ]
     }
+
+@router.get("/specialties")
+async def get_mgmt_specialties(
+    faculty_id: int = None,
+    staff: Any = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    uni_id = getattr(staff, 'university_id', None)
+    
+    stmt = select(Student.specialty_name).where(
+        Student.university_id == uni_id, 
+        Student.specialty_name != None
+    )
+    
+    if faculty_id:
+        stmt = stmt.where(Student.faculty_id == faculty_id)
+        
+    result = await db.execute(stmt.distinct().order_by(Student.specialty_name))
+    specialties = result.scalars().all()
+    
+    return {"success": True, "data": specialties}
 
 @router.get("/students/{student_id}/full-details")
 async def get_mgmt_student_details(

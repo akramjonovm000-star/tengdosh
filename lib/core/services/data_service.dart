@@ -276,15 +276,50 @@ class DataService {
     return [];
   }
 
-  Future<List<dynamic>> searchStudents(String query) async {
+  Future<List<dynamic>> searchStudents({
+    String? query,
+    int? facultyId,
+    String? educationType,
+    String? levelName,
+    String? specialtyName,
+  }) async {
     try {
-      final response = await _get("${ApiConstants.managementStudents}/search?query=${Uri.encodeComponent(query)}");
+      final queryParams = <String>[];
+      if (query != null && query.isNotEmpty) queryParams.add("query=${Uri.encodeComponent(query)}");
+      if (facultyId != null) queryParams.add("faculty_id=$facultyId");
+      if (educationType != null) queryParams.add("education_type=${Uri.encodeComponent(educationType)}");
+      if (levelName != null) queryParams.add("level_name=${Uri.encodeComponent(levelName)}");
+      if (specialtyName != null) queryParams.add("specialty_name=${Uri.encodeComponent(specialtyName)}");
+
+      String url = "${ApiConstants.managementStudents}/search";
+      if (queryParams.isNotEmpty) {
+        url += "?${queryParams.join("&")}";
+      }
+
+      final response = await _get(url);
       if (response.statusCode == 200) {
         final body = json.decode(response.body);
         if (body['success'] == true) return body['data'];
       }
     } catch (e) {
       debugPrint("DataService: Error searching students: $e");
+    }
+    return [];
+  }
+
+  Future<List<dynamic>> getManagementSpecialties({int? facultyId}) async {
+    try {
+      String url = "${ApiConstants.backendUrl}/management/specialties";
+      if (facultyId != null) {
+        url += "?faculty_id=$facultyId";
+      }
+      final response = await _get(url);
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) return body['data'];
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching management specialties: $e");
     }
     return [];
   }
