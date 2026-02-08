@@ -35,6 +35,9 @@ async def get_my_profile(
         elif student.role == "dekan":
             role_label = "Dekan"
             
+        # [FIX] Use employee_id_number as the primary ID (hemis_login) for staff
+        staff_id = getattr(student, 'employee_id_number', None) or str(student.hemis_id) if student.hemis_id else h_login
+        
         return {
              "id": student.id,
              "full_name": student.full_name,
@@ -54,8 +57,8 @@ async def get_my_profile(
              "semester_name": getattr(student, 'birth_date', '') or "",         # Mapped to 'Semestr' slot -> Birth Date
              "education_form": "",
              "student_status": "active" if student.is_active else "inactive",
-             "hemis_id": getattr(student, 'employee_id_number', None) or str(student.hemis_id) if student.hemis_id else None,
-             "hemis_login": h_login,
+             "hemis_id": staff_id,
+             "hemis_login": staff_id,
              "is_premium": getattr(student, 'is_premium', False),
              "premium_expiry": student.premium_expiry.isoformat() if student.premium_expiry else None,
              "custom_badge": getattr(student, 'custom_badge', None),

@@ -27,6 +27,7 @@ class RoleMapper {
     "dormitory": "Yotoqxona",
     "lawyer": "Yurist",
     "talaba": "Talaba", // Safety fallback
+    "rahbariyat": "Rahbariyat",
   };
 
   static String getLabel(String? code) {
