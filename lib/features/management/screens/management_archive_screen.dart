@@ -122,7 +122,7 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text("Hujjatlar Arxivi", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        title: const Text("Hujjatlar arxivi", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,

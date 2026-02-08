@@ -96,7 +96,7 @@ class ManagementDashboard extends StatelessWidget {
               },
             ),
             DashboardCard(
-              title: "Hujjatlar Arshivi",
+              title: "Hujjatlar Arxivi",
               icon: Icons.inventory_2_rounded,
               color: Colors.blueGrey,
               onTap: () {
