@@ -97,8 +97,8 @@ async def get_current_student(
             if student.premium_expiry + timedelta(days=7) < datetime.utcnow():
                 student.is_premium = False
                 
-                # Clear username if exists
-                if student.username:
+                # Clear username if exists (Only for Students who have username field)
+                if hasattr(student, 'username') and student.username:
                     from database.models import TakenUsername
                     username_entry = await db.scalar(select(TakenUsername).where(TakenUsername.student_id == student.id))
                     if username_entry:
