@@ -236,10 +236,44 @@ async def get_mgmt_student_details(
                     "phone": getattr(student, 'phone', None),
                     "gpa": getattr(student, 'gpa', 0.0)
                 },
-                "appeals": [{"id": a.id, "text": a.text, "status": getattr(a, 'status', 'pending'), "date": safe_isoformat(getattr(a, 'created_at', None))} for a in appeals],
-                "activities": [{"id": act.id, "title": getattr(act, 'name', getattr(act, 'title', 'Benoq')), "status": getattr(act, 'status', 'pending'), "date": safe_isoformat(getattr(act, 'created_at', None))} for act in activities],
-                "documents": [{"id": d.id, "title": d.title, "status": getattr(d, 'status', 'pending'), "date": safe_isoformat(getattr(d, 'created_at', None))} for d in docs],
-                "certificates": [{"id": c.id, "title": c.title, "status": "active", "date": safe_isoformat(getattr(c, 'created_at', None))} for c in certs]
+                "appeals": [
+                    {
+                        "id": a.id, 
+                        "text": a.text, 
+                        "status": getattr(a, 'status', 'pending'), 
+                        "date": safe_isoformat(getattr(a, 'created_at', None)),
+                        "file_id": getattr(a, 'file_id', None),
+                        "file_type": getattr(a, 'file_type', 'photo')
+                    } for a in appeals
+                ],
+                "activities": [
+                    {
+                        "id": act.id, 
+                        "title": getattr(act, 'name', getattr(act, 'title', 'Benoq')), 
+                        "status": getattr(act, 'status', 'pending'), 
+                        "date": safe_isoformat(getattr(act, 'created_at', None)),
+                        "images": [{"file_id": img.file_id, "file_type": img.file_type} for img in getattr(act, 'images', [])]
+                    } for act in activities
+                ],
+                "documents": [
+                    {
+                        "id": d.id, 
+                        "title": d.title, 
+                        "status": getattr(d, 'status', 'pending'), 
+                        "date": safe_isoformat(getattr(d, 'created_at', None)),
+                        "file_id": getattr(d, 'file_id', None),
+                        "file_type": getattr(d, 'file_type', 'document')
+                    } for d in docs
+                ],
+                "certificates": [
+                    {
+                        "id": c.id, 
+                        "title": c.title, 
+                        "status": "active", 
+                        "date": safe_isoformat(getattr(c, 'created_at', None)),
+                        "file_id": getattr(c, 'file_id', None)
+                    } for c in certs
+                ]
             }
         }
     except Exception as e:
