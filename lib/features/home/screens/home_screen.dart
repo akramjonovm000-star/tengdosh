@@ -161,6 +161,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 1. Get Auth Provider at the top level of build
+    final auth = Provider.of<AuthProvider>(context);
+
     // Screens for BottomNav
     final List<Widget> screens = [
       _buildHomeContent(),           // 0: Home (Dashboard)
@@ -171,7 +174,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
 
     return Consumer<AuthProvider>(
-      builder: (context, auth, child) {
+      builder: (context, authProvider, child) {
         return Stack(
           children: [
             Scaffold(
