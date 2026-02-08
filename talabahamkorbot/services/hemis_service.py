@@ -180,17 +180,25 @@ class HemisService:
 
     @staticmethod
     def generate_auth_url(state: str = "mobile", role: str = "student"):
-        from config import HEMIS_CLIENT_ID, HEMIS_REDIRECT_URL, HEMIS_AUTH_URL
+        from config import (
+            HEMIS_CLIENT_ID, HEMIS_REDIRECT_URL, HEMIS_AUTH_URL,
+            HEMIS_STAFF_CLIENT_ID, HEMIS_STAFF_REDIRECT_URL
+        )
         
         domain = HEMIS_AUTH_URL
+        client_id = HEMIS_CLIENT_ID
+        redirect_uri = HEMIS_REDIRECT_URL
+
         if role == "staff":
+            client_id = HEMIS_STAFF_CLIENT_ID
+            redirect_uri = HEMIS_STAFF_REDIRECT_URL
             if "student.jmcu.uz" in domain:
                 domain = domain.replace("student.jmcu.uz", "hemis.jmcu.uz")
         else: # student
             if "hemis.jmcu.uz" in domain:
                 domain = domain.replace("hemis.jmcu.uz", "student.jmcu.uz")
             
-        return f"{domain}?client_id={HEMIS_CLIENT_ID}&redirect_uri={HEMIS_REDIRECT_URL}&response_type=code&state={state}"
+        return f"{domain}?client_id={client_id}&redirect_uri={redirect_uri}&response_type=code&state={state}"
 
     @staticmethod
     def generate_oauth_url(state: str = "mobile"):
@@ -201,8 +209,18 @@ class HemisService:
         # OAuth usually requires fresh client context or we can use shared
         # Keeping shared is fine
         client = await HemisService.get_client()
-        from config import HEMIS_CLIENT_ID, HEMIS_CLIENT_SECRET, HEMIS_REDIRECT_URL, HEMIS_TOKEN_URL
+        from config import (
+            HEMIS_CLIENT_ID, HEMIS_CLIENT_SECRET, HEMIS_REDIRECT_URL, HEMIS_TOKEN_URL,
+            HEMIS_STAFF_CLIENT_ID, HEMIS_STAFF_CLIENT_SECRET, HEMIS_STAFF_REDIRECT_URL
+        )
         
+        # Determine credentials based on base_url
+        is_staff = base_url and "hemis.jmcu.uz" in base_url
+        
+        c_id = HEMIS_STAFF_CLIENT_ID if is_staff else HEMIS_CLIENT_ID
+        c_secret = HEMIS_STAFF_CLIENT_SECRET if is_staff else HEMIS_CLIENT_SECRET
+        r_uri = HEMIS_STAFF_REDIRECT_URL if is_staff else HEMIS_REDIRECT_URL
+
         # Determine token URL
         token_url = HEMIS_TOKEN_URL
         if base_url:
@@ -211,22 +229,20 @@ class HemisService:
             token_url = f"{domain}/oauth/access-token"
 
         try:
-            # Revert to Body credentials, but FORCE Content-Type
+            # Basic Auth + Body params (No credentials in body, as per test bot standard)
             data = {
                 "grant_type": "authorization_code",
                 "code": code,
-                "redirect_uri": HEMIS_REDIRECT_URL,
-                "client_id": HEMIS_CLIENT_ID,
-                "client_secret": HEMIS_CLIENT_SECRET
+                "redirect_uri": r_uri,
             }
             
             headers = {
                 "Content-Type": "application/x-www-form-urlencoded"
             }
             
-            logger.info(f"Token Exchange (Body+Form) on {token_url}: code={code[:5]}...")
+            logger.info(f"Token Exchange (Basic Auth) on {token_url}: client_id={c_id}, redirect_uri={r_uri}")
             
-            response = await client.post(token_url, data=data, headers=headers)
+            response = await client.post(token_url, data=data, headers=headers, auth=(c_id, c_secret))
             
             if response.status_code == 200:
                 return response.json(), None

@@ -43,6 +43,7 @@ async def oauth_login(
 
 @authlog_router.get("/")
 @authlog_router.get("/authlog")
+@authlog_router.get("/oauth/login")
 async def authlog_callback(code: Optional[str] = None, error: Optional[str] = None, state: str = "mobile", db: AsyncSession = Depends(get_session)):
     """
     Handles the callback from HEMIS (redirected via Nginx /authlog OR Root)

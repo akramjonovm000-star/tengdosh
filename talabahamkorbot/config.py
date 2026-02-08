@@ -48,9 +48,14 @@ WEBHOOK_URL = os.environ.get("WEBHOOK_URL", f"https://{DOMAIN}{WEBHOOK_BASE_PATH
 LOG_LEVEL = "INFO"
 
 # 🔐 --- HEMIS OAuth Settings --- 🔐
-HEMIS_CLIENT_ID = os.environ.get("HEMIS_CLIENT_ID", "5")
+HEMIS_CLIENT_ID = os.environ.get("HEMIS_CLIENT_ID", "6")
 HEMIS_CLIENT_SECRET = os.environ.get("HEMIS_CLIENT_SECRET")
 HEMIS_REDIRECT_URL = os.environ.get("HEMIS_REDIRECT_URL", "https://tengdosh.uzjoku.uz/api/v1/oauth/login")
+
+# Staff Credentials
+HEMIS_STAFF_CLIENT_ID = os.environ.get("HEMIS_STAFF_CLIENT_ID", "8")
+HEMIS_STAFF_CLIENT_SECRET = os.environ.get("HEMIS_STAFF_CLIENT_SECRET")
+HEMIS_STAFF_REDIRECT_URL = os.environ.get("HEMIS_STAFF_REDIRECT_URL", "https://tengdosh.uzjoku.uz/oauth/login")
 HEMIS_AUTH_URL = "https://hemis.jmcu.uz/oauth/authorize" # User facing
 HEMIS_TOKEN_URL = "https://student.jmcu.uz/oauth/access-token" # Internal
 HEMIS_PROFILE_URL = "https://student.jmcu.uz/oauth/api/user" # Internal

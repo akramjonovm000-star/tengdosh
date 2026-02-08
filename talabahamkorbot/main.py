@@ -194,6 +194,7 @@ from api.announcements import router as announcements_router
 from fastapi.staticfiles import StaticFiles
 
 app.include_router(api_router, prefix="/api/v1")
+app.include_router(authlog_router) # Support callback paths like /authlog and /oauth/login
 app.include_router(announcements_router, prefix="/api/v1")
 
 from api.support import router as support_router
