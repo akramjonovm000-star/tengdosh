@@ -73,10 +73,10 @@ class ManagementDashboard extends StatelessWidget {
           childAspectRatio: 1.1,
           children: [
             DashboardCard(
-              title: "Tizim Analitikasi",
-              icon: Icons.insights_rounded,
-              color: Colors.indigo,
-              onTap: () => _showNotImplemented(context, "Analitika"),
+              title: "HEMIS",
+              icon: Icons.military_tech_rounded,
+              color: Colors.amber,
+              onTap: () => _showHemisSubmenu(context),
             ),
             DashboardCard(
               title: "Xodimlar Monitoringi",
@@ -107,16 +107,10 @@ class ManagementDashboard extends StatelessWidget {
               },
             ),
             DashboardCard(
-              title: "HEMIS",
-              icon: Icons.military_tech_rounded,
-              color: Colors.amber,
-              onTap: () => _showNotImplemented(context, "HEMIS"),
-            ),
-            DashboardCard(
-              title: "Moliyaviy Holat",
-              icon: Icons.account_balance_wallet_rounded,
-              color: Colors.cyan,
-              onTap: () => _showNotImplemented(context, "Moliya"),
+              title: "Tizim Analitikasi",
+              icon: Icons.insights_rounded,
+              color: Colors.indigo,
+              onTap: () => _showNotImplemented(context, "Analitika"),
             ),
           ],
         ),
@@ -207,6 +201,90 @@ class ManagementDashboard extends StatelessWidget {
   void _showNotImplemented(BuildContext context, String feature) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text("$feature bo'limi hozirda ishlab chiqilmoqda.")),
+    );
+  }
+
+  void _showHemisSubmenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "HEMIS Bo'limi",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            _buildSubmenuItem(
+              context,
+              title: "HEMIS Monitoring",
+              icon: Icons.military_tech_rounded,
+              color: Colors.amber,
+              onTap: () => _showNotImplemented(context, "HEMIS"),
+            ),
+            const SizedBox(height: 12),
+            _buildSubmenuItem(
+              context,
+              title: "Moliyaviy Holat",
+              icon: Icons.account_balance_wallet_rounded,
+              color: Colors.cyan,
+              onTap: () => _showNotImplemented(context, "Moliya"),
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSubmenuItem(BuildContext context, {required String title, required IconData icon, required Color color, required VoidCallback onTap}) {
+    return InkWell(
+      onTap: () {
+        Navigator.pop(context);
+        onTap();
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.1)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 16),
+            Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+            const Spacer(),
+            const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
+          ],
+        ),
+      ),
     );
   }
 }
