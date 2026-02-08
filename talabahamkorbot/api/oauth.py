@@ -150,56 +150,78 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
             result = await db.execute(select(Staff).where(Staff.jshshir == pinfl))
             staff = result.scalar_one_or_none()
             
-        if staff:
-            if not staff.hemis_id and h_id:
-                staff.hemis_id = int(h_id)
-            # Staff doesn't have hemis_login column usually, so skip or add if schema changed
-            # staff.hemis_login = h_login 
-            await db.commit() # Save hemis_id
-            
-            # Role fallback
-            if not staff.role:
-                 # If lazy created with no role? (Unlikely)
-                 pass
-                 
-            internal_token = f"staff_id_{staff.id}"
-        else:
-             # Auto-register Staff
-             logger.info(f"Auto-registering new staff: {h_id} - {me.get('firstname')} {me.get('surname')}")
-             
-             # Map roles
+             # Determine Best Role
              hemis_roles = me.get("roles", []) or []
-             user_role = StaffRole.TEACHER
+             user_role = StaffRole.TEACHER # Default
              
-             # Simple mapping (expand as needed)
+             # Priority Map (High to Low)
+             role_priority = {
+                 StaffRole.REKTOR: 100,
+                 StaffRole.PROREKTOR: 90,
+                 StaffRole.DEKAN: 80,
+                 StaffRole.DEKAN_ORINBOSARI: 70,
+                 StaffRole.KAFEDRA_MUDIRI: 60,
+                 StaffRole.RAHBARIYAT: 50, # Admin/Management
+                 StaffRole.TEACHER: 10,
+                 StaffRole.TYUTOR: 5
+             }
+             
              role_map = {
                  "tutor": StaffRole.TYUTOR,
                  "teacher": StaffRole.TEACHER,
                  "dean": StaffRole.DEKAN,
-                 "department_head": StaffRole.KAFEDRA_MUDIRI
+                 "department_head": StaffRole.KAFEDRA_MUDIRI,
+                 "admin": StaffRole.RAHBARIYAT,
+                 "rector": StaffRole.REKTOR,
+                 "prorector": StaffRole.PROREKTOR,
+                 "deputy_dean": StaffRole.DEKAN_ORINBOSARI
              }
+             
+             best_priority = -1
              
              for r in hemis_roles:
                  if isinstance(r, dict): r_code = r.get("code")
                  else: r_code = str(r)
                  
                  if r_code in role_map:
-                     user_role = role_map[r_code]
-                     break
+                     mapped_role = role_map[r_code]
+                     priority = role_priority.get(mapped_role, 0)
+                     
+                     if priority > best_priority:
+                         best_priority = priority
+                         user_role = mapped_role
              
-             staff = Staff(
-                 hemis_id=int(h_id) if h_id else None,
-                 full_name=f"{me.get('surname', '')} {me.get('firstname', '')} {me.get('patronymic', '')}".strip(),
-                 jshshir=pinfl or "",
-                 role=user_role,
-                 phone=me.get("phone"),
-                 is_active=True
-             )
-             db.add(staff)
-             await db.commit()
-             await db.refresh(staff)
-             
-             internal_token = f"staff_id_{staff.id}"
+             logger.info(f"Selected Best Role: {user_role} (Priority: {best_priority}) from {hemis_roles}")
+
+             if staff:
+                 # Update existing staff role if needed
+                 if not staff.hemis_id and h_id:
+                     staff.hemis_id = int(h_id)
+                 
+                 # ALWAYS update role to ensure highest privilege
+                 if staff.role != user_role:
+                      logger.info(f"Updating Staff Role from {staff.role} to {user_role}")
+                      staff.role = user_role
+                      
+                 await db.commit()
+                 internal_token = f"staff_id_{staff.id}"
+             else:
+                 # Auto-register Staff
+                 logger.info(f"Auto-registering new staff: {h_id} - {me.get('firstname')} {me.get('surname')}")
+                 
+                 staff = Staff(
+                     hemis_id=int(h_id) if h_id else None,
+                     full_name=f"{me.get('surname', '')} {me.get('firstname', '')} {me.get('patronymic', '')}".strip(),
+                     jshshir=pinfl or "",
+                     role=user_role,
+                     phone=me.get("phone"),
+                     is_active=True
+                 )
+                 db.add(staff)
+                 await db.commit()
+                 await db.refresh(staff)
+                 
+                 internal_token = f"staff_id_{staff.id}"
 
     # 4. Return HTML
     
