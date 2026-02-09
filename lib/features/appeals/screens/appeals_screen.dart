@@ -316,9 +316,9 @@ class _AppealsScreenState extends State<AppealsScreen> with SingleTickerProvider
       
       if (!ignoreStatus && _selectedStatus != "Barchasi") {
         if (_selectedStatus == "Javob berilgan") {
-            if (a.status != "answered") return false;
+            if (a.status != "answered" && a.status != "resolved" && a.status != "replied") return false;
         } else if (_selectedStatus == "Kutilmoqda") {
-            if (a.status != "pending") return false;
+            if (a.status != "pending" && a.status != "processing" && !a.status.startsWith("assigned_")) return false;
         } else if (_selectedStatus == "Yopilgan") {
             if (a.status != "closed") return false;
         }
@@ -413,6 +413,8 @@ class AppealCard extends StatelessWidget {
 
     switch (appeal.status) {
       case 'answered':
+      case 'resolved':
+      case 'replied':
         statusColor = Colors.green;
         statusText = "Javob berilgan";
         statusIcon = Icons.check_circle_rounded;
@@ -423,6 +425,7 @@ class AppealCard extends StatelessWidget {
         statusIcon = Icons.lock_outline_rounded;
         break;
       case 'pending':
+      case 'processing':
       default:
         statusColor = Colors.orange;
         statusText = "Kutilmoqda";
@@ -1131,9 +1134,11 @@ class _AppealDetailScreenState extends State<AppealDetailScreen> {
         );
     }
     
-    String statusDisplay = _detail!.status == 'pending' ? "Kutilmoqda" 
-                       : _detail!.status == 'answered' ? "Javob berilgan" 
-                       : _detail!.status == 'closed' ? "Yopilgan" : _detail!.status;
+    String statusDisplay = (_detail!.status == 'pending' || _detail!.status == 'processing' || _detail!.status.startsWith("assigned_")) 
+                       ? "Kutilmoqda" 
+                       : (_detail!.status == 'answered' || _detail!.status == 'resolved' || _detail!.status == 'replied') 
+                         ? "Javob berilgan" 
+                         : _detail!.status == 'closed' ? "Yopilgan" : _detail!.status;
                        
     final messages = _detail!.messages;
 

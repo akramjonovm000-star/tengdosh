@@ -154,12 +154,13 @@ async def get_feedback_stats(
     results = feedbacks.all()
     
     # Mapping:
-    # - 'answered' -> answered
+    # - 'answered', 'resolved', 'replied' -> answered
     # - 'closed' -> closed
-    # - everything else (pending, assigned_*) -> pending
+    # - everything else (pending, assigned_*, processing) -> pending
+    answered_statuses = ['answered', 'resolved', 'replied']
     stats = AppealStatsSchema(
-        pending=len([f for f in results if f.status not in ['answered', 'closed', 'rejected']]),
-        answered=len([f for f in results if f.status == 'answered']),
+        pending=len([f for f in results if f.status not in answered_statuses + ['closed', 'rejected']]),
+        answered=len([f for f in results if f.status in answered_statuses]),
         closed=len([f for f in results if f.status == 'closed'])
     )
     return stats
