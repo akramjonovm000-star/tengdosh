@@ -394,7 +394,6 @@ async def search_mgmt_students(
     if query:
         search_filters.append(
             (Student.full_name.ilike(f"%{query}%")) | 
-            (Student.hemis_id.ilike(f"%{query}%")) |
             (Student.hemis_login.ilike(f"%{query}%"))
         )
 
@@ -516,9 +515,10 @@ async def search_mgmt_students(
         # The service returns 0 on error.
         
         if total_count == 0:
-             # Fallback to DB if API failed or returned 0 (e.g. invalid filter ID)
-             # This ensures we at least show local results
-             count_stmt = select(func.count(Student.id)).where(and_(*category_filters))
+             # Fallback to DB if API failed or returned 0 (e.g. invalid filter ID or Short ID)
+             # [FIX] Use search_filters for count, not just category_filters. 
+             # search_filters includes the name/ID query logic.
+             count_stmt = select(func.count(Student.id)).where(and_(*search_filters))
              db_count = (await db.execute(count_stmt)).scalar() or 0
              total_count = db_count
              
