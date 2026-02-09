@@ -6,6 +6,7 @@ from api.dependencies import get_current_student, get_db
 from api.schemas import GPAResultSchema
 from database.models import Student
 from services.hemis_service import HemisService
+from services.university_service import UniversityService
 from services.gpa_calculator import GPACalculator
 
 router = APIRouter()
@@ -41,13 +42,14 @@ async def get_semester_gpa(
             "subjects": []
         }
 
-    if await HemisService.check_auth_status(token) == "AUTH_ERROR":
+    base_url = UniversityService.get_api_url(student.hemis_login)
+    if await HemisService.check_auth_status(token, base_url=base_url) == "AUTH_ERROR":
         from fastapi import HTTPException
         raise HTTPException(status_code=401, detail="HEMIS_AUTH_ERROR")
 
     # If no semester provided, try to find current
     if not semester_id:
-        me_data = await HemisService.get_me(token)
+        me_data = await HemisService.get_me(token, base_url=base_url)
         if me_data:
             sem = me_data.get("semester", {})
             semester_id = str(sem.get("code") or sem.get("id") or "11")
@@ -55,7 +57,7 @@ async def get_semester_gpa(
             semester_id = "11"
 
     # Fetch subjects
-    subjects = await HemisService.get_student_subject_list(token, semester_code=semester_id, student_id=student.id)
+    subjects = await HemisService.get_student_subject_list(token, semester_code=semester_id, student_id=student.id, base_url=base_url)
     if not subjects:
         subjects = []
 
@@ -67,7 +69,7 @@ async def get_semester_gpa(
         try:
             prev_code = str(int(semester_id) - 1)
             # Fetch previous subjects
-            prev_subjects = await HemisService.get_student_subject_list(token, semester_code=prev_code, student_id=student.id)
+            prev_subjects = await HemisService.get_student_subject_list(token, semester_code=prev_code, student_id=student.id, base_url=base_url)
             if prev_subjects:
                 prev_result = GPACalculator.calculate_gpa(prev_subjects)
                 if prev_result.total_credits > 0:
@@ -107,7 +109,8 @@ async def get_cumulative_gpa(
             "subjects": []
         }
 
-    if await HemisService.check_auth_status(token) == "AUTH_ERROR":
+    base_url = UniversityService.get_api_url(student.hemis_login)
+    if await HemisService.check_auth_status(token, base_url=base_url) == "AUTH_ERROR":
         from fastapi import HTTPException
         raise HTTPException(status_code=401, detail="HEMIS_AUTH_ERROR")
 
@@ -115,7 +118,7 @@ async def get_cumulative_gpa(
     import asyncio
     
     # 1. Get Me to find current semester
-    me_data = await HemisService.get_me(token)
+    me_data = await HemisService.get_me(token, base_url=base_url)
     current_sem_code = 11
     if me_data:
         sem = me_data.get("semester", {})
@@ -128,7 +131,7 @@ async def get_cumulative_gpa(
     # 2. Iterate from 11 to current
     tasks = []
     for code in range(11, current_sem_code + 2): # Check +1 just in case
-        tasks.append(HemisService.get_student_subject_list(token, semester_code=str(code), student_id=student.id))
+        tasks.append(HemisService.get_student_subject_list(token, semester_code=str(code), student_id=student.id, base_url=base_url))
         
     results = await asyncio.gather(*tasks)
     

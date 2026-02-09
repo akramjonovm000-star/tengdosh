@@ -20,6 +20,7 @@ from keyboards.inline_kb import (
 )
 from models.states import AuthStates
 from services.hemis_service import HemisService
+from services.university_service import UniversityService
 from services.grade_checker import send_welcome_report
 
 router = Router()
@@ -384,28 +385,39 @@ async def process_hemis(message: Message, state: FSMContext, session: AsyncSessi
     # SIMPLIFIED LOGIN FLOW (User Request):
     # Always ask for password, no confirmation/phone.
     
+    # [NEW] Dynamic University Detection
+    uni_name = UniversityService.get_university_name(hemis)
+    api_url = UniversityService.get_api_url(hemis)
+    
+    greeting_header = "🔑 <b>HEMIS Parolini Kiriting</b>"
+    if uni_name:
+        greeting_header = f"🎓 <b>{uni_name}</b>\n\nAssalomu alaykum! Siz ushbu universitet talabasisiz."
+        await state.update_data(hemis_login=hemis, base_url=api_url)
+    else:
+        await state.update_data(hemis_login=hemis)
+        
+    await state.set_state(AuthStates.entering_hemis_password)
+    
     # Try to find student in DB to greet them by name if possible
     student = await session.scalar(select(Student).where(Student.hemis_login == hemis))
-
-    await state.update_data(hemis_login=hemis)
-    await state.set_state(AuthStates.entering_hemis_password)
     
     # If student exists, we know their name, but we still ask for password to AUTHENTICATE.
     # We can customize the message:
     if student:
         await message.answer(
-            f"👤 <b>{student.full_name}</b>\n\n"
-            "🔐 <b>Parolni tasdiqlash</b>\n"
+            f"{greeting_header}\n\n"
+            f"👤 <b>{student.full_name}</b>\n"
             "Haqiqatan ham siz ekanligingizni tasdiqlash uchun <b>HEMIS parolingizni</b> kiriting:",
             parse_mode="HTML",
              reply_markup=get_retry_or_home_kb()
         )
     else:
         await message.answer(
-            "🔑 <b>HEMIS Parolini Kiriting</b>\n\n"
+            f"{greeting_header}\n\n"
             "Tizimga kirish uchun parolingizni yozib yuboring:\n"
             "(Parol faqat sessiya olish uchun ishlatiladi)",
-            reply_markup=get_retry_or_home_kb()
+            reply_markup=get_retry_or_home_kb(),
+            parse_mode="HTML"
         )
 
 
@@ -476,10 +488,11 @@ async def process_hemis_password(message: Message, state: FSMContext, session: A
 
     # HEMIS tekshirish
     from services.hemis_service import HemisService
-    logger.info(f"Process HEMIS Auth for {login}...")
+    base_url = data.get("base_url")
+    logger.info(f"Process HEMIS Auth for {login} (URL: {base_url})...")
     
     if not token:
-        token, error_msg = await HemisService.authenticate(login, password)
+        token, error_msg = await HemisService.authenticate(login, password, base_url=base_url)
 
     if not token:
         # Show specific error from HEMIS
@@ -495,9 +508,9 @@ async def process_hemis_password(message: Message, state: FSMContext, session: A
         )
 
     # Ma'lumotlarni olish
-    logger.info(f"Fetching profile for {login}...")
+    logger.info(f"Fetching profile for {login} (URL: {base_url})...")
     if not me:
-        me = await HemisService.get_me(token)
+        me = await HemisService.get_me(token, base_url=base_url)
     if not me:
          logger.warning(f"Profile fetch failed for {login}")
          return await message.answer("❌ HEMIS ma'lumotlarini yuklab bo'lmadi.")
@@ -572,7 +585,7 @@ async def process_hemis_password(message: Message, state: FSMContext, session: A
                 sem_code = me["semester"].get("id")
         
         # Yangi method Endi PNFL so'ramaydi, Token + Semester Code yetadi
-        usage_hours = await HemisService.get_student_absence(token, semester_code=str(sem_code) if sem_code else None)
+        usage_hours = await HemisService.get_student_absence(token, semester_code=str(sem_code) if sem_code else None, base_url=base_url)
         # Handle Tuple return (total, excused, unexcused)
         if isinstance(usage_hours, tuple) or isinstance(usage_hours, list):
             missed_hours = usage_hours[0]

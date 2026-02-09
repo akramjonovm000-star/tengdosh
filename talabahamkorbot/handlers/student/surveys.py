@@ -12,6 +12,7 @@ from database.models import TgAccount, Student
 from models.states import StudentSurveyStates, StudentAcademicStates
 from keyboards.inline_kb import get_student_academic_kb
 from services.hemis_service import HemisService
+from services.university_service import UniversityService
 
 router = Router()
 logger = logging.getLogger(__name__)
@@ -33,10 +34,11 @@ async def show_surveys_list(call: CallbackQuery, session: AsyncSession):
         return await call.answer("❌ HEMIS ma'lumotlari topilmadi", show_alert=True)
 
     token = account.student.hemis_token
+    base_url = UniversityService.get_api_url(account.student.hemis_login)
     await call.answer()
     
     # 1. Fetch from HEMIS
-    resp = await HemisService.get_student_surveys(token)
+    resp = await HemisService.get_student_surveys(token, base_url=base_url)
     if not resp or not resp.get("success"):
         return await call.message.edit_text(
             "❌ So'rovnomalarni yuklashda xatolik yuz berdi.",
@@ -87,12 +89,13 @@ async def start_survey_handler(call: CallbackQuery, session: AsyncSession, state
         .options(selectinload(TgAccount.student))
     )
     token = account.student.hemis_token
+    base_url = UniversityService.get_api_url(account.student.hemis_login)
     await call.answer()
 
     # Load survey details (questions)
     await call.message.edit_text("⏳ So'rovnoma yuklanmoqda...")
     
-    resp = await HemisService.start_student_survey(token, survey_id)
+    resp = await HemisService.start_student_survey(token, survey_id, base_url=base_url)
     if not resp or not resp.get("success"):
         return await call.message.edit_text("❌ So'rovnomani boshlashda xatolik yuz berdi.", reply_markup=get_student_academic_kb())
 
@@ -110,7 +113,8 @@ async def start_survey_handler(call: CallbackQuery, session: AsyncSession, state
         quiz_rule_id=quiz_rule_id,
         questions=questions,
         current_index=0,
-        last_msg_id=call.message.message_id
+        last_msg_id=call.message.message_id,
+        base_url=base_url
     )
 
     await show_question(call.message, state)
@@ -219,6 +223,7 @@ async def process_survey_answer(call: CallbackQuery, state: FSMContext):
     await call.answer()
     
     if v_selector != "skip":
+        base_url = data.get("base_url")
         # Get actual variant text from index
         try:
             v_idx = int(v_selector)
@@ -228,7 +233,7 @@ async def process_survey_answer(call: CallbackQuery, state: FSMContext):
             answer = v_selector # fallback
             
         # Submit to HEMIS
-        await HemisService.submit_survey_answer(token, q_id, q_type, answer)
+        await HemisService.submit_survey_answer(token, q_id, q_type, answer, base_url=base_url)
 
     # Move to next
     await state.update_data(current_index=idx + 1)
@@ -247,10 +252,11 @@ async def process_survey_text_answer(message: Message, state: FSMContext):
         return await message.answer("Iltimos, yuqoridagi tugmalardan birini tanlang.")
 
     token = data.get("token")
+    base_url = data.get("base_url")
     q_id = q.get("id")
     answer = message.text.strip()
     
-    await HemisService.submit_survey_answer(token, q_id, "input", answer)
+    await HemisService.submit_survey_answer(token, q_id, "input", answer, base_url=base_url)
     
     # Move to next
     await state.update_data(current_index=idx + 1)
@@ -268,10 +274,11 @@ async def finish_survey_handler(call: CallbackQuery, state: FSMContext, session:
     data = await state.get_data()
     token = data.get("token")
     quiz_rule_id = data.get("quiz_rule_id")
+    base_url = data.get("base_url")
     
     await call.answer("Yakunlanmoqda...")
     
-    success = await HemisService.finish_student_survey(token, quiz_rule_id)
+    success = await HemisService.finish_student_survey(token, quiz_rule_id, base_url=base_url)
     await state.clear()
     
     if success:

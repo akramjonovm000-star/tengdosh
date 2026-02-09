@@ -26,8 +26,18 @@ async def get_my_profile(
         
         # [FIX] Role Label Mapping
         role_label = "Xodim"
+        frontend_role_code = student.role
+        
         if student.role == "rahbariyat":
             role_label = "Rahbariyat"
+        elif student.role == "rektor":
+            role_label = "Rektor"
+            # [CRITICAL] Frontend likely routes based on 'rahbariyat' code
+            # So we mask it as rahbariyat for the UI to open the correct module
+            frontend_role_code = "rahbariyat" 
+        elif student.role == "prorektor":
+            role_label = "Prorektor"
+            frontend_role_code = "rahbariyat"
         elif student.role == "teacher":
             role_label = "O'qituvchi"
         elif student.role == "tutor":
@@ -38,14 +48,32 @@ async def get_my_profile(
         # [FIX] Use employee_id_number as the primary ID (hemis_login) for staff
         staff_id = getattr(student, 'employee_id_number', None) or str(student.hemis_id) if student.hemis_id else h_login
         
+        # [FIX] Local Name Formatting for Staff (Firstname Surname)
+        # RASHIDOV SANJARBEK ... -> Sanjarbek Rashidov
+        fn_str = student.full_name or ""
+        parts = fn_str.split()
+        
+        display_name = fn_str
+        s_first_name = fn_str
+        s_last_name = ""
+        
+        if len(parts) >= 2:
+            # Assuming DB format: Surname Firstname Patronymic
+            # Wanted: Firstname Surname
+            p_name = parts[1].title()
+            p_surname = parts[0].title()
+            display_name = f"{p_name} {p_surname}"
+            s_first_name = p_name
+            s_last_name = p_surname
+            
         return {
              "id": student.id,
-             "full_name": student.full_name,
-             "first_name": student.full_name.split()[0] if student.full_name else "",
-             "last_name": student.full_name.split()[-1] if student.full_name and len(student.full_name.split()) > 1 else "",
-             "short_name": student.full_name, # Fallback
-             "role": role_label, # Dynamic Label
-             "role_code": student.role, # Internal code
+             "full_name": display_name,
+             "first_name": s_first_name,
+             "last_name": s_last_name,
+             "short_name": display_name, # Fallback
+             "role": role_label, # Dynamic Label (Rektor)
+             "role_code": frontend_role_code, # Internal code (Rahbariyat -> triggers dashboard)
              "image": getattr(student, 'image_url', None) or "https://ui-avatars.com/api/?name=" + student.full_name.replace(" ", "+"),
              "image_url": getattr(student, 'image_url', None) or "https://ui-avatars.com/api/?name=" + student.full_name.replace(" ", "+"),
              "university_name": "O‘zbekiston jurnalistika va ommaviy kommunikatsiyalar universiteti", # [FIX] Full Name
@@ -119,7 +147,9 @@ async def get_my_profile(
     # without needing to re-login.
     import asyncio
     from services.hemis_service import HemisService
-    asyncio.create_task(HemisService.prefetch_data(student.hemis_token, student.id))
+    from services.university_service import UniversityService
+    base_url = UniversityService.get_api_url(student.hemis_login)
+    asyncio.create_task(HemisService.prefetch_data(student.hemis_token, student.id, base_url=base_url))
 
     return data
 
@@ -137,7 +167,9 @@ async def sync_data(
     from services.hemis_service import HemisService
     
     # Trigger background prefetch
-    asyncio.create_task(HemisService.prefetch_data(student.hemis_token, student.id))
+    from services.university_service import UniversityService
+    base_url = UniversityService.get_api_url(student.hemis_login)
+    asyncio.create_task(HemisService.prefetch_data(student.hemis_token, student.id, base_url=base_url))
     
     return {"success": True, "message": "Ma'lumotlar yangilanmoqda..."}
 

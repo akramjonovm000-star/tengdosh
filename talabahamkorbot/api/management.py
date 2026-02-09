@@ -17,6 +17,8 @@ import json
 
 router = APIRouter(prefix="/management", tags=["Management"])
 
+
+
 @router.get("/dashboard")
 async def get_management_dashboard(
     staff: Any = Depends(get_current_student),
@@ -352,6 +354,13 @@ async def search_mgmt_students(
     if uni_id is None:
         return {"success": True, "total_count": 0, "app_users_count": 0, "data": []}
     
+    # [FIX] Smart Filter Mapping (Frontend sends Form as Type)
+    # Corrects "Turi" dropdown sending "Kunduzgi", "Sirtqi" etc.
+    known_forms = ["Kunduzgi", "Kechki", "Sirtqi", "Masofaviy"]
+    if education_type and education_type in known_forms:
+        education_form = education_type
+        education_type = None
+    
     # 1. Base category filters (University + Dropdowns)
     category_filters = [Student.university_id == uni_id]
     # Custom Faculty ID Mapping for Local DB (Admin to Local)
@@ -361,8 +370,8 @@ async def search_mgmt_students(
     elif faculty_id == 43: db_faculty_id = 35 # Xalqaro
     
     if db_faculty_id: category_filters.append(Student.faculty_id == db_faculty_id)
-    if education_type: category_filters.append(Student.education_type == education_type)
-    if education_form: category_filters.append(Student.education_form == education_form)
+    if education_type: category_filters.append(Student.education_type.ilike(f"%{education_type}%"))
+    if education_form: category_filters.append(Student.education_form.ilike(f"%{education_form}%"))
     if level_name: category_filters.append(Student.level_name == level_name)
     if specialty_name: category_filters.append(Student.specialty_name == specialty_name)
     if group_number: category_filters.append(Student.group_number == group_number)
@@ -389,10 +398,7 @@ async def search_mgmt_students(
             (Student.hemis_login.ilike(f"%{query}%"))
         )
 
-    # 3. Get Students (using Search filters)
-    stmt = select(Student).where(and_(*search_filters)).order_by(Student.full_name).limit(500)
-    result = await db.execute(stmt)
-    students = result.scalars().all()
+
     
     # 4. Get Stats
     from services.hemis_service import HemisService
@@ -424,32 +430,68 @@ async def search_mgmt_students(
             
         if education_type and not start_dept_override:
             # Standard Education Type mapping
+            # Standard Education Type mapping
             if "Bakalavr" in education_type:
                 admin_filters["_education_type"] = 11
             elif "Magistr" in education_type:
                 admin_filters["_education_type"] = 12
-            else:
-                # Fallback: try to pass as is or map other types if known
-                # But for now, user only complained about Bakalavr.
-                pass
+            
+        # [FIX] Admin API Filter Mappings for Forms (Verified IDs)
+        if education_form and not start_dept_override:
+            if "Kunduzgi" in education_form:
+                 admin_filters["_education_form"] = 11
+            elif "Kechki" in education_form:
+                 admin_filters["_education_form"] = 12
+            elif "Sirtqi" in education_form:
+                 admin_filters["_education_form"] = 13
+            elif "Masofaviy" in education_form:
+                 admin_filters["_education_form"] = 16
+            
+        if level_name:
+            # Verified Level IDs: 1-kurs=11, 2-kurs=12, 3-kurs=13, 4-kurs=14
+            if "1" in level_name: admin_filters["_level"] = 11
+            elif "2" in level_name: admin_filters["_level"] = 12
+            elif "3" in level_name: admin_filters["_level"] = 13
+            elif "4" in level_name: admin_filters["_level"] = 14
+
 
         if specialty_name:
-            # Resolve ID from DB
-            spec_stmt = select(Student.specialty_id).where(Student.specialty_name == specialty_name).limit(1)
-            spec_id = (await db.execute(spec_stmt)).scalar()
+            spec_id = await HemisService.resolve_specialty_id(specialty_name, education_type)
             if spec_id:
                 admin_filters["_specialty"] = spec_id
                 
         if group_number:
-            # Resolve ID from DB
-            grp_stmt = select(Student.group_id).where(Student.group_number == group_number).limit(1)
-            grp_id = (await db.execute(grp_stmt)).scalar()
+            grp_id = await HemisService.resolve_group_id(group_number)
             if grp_id:
                 admin_filters["_group"] = grp_id
         
         # Fetch from Admin API
         # Note: If no filters are passed, it returns total university count (which is good)
-        total_count = await HemisService.get_admin_student_count(admin_filters)
+        # [NEW] Fetch from Admin API (List + Count)
+        admin_items, total_count = await HemisService.get_admin_student_list(
+            admin_filters, page=1, limit=500
+        )
+        
+        students = []
+        if total_count > 0:
+            for item in admin_items:
+                s = Student()
+                s.id = item.get("id") 
+                s.hemis_id = item.get("id")
+                s.hemis_login = item.get("login")
+                s.full_name = item.get("full_name") or f"{item.get('second_name', '')} {item.get('first_name', '')} {item.get('third_name', '')}".strip()
+                s.image_url = item.get("image")
+                dept = item.get("department", {})
+                s.faculty_name = dept.get("name") if isinstance(dept, dict) else ""
+                grp = item.get("group", {})
+                s.group_number = grp.get("name") if isinstance(grp, dict) else ""
+                lvl = item.get("level", {})
+                s.level_name = lvl.get("name") if isinstance(lvl, dict) else ""
+                ef = item.get("educationForm", {})
+                s.education_form = ef.get("name") if isinstance(ef, dict) else ""
+                et = item.get("educationType", {})
+                s.education_type = et.get("name") if isinstance(et, dict) else ""
+                students.append(s)
         
         # If Admin API fails (cnt=0) and we have no filters, it might be an error or just empty.
         # If it returns 0 but DB has users, we might want to fallback to DB count?
@@ -458,12 +500,16 @@ async def search_mgmt_students(
         # The service returns 0 on error.
         
         if total_count == 0:
-             # Fallback to DB if API failed or returned 0 (and we suspect it's wrong)
-             # But if it's a specific filter, 0 might be correct.
-             # Let's assume if it's 0, we fallback to DB count just in case API token is bad.
+             # Fallback to DB if API failed or returned 0 (e.g. invalid filter ID)
+             # This ensures we at least show local results
              count_stmt = select(func.count(Student.id)).where(and_(*category_filters))
              db_count = (await db.execute(count_stmt)).scalar() or 0
-             total_count = max(total_count, db_count)
+             total_count = db_count
+             
+             # Fallback List (When Admin API returns 0)
+             stmt = select(Student).where(and_(*search_filters)).order_by(Student.full_name).limit(500)
+             result = await db.execute(stmt)
+             students = result.scalars().all()
 
     else:
         # Fallback to Old Logic (Public API + DB)
@@ -481,6 +527,11 @@ async def search_mgmt_students(
             # Use DB Count for specific filters
             count_stmt = select(func.count(Student.id)).where(and_(*category_filters))
             total_count = (await db.execute(count_stmt)).scalar() or 0
+        
+        # Execute Local Query for list (FALLBACK PATH ONLY)
+        stmt = select(Student).where(and_(*search_filters)).order_by(Student.full_name).limit(500)
+        result = await db.execute(stmt)
+        students = result.scalars().all()
 
     # App Users Count (Students who logged into app - always DB)
 
@@ -894,7 +945,9 @@ async def send_student_doc_to_management(
     from bot import bot
     
     # Security
-    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) in ['rahbariyat', 'tyutor']
+    global_mgmt_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR]
+    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) in global_mgmt_roles or getattr(staff, 'role', None) == StaffRole.TYUTOR
+    
     if not is_mgmt:
         raise HTTPException(status_code=403, detail="Faqat rahbariyat yoki tyutorlar uchun")
     
@@ -990,10 +1043,13 @@ async def get_mgmt_documents_archive(
     """
     Get a list of all student documents for management with filtering.
     """
-    from database.models import UserDocument
+    from database.models import UserDocument, UserCertificate
     
-    # 1. Security Check
-    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) == 'rahbariyat'
+    # 1. Security & Role Resolution
+    global_mgmt_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR]
+    staff_role = getattr(staff, 'role', None) or getattr(staff, 'hemis_role', None)
+    is_mgmt = staff_role == 'rahbariyat' or staff_role in global_mgmt_roles or staff_role == StaffRole.TYUTOR
+    
     if not is_mgmt:
         raise HTTPException(status_code=403, detail="Faqat rahbariyat uchun")
         
@@ -1001,7 +1057,20 @@ async def get_mgmt_documents_archive(
     if not uni_id:
         raise HTTPException(status_code=400, detail="Universitet aniqlanmadi")
 
-    # 1. Base category filters (University + Dropdowns)
+    # 2. Auto-restrict Faculty/Group for Dean/Tutor
+    # If Dean, override faculty_id to their own
+    if staff_role == 'dekan':
+        faculty_id = getattr(staff, 'faculty_id', None)
+    # If Tutor, restrict via group lookup (TutorGroup)
+    if staff_role == 'tyutor':
+        from database.models import TutorGroup
+        tutor_groups = await db.execute(select(TutorGroup.group_name).where(TutorGroup.staff_id == staff.id))
+        tutor_group_names = tutor_groups.scalars().all()
+        # If specific group not requested, filter by all tutor's groups
+        if not group_number and tutor_group_names:
+            group_number = tutor_group_names[0] # Simplification for now
+
+    # 3. Base category filters
     category_filters = [Student.university_id == uni_id]
     if faculty_id: category_filters.append(Student.faculty_id == faculty_id)
     if education_type: category_filters.append(Student.education_type == education_type)
@@ -1010,81 +1079,73 @@ async def get_mgmt_documents_archive(
     if specialty_name: category_filters.append(Student.specialty_name == specialty_name)
     if group_number: category_filters.append(Student.group_number == group_number)
 
-    # 2. Build Query for Documents
-    # If title is "Sertifikatlar", fetch from UserCertificate table
-    if title == "Sertifikatlar":
-        from database.models import UserCertificate
-        
-        # Base query for certificates
-        stmt = select(UserCertificate, Student).join(Student, UserCertificate.student_id == Student.id).where(and_(*category_filters))
-        
-        # Add search filter for certificates
+    all_results = []
+    total_count = 0
+
+    # 4. Fetch Certificates (If title="Sertifikatlar" or "Hammasi")
+    if not title or title == "Sertifikatlar":
+        stmt_cert = select(UserCertificate).join(Student).where(and_(*category_filters)).options(selectinload(UserCertificate.student))
         if query:
-            stmt = stmt.where(
-                (UserCertificate.title.ilike(f"%{query}%")) |
-                (Student.full_name.ilike(f"%{query}%"))
-            )
-            
-        # Execute Query
-        stmt_count = select(func.count(UserCertificate.id)).join(Student, UserCertificate.student_id == Student.id).where(and_(*category_filters))
-        count = (await db.execute(stmt_count)).scalar()
+            stmt_cert = stmt_cert.where((UserCertificate.title.ilike(f"%{query}%")) | (Student.full_name.ilike(f"%{query}%")))
         
-        stmt = stmt.order_by(UserCertificate.created_at.desc()).offset((page - 1) * limit).limit(limit)
-        result = await db.execute(stmt)
-        rows = result.all()
+        # Count for Certificates
+        cnt_cert = await db.execute(select(func.count(UserCertificate.id)).join(Student).where(and_(*category_filters)))
+        total_count += cnt_cert.scalar() or 0
         
-        docs_data = []
-        for c, s in rows:
-            docs_data.append({
-                "id": c.id,
+        res_cert = await db.execute(stmt_cert.order_by(UserCertificate.created_at.desc()))
+        for c in res_cert.scalars().all():
+            all_results.append({
+                "id": f"cert_{c.id}",
                 "title": c.title,
                 "created_at": c.created_at.isoformat() if c.created_at else None,
                 "file_id": c.file_id,
-                "file_type": "document", # Frontend treats as document
+                "file_type": "document",
                 "is_certificate": True,
                 "student": {
-                    "full_name": s.full_name,
-                    "group_number": s.group_number,
-                    "faculty_name": s.faculty_name,
+                    "full_name": c.student.full_name if c.student else "Noma'lum",
+                    "group_number": c.student.group_number if c.student else "",
+                    "faculty_name": c.student.faculty_name if c.student else "",
                 }
             })
+
+    # 5. Fetch Standard Documents (If title mismatch "Sertifikatlar")
+    if title != "Sertifikatlar":
+        stmt_doc = select(UserDocument).join(Student).where(and_(*category_filters)).options(selectinload(UserDocument.student))
+        if title:
+            stmt_doc = stmt_doc.where(UserDocument.title == title)
+        if query:
+            stmt_doc = stmt_doc.where((UserDocument.title.ilike(f"%{query}%")) | (Student.full_name.ilike(f"%{query}%")))
             
-        return {"success": True, "data": docs_data, "total_count": count}
-
-    # 3. Get Documents (Standard)
-    stmt = select(UserDocument).join(Student).where(and_(*category_filters))
-    
-    # 4. Filter by Title (Category) if specified and NOT "Sertifikatlar"
-    if title:
-        stmt = stmt.where(UserDocument.title == title)
-
-    # 5. Search in Title or Student Name
-    if query:
-        stmt = stmt.where(
-            (UserDocument.title.ilike(f"%{query}%")) |
-            (Student.full_name.ilike(f"%{query}%"))
-        )
+        # Count for Documents
+        cnt_doc = await db.execute(select(func.count(UserDocument.id)).join(Student).where(and_(*category_filters)))
+        total_count += cnt_doc.scalar() or 0
         
-    stmt = stmt.order_by(UserDocument.created_at.desc()).offset((page - 1) * limit).limit(limit)
+        res_doc = await db.execute(stmt_doc.order_by(UserDocument.created_at.desc()))
+        for d in res_doc.scalars().all():
+            all_results.append({
+                "id": str(d.id),
+                "title": d.title,
+                "created_at": d.created_at.isoformat() if d.created_at else None,
+                "file_id": d.file_id,
+                "file_type": d.file_type or "document",
+                "student": {
+                    "full_name": d.student.full_name if d.student else "Noma'lum",
+                    "group_number": d.student.group_number if d.student else "",
+                    "faculty_name": d.student.faculty_name if d.student else "",
+                }
+            })
+
+    # 6. Sort Combined Results & Paginate
+    all_results.sort(key=lambda x: x["created_at"] or "", reverse=True)
     
-    result = await db.execute(stmt)
-    docs = result.scalars().all()
+    start = (page - 1) * limit
+    paginated_results = all_results[start : start + limit]
     
-    docs_data = []
-    for d in docs:
-        docs_data.append({
-            "id": d.id,
-            "title": d.title,
-            "created_at": d.created_at.isoformat() if d.created_at else None,
-            "file_id": d.file_id,
-            "student": {
-                "full_name": d.student.full_name,
-                "group_number": d.student.group_number,
-                "faculty_name": d.student.faculty_name,
-            }
-        })
-        
-    return {"success": True, "data": docs_data}
+    return {
+        "success": True, 
+        "data": paginated_results, 
+        "total_count": total_count
+    }
 
     # 4. Get Stats (Matching Student Search logic)
     has_backend_filters = any([faculty_id, specialty_name, group_number])

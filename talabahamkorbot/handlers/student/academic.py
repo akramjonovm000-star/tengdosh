@@ -17,6 +17,7 @@ from database.models import TgAccount, Student, StudentCache, ResourceFile
 from models.states import StudentUpdateAuthStates, StudentAcademicStates
 from keyboards.inline_kb import get_student_academic_kb
 from services.hemis_service import HemisService
+from services.university_service import UniversityService
 
 router = Router()
 logger = logging.getLogger(__name__)
@@ -39,7 +40,8 @@ async def process_academic_password(message: Message, state: FSMContext, session
     status_msg = await message.answer("⏳ Tekshirilmoqda...")
     
     # Try Auth
-    token, error = await HemisService.authenticate(student.hemis_login, password)
+    base_url = UniversityService.get_api_url(student.hemis_login)
+    token, error = await HemisService.authenticate(student.hemis_login, password, base_url=base_url)
     
     if token:
         # Success
@@ -106,8 +108,8 @@ async def show_subject_resources(call: CallbackQuery, session: AsyncSession, sta
             
         token = account.student.hemis_token
         await call.message.edit_text("⏳ Resurslar yuklanmoqda...", reply_markup=None)
-
-        resources = await HemisService.get_student_resources(token, subject_id=subj_id, semester_code=sem_code)
+        base_url = UniversityService.get_api_url(account.student.hemis_login)
+        resources = await HemisService.get_student_resources(token, subject_id=subj_id, semester_code=sem_code, base_url=base_url)
         
         # Back button
         back_btn = InlineKeyboardButton(text="⬅️ Fanlar ro'yxati", callback_data=f"student_resources_menu_{sem_code}")
@@ -226,7 +228,8 @@ async def show_gpa(call: Union[CallbackQuery, Message], session: AsyncSession, s
     token = account.student.hemis_token
 
     # Auth Check
-    auth_status = await HemisService.check_auth_status(token)
+    base_url = UniversityService.get_api_url(account.student.hemis_login)
+    auth_status = await HemisService.check_auth_status(token, base_url=base_url)
     if auth_status == "AUTH_ERROR":
         await state.set_state(StudentAcademicStates.waiting_for_password)
         await state.update_data(pending_action="student_rating")
@@ -253,7 +256,8 @@ async def show_gpa(call: Union[CallbackQuery, Message], session: AsyncSession, s
     except: pass
 
     # Get GPA
-    gpa = await HemisService.get_student_performance(token)
+    base_url = UniversityService.get_api_url(account.student.hemis_login)
+    gpa = await HemisService.get_student_performance(token, base_url=base_url)
     
     msg = (
         f"📊 <b>Reyting Daftarcha (GPA)</b>\n\n"
@@ -318,19 +322,20 @@ async def show_grades(call: Union[CallbackQuery, Message], session: AsyncSession
     except: pass
 
     # 2. Token Health Check & Auto-Refresh
-    me_data = await HemisService.get_me(token)
+    base_url = UniversityService.get_api_url(account.student.hemis_login)
+    me_data = await HemisService.get_me(token, base_url=base_url)
     
     if not me_data:
          # Try Auto-Login if credentials exist
          if account.student.hemis_login and account.student.hemis_password:
              # Notify attempting refresh? Maybe silent?
-             new_token, err = await HemisService.authenticate(account.student.hemis_login, account.student.hemis_password)
+             new_token, err = await HemisService.authenticate(account.student.hemis_login, account.student.hemis_password, base_url=base_url)
              
              if new_token:
                  account.student.hemis_token = new_token
                  await session.commit()
                  token = new_token
-                 me_data = await HemisService.get_me(token)
+                 me_data = await HemisService.get_me(token, base_url=base_url)
              else:
                  # Auth Failed -> Ask New Password
                  await state.set_state(StudentAcademicStates.waiting_for_password)
@@ -372,7 +377,7 @@ async def show_grades(call: Union[CallbackQuery, Message], session: AsyncSession
         requested_sem = str(current_sem_code)
 
     # 4. Fetch grades
-    grades_data = await HemisService.get_student_subject_list(token, semester_code=requested_sem)
+    grades_data = await HemisService.get_student_subject_list(token, semester_code=requested_sem, base_url=base_url)
     if not grades_data: grades_data = []
     
     # 5. Build message
@@ -490,7 +495,8 @@ async def show_tasks(call: Union[CallbackQuery, Message], session: AsyncSession,
     token = account.student.hemis_token
 
     # Auth Check
-    auth_status = await HemisService.check_auth_status(token)
+    base_url = UniversityService.get_api_url(account.student.hemis_login)
+    auth_status = await HemisService.check_auth_status(token, base_url=base_url)
     if auth_status == "AUTH_ERROR":
         await state.set_state(StudentAcademicStates.waiting_for_password)
         await state.update_data(pending_action="student_tasks")
@@ -498,7 +504,7 @@ async def show_tasks(call: Union[CallbackQuery, Message], session: AsyncSession,
         msg_text = (
             "⚠️ <b>Parolingiz o'zgargan!</b>\n\n"
             "Siz Hemis tizimida parolingizni o'zgartirgansiz.\n"
-            "Vazifalarni ko'rish uchun, iltimos, <b>yangi parolni kiriting:</b>"
+            "Vazifalarini ko'rish uchun, iltimos, <b>yangi parolni kiriting:</b>"
         )
         try:
             if isinstance(call, CallbackQuery):
@@ -517,7 +523,8 @@ async def show_tasks(call: Union[CallbackQuery, Message], session: AsyncSession,
     except: pass
 
     # 1. Get Current Semester
-    me_data = await HemisService.get_me(token)
+    base_url = UniversityService.get_api_url(account.student.hemis_login)
+    me_data = await HemisService.get_me(token, base_url=base_url)
     current_sem_code = "11"
     if me_data:
         sem = me_data.get("semester", {})
@@ -525,7 +532,7 @@ async def show_tasks(call: Union[CallbackQuery, Message], session: AsyncSession,
             current_sem_code = str(sem.get("code") or sem.get("id") or "11")
 
     # 2. Fetch Subjects for Current Semester
-    subjects = await HemisService.get_student_subject_list(token, semester_code=current_sem_code)
+    subjects = await HemisService.get_student_subject_list(token, semester_code=current_sem_code, base_url=base_url)
     
     if not subjects:
         return await call.message.edit_text(
@@ -611,8 +618,8 @@ async def show_subject_tasks_detail(call: CallbackQuery, session: AsyncSession, 
     # 1. Fetch All Tasks for Semester (API requirement: usually fetched by semester, then filtered by subject)
     # Optimization: If HemisService had get_tasks_by_subject, we'd use it. currently get_subject_tasks takes semester.
     # We fetch all tasks for the semester and filter in memory.
-    
-    all_tasks = await HemisService.get_subject_tasks(token, semester_id=sem_code)
+    base_url = UniversityService.get_api_url(account.student.hemis_login)
+    all_tasks = await HemisService.get_subject_tasks(token, semester_id=sem_code, base_url=base_url)
     
     if not all_tasks:
         # Retry logic removed for now / or specific 'empty' handling
@@ -731,7 +738,8 @@ async def show_attendance(call: Union[CallbackQuery, Message], session: AsyncSes
     token = account.student.hemis_token
     
     # Auth Check
-    auth_status = await HemisService.check_auth_status(token)
+    base_url = UniversityService.get_api_url(account.student.hemis_login)
+    auth_status = await HemisService.check_auth_status(token, base_url=base_url)
     if auth_status == "AUTH_ERROR":
         await state.set_state(StudentAcademicStates.waiting_for_password)
         await state.update_data(pending_action="student_attendance")
@@ -764,7 +772,8 @@ async def show_attendance(call: Union[CallbackQuery, Message], session: AsyncSes
     except: pass
 
     # Fetch ME to get current semester info
-    me_data = await HemisService.get_me(token)
+    base_url = UniversityService.get_api_url(account.student.hemis_login)
+    me_data = await HemisService.get_me(token, base_url=base_url)
     current_sem_code = 11 # Default
     if me_data and "semester" in me_data:
         try:
@@ -828,7 +837,8 @@ async def process_attendance_sem(call: CallbackQuery, session: AsyncSession):
     await call.message.edit_text(f"⏳ {int(sem_code)-10}-semestr davomati yuklanmoqda...", reply_markup=None)
     
     # Fetch Data (Summary + Items) + Caching
-    result = await HemisService.get_student_absence(token, semester_code=sem_code, student_id=account.student.id)
+    base_url = UniversityService.get_api_url(account.student.hemis_login)
+    result = await HemisService.get_student_absence(token, semester_code=sem_code, student_id=account.student.id, base_url=base_url)
     
     total, excused, unexcused, items = 0, 0, 0, []
     if isinstance(result, (tuple, list)):
@@ -924,7 +934,8 @@ async def show_resources_menu(event: Union[CallbackQuery, Message], session: Asy
         
     student = account.student
     token = student.hemis_token
-    is_auth, error = await HemisService.check_auth_status(token)
+    base_url = UniversityService.get_api_url(student.hemis_login)
+    is_auth, error = await HemisService.check_auth_status(token, base_url=base_url)
     
     if not is_auth:
         await state.update_data(pending_action="student_resources_menu")
@@ -940,7 +951,8 @@ async def show_resources_menu(event: Union[CallbackQuery, Message], session: Asy
     # Use get_me strategy from show_subjects_list
     current_sem_code = 12 # default fallback
     try:
-        me_data = await HemisService.get_me(token)
+        base_url = UniversityService.get_api_url(student.hemis_login)
+        me_data = await HemisService.get_me(token, base_url=base_url)
         if me_data:
             sem = me_data.get("semester", {})
             if sem and isinstance(sem, dict):
@@ -962,7 +974,8 @@ async def show_resources_menu(event: Union[CallbackQuery, Message], session: Asy
     
     try:
         # Fetch Subjects SPECIFICALLY for this semester
-        subjects = await HemisService.get_student_subject_list(token, semester_code=requested_sem, student_id=student.id)
+        base_url = UniversityService.get_api_url(student.hemis_login)
+        subjects = await HemisService.get_student_subject_list(token, semester_code=requested_sem, student_id=student.id, base_url=base_url)
         
         # 4. Build Keyboard
         kb_rows = []
@@ -1059,9 +1072,10 @@ async def show_subjects_list(call: Union[CallbackQuery, Message], session: Async
         except: return
         
     token = account.student.hemis_token
+    base_url = UniversityService.get_api_url(account.student.hemis_login)
     
     # Auth Check
-    auth_status = await HemisService.check_auth_status(token)
+    auth_status = await HemisService.check_auth_status(token, base_url=base_url)
     if auth_status == "AUTH_ERROR":
         await state.set_state(StudentAcademicStates.waiting_for_password)
         await state.update_data(pending_action="student_subjects")
@@ -1080,7 +1094,8 @@ async def show_subjects_list(call: Union[CallbackQuery, Message], session: Async
         return
     
     # 2. Get ME
-    me_data = await HemisService.get_me(token)
+    base_url = UniversityService.get_api_url(account.student.hemis_login)
+    me_data = await HemisService.get_me(token, base_url=base_url)
     current_sem_code = 11
     if me_data:
         sem = me_data.get("semester", {})
@@ -1101,12 +1116,20 @@ async def show_subjects_list(call: Union[CallbackQuery, Message], session: Async
     
     # 3. Fetch Data concurrently
     student_id = account.student.id
-    
-    subjects_data, attendance_result, schedule_data = await asyncio.gather(
-        HemisService.get_student_subject_list(token, semester_code=requested_sem, student_id=student_id),
-        HemisService.get_student_absence(token, semester_code=requested_sem, student_id=student_id),
-        HemisService.get_student_schedule_cached(token, semester_code=requested_sem, student_id=student_id)
-    )
+    try:
+        subjects_data, attendance_result, schedule_data = await asyncio.gather(
+            HemisService.get_student_subject_list(token, semester_code=requested_sem, student_id=student_id, base_url=base_url),
+            HemisService.get_student_absence(token, semester_code=requested_sem, student_id=student_id, base_url=base_url),
+            HemisService.get_student_schedule_cached(token, semester_code=requested_sem, student_id=student_id, base_url=base_url)
+        )
+    except Exception as e:
+        logger.error(f"Error fetching student academic data: {e}")
+        # Handle error gracefully, perhaps send an error message to the user
+        if isinstance(call, CallbackQuery):
+            await call.message.edit_text("❌ Ma'lumotlarni yuklashda xatolik yuz berdi.", reply_markup=get_student_academic_kb())
+        else:
+            await call.answer("❌ Ma'lumotlarni yuklashda xatolik yuz berdi.", reply_markup=get_student_academic_kb())
+        return
     
     # Process Attendance
     abs_map = {}
@@ -1274,7 +1297,8 @@ async def download_single_topic(call: CallbackQuery, session: AsyncSession):
         await call.answer("Fayllar tayyorlanmoqda...", show_alert=False)
         
         # Pass sem_code here!
-        resources = await HemisService.get_student_resources(token, subject_id=subj_id, semester_code=sem_code)
+        base_url = UniversityService.get_api_url(account.student.hemis_login)
+        resources = await HemisService.get_student_resources(token, subject_id=subj_id, semester_code=sem_code, base_url=base_url)
         target_topic = next((r for r in resources if str(r.get("id")) == str(topic_id)), None)
         
         if not target_topic:
@@ -1334,7 +1358,8 @@ async def download_all_resources(call: CallbackQuery, session: AsyncSession):
         await call.answer("Barchasini yuklash boshlandi", show_alert=False)
         original_text = call.message.text
         
-        resources = await HemisService.get_student_resources(token, subject_id=subj_id, semester_code=sem_code)
+        base_url = UniversityService.get_api_url(account.student.hemis_login)
+        resources = await HemisService.get_student_resources(token, subject_id=subj_id, semester_code=sem_code, base_url=base_url)
         
         # Prepare topics list for status update
         topics_list = []
@@ -1446,9 +1471,10 @@ async def show_schedule(call: Union[CallbackQuery, Message], session: AsyncSessi
         except: return
 
     token = account.student.hemis_token
+    base_url = UniversityService.get_api_url(account.student.hemis_login)
     
     # Auth Check
-    auth_status = await HemisService.check_auth_status(token)
+    auth_status = await HemisService.check_auth_status(token, base_url=base_url)
     if auth_status == "AUTH_ERROR":
         await state.set_state(StudentAcademicStates.waiting_for_password)
         await state.update_data(pending_action="student_schedule")
@@ -1494,7 +1520,7 @@ async def show_schedule(call: Union[CallbackQuery, Message], session: AsyncSessi
 
     # Fetch
     try:
-        raw_schedule = await HemisService.get_student_schedule(token, week_start=s_date, week_end=e_date)
+        raw_schedule = await HemisService.get_student_schedule(token, week_start=s_date, week_end=e_date, base_url=base_url)
         # Strict Filtering: Ensure lessons strictly fall within the 7-day range
         # (HEMIS API sometimes returns data outside the requested range)
         start_ts = start_week.timestamp()

@@ -30,6 +30,7 @@ from keyboards.inline_kb import (
 from database.models import StaffRole, TutorGroup, Faculty, UserAppeal
 from utils.feedback_utils import get_feedback_thread_text
 from services.hemis_service import HemisService
+from services.university_service import UniversityService
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 router = Router()
@@ -368,7 +369,8 @@ async def feedback_recipient_chosen(call: CallbackQuery, state: FSMContext, sess
             teachers = []
             if student.hemis_token:
                 # Cache orqali schedule dan olish
-                teachers = await HemisService.get_semester_teachers(student.hemis_token)
+                base_url = UniversityService.get_api_url(student.hemis_login)
+                teachers = await HemisService.get_semester_teachers(student.hemis_token, base_url=base_url)
             
             if not teachers:
                  # Fallback: Agar schedule bo'sh bo'lsa yoki token yo'q bo'lsa, eski usul (DB dan random)
@@ -525,7 +527,8 @@ async def feedback_teacher_selected(call: CallbackQuery, state: FSMContext, sess
         # Fetch name for UI
         student = await get_student(call, session)
         if student:
-             teachers = await HemisService.get_semester_teachers(student.hemis_token)
+             base_url = UniversityService.get_api_url(student.hemis_login)
+             teachers = await HemisService.get_semester_teachers(student.hemis_token, base_url=base_url)
              t_info = next((t for t in teachers if t["id"] == hemis_id), None)
              if t_info:
                  target_name = t_info["name"]

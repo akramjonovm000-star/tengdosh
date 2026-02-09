@@ -7,6 +7,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from services.hemis_service import HemisService
+from services.university_service import UniversityService
 from models.states import StudentProfileStates
 
 from database.models import (
@@ -190,7 +191,8 @@ async def student_profile(call: CallbackQuery, state: FSMContext, session: Async
 
     # 🔒 Auth Check & Update
     if student.hemis_token:
-        status = await HemisService.check_auth_status(student.hemis_token)
+        base_url = UniversityService.get_api_url(student.hemis_login)
+        status = await HemisService.check_auth_status(student.hemis_token, base_url=base_url)
         
         if status == "AUTH_ERROR":
             await state.set_state(StudentProfileStates.waiting_for_password)
@@ -206,14 +208,14 @@ async def student_profile(call: CallbackQuery, state: FSMContext, session: Async
              # Update missed hours
              try:
                  # Fetch ME to get current semester info
-                 me_data = await HemisService.get_me(student.hemis_token)
+                 me_data = await HemisService.get_me(student.hemis_token, base_url=base_url)
                  current_sem_code = None
                  if me_data and "semester" in me_data:
                      try:
                          current_sem_code = str(me_data["semester"]["code"])
                      except: pass
 
-                 abs_res = await HemisService.get_student_absence(student.hemis_token, semester_code=current_sem_code, student_id=student.id)
+                 abs_res = await HemisService.get_student_absence(student.hemis_token, semester_code=current_sem_code, student_id=student.id, base_url=base_url)
                  if abs_res and isinstance(abs_res, tuple):
                      student.missed_hours = abs_res[0]
                      await session.commit()
@@ -236,7 +238,8 @@ async def process_profile_password(message: Message, state: FSMContext, session:
     status_msg = await message.answer("⏳ Tekshirilmoqda...")
     
     # Try Auth
-    token, error = await HemisService.authenticate(student.hemis_login, password)
+    base_url = UniversityService.get_api_url(student.hemis_login)
+    token, error = await HemisService.authenticate(student.hemis_login, password, base_url=base_url)
     
     if token:
         # Success
@@ -246,14 +249,14 @@ async def process_profile_password(message: Message, state: FSMContext, session:
         # Update Data immediately
         try:
              # Fetch ME to get current semester info
-             me_data = await HemisService.get_me(token)
+             me_data = await HemisService.get_me(token, base_url=base_url)
              current_sem_code = None
              if me_data and "semester" in me_data:
                  try:
                      current_sem_code = str(me_data["semester"]["code"])
                  except: pass
              
-             abs_res = await HemisService.get_student_absence(token, semester_code=current_sem_code, student_id=student.id)
+             abs_res = await HemisService.get_student_absence(token, semester_code=current_sem_code, student_id=student.id, base_url=base_url)
              if abs_res and isinstance(abs_res, tuple):
                  student.missed_hours = abs_res[0]
         except: pass

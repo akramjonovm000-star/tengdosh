@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from services.hemis_service import HemisService
+from services.university_service import UniversityService
 from database.db_connect import get_session
 from api.dependencies import get_current_student
 from database.models import Student, TgAccount
@@ -25,7 +26,8 @@ async def resolve_semester(student, requested_semester=None, refresh=False):
         return requested_semester or "11"
         
     # Default (Joriy) - Match Bot: Try get_me first
-    me_data = await HemisService.get_me(token)
+    base_url = UniversityService.get_api_url(student.hemis_login)
+    me_data = await HemisService.get_me(token, base_url=base_url)
     if me_data:
         sem = me_data.get("semester", {})
         if not sem: sem = me_data.get("currentSemester", {})
@@ -34,7 +36,7 @@ async def resolve_semester(student, requested_semester=None, refresh=False):
             if code: return code
 
     # Fallback to list
-    semesters = await HemisService.get_semester_list(student.hemis_token, student_id=student.id, force_refresh=refresh)
+    semesters = await HemisService.get_semester_list(student.hemis_token, student_id=student.id, force_refresh=refresh, base_url=base_url)
     if semesters:
         return str(semesters[0].get("code") or semesters[0].get("id"))
         
@@ -55,16 +57,19 @@ async def get_grades(
     if not token:
          return {"success": False, "message": "No Token", "data": []}
 
-    if await HemisService.check_auth_status(token) == "AUTH_ERROR":
+    base_url = UniversityService.get_api_url(student.hemis_login)
+    if await HemisService.check_auth_status(token, base_url=base_url) == "AUTH_ERROR":
         raise HTTPException(status_code=401, detail="HEMIS_AUTH_ERROR")
 
     sem_code = await resolve_semester(student, semester, refresh=refresh)
+    base_url = UniversityService.get_api_url(student.hemis_login)
 
     subjects_data = await HemisService.get_student_subject_list(
         token, 
         semester_code=sem_code, 
         student_id=student.id,
-        force_refresh=refresh
+        force_refresh=refresh,
+        base_url=base_url
     )
 
     results = []
@@ -102,12 +107,14 @@ async def get_semesters(
     if not student.hemis_token:
         return {"success": False, "message": "No Token"}
 
-    if await HemisService.check_auth_status(student.hemis_token) == "AUTH_ERROR":
+    base_url = UniversityService.get_api_url(student.hemis_login)
+    if await HemisService.check_auth_status(student.hemis_token, base_url=base_url) == "AUTH_ERROR":
         raise HTTPException(status_code=401, detail="HEMIS_AUTH_ERROR")
 
     # 1. Fetch Real Semesters from Profile & List
-    me_data = await HemisService.get_me(student.hemis_token)
-    semesters = await HemisService.get_semester_list(student.hemis_token, student_id=student.id, force_refresh=refresh)
+    base_url = UniversityService.get_api_url(student.hemis_login)
+    me_data = await HemisService.get_me(student.hemis_token, base_url=base_url)
+    semesters = await HemisService.get_semester_list(student.hemis_token, student_id=student.id, force_refresh=refresh, base_url=base_url)
     
     current_code = None
     if me_data:
@@ -185,14 +192,16 @@ async def get_subjects(
     if not getattr(student, 'hemis_token', None):
         return {"success": False, "message": "No Token"}
 
-    if await HemisService.check_auth_status(student.hemis_token) == "AUTH_ERROR":
+    base_url = UniversityService.get_api_url(student.hemis_login)
+    if await HemisService.check_auth_status(student.hemis_token, base_url=base_url) == "AUTH_ERROR":
         raise HTTPException(status_code=401, detail="HEMIS_AUTH_ERROR")
 
     sem_code = await resolve_semester(student, semester, refresh=refresh)
+    base_url = UniversityService.get_api_url(student.hemis_login)
     
-    subjects_task = HemisService.get_student_subject_list(student.hemis_token, semester_code=sem_code, student_id=student.id, force_refresh=refresh)
-    absence_task = HemisService.get_student_absence(student.hemis_token, semester_code=sem_code, student_id=student.id, force_refresh=refresh)
-    schedule_task = HemisService.get_student_schedule_cached(student.hemis_token, semester_code=sem_code, student_id=student.id, force_refresh=refresh)
+    subjects_task = HemisService.get_student_subject_list(student.hemis_token, semester_code=sem_code, student_id=student.id, force_refresh=refresh, base_url=base_url)
+    absence_task = HemisService.get_student_absence(student.hemis_token, semester_code=sem_code, student_id=student.id, force_refresh=refresh, base_url=base_url)
+    schedule_task = HemisService.get_student_schedule_cached(student.hemis_token, semester_code=sem_code, student_id=student.id, force_refresh=refresh, base_url=base_url)
     
     subjects_data, attendance_result, schedule_data = await asyncio.gather(
         subjects_task, absence_task, schedule_task
@@ -262,12 +271,13 @@ async def get_schedule(
     if not token:
         return {"success": False, "message": "No Token"}
 
-    if await HemisService.check_auth_status(token) == "AUTH_ERROR":
+    base_url = UniversityService.get_api_url(student.hemis_login)
+    if await HemisService.check_auth_status(token, base_url=base_url) == "AUTH_ERROR":
         raise HTTPException(status_code=401, detail="HEMIS_AUTH_ERROR")
 
     sem_code = await resolve_semester(student, semester, refresh=refresh)
     schedule_data = await HemisService.get_student_schedule_cached(
-        token, semester_code=sem_code, student_id=student.id, force_refresh=refresh
+        token, semester_code=sem_code, student_id=student.id, force_refresh=refresh, base_url=base_url
     )
 
 
@@ -309,9 +319,10 @@ async def get_schedule(
         group.sort(key=lambda x: (int(x.get("lesson_date") or 0), x.get("start_time") or ""))
 
     unique_subjects = set(k[0] for k in lessons_by_group.keys())
+    base_url = UniversityService.get_api_url(student.hemis_login)
     for s_id in unique_subjects:
         for t_code in set(k[1] for k in lessons_by_group.keys() if k[0] == s_id):
-            topics = await HemisService.get_curriculum_topics(token, subject_id=s_id, semester_code=sem_code, training_type_code=t_code, student_id=student.id)
+            topics = await HemisService.get_curriculum_topics(token, subject_id=s_id, semester_code=sem_code, training_type_code=t_code, student_id=student.id, base_url=base_url)
 
             if topics:
                 group = lessons_by_group[(s_id, t_code)]
@@ -335,14 +346,16 @@ async def get_attendance(
     if not token:
         return {"success": False, "message": "No Token"}
 
-    if await HemisService.check_auth_status(token) == "AUTH_ERROR":
+    base_url = UniversityService.get_api_url(student.hemis_login)
+    if await HemisService.check_auth_status(token, base_url=base_url) == "AUTH_ERROR":
         raise HTTPException(status_code=401, detail="HEMIS_AUTH_ERROR")
 
     sem_code = await resolve_semester(student, semester, refresh=refresh)
+    base_url = UniversityService.get_api_url(student.hemis_login)
     
     try:
         _, _, _, data = await HemisService.get_student_absence(
-            token, semester_code=sem_code, student_id=student.id, force_refresh=refresh
+            token, semester_code=sem_code, student_id=student.id, force_refresh=refresh, base_url=base_url
         )
 
         
@@ -369,10 +382,11 @@ async def get_resources(subject_id: str, student: Student = Depends(get_current_
         return {"success": True, "data": []}
 
     token = getattr(student, 'hemis_token', None)
-    if not token or await HemisService.check_auth_status(token) == "AUTH_ERROR":
+    base_url = UniversityService.get_api_url(student.hemis_login)
+    if not token or await HemisService.check_auth_status(token, base_url=base_url) == "AUTH_ERROR":
         raise HTTPException(status_code=401, detail="HEMIS_AUTH_ERROR")
 
-    resources = await HemisService.get_student_resources(token, subject_id=subject_id)
+    resources = await HemisService.get_student_resources(token, subject_id=subject_id, base_url=base_url)
 
     parsed = []
     for res in resources:
@@ -389,10 +403,11 @@ async def get_subject_details_endpoint(subject_id: str, semester: str = None, st
         return {"success": False, "message": "Xodimlar uchun mavjud emas"}
 
     token = getattr(student, 'hemis_token', None)
-    if not token or await HemisService.check_auth_status(token) == "AUTH_ERROR":
+    base_url = UniversityService.get_api_url(student.hemis_login)
+    if not token or await HemisService.check_auth_status(token, base_url=base_url) == "AUTH_ERROR":
         raise HTTPException(status_code=401, detail="HEMIS_AUTH_ERROR")
 
-    subjects = await HemisService.get_student_subject_list(token, semester_code=semester, student_id=student.id)
+    subjects = await HemisService.get_student_subject_list(token, semester_code=semester, student_id=student.id, base_url=base_url)
 
     target_subject = next((s for s in subjects if str(s.get("subject", {}).get("id") or s.get("curriculumSubject",{}).get("subject",{}).get("id")) == str(subject_id)), None)
     
@@ -402,9 +417,9 @@ async def get_subject_details_endpoint(subject_id: str, semester: str = None, st
     # Convert to list for frontend
     detailed_list = [v for k, v in detailed_dict.items() if k in ["JN", "ON", "YN"]]
     
-    schedule = await HemisService.get_student_schedule_cached(token, semester_code=semester, student_id=student.id)
+    schedule = await HemisService.get_student_schedule_cached(token, semester_code=semester, student_id=student.id, base_url=base_url)
     teachers = {item.get("employee", {}).get("name") for item in schedule if str(item.get("subject", {}).get("id")) == str(subject_id) if item.get("employee", {}).get("name")}
-    _, _, _, absence_items = await HemisService.get_student_absence(token, semester_code=semester, student_id=student.id)
+    _, _, _, absence_items = await HemisService.get_student_absence(token, semester_code=semester, student_id=student.id, base_url=base_url)
 
     
     subject_absence = [{"date": datetime.fromtimestamp(item.get("lesson_date")).strftime("%d.%m.%Y") if item.get("lesson_date") else "", "hours": item.get("absent_on", 0) + item.get("absent_off", 0) or item.get("hour", 2)} for item in absence_items if str(item.get("subject", {}).get("id")) == str(subject_id)]

@@ -4,6 +4,7 @@ from services.hemis_service import HemisService
 from api.dependencies import get_current_student
 from database.models import Student
 from database.db_connect import get_session
+from services.university_service import UniversityService
 from typing import Any
 
 router = APIRouter()
@@ -16,7 +17,8 @@ async def get_student_surveys(
     if not token:
         raise HTTPException(status_code=401, detail="No HEMIS token found")
     
-    resp = await HemisService.get_student_surveys(token)
+    base_url = UniversityService.get_api_url(student.hemis_login)
+    resp = await HemisService.get_student_surveys(token, base_url=base_url)
     if resp is None:
         raise HTTPException(status_code=500, detail="Failed to fetch surveys from HEMIS")
     
@@ -31,7 +33,8 @@ async def start_survey(
     if not token:
         raise HTTPException(status_code=401, detail="No HEMIS token found")
     
-    resp = await HemisService.start_student_survey(token, survey_id)
+    base_url = UniversityService.get_api_url(student.hemis_login)
+    resp = await HemisService.start_student_survey(token, survey_id, base_url=base_url)
     if resp is None:
         raise HTTPException(status_code=500, detail="Failed to start survey in HEMIS")
     
@@ -48,11 +51,13 @@ async def submit_answer(
     if not token:
         raise HTTPException(status_code=401, detail="No HEMIS token found")
     
+    base_url = UniversityService.get_api_url(student.hemis_login)
     resp = await HemisService.submit_survey_answer(
         token, 
         question_id, 
         button_type, 
-        answer
+        answer,
+        base_url=base_url
     )
     if resp is None:
         raise HTTPException(status_code=500, detail="Failed to submit answer to HEMIS")
@@ -68,7 +73,8 @@ async def finish_survey(
     if not token:
         raise HTTPException(status_code=401, detail="No HEMIS token found")
     
-    resp = await HemisService.finish_student_survey(token, quiz_rule_id)
+    base_url = UniversityService.get_api_url(student.hemis_login)
+    resp = await HemisService.finish_student_survey(token, quiz_rule_id, base_url=base_url)
     if resp is None:
         raise HTTPException(status_code=500, detail="Failed to finish survey in HEMIS")
     

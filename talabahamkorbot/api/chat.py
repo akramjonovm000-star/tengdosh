@@ -132,7 +132,17 @@ async def get_messages(
     if chat.user1_id != student.id and chat.user2_id != student.id:
         raise HTTPException(status_code=403, detail="Ruxsat yo'q")
         
-    # Mark as read
+    # Mark messages as read (atomically)
+    from sqlalchemy import update
+    update_stmt = update(PrivateMessage).where(
+        and_(
+            PrivateMessage.chat_id == chat_id,
+            PrivateMessage.sender_id != student.id,
+            PrivateMessage.is_read == False
+        )
+    ).values(is_read=True)
+    await db.execute(update_stmt)
+
     if chat.user1_id == student.id:
         chat.user1_unread_count = 0
     else:
@@ -148,7 +158,7 @@ async def get_messages(
     result = await db.execute(stmt)
     messages = result.scalars().all()
     
-    # Commit read status
+    # Commit changes
     await db.commit()
     
     return [
@@ -189,7 +199,22 @@ async def send_message(
     )
     db.add(msg)
     
-    # Update Chat Meta
+    # Mark incoming messages as read since we are sending a reply
+    from sqlalchemy import update
+    update_stmt = update(PrivateMessage).where(
+        and_(
+            PrivateMessage.chat_id == chat_id,
+            PrivateMessage.sender_id != student.id,
+            PrivateMessage.is_read == False
+        )
+    ).values(is_read=True)
+    await db.execute(update_stmt)
+    
+    # Reset unread count for the current user (if they had any they missed)
+    if chat.user1_id == student.id:
+        chat.user1_unread_count = 0
+    else:
+        chat.user2_unread_count = 0
     chat.last_message_content = content[:100] # Preview
     chat.last_message_time = datetime.utcnow()
     

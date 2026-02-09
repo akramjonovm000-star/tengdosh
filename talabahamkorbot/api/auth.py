@@ -6,6 +6,7 @@ from sqlalchemy import select
 from database.db_connect import get_session
 from database.models import Student, User
 from services.hemis_service import HemisService
+from services.university_service import UniversityService
 from api.schemas import HemisLoginRequest, StudentProfileSchema
 import logging
 
@@ -190,7 +191,12 @@ async def login_via_hemis(
     # 1. AUTHENTICATE
     import time
     t_start = time.time()
-    token, error = await HemisService.authenticate(creds.login, creds.password)
+    
+    # [NEW] Dynamic University Detection
+    base_url = UniversityService.get_api_url(creds.login)
+    logger.info(f"AuthLog: Resolved URL for {creds.login}: {base_url}")
+    
+    token, error = await HemisService.authenticate(creds.login, creds.password, base_url=base_url)
     t_auth = time.time()
     logger.info(f"AuthLog: Authenticate took {t_auth - t_start:.2f}s")
     
@@ -201,7 +207,7 @@ async def login_via_hemis(
 
     # 2. GET PROFILE
     logger.info(f"AuthLog: Fetching profile for login {creds.login}...")
-    me = await HemisService.get_me(token)
+    me = await HemisService.get_me(token, base_url=base_url)
     t_profile = time.time()
     logger.info(f"AuthLog: Get Me took {t_profile - t_auth:.2f}s")
     
@@ -687,7 +693,8 @@ async def delete_account(
     Requires valid HEMIS credentials for confirmation.
     """
     # 1. Verify Credentials via HEMIS (Identity Proof)
-    token, error = await HemisService.authenticate(creds.login, creds.password)
+    base_url = UniversityService.get_api_url(creds.login)
+    token, error = await HemisService.authenticate(creds.login, creds.password, base_url=base_url)
     
     if not token:
         raise HTTPException(status_code=401, detail="Parol noto'g'ri. Iltimos, ma'lumotlarni tekshiring.")

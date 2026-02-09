@@ -1,4 +1,5 @@
 import httpx
+import asyncio
 import logging
 from typing import Dict, Any, Optional
 from datetime import datetime, timedelta
@@ -81,17 +82,19 @@ class HemisService:
         return h
 
     @staticmethod
-    async def check_auth_status(token: str) -> str:
+    async def check_auth_status(token: str, base_url: Optional[str] = None) -> str:
         # Check Cache
         now = datetime.utcnow()
-        if token in HemisService._auth_cache:
-            cache = HemisService._auth_cache[token]
+        cache_key = f"{token}-{base_url or 'default'}"
+        if cache_key in HemisService._auth_cache:
+            cache = HemisService._auth_cache[cache_key]
             if cache["expiry"] > now:
                 return cache["status"]
                 
         client = await HemisService.get_client()
+        final_base = base_url or HemisService.BASE_URL
         try:
-            url = f"{HemisService.BASE_URL}/account/me"
+            url = f"{final_base}/account/me"
             response = await client.get(url, headers=HemisService.get_headers(token))
             
             status = "NETWORK_ERROR"
@@ -101,7 +104,7 @@ class HemisService:
                 status = "AUTH_ERROR"
             
             # Cache for 2 minutes to reduce latency
-            HemisService._auth_cache[token] = {
+            HemisService._auth_cache[cache_key] = {
                 "status": status,
                 "expiry": now + timedelta(minutes=2)
             }
@@ -111,15 +114,14 @@ class HemisService:
             return "NETWORK_ERROR"
 
     @staticmethod
-    async def get_subject_tasks(token: str, semester_id: str = None):
+    async def get_subject_tasks(token: str, semester_id: str = None, base_url: Optional[str] = None):
         client = await HemisService.get_client()
-        url = f"{HemisService.BASE_URL}/data/subject-task-student-list"
-        params = {}
-        if semester_id:
-            params['semester'] = semester_id
-        
+        final_base = base_url or HemisService.BASE_URL
         try:
-            response = await HemisService.fetch_with_retry(client, "GET", url, headers=HemisService.get_headers(token), params=params)
+            params = {}
+            if semester_id: params["semester"] = str(semester_id)
+            
+            response = await HemisService.fetch_with_retry(client, "GET", f"{final_base}/education/tasks", headers=HemisService.get_headers(token), params=params)
             if response.status_code == 200:
                 data = response.json()
                 return data.get("data", {}).get("items", []) or data.get("data", [])
@@ -129,14 +131,18 @@ class HemisService:
             return []
 
     @staticmethod
-    async def authenticate(login: str, password: str):
+    async def authenticate(login: str, password: str, base_url: Optional[str] = None):
         client = await HemisService.get_client()
+        
+        # Determine URL
+        final_base = base_url or HemisService.BASE_URL
+        url = f"{final_base}/auth/login"
+        
         # --- TEST CREDENTIALS ---
         if login == "test_tutor" and password == "123":
             return "test_token_tutor", None
         # ------------------------
 
-        url = f"{HemisService.BASE_URL}/auth/login"
         # [MODIFIED] Ensure login is string for TSUE compatibility
         safe_login = str(login)
         json_payload = {"login": safe_login, "password": password}
@@ -251,8 +257,8 @@ class HemisService:
             return None, str(e)
 
     @staticmethod
-    async def exchange_code_for_token(code: str):
-        data, error = await HemisService.exchange_code(code)
+    async def exchange_code_for_token(code: str, base_url: Optional[str] = None):
+        data, error = await HemisService.exchange_code(code, base_url=base_url)
         if data:
             return data.get("access_token"), None
         return None, error
@@ -265,7 +271,9 @@ class HemisService:
         domain = base_url or "https://student.jmcu.uz"
         if domain.endswith("/rest/v1"): domain = domain.replace("/rest/v1", "")
         
-        rest_url = f"{domain}/rest/v1/account/me"
+        # Ensure rest_url uses the correct base
+        rest_base = base_url or HemisService.BASE_URL
+        rest_url = f"{rest_base}/account/me"
         # Updated fields per user suggestion
         oauth_profile_url = f"{domain}/oauth/api/user?fields=id,uuid,type,name,login,picture,email,university_id,phone"
 
@@ -305,8 +313,10 @@ class HemisService:
             return None
 
     @staticmethod
-    async def get_student_absence(token: str, semester_code: str = None, student_id: int = None, force_refresh: bool = False):
+    async def get_student_absence(token: str, semester_code: str = None, student_id: int = None, force_refresh: bool = False, base_url: Optional[str] = None):
         key = f"attendance_{semester_code}" if semester_code else "attendance_all"
+        
+        final_base = base_url or HemisService.BASE_URL
         
         def calculate_totals(data):
             total, excused, unexcused = 0, 0, 0
@@ -347,7 +357,7 @@ class HemisService:
             params = {"semester": semester_code} if semester_code else {}
             response = await HemisService.fetch_with_retry(
                 client, "GET", 
-                f"{HemisService.BASE_URL}/education/attendance",
+                f"{final_base}/education/attendance",
                 headers=HemisService.get_headers(token), params=params
             )
             
@@ -385,8 +395,9 @@ class HemisService:
             raise e
 
     @staticmethod
-    async def get_semester_list(token: str, student_id: int = None, force_refresh: bool = False):
+    async def get_semester_list(token: str, student_id: int = None, force_refresh: bool = False, base_url: Optional[str] = None):
         key = "semesters_list"
+        final_base = base_url or HemisService.BASE_URL
         
         # Check Cache
         if student_id and not force_refresh:
@@ -401,7 +412,7 @@ class HemisService:
 
         client = await HemisService.get_client()
         try:
-            url = f"{HemisService.BASE_URL}/education/semesters"
+            url = f"{final_base}/education/semesters"
             response = await HemisService.fetch_with_retry(client, "GET", url, headers=HemisService.get_headers(token))
             
             if response.status_code == 200:
@@ -432,8 +443,9 @@ class HemisService:
             return []
 
     @staticmethod
-    async def get_student_subject_list(token: str, semester_code: str = None, student_id: int = None, force_refresh: bool = False):
+    async def get_student_subject_list(token: str, semester_code: str = None, student_id: int = None, force_refresh: bool = False, base_url: Optional[str] = None):
         key = f"subjects_{semester_code}" if semester_code else "subjects_all"
+        final_base = base_url or HemisService.BASE_URL
         
         # Check Cache
         if student_id and not force_refresh:
@@ -451,7 +463,7 @@ class HemisService:
             params = {"semester": semester_code} if semester_code else {}
             response = await HemisService.fetch_with_retry(
                 client, "GET", 
-                f"{HemisService.BASE_URL}/education/subject-list",
+                f"{final_base}/education/subject-list",
                 headers=HemisService.get_headers(token), params=params
             )
             if response.status_code == 200:
@@ -476,8 +488,9 @@ class HemisService:
             return []
 
     @staticmethod
-    async def get_student_schedule_cached(token: str, semester_code: str = None, student_id: int = None, force_refresh: bool = False):
+    async def get_student_schedule_cached(token: str, semester_code: str = None, student_id: int = None, force_refresh: bool = False, base_url: Optional[str] = None):
         key = f"schedule_{semester_code}" if semester_code else "schedule_all"
+        final_base = base_url or HemisService.BASE_URL
         
         # Check Cache
         if student_id and not force_refresh:
@@ -495,7 +508,7 @@ class HemisService:
             params = {"semester": semester_code} if semester_code else {}
             response = await HemisService.fetch_with_retry(
                 client, "GET", 
-                f"{HemisService.BASE_URL}/education/schedule",
+                f"{final_base}/education/schedule",
                 headers=HemisService.get_headers(token), params=params
             )
             if response.status_code == 200:
@@ -520,8 +533,9 @@ class HemisService:
             return []
 
     @staticmethod
-    async def get_curriculum_topics(token: str, subject_id: str = None, semester_code: str = None, training_type_code: str = None, student_id: int = None):
+    async def get_curriculum_topics(token: str, subject_id: str = None, semester_code: str = None, training_type_code: str = None, student_id: int = None, base_url: Optional[str] = None):
         key = f"curriculum_topics_{subject_id}_{semester_code}_{training_type_code}"
+        final_base = base_url or HemisService.BASE_URL
         if student_id:
             try:
                 async with AsyncSessionLocal() as session:
@@ -541,7 +555,7 @@ class HemisService:
             }
             params = {k: v for k, v in params.items() if v is not None}
             
-            url = f"{HemisService.BASE_URL}/data/curriculum-subject-topic-list"
+            url = f"{final_base}/data/curriculum-subject-topic-list"
             response = await client.get(url, headers=HemisService.get_headers(token), params=params)
             
             if response.status_code == 200:
@@ -561,12 +575,13 @@ class HemisService:
         except: return []
 
     @staticmethod
-    async def get_student_schedule(token: str, week_start: str, week_end: str):
+    async def get_student_schedule(token: str, week_start: str, week_end: str, base_url: Optional[str] = None):
         client = await HemisService.get_client()
+        final_base = base_url or HemisService.BASE_URL
         try:
             params = {"week_start": week_start, "week_end": week_end}
             response = await client.get(
-                f"{HemisService.BASE_URL}/education/schedule",
+                f"{final_base}/education/schedule",
                 headers=HemisService.get_headers(token),
                 params=params
             )
@@ -576,10 +591,10 @@ class HemisService:
         except: return []
 
     @staticmethod
-    async def get_student_performance(token: str, student_id: int = None, semester_code: str = None):
+    async def get_student_performance(token: str, student_id: int = None, semester_code: str = None, base_url: Optional[str] = None):
         try:
             # Reuses get_student_subject_list which is cached
-            subjects = await HemisService.get_student_subject_list(token, semester_code=semester_code, student_id=student_id)
+            subjects = await HemisService.get_student_subject_list(token, semester_code=semester_code, student_id=student_id, base_url=base_url)
             if not subjects: return 0.0
             from services.gpa_calculator import GPACalculator
             result = GPACalculator.calculate_gpa(subjects)
@@ -631,14 +646,209 @@ class HemisService:
         return results
 
     @staticmethod
-    async def get_student_resources(token: str, subject_id: str, semester_code: str = None):
+    async def resolve_specialty_id(specialty_name: str, education_type: str = None) -> int:
+        """Find the best matching specialty ID, checking counts for duplicates."""
+        if not HEMIS_ADMIN_TOKEN or not specialty_name: return None
+        
+        # 1. Check persistent cache (memory only for now)
+        cache_key = f"{specialty_name}:{education_type}"
+        if not hasattr(HemisService, "_resolved_specialty_ids"):
+             HemisService._resolved_specialty_ids = {}
+        if cache_key in HemisService._resolved_specialty_ids:
+             return HemisService._resolved_specialty_ids[cache_key]
+
+        all_specs = await HemisService.get_specialty_list()
+        name_lower = specialty_name.lower()
+        clean_req = name_lower.replace(" ", "")
+        
+        # 2. Collect candidates
+        candidates = []
+        for s in all_specs:
+            s_name = s.get("name", "").lower()
+            clean_s = s_name.replace(" ", "")
+            if clean_req == clean_s or clean_req in clean_s or clean_s in clean_req:
+                candidates.append(s)
+        
+        if not candidates: return None
+
+        # 3. Narrow by Education Type (60... Bakalavr, 70... Magistr)
+        if education_type:
+            type_prefix = "6" if "Bakalavr" in education_type else "7" if "Magistr" in education_type else None
+            if type_prefix:
+                typed = [c for c in candidates if str(c.get("code", "")).startswith(type_prefix)]
+                if typed:
+                    candidates = typed
+        
+        # 4. Narrow by Exact Name if multiple exist
+        exact = [c for c in candidates if name_lower == c.get("name", "").lower()]
+        if exact:
+            candidates = exact
+
+        # 5. Resolve among remaining clones by checking real student counts
+        resolved_id = None
+        if len(candidates) > 1:
+            try:
+                client = await HemisService.get_client()
+                tasks = []
+                for c in candidates:
+                    sid = c.get("id")
+                    url = f"{HemisService.BASE_URL}/data/student-list"
+                    tasks.append(client.get(url, 
+                        headers={"Authorization": f"Bearer {HEMIS_ADMIN_TOKEN}"},
+                        params={"limit": 1, "_specialty": sid}
+                    ))
+                
+                responses = await asyncio.gather(*tasks)
+                max_count = -1
+                for i, r in enumerate(responses):
+                    if r.status_code == 200:
+                        count = r.json().get("data", {}).get("pagination", {}).get("totalCount", 0)
+                        if count > max_count:
+                            max_count = count
+                            resolved_id = candidates[i].get("id")
+            except Exception as e:
+                logger.error(f"Error resolving specialty count: {e}")
+                # Fallback to highest ID if count check fails
+                candidates.sort(key=lambda x: x.get("id"), reverse=True)
+                resolved_id = candidates[0].get("id")
+        elif candidates:
+            resolved_id = candidates[0].get("id")
+
+        if resolved_id:
+            HemisService._resolved_specialty_ids[cache_key] = resolved_id
+        return resolved_id
+
+    # [NEW] Admin API Methods for accurate search
+    @staticmethod
+    async def get_group_list():
+        """Fetch list of groups from Admin API"""
+        if not HEMIS_ADMIN_TOKEN: return []
+        
+        # Simple cache in memory
+        if hasattr(HemisService, "_cached_groups") and HemisService._cached_groups:
+            return HemisService._cached_groups
+            
         client = await HemisService.get_client()
         try:
-            url = f"{HemisService.BASE_URL}/education/resources?subject={subject_id}"
-            if semester_code:
-                url += f"&semester={semester_code}"
+            url = f"{HemisService.BASE_URL}/data/group-list"
+            # High limit to fetch all university groups (usually < 1000)
+            response = await HemisService.fetch_with_retry(
+                client, "GET", url, 
+                params={"limit": 1000},
+                headers={"Authorization": f"Bearer {HEMIS_ADMIN_TOKEN}"}
+            )
+            if response.status_code == 200:
+                data = response.json().get("data", {})
+                items = data if isinstance(data, list) else data.get("items", [])
+                HemisService._cached_groups = items
+                return items
+        except Exception as e:
+            logger.error(f"Error fetching group list: {e}")
+        return []
+
+    @staticmethod
+    async def resolve_group_id(group_name: str) -> Optional[int]:
+        """Find the matching group ID from the group list."""
+        if not HEMIS_ADMIN_TOKEN or not group_name: return None
+        
+        # Cache resolution
+        if not hasattr(HemisService, "_resolved_group_ids"):
+             HemisService._resolved_group_ids = {}
+        if group_name in HemisService._resolved_group_ids:
+             return HemisService._resolved_group_ids[group_name]
+
+        all_groups = await HemisService.get_group_list()
+        req_norm = group_name.lower().replace(" ", "").replace("‘", "'").replace("’", "'")
+        
+        # 1. Try exact or substantial substring match
+        for g in all_groups:
+            g_original = g.get("name", "")
+            g_name = g_original.lower().replace(" ", "").replace("‘", "'").replace("’", "'")
+            if req_norm == g_name or req_norm in g_name or g_name in req_norm:
+                gid = g.get("id")
+                HemisService._resolved_group_ids[group_name] = gid
+                return gid
+        
+        # 2. Try matching by group prefix code (e.g. "25-23")
+        # Most group names start with "XX-YY"
+        import re
+        match = re.search(r'(\d+-\d+)', group_name)
+        if match:
+            group_prefix = match.group(1)
+            for g in all_groups:
+                if g.get("name", "").startswith(group_prefix):
+                    gid = g.get("id")
+                    HemisService._resolved_group_ids[group_name] = gid
+                    return gid
+                    
+        return None
+
+    @staticmethod
+    async def get_specialty_list():
+        """Fetch list of specialties from Admin API"""
+        if not HEMIS_ADMIN_TOKEN: return []
+        
+        # Simple cache in memory
+        if hasattr(HemisService, "_cached_specialties") and HemisService._cached_specialties:
+            return HemisService._cached_specialties
             
-            response = await client.get(url, headers=HemisService.get_headers(token))
+        client = await HemisService.get_client()
+        try:
+            url = f"{HemisService.BASE_URL}/data/specialty-list"
+            response = await HemisService.fetch_with_retry(
+                client, "GET", url, 
+                params={"limit": 300},
+                headers={"Authorization": f"Bearer {HEMIS_ADMIN_TOKEN}"}
+            )
+            if response.status_code == 200:
+                data = response.json().get("data", {})
+                items = data if isinstance(data, list) else data.get("items", [])
+                HemisService._cached_specialties = items
+                return items
+        except Exception as e:
+            logger.error(f"Error fetching specialty list: {e}")
+        return []
+
+    @staticmethod
+    async def get_admin_student_list(filters: Dict[str, Any], page: int = 1, limit: int = 20):
+        if not HEMIS_ADMIN_TOKEN: return [], 0
+        
+        client = await HemisService.get_client()
+        try:
+            url = f"{HemisService.BASE_URL}/data/student-list"
+            params = {
+                "limit": limit,
+                "page": page,
+                **filters
+            }
+            # Remove None values
+            params = {k: v for k, v in params.items() if v is not None}
+            
+            response = await HemisService.fetch_with_retry(
+                client, "GET", url, 
+                headers={"Authorization": f"Bearer {HEMIS_ADMIN_TOKEN}"},
+                params=params
+            )
+            
+            if response.status_code == 200:
+                data = response.json().get("data", {})
+                items = data.get("items", [])
+                total = data.get("pagination", {}).get("totalCount", 0)
+                return items, total
+            return [], 0
+        except Exception as e:
+            logger.error(f"Admin Student List Error: {e}")
+            return [], 0
+
+    @staticmethod
+    async def get_student_resources(token: str, subject_id: str, semester_code: str = None, base_url: Optional[str] = None):
+        client = await HemisService.get_client()
+        final_base = base_url or HemisService.BASE_URL
+        try:
+            params = {"subject": subject_id}
+            if semester_code: params["semester"] = semester_code
+            
+            response = await client.get(f"{final_base}/education/resources", headers=HemisService.get_headers(token), params=params)
             if response.status_code == 200:
                 return response.json().get("data", [])
             return []
@@ -692,16 +902,28 @@ class HemisService:
             t["subjects"] = list(t["subjects"])
             t["subjects"].sort()
             result.append(t)
-        return result
+    async def get_semester_teachers(token: str, semester_code: str = None, base_url: Optional[str] = None):
+        client = await HemisService.get_client()
+        final_base = base_url or HemisService.BASE_URL
+        try:
+            url = f"{final_base}/education/teachers"
+            response = await client.get(url, headers=HemisService.get_headers(token))
+            if response.status_code == 200:
+                return response.json()
+            return None
+        except Exception as e:
+            logger.error(f"Error fetching teachers: {e}") # Changed error message to reflect new functionality
+            return None
 
     # --- Surveys (So'rovnomalar) ---
     
     @staticmethod
-    async def get_student_surveys(token: str):
+    async def get_student_surveys(token: str, base_url: Optional[str] = None):
         """GET /v1/student/survey"""
         client = await HemisService.get_client()
+        final_base = base_url or HemisService.BASE_URL
         try:
-            url = f"{HemisService.BASE_URL}/student/survey"
+            url = f"{final_base}/student/survey"
             response = await client.get(url, headers=HemisService.get_headers(token))
             if response.status_code == 200:
                 return response.json()
@@ -711,11 +933,12 @@ class HemisService:
             return None
 
     @staticmethod
-    async def start_student_survey(token: str, survey_id: int):
+    async def start_student_survey(token: str, survey_id: int, base_url: Optional[str] = None):
         """POST /v1/student/survey-start"""
         client = await HemisService.get_client()
+        final_base = base_url or HemisService.BASE_URL
         try:
-            url = f"{HemisService.BASE_URL}/student/survey-start"
+            url = f"{final_base}/education/survey-start"
             payload = {"id": survey_id, "lang": "UZ"}
             response = await client.post(url, headers=HemisService.get_headers(token), json=payload)
             if response.status_code == 200:
@@ -726,11 +949,12 @@ class HemisService:
             return None
 
     @staticmethod
-    async def submit_survey_answer(token: str, question_id: int, button_type: str, answer: Any):
+    async def submit_survey_answer(token: str, question_id: int, button_type: str, answer: Any, base_url: Optional[str] = None):
         """POST /v1/student/survey-answer"""
         client = await HemisService.get_client()
+        final_base = base_url or HemisService.BASE_URL
         try:
-            url = f"{HemisService.BASE_URL}/student/survey-answer"
+            url = f"{final_base}/education/survey-answer"
             payload = {
                 "question_id": question_id,
                 "button_type": button_type,
@@ -762,18 +986,18 @@ class HemisService:
 # Force update
 
     @staticmethod
-    async def prefetch_data(token: str, student_id: int):
+    async def prefetch_data(token: str, student_id: int, base_url: Optional[str] = None):
         """
         Eagerly loads critical data into cache to prevent 'First Load' delay.
         Should be called as a background task upon login.
         """
-        logger.info(f"Prefetching data for student {student_id}...")
+        logger.info(f"Prefetching data for student {student_id} (URL: {base_url})...")
         try:
             # 0. Warm Me Cache
-            await HemisService.get_me(token)
+            await HemisService.get_me(token, base_url=base_url)
 
             # 1. Semesters (Fast)
-            semesters = await HemisService.get_semester_list(token, student_id=student_id)
+            semesters = await HemisService.get_semester_list(token, student_id=student_id, base_url=base_url)
             
             # Resolve ID
             sem_code = None
@@ -794,11 +1018,11 @@ class HemisService:
             import asyncio
             await asyncio.gather(
                 # Grades / Subjects
-                HemisService.get_student_subject_list(token, semester_code=sem_code, student_id=student_id),
+                HemisService.get_student_subject_list(token, semester_code=sem_code, student_id=student_id, base_url=base_url),
                 # Attendance
-                HemisService.get_student_absence(token, semester_code=sem_code, student_id=student_id),
+                HemisService.get_student_absence(token, semester_code=sem_code, student_id=student_id, base_url=base_url),
                 # Schedule
-                HemisService.get_student_schedule_cached(token, semester_code=sem_code, student_id=student_id)
+                HemisService.get_student_schedule_cached(token, semester_code=sem_code, student_id=student_id, base_url=base_url)
             )
             logger.info(f"Prefetch complete for student {student_id}")
         except Exception as e:
