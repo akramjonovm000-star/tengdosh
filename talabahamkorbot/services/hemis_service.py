@@ -604,12 +604,13 @@ class HemisService:
             return 0.0
 
     @staticmethod
-    def parse_grades_detailed(subject_data: dict) -> dict:
+    def parse_grades_detailed(subject_data: dict, skip_conversion: bool = False) -> dict:
         exams = subject_data.get("gradesByExam", []) or []
         def to_5_scale(val, max_val):
             if val is None: val = 0
             if max_val == 0: return 0 
             if max_val <= 5: return round(val)
+            if skip_conversion: return val # Skip conversion for non-JMCU
             return round((val / max_val) * 5)
             
         # Default Structure
@@ -646,7 +647,17 @@ class HemisService:
         return results
 
     @staticmethod
-    async def resolve_specialty_id(specialty_name: str, education_type: str = None) -> int:
+    def _normalize_name(name: str) -> str:
+        if not name: return ""
+        # Handle Uzbek characters variations (o', g', o, g)
+        n = name.lower().strip()
+        n = n.replace("‘", "'").replace("’", "'").replace("`", "'").replace("'", "")
+        n = n.replace("o'", "o").replace("g'", "g").replace("h", "x") # Loose match x/h
+        n = n.replace(" ", "").replace("-", "").replace(".", "")
+        return n
+
+    @staticmethod
+    async def resolve_specialty_id(specialty_name: str, education_type: str = None) -> Optional[int]:
         """Find the best matching specialty ID, checking counts for duplicates."""
         if not HEMIS_ADMIN_TOKEN or not specialty_name: return None
         
@@ -658,15 +669,14 @@ class HemisService:
              return HemisService._resolved_specialty_ids[cache_key]
 
         all_specs = await HemisService.get_specialty_list()
-        name_lower = specialty_name.lower()
-        clean_req = name_lower.replace(" ", "")
+        req_norm = HemisService._normalize_name(specialty_name)
         
         # 2. Collect candidates
         candidates = []
         for s in all_specs:
-            s_name = s.get("name", "").lower()
-            clean_s = s_name.replace(" ", "")
-            if clean_req == clean_s or clean_req in clean_s or clean_s in clean_req:
+            s_name = s.get("name", "")
+            s_norm = HemisService._normalize_name(s_name)
+            if req_norm == s_norm or req_norm in s_norm or s_norm in req_norm:
                 candidates.append(s)
         
         if not candidates: return None
@@ -679,8 +689,8 @@ class HemisService:
                 if typed:
                     candidates = typed
         
-        # 4. Narrow by Exact Name if multiple exist
-        exact = [c for c in candidates if name_lower == c.get("name", "").lower()]
+        # 4. Narrow by Exact Normalized Name if multiple exist
+        exact = [c for c in candidates if req_norm == HemisService._normalize_name(c.get("name", ""))]
         if exact:
             candidates = exact
 
@@ -690,7 +700,8 @@ class HemisService:
             try:
                 client = await HemisService.get_client()
                 tasks = []
-                for c in candidates:
+                # Limit to first 5 candidates to avoid overwhelming
+                for c in candidates[:5]:
                     sid = c.get("id")
                     url = f"{HemisService.BASE_URL}/data/student-list"
                     tasks.append(client.get(url, 
@@ -734,7 +745,7 @@ class HemisService:
             # High limit to fetch all university groups (usually < 1000)
             response = await HemisService.fetch_with_retry(
                 client, "GET", url, 
-                params={"limit": 1000},
+                params={"limit": 1500}, # Support up to 1500 groups
                 headers={"Authorization": f"Bearer {HEMIS_ADMIN_TOKEN}"}
             )
             if response.status_code == 200:
@@ -758,25 +769,25 @@ class HemisService:
              return HemisService._resolved_group_ids[group_name]
 
         all_groups = await HemisService.get_group_list()
-        req_norm = group_name.lower().replace(" ", "").replace("‘", "'").replace("’", "'")
+        req_norm = HemisService._normalize_name(group_name)
         
         # 1. Try exact or substantial substring match
         for g in all_groups:
             g_original = g.get("name", "")
-            g_name = g_original.lower().replace(" ", "").replace("‘", "'").replace("’", "'")
-            if req_norm == g_name or req_norm in g_name or g_name in req_norm:
+            g_norm = HemisService._normalize_name(g_original)
+            if req_norm == g_norm or req_norm in g_norm or g_norm in req_norm:
                 gid = g.get("id")
                 HemisService._resolved_group_ids[group_name] = gid
                 return gid
         
         # 2. Try matching by group prefix code (e.g. "25-23")
-        # Most group names start with "XX-YY"
         import re
         match = re.search(r'(\d+-\d+)', group_name)
         if match:
-            group_prefix = match.group(1)
+            group_prefix = match.group(1).replace("-", "")
             for g in all_groups:
-                if g.get("name", "").startswith(group_prefix):
+                g_prefix = HemisService._normalize_name(g.get("name", ""))
+                if g_prefix.startswith(group_prefix):
                     gid = g.get("id")
                     HemisService._resolved_group_ids[group_name] = gid
                     return gid

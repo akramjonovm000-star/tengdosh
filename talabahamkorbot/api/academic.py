@@ -79,7 +79,8 @@ async def get_grades(
         name = sub_details.get("name") or item.get("subject", {}).get("name", "Nomsiz fan")
         s_id = sub_details.get("id") or item.get("subject", {}).get("id")
 
-        detailed_dict = HemisService.parse_grades_detailed(item)
+        is_jmcu = (student.hemis_login[:3] == "395")
+        detailed_dict = HemisService.parse_grades_detailed(item, skip_conversion=not is_jmcu)
         on = detailed_dict.get("ON", {"val_5": 0, "raw": 0})
         yn = detailed_dict.get("YN", {"val_5": 0, "raw": 0})
         jn = detailed_dict.get("JN", {"val_5": 0, "raw": 0})
@@ -241,7 +242,8 @@ async def get_subjects(
         s_id = sub_details.get("id")
         name_lower = name.lower().strip()
         t_info = teacher_map.get(name_lower, {})
-        detailed_dict = HemisService.parse_grades_detailed(item)
+        is_jmcu = (student.hemis_login[:3] == "395")
+        detailed_dict = HemisService.parse_grades_detailed(item, skip_conversion=not is_jmcu)
         on = detailed_dict.get("ON", {"val_5": 0, "raw": 0})
         yn = detailed_dict.get("YN", {"val_5": 0, "raw": 0})
         jn = detailed_dict.get("JN", {"val_5": 0, "raw": 0})
@@ -413,7 +415,8 @@ async def get_subject_details_endpoint(subject_id: str, semester: str = None, st
     
     if not target_subject: return {"success": False, "message": "Fan topilmadi"}
 
-    detailed_dict = HemisService.parse_grades_detailed(target_subject)
+    is_jmcu = (student.hemis_login[:3] == "395")
+    detailed_dict = HemisService.parse_grades_detailed(target_subject, skip_conversion=not is_jmcu)
     # Convert to list for frontend
     detailed_list = [v for k, v in detailed_dict.items() if k in ["JN", "ON", "YN"]]
     

@@ -42,9 +42,10 @@ async def broadcast_grades():
                     continue
                 
                 # Check for YN grades
+                is_jmcu = (student.hemis_login[:3] == "395") if student.hemis_login else False
                 yn_list = []
                 for subj in subjects:
-                    parsed = HemisService.parse_grades_detailed(subj)
+                    parsed = HemisService.parse_grades_detailed(subj, skip_conversion=not is_jmcu)
                     yn_score = parsed["YN"]["raw"]
                     if yn_score > 0:
                         curr_subj = subj.get("curriculumSubject", {})

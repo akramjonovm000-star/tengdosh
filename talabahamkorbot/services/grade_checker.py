@@ -80,14 +80,16 @@ async def check_new_grades():
                     if not old_subj:
                         # New subject? Unlikely mid-semester, but possible.
                         # Check if it has grades > 0
-                        parsed_fresh = HemisService.parse_grades_detailed(fresh_subj)
+                        is_jmcu = (student.hemis_login[:3] == "395") if student.hemis_login else False
+                        parsed_fresh = HemisService.parse_grades_detailed(fresh_subj, skip_conversion=not is_jmcu)
                         if parsed_fresh["raw_total"] > 0:
                             changes.append(f"🆕 <b>{subj_name}</b> fanidan baholar chiqdi!")
                         continue
                         
                     # Compare Grades
-                    parsed_fresh = HemisService.parse_grades_detailed(fresh_subj)
-                    parsed_old = HemisService.parse_grades_detailed(old_subj)
+                    is_jmcu = (student.hemis_login[:3] == "395") if student.hemis_login else False
+                    parsed_fresh = HemisService.parse_grades_detailed(fresh_subj, skip_conversion=not is_jmcu)
+                    parsed_old = HemisService.parse_grades_detailed(old_subj, skip_conversion=not is_jmcu)
                     
                     # ON Check
                     if parsed_fresh["ON"]["raw"] > parsed_old["ON"]["raw"]:
@@ -185,9 +187,10 @@ async def send_welcome_report(student_id: int):
                 return
 
             # Check for YN grades
+            is_jmcu = (student.hemis_login[:3] == "395") if student.hemis_login else False
             yn_list = []
             for subj in subjects:
-                parsed = HemisService.parse_grades_detailed(subj)
+                parsed = HemisService.parse_grades_detailed(subj, skip_conversion=not is_jmcu)
                 yn_score = parsed["YN"]["raw"]
                 if yn_score > 0:
                     curr_subj = subj.get("curriculumSubject", {})
