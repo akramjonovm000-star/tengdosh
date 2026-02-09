@@ -92,7 +92,8 @@ async def login_via_hemis(
             # Check by ID OR JSHSHIR to avoid IntegrityError
             demo_staff = await db.scalar(
                 select(Staff).where(
-                    (Staff.hemis_id == 999999) | (Staff.jshshir == "12345678901234")
+                    (Staff.hemis_id.in_([999999, 888888])) | 
+                    (Staff.jshshir.in_(["12345678901234", "98765432109876"]))
                 )
             )
             

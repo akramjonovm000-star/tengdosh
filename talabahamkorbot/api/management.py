@@ -459,15 +459,19 @@ async def search_mgmt_students(
             spec_id = await HemisService.resolve_specialty_id(specialty_name, education_type)
             if spec_id:
                 admin_filters["_specialty"] = spec_id
+            else:
+                # If filter provided but not resolved, return empty to avoid false positives
+                return {"success": True, "total_count": 0, "app_users_count": 0, "data": []}
                 
         if group_number:
             grp_id = await HemisService.resolve_group_id(group_number)
             if grp_id:
                 admin_filters["_group"] = grp_id
+            else:
+                # If filter provided but not resolved, return empty
+                return {"success": True, "total_count": 0, "app_users_count": 0, "data": []}
         
-        # Fetch from Admin API
-        # Note: If no filters are passed, it returns total university count (which is good)
-        # [NEW] Fetch from Admin API (List + Count)
+        # Fetch from Admin API (List + Count)
         admin_items, total_count = await HemisService.get_admin_student_list(
             admin_filters, page=1, limit=500
         )
@@ -571,18 +575,29 @@ async def search_mgmt_students(
 @router.get("/specialties")
 async def get_mgmt_specialties(
     faculty_id: int = None,
+    education_type: str = None,
     staff: Any = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
 ):
-    uni_id = getattr(staff, 'university_id', None)
+    from services.hemis_service import HemisService
+    from config import HEMIS_ADMIN_TOKEN
     
+    # 1. Try Admin API (University-wide)
+    if HEMIS_ADMIN_TOKEN:
+        all_specs = await HemisService.get_specialty_list(faculty_id=faculty_id, education_type=education_type)
+        if all_specs:
+            return {"success": True, "data": sorted(list(set([s.get("name") for s in all_specs if s.get("name")])))}
+
+    # 2. Fallback to Local DB
+    uni_id = getattr(staff, 'university_id', None)
     stmt = select(Student.specialty_name).where(
         Student.university_id == uni_id, 
         Student.specialty_name != None
     )
-    
     if faculty_id:
         stmt = stmt.where(Student.faculty_id == faculty_id)
+    if education_type:
+        stmt = stmt.where(Student.education_type == education_type)
         
     result = await db.execute(stmt.distinct().order_by(Student.specialty_name))
     specialties = result.scalars().all()
@@ -670,13 +685,37 @@ async def search_mgmt_staff(
         ]
     }
 
-@router.get("/groups/all")
+@router.get("/groups")
 async def get_mgmt_groups_simple(
     faculty_id: int = None,
+    education_type: str = None,
+    education_form: str = None,
+    specialty_name: str = None,
     level_name: str = None,
     staff: Any = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
 ):
+    from services.hemis_service import HemisService
+    from config import HEMIS_ADMIN_TOKEN
+
+    # 1. Try Admin API (University-wide)
+    if HEMIS_ADMIN_TOKEN:
+        spec_id = None
+        if specialty_name:
+            spec_id = await HemisService.resolve_specialty_id(specialty_name, education_type)
+
+        all_groups = await HemisService.get_group_list(
+            faculty_id=faculty_id,
+            specialty_id=spec_id,
+            education_type=education_type,
+            education_form=education_form,
+            level_name=level_name
+        )
+        if all_groups:
+             group_names = [g.get("name") for g in all_groups if g.get("name")]
+             return {"success": True, "data": sorted(list(set(group_names)))}
+
+    # 2. Fallback to Local DB
     uni_id = getattr(staff, 'university_id', None)
     f_id = getattr(staff, 'faculty_id', None)
     s_role = getattr(staff, 'role', None)
@@ -688,6 +727,7 @@ async def get_mgmt_groups_simple(
     
     # Role-based restriction
     if s_role == 'tyutor':
+        from database.models import TutorGroup
         tg_stmt = select(TutorGroup.group_number).where(TutorGroup.tutor_id == staff.id)
         group_numbers = (await db.execute(tg_stmt)).scalars().all()
         filters.append(Student.group_number.in_(group_numbers))

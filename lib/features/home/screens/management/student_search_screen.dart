@@ -52,7 +52,10 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
 
   Future<void> _loadSpecialties() async {
     try {
-      final specs = await _dataService.getManagementSpecialties(facultyId: _selectedFacultyId);
+      final specs = await _dataService.getManagementSpecialties(
+        facultyId: _selectedFacultyId,
+        educationType: _selectedEducationType,
+      );
       setState(() {
         _specialties = List<String>.from(specs);
       });
@@ -63,6 +66,9 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
     try {
       final groups = await _dataService.getManagementGroups(
         facultyId: _selectedFacultyId,
+        educationType: _selectedEducationType,
+        educationForm: _selectedEducationForm,
+        specialtyName: _selectedSpecialty,
         levelName: _selectedCourse != null ? "${_selectedCourse}-kurs" : null,
       );
       setState(() {
@@ -162,8 +168,10 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
                           setState(() {
                             _selectedEducationType = val;
                             _selectedCourse = null; // Important: reset course
+                            _selectedSpecialty = null; // reset specialty
                             _selectedGroup = null;  // reset group
                           });
+                          _loadSpecialties();
                           _loadGroups();
                           _handleSearch();
                         },
@@ -197,7 +205,11 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
                         value: _selectedEducationForm,
                         items: ["Kunduzgi", "Masofaviy", "Kechki", "Sirtqi"].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 11)))).toList(),
                         onChanged: (val) {
-                          setState(() => _selectedEducationForm = val);
+                          setState(() {
+                            _selectedEducationForm = val;
+                            _selectedGroup = null;
+                          });
+                          _loadGroups();
                           _handleSearch();
                         },
                       ),
@@ -242,7 +254,11 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
                           child: Text(s, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11)),
                         )).toList(),
                         onChanged: (val) {
-                          setState(() => _selectedSpecialty = val);
+                          setState(() {
+                            _selectedSpecialty = val;
+                            _selectedGroup = null;
+                          });
+                          _loadGroups();
                           _handleSearch();
                         },
                       ),

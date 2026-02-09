@@ -731,27 +731,50 @@ class HemisService:
 
     # [NEW] Admin API Methods for accurate search
     @staticmethod
-    async def get_group_list():
-        """Fetch list of groups from Admin API"""
+    async def get_group_list(
+        faculty_id: int = None, 
+        specialty_id: int = None, 
+        education_type: str = None, 
+        education_form: str = None,
+        level_name: str = None
+    ):
+        """Fetch list of groups from Admin API with optional filtering"""
         if not HEMIS_ADMIN_TOKEN: return []
         
-        # Simple cache in memory
-        if hasattr(HemisService, "_cached_groups") and HemisService._cached_groups:
-            return HemisService._cached_groups
+        # Cache key based on filters
+        cache_key = (faculty_id, specialty_id, education_type, education_form, level_name)
+        if not hasattr(HemisService, "_cached_groups_map"):
+            HemisService._cached_groups_map = {}
+            
+        if cache_key in HemisService._cached_groups_map:
+            return HemisService._cached_groups_map[cache_key]
             
         client = await HemisService.get_client()
         try:
             url = f"{HemisService.BASE_URL}/data/group-list"
-            # High limit to fetch all university groups (usually < 1000)
+            params = {
+                "limit": 1500,
+                "_department": faculty_id,
+                "_specialty": specialty_id,
+                "_education_type": education_type,
+                "_education_form": education_form,
+                "_level": level_name
+            }
+            # Remove None values
+            params = {k: v for k, v in params.items() if v is not None}
+            
             response = await HemisService.fetch_with_retry(
                 client, "GET", url, 
-                params={"limit": 1500}, # Support up to 1500 groups
+                params=params,
                 headers={"Authorization": f"Bearer {HEMIS_ADMIN_TOKEN}"}
             )
             if response.status_code == 200:
                 data = response.json().get("data", {})
                 items = data if isinstance(data, list) else data.get("items", [])
-                HemisService._cached_groups = items
+                HemisService._cached_groups_map[cache_key] = items
+                # Also populate the legacy all-groups cache if no filters
+                if not any([faculty_id, specialty_id, education_type, education_form, level_name]):
+                    HemisService._cached_groups = items
                 return items
         except Exception as e:
             logger.error(f"Error fetching group list: {e}")
@@ -795,26 +818,46 @@ class HemisService:
         return None
 
     @staticmethod
-    async def get_specialty_list():
-        """Fetch list of specialties from Admin API"""
+    async def get_specialty_list(faculty_id: int = None, education_type: str = None):
+        """Fetch list of specialties from Admin API with optional faculty and type filters"""
         if not HEMIS_ADMIN_TOKEN: return []
         
-        # Simple cache in memory
-        if hasattr(HemisService, "_cached_specialties") and HemisService._cached_specialties:
-            return HemisService._cached_specialties
+        # Cache key based on faculty and type
+        cache_key = (faculty_id, education_type)
+        if not hasattr(HemisService, "_cached_specialties_map"):
+            HemisService._cached_specialties_map = {}
+            
+        if cache_key in HemisService._cached_specialties_map:
+            return HemisService._cached_specialties_map[cache_key]
             
         client = await HemisService.get_client()
         try:
             url = f"{HemisService.BASE_URL}/data/specialty-list"
+            params = {"limit": 300}
+            if faculty_id:
+                params["_department"] = faculty_id
+            
+            # Note: _education_type is often NOT supported for specialty-list in Admin API.
+            # We will fetch by department then filter by code locally if type is provided.
             response = await HemisService.fetch_with_retry(
                 client, "GET", url, 
-                params={"limit": 300},
+                params=params,
                 headers={"Authorization": f"Bearer {HEMIS_ADMIN_TOKEN}"}
             )
             if response.status_code == 200:
                 data = response.json().get("data", {})
                 items = data if isinstance(data, list) else data.get("items", [])
-                HemisService._cached_specialties = items
+                
+                # Local filtering by Education Type prefix (6... for Bakalavr, 7... for Magistr)
+                if education_type:
+                    type_prefix = "6" if "Bakalavr" in education_type else "7" if "Magistr" in education_type else None
+                    if type_prefix:
+                        items = [s for s in items if str(s.get("code", "")).startswith(type_prefix)]
+                
+                HemisService._cached_specialties_map[cache_key] = items
+                # Populate legacy cache if no filters
+                if not faculty_id and not education_type:
+                    HemisService._cached_specialties = items
                 return items
         except Exception as e:
             logger.error(f"Error fetching specialty list: {e}")

@@ -334,11 +334,15 @@ class DataService {
     return [];
   }
 
-  Future<List<dynamic>> getManagementSpecialties({int? facultyId}) async {
+  Future<List<dynamic>> getManagementSpecialties({int? facultyId, String? educationType}) async {
     try {
       String url = "${ApiConstants.backendUrl}/management/specialties";
-      if (facultyId != null) {
-        url += "?faculty_id=$facultyId";
+      final queryParams = <String>[];
+      if (facultyId != null) queryParams.add("faculty_id=$facultyId");
+      if (educationType != null) queryParams.add("education_type=${Uri.encodeComponent(educationType)}");
+      
+      if (queryParams.isNotEmpty) {
+        url += "?${queryParams.join("&")}";
       }
       final response = await _get(url);
       if (response.statusCode == 200) {
@@ -351,12 +355,21 @@ class DataService {
     return [];
   }
 
-  Future<List<dynamic>> getManagementGroups({int? facultyId, String? levelName}) async {
+  Future<List<dynamic>> getManagementGroups({
+    int? facultyId, 
+    String? levelName,
+    String? educationType,
+    String? educationForm,
+    String? specialtyName,
+  }) async {
     try {
       String url = "${ApiConstants.backendUrl}/management/groups";
       final queryParams = <String>[];
       if (facultyId != null) queryParams.add("faculty_id=$facultyId");
       if (levelName != null) queryParams.add("level_name=${Uri.encodeComponent(levelName)}");
+      if (educationType != null) queryParams.add("education_type=${Uri.encodeComponent(educationType)}");
+      if (educationForm != null) queryParams.add("education_form=${Uri.encodeComponent(educationForm)}");
+      if (specialtyName != null) queryParams.add("specialty_name=${Uri.encodeComponent(specialtyName)}");
       
       if (queryParams.isNotEmpty) {
         url += "?${queryParams.join("&")}";
