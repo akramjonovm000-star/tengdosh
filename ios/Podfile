@@ -30,6 +30,11 @@ target 'Runner' do
   use_modular_headers!
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+
+  # Explicitly add these to resolve module lookup issues with static linkage
+  pod 'SDWebImage', :modular_headers => true
+  pod 'SDWebImageWebPCoder', :modular_headers => true
+  pod 'libwebp', :modular_headers => true
   
   target 'RunnerTests' do
     inherit! :search_paths
@@ -53,6 +58,10 @@ post_install do |installer|
       
       # FIX: Disable "Double-quoted include" warning/error
       config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
+
+      # FIX: Ensure module maps are enabled for build stability
+      config.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
+      config.build_settings['DEFINES_MODULE'] = 'YES'
     end
   end
 
