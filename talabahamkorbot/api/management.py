@@ -456,7 +456,13 @@ async def search_mgmt_students(
 
 
         if specialty_name:
-            spec_id = await HemisService.resolve_specialty_id(specialty_name, education_type)
+            # [FIX] Smart Resolution: Use Faculty and Form to find the correct specialty ID
+            spec_id = await HemisService.resolve_specialty_id(
+                specialty_name, 
+                education_type, 
+                faculty_id=faculty_id,
+                education_form=education_form
+            )
             if spec_id:
                 admin_filters["_specialty"] = spec_id
             else:
@@ -470,6 +476,12 @@ async def search_mgmt_students(
             else:
                 # If filter provided but not resolved, return empty
                 return {"success": True, "total_count": 0, "app_users_count": 0, "data": []}
+        
+        # [NEW] Handle Search Query (Name or ID)
+        if query:
+            # The 'search' param is reliable for names. 
+            # Substring search for IDs often defaults to name search or is not supported.
+            admin_filters["search"] = query
         
         # Fetch from Admin API (List + Count)
         admin_items, total_count = await HemisService.get_admin_student_list(
@@ -702,7 +714,13 @@ async def get_mgmt_groups_simple(
     if HEMIS_ADMIN_TOKEN:
         spec_id = None
         if specialty_name:
-            spec_id = await HemisService.resolve_specialty_id(specialty_name, education_type)
+            # [FIX] Smarter resolution using Faculty and Form context
+            spec_id = await HemisService.resolve_specialty_id(
+                specialty_name, 
+                education_type,
+                faculty_id=faculty_id,
+                education_form=education_form
+            )
 
         all_groups = await HemisService.get_group_list(
             faculty_id=faculty_id,

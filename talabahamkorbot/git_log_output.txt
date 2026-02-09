@@ -1,0 +1,148 @@
+commit 949a29227191a0d961bd571077c30cea3ffdd23b
+Author: Antigravity Bot <bot@antigravity.dev>
+Date:   2026-02-09 04:47:14 +0000
+
+    fix(scoped): Enforce Uppercase for Mgmt, Title Case for Students, Fix OneID Login
+
+commit 903446ada5d8864921737a0af7933f1030ef3f52
+Author: Antigravity Bot <bot@antigravity.dev>
+Date:   2026-02-09 04:11:00 +0000
+
+    fix(core): Standardize robust name formatting across all modules
+
+commit f617b8af3aaa841f1a2c774cb2e9d586079947ef
+Author: Antigravity Bot <bot@antigravity.dev>
+Date:   2026-02-09 04:03:21 +0000
+
+    debug: Add name formatting tracing
+
+commit ac7eb538fd99e1125c511f8a424d3709e5f4e08b
+Author: Antigravity Bot <bot@antigravity.dev>
+Date:   2026-02-09 03:57:08 +0000
+
+    fix(profile): Use robust Uzbek-safe capitalization for name display
+
+commit a7c184511238079ae1ad80fc9592e6d0dc3a9fd0
+Author: Antigravity Bot <bot@antigravity.dev>
+Date:   2026-02-09 03:52:38 +0000
+
+    fix(profile): Finalize clean name formatting without debug logs
+
+commit 929e404ee7199e60b34b945fe53062b2069c1d5a
+Author: Antigravity Bot <bot@antigravity.dev>
+Date:   2026-02-09 03:52:06 +0000
+
+    fix(profile): Enforce .title() for swapped name and clear last_name
+
+commit 0be64201e99022dcef8b0ddd2858a501cbd167a1
+Author: Antigravity Bot <bot@antigravity.dev>
+Date:   2026-02-09 03:49:15 +0000
+
+    fix(auth): Finalize student login fix and context builder attribute error
+
+commit 5f2b4f6a8dd7ac51dba76221836a398c8aabc4ab
+Author: Antigravity Bot <bot@antigravity.dev>
+Date:   2026-02-09 03:47:37 +0000
+
+    fix(profile): Split name as Name Surname then Patronymic for split UI
+
+commit c0c85766399c7afa04c2d574d0b794046ebc011f
+Author: Antigravity Bot <bot@antigravity.dev>
+Date:   2026-02-09 03:43:18 +0000
+
+    fix(profile): Reorder name to First Last Patronymic and case o'g'li/qizi
+
+commit e87fce82d920c44b6d38f8b3456a49e5cc5d2bf7
+Author: Antigravity Bot <bot@antigravity.dev>
+Date:   2026-02-09 03:38:06 +0000
+
+    fix(profile): Remove debug logs and finalize name formatting
+
+commit a9c9c52c9e972cbacdfa34a89749da069ee07d5d
+Author: Antigravity Bot <bot@antigravity.dev>
+Date:   2026-02-09 03:30:24 +0000
+
+    fix(profile): Force First Last name formatting and add debug logs
+
+commit 82532c54fe4b3244a3f99f0131db1761634fe1a0
+Author: Antigravity Bot <bot@antigravity.dev>
+Date:   2026-02-09 03:20:22 +0000
+
+    feat(staff): Add Rector role support and fix name parsing in profile
+
+commit 1bdc96c768e24468e3ddad9f69b3fbff4c8bb511
+Author: Antigravity Bot <bot@antigravity.dev>
+Date:   2026-02-08 17:03:47 +0000
+
+    fix(archive): Resolve MissingGreenlet error in certificates filter logic
+    
+    - Explicitly select both UserCertificate and Student entities to avoid lazy loading issues in async context.
+    - Verified with debug script.
+
+commit bd7e0c33e6c5dd9a476bbcb6852200ee9ddea4fc
+Author: Antigravity Bot <bot@antigravity.dev>
+Date:   2026-02-08 16:37:41 +0000
+
+    feat(archive): Add Certificates support to Document Archive
+    
+    - Backend: Updated get_mgmt_documents_archive to support 'Sertifikatlar' filter
+    - Backend: Updated document download and export logic to handle UserCertificate
+    - Frontend: Added 'Sertifikatlar' chip to ManagementArchiveScreen
+    - Frontend: Updated DataService to support downloading specific document types
+
+commit 0bb9acac8761a361c5c6319ca2f67ee2845a0907
+Author: Antigravity Bot <bot@antigravity.dev>
+Date:   2026-02-08 16:20:53 +0000
+
+    feat(hemis): Rename 'Yotoqxona' to 'Turarjoy'
+    
+    - Updated HemisDashboardScreen and DormitoryDashboardScreen
+    - Clarified student accommodation details in the list
+    - Updated walkthrough documentation
+
+commit fd51bb66f1de455d9ba2bc9bb9eb6b39e7c4914e
+Author: Antigravity Bot <bot@antigravity.dev>
+Date:   2026-02-08 16:15:48 +0000
+
+    fix(dashboard): Open HEMIS Dashboard in full screen
+    
+    - Replaced modal bottom sheet with full screen navigation for HEMIS card
+    - Ensures 'HEMIS Monitoring', 'Moliya', and 'Yotoqxona' are accessible from the new screen
+
+commit f9bd7c4fbe81ef1fdb3d64b0a8b952c67e31a6ff
+Author: Antigravity Bot <bot@antigravity.dev>
+Date:   2026-02-08 16:12:04 +0000
+
+    fix(dashboard): Add missing import for StudentSearchScreen
+    
+    - Resolves 'Not a constant expression' build error
+    - Ensures navigation to Student Search works correctly
+
+commit a08aba56ebdcc66f5b48e5e9a81c8090f2beaef7
+Author: Antigravity Bot <bot@antigravity.dev>
+Date:   2026-02-08 16:08:50 +0000
+
+    feat: Implement HEMIS Dashboard and Dormitory section, fix Staff/Student logic
+    
+    - Added HemisDashboardScreen and DormitoryDashboardScreen
+    - Replaced HEMIS modal with full screen navigation
+    - Fixed Staff login and data restoration (Sanjar Botirovich)
+    - Cleaned up demo staff data
+    - Improved Management Dashboard structure
+
+commit fca7ee8ab58fa69dce82fd63cf5524a20dfd4dd5
+Author: Antigravity Bot <bot@antigravity.dev>
+Date:   2026-02-08 15:15:19 +0000
+
+    feat: implement staff community support, search, and fix management dashboard stats
+
+commit e867a50773ed3ed9dd6a3ad94f7e9a46003efd5b
+Author: Antigravity Bot <bot@antigravity.dev>
+Date:   2026-02-08 14:50:11 +0000
+
+    fix(backend): correct faculty filter logic & syntax error
+    
+    - Update api/management.py to map Admin API faculty IDs to Local DB IDs
+    - Fix SyntaxError in api/community.py
+    - Enhance search_mgmt_students to support Magistr/Sirtqi filter overrides
+    - Add HemisService.get_faculties for Admin API data source

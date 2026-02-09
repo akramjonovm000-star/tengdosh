@@ -657,12 +657,15 @@ class HemisService:
         return n
 
     @staticmethod
-    async def resolve_specialty_id(specialty_name: str, education_type: str = None) -> Optional[int]:
+    async def resolve_specialty_id(specialty_name: str, education_type: str = None, faculty_id: int = None, education_form: str = None) -> Optional[int]:
         """Find the best matching specialty ID, checking counts for duplicates."""
         if not HEMIS_ADMIN_TOKEN or not specialty_name: return None
         
+        if not HEMIS_ADMIN_TOKEN or not specialty_name: return None
+        
         # 1. Check persistent cache (memory only for now)
-        cache_key = f"{specialty_name}:{education_type}"
+        # keys now include context
+        cache_key = f"{specialty_name}:{education_type}:{faculty_id}:{education_form}"
         if not hasattr(HemisService, "_resolved_specialty_ids"):
              HemisService._resolved_specialty_ids = {}
         if cache_key in HemisService._resolved_specialty_ids:
@@ -683,7 +686,9 @@ class HemisService:
 
         # 3. Narrow by Education Type (60... Bakalavr, 70... Magistr)
         if education_type:
-            type_prefix = "6" if "Bakalavr" in education_type else "7" if "Magistr" in education_type else None
+            is_bach = "Bakalavr" in education_type or str(education_type) == "11"
+            is_mag = "Magistr" in education_type or str(education_type) == "12"
+            type_prefix = "6" if is_bach else "7" if is_mag else None
             if type_prefix:
                 typed = [c for c in candidates if str(c.get("code", "")).startswith(type_prefix)]
                 if typed:
@@ -694,7 +699,28 @@ class HemisService:
         if exact:
             candidates = exact
 
-        # 5. Resolve among remaining clones by checking real student counts
+        # 5. [NEW] Narrow by Context (Faculty or Sirtqi Dept)
+        context_candidates = []
+        
+        # A. Sirtqi Context (Prioritize Dept 35)
+        # Check if form is Sirtqi (13/Sirtqi)
+        is_sirtqi = education_form and ("Sirtqi" in education_form or str(education_form) == "13")
+        
+        if is_sirtqi:
+            sirtqi_matches = [c for c in candidates if c.get("department", {}).get("id") == 35]
+            if sirtqi_matches:
+                context_candidates = sirtqi_matches
+        
+        # B. Faculty Context (Prioritize Selected Faculty)
+        elif faculty_id:
+            faculty_matches = [c for c in candidates if c.get("department", {}).get("id") == faculty_id]
+            if faculty_matches:
+                context_candidates = faculty_matches
+                
+        if context_candidates:
+            candidates = context_candidates
+
+        # 6. Resolve among remaining clones by checking real student counts
         resolved_id = None
         if len(candidates) > 1:
             try:
@@ -749,16 +775,46 @@ class HemisService:
         if cache_key in HemisService._cached_groups_map:
             return HemisService._cached_groups_map[cache_key]
             
+        # Normalization for Admin API
+        norm_level = level_name
+        if level_name and "-kurs" in level_name:
+            norm_level = level_name.replace("-kurs", "")
+            
+        norm_type = education_type
+        if education_type:
+            if "Bakalavr" in education_type:
+                norm_type = "11"
+            elif "Magistr" in education_type:
+                norm_type = "12"
+
+        norm_form = education_form
+        if education_form:
+            if "Kunduzgi" in education_form:
+                norm_form = "11"
+            elif "Kechki" in education_form:
+                norm_form = "12"
+            elif "Sirtqi" in education_form:
+                norm_form = "13"
+            elif "Masofaviy" in education_form:
+                norm_form = "16"
+
+        # [FIX] Sirtqi Logic: If Sirtqi is selected, we must look into Dept 35 (Sirtqi bo'limi)
+        # But we must filter by the original Faculty's specialties later (Smart Filter).
+        # However, for the raw group list fetch, we just need to target Dept 35 if form is Sirtqi.
+        target_dept = faculty_id
+        if education_form and ("Sirtqi" in education_form or str(education_form) == "13"):
+             target_dept = 35
+
         client = await HemisService.get_client()
         try:
             url = f"{HemisService.BASE_URL}/data/group-list"
             params = {
                 "limit": 1500,
-                "_department": faculty_id,
+                "_department": target_dept,
                 "_specialty": specialty_id,
-                "_education_type": education_type,
-                "_education_form": education_form,
-                "_level": level_name
+                "_education_type": norm_type,
+                "_education_form": norm_form,
+                "_level": norm_level
             }
             # Remove None values
             params = {k: v for k, v in params.items() if v is not None}
@@ -830,6 +886,15 @@ class HemisService:
         if cache_key in HemisService._cached_specialties_map:
             return HemisService._cached_specialties_map[cache_key]
             
+        # Normalize type for local-filter-fallback if needed, 
+        # but primarily we use it for potential API param if they start supporting it.
+        norm_type = education_type
+        if education_type:
+            if "Bakalavr" in education_type:
+                norm_type = "11"
+            elif "Magistr" in education_type:
+                norm_type = "12"
+
         client = await HemisService.get_client()
         try:
             url = f"{HemisService.BASE_URL}/data/specialty-list"
@@ -849,8 +914,9 @@ class HemisService:
                 items = data if isinstance(data, list) else data.get("items", [])
                 
                 # Local filtering by Education Type prefix (6... for Bakalavr, 7... for Magistr)
+                # We use the raw education_type for string matching check or norm_type
                 if education_type:
-                    type_prefix = "6" if "Bakalavr" in education_type else "7" if "Magistr" in education_type else None
+                    type_prefix = "6" if "11" == norm_type or "Bakalavr" in education_type else "7" if "12" == norm_type or "Magistr" in education_type else None
                     if type_prefix:
                         items = [s for s in items if str(s.get("code", "")).startswith(type_prefix)]
                 
