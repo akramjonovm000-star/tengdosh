@@ -490,11 +490,22 @@ async def search_mgmt_students(
         
         students = []
         if total_count > 0:
+            # [NEW] Map Admin API Results to Local Database IDs (Optimization for Full Details)
+            # Use student_id_number as the matching key for Students
+            logins = [item.get("student_id_number") for item in admin_items if item.get("student_id_number")]
+            login_to_id = {}
+            if logins:
+                l_stmt = select(Student.id, Student.hemis_login).where(Student.hemis_login.in_(logins))
+                l_res = await db.execute(l_stmt)
+                login_to_id = {row[1]: row[0] for row in l_res.all()}
+
             for item in admin_items:
                 s = Student()
-                s.id = item.get("id") 
+                login = item.get("student_id_number")
+                # Use local ID (PK) if student has logged into app, else keep HEMIS ID for read-only display
+                s.id = login_to_id.get(login, item.get("id")) 
                 s.hemis_id = item.get("id")
-                s.hemis_login = item.get("login")
+                s.hemis_login = login
                 s.full_name = item.get("full_name") or f"{item.get('second_name', '')} {item.get('first_name', '')} {item.get('third_name', '')}".strip()
                 s.image_url = item.get("image")
                 dept = item.get("department", {})
