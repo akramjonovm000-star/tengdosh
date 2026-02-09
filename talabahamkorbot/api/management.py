@@ -394,6 +394,7 @@ async def search_mgmt_students(
     if query:
         search_filters.append(
             (Student.full_name.ilike(f"%{query}%")) | 
+            (Student.hemis_id.ilike(f"%{query}%")) |
             (Student.hemis_login.ilike(f"%{query}%"))
         )
 
