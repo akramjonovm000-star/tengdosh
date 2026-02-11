@@ -524,6 +524,21 @@ class _ActivityReviewScreenState extends State<ActivityReviewScreen> {
     );
   }
 
+  String _getStatusLabel(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return 'Kutilmoqda';
+      case 'confirmed':
+      case 'accepted':
+      case 'accapted':
+        return 'Tasdiqlangan';
+      case 'rejected':
+        return 'Rad etilgan';
+      default:
+        return status;
+    }
+  }
+
   Widget _buildActivityCard(dynamic item) {
     final status = item['status'] ?? 'pending';
     final int id = int.tryParse(item['id'].toString()) ?? 0;
@@ -543,7 +558,7 @@ class _ActivityReviewScreenState extends State<ActivityReviewScreen> {
             trailing: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-              child: Text(status.toUpperCase(), style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold)),
+              child: Text(_getStatusLabel(status).toUpperCase(), style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold)),
             ),
           ),
           if (item['description'] != null && item['description'].toString().isNotEmpty)
