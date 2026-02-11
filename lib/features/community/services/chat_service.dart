@@ -119,6 +119,9 @@ class ChatService {
           content: data['content'],
           isMe: true, // Always me if I sent it
           timestamp: "Hozirgina",
+          createdAt: data['created_at'] != null 
+              ? DateTime.parse(data['created_at']).toLocal() 
+              : DateTime.now(),
           isRead: false
         );
       }
