@@ -246,6 +246,7 @@ class _ActivityReviewScreenState extends State<ActivityReviewScreen> {
               ),
             ),
           ),
+          _buildFilterGrid(),
           _buildFilterBar(),
           Expanded(
             child: _isLoading && _activities.isEmpty
@@ -269,6 +270,159 @@ class _ActivityReviewScreenState extends State<ActivityReviewScreen> {
                       ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFilterGrid() {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _buildCompactDropdown<String>(
+                  hint: "Turi",
+                  value: _selectedEducationType,
+                  items: ["Bakalavr", "Magistr"].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 12)))).toList(),
+                  onChanged: (val) async {
+                    setState(() {
+                      _selectedEducationType = val;
+                      _selectedCourse = null;
+                      _selectedSpecialty = null;
+                      _selectedGroup = null;
+                    });
+                    _loadActivities(refresh: true);
+                    await _loadSpecialties();
+                    await _loadGroups();
+                    if (mounted) setState(() {});
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildCompactDropdown<int>(
+                  hint: "Fakultet",
+                  value: _faculties.any((f) => f['id'] == _selectedFacultyId) ? _selectedFacultyId : null,
+                  items: _faculties.map((f) => DropdownMenuItem<int>(
+                      value: f['id'],
+                      child: Text(f['name'] ?? "", overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
+                  )).toList(),
+                  onChanged: (val) async {
+                    setState(() {
+                      _selectedFacultyId = val;
+                      _selectedSpecialty = null;
+                      _selectedGroup = null;
+                    });
+                    _loadActivities(refresh: true);
+                    await _loadSpecialties();
+                    await _loadGroups();
+                    if (mounted) setState(() {});
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildCompactDropdown<String>(
+                  hint: "Shakli",
+                  value: _selectedEducationForm,
+                  items: ["Kunduzgi", "Masofaviy", "Kechki", "Sirtqi"].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 12)))).toList(),
+                  onChanged: (val) async {
+                    setState(() {
+                      _selectedEducationForm = val;
+                      _selectedGroup = null;
+                    });
+                    _loadActivities(refresh: true);
+                    await _loadGroups();
+                    if (mounted) setState(() {});
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _buildCompactDropdown<String>(
+                  hint: "Kurs",
+                  value: _selectedCourse,
+                  items: (_selectedEducationType == "Magistr" ? ["1", "2"] : ["1", "2", "3", "4"])
+                      .map((e) => DropdownMenuItem(value: e, child: Text("$e-kurs", style: const TextStyle(fontSize: 12)))).toList(),
+                  onChanged: (val) async {
+                    setState(() {
+                      _selectedCourse = val;
+                      _selectedGroup = null;
+                    });
+                    _loadActivities(refresh: true);
+                    await _loadGroups();
+                    if (mounted) setState(() {});
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildCompactDropdown<String>(
+                  hint: "Yo'nalish",
+                  value: _specialties.contains(_selectedSpecialty) ? _selectedSpecialty : null,
+                  items: _specialties.map((s) => DropdownMenuItem(value: s, child: Text(s, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)))).toList(),
+                  onChanged: (val) async {
+                    setState(() {
+                      _selectedSpecialty = val;
+                      _selectedGroup = null;
+                    });
+                    _loadActivities(refresh: true);
+                    await _loadGroups();
+                    if (mounted) setState(() {});
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildCompactDropdown<String>(
+                  hint: "Guruh",
+                  value: _groups.contains(_selectedGroup) ? _selectedGroup : null,
+                  items: _groups.map((g) => DropdownMenuItem(value: g, child: Text(g, style: const TextStyle(fontSize: 12)))).toList(),
+                  onChanged: (val) {
+                    setState(() => _selectedGroup = val);
+                    _loadActivities(refresh: true);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactDropdown<T>({
+    required String hint,
+    required T? value,
+    required List<DropdownMenuItem<T>> items,
+    required ValueChanged<T?> onChanged,
+  }) {
+    return Container(
+      height: 40,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<T>(
+          isExpanded: true,
+          hint: Text(hint, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+          value: value,
+          icon: const Icon(Icons.arrow_drop_down, size: 20),
+          items: [
+             DropdownMenuItem<T>(value: null, child: Text(hint, style: const TextStyle(fontSize: 12))),
+             ...items
+          ],
+          onChanged: onChanged,
+        ),
       ),
     );
   }
