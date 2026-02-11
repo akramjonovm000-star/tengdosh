@@ -8,7 +8,7 @@ import logging
 import time
 
 from database.db_connect import get_session
-from database.models import Student, Staff, StaffRole
+from database.models import Student, Staff, StaffRole, University
 from config import HEMIS_CLIENT_ID, HEMIS_CLIENT_SECRET, HEMIS_REDIRECT_URL, HEMIS_AUTH_URL, HEMIS_TOKEN_URL, BOT_USERNAME
 from services.hemis_service import HemisService
 from api.schemas import StudentProfileSchema # Re-use schemas
@@ -88,7 +88,8 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
     # 2. Get User Profile with this Token (CRITICAL STEP)
     logger.info(f"AuthLog: Fetching profile for token {access_token[:10]} using {base_url}...")
     # Explicitly use OAuth endpoint as per instruction
-    me = await HemisService.get_me(access_token, base_url=base_url, use_oauth_endpoint=True)
+    # [FIX] Set to False to allow Fallback: REST -> OAuth (More robust for Staff)
+    me = await HemisService.get_me(access_token, base_url=base_url, use_oauth_endpoint=False)
     t2 = time.time()
     logger.info(f"AuthLog: Get Me took {t2 - t1:.2f}s")
     

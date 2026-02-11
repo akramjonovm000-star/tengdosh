@@ -188,7 +188,7 @@ async def upload_profile_image(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Upload and set a custom profile image for the student.
+    Upload and set a custom profile image for the student/staff.
     """
     import logging
     logger = logging.getLogger(__name__)
@@ -218,8 +218,15 @@ async def upload_profile_image(
         # --- DELETE OLD IMAGE END ---
 
         # Create Filename
+        # [FIX] Handle Staff ID vs Student ID
+        subject_id = student.id
+        from database.models import Staff
+        prefix = "student"
+        if isinstance(student, Staff):
+            prefix = "staff"
+            
         ext = file.filename.split(".")[-1]
-        filename = f"{student.id}_{int(time.time())}.{ext}"
+        filename = f"{prefix}_{subject_id}_{int(time.time())}.{ext}"
         file_path = f"static/uploads/{filename}"
         
         # Save File
@@ -267,8 +274,20 @@ async def set_username(
     """Set or update username"""
     # [NEW] Premium Check
     from datetime import datetime
-    if not student.is_premium or not student.premium_expiry or student.premium_expiry < datetime.utcnow():
-        raise HTTPException(status_code=403, detail="Username o'rnatish yoki o'zgartirish faqat Premium foydalanuvchilar uchun")
+    
+    # [FIX] Check for Staff compatibility
+    from database.models import Staff
+    
+    if isinstance(student, Staff):
+        # Staff logic - verify manual premium/privilege or assume permitted for management? 
+        # Typically management should have this ability without premium subscription
+        # But if strict, check premium fields.
+        pass # Allow all management
+    else:
+        # Student logic
+        if not student.is_premium or not student.premium_expiry or student.premium_expiry < datetime.utcnow():
+            raise HTTPException(status_code=403, detail="Username o'rnatish yoki o'zgartirish faqat Premium foydalanuvchilar uchun")
+
 
     raw_username = data.username.strip()
     if raw_username.startswith("@"):
@@ -288,8 +307,18 @@ async def set_username(
     # Check if this exact username is taken by someone else (using lowercase for uniqueness)
     existing = await db.scalar(select(TakenUsername).where(TakenUsername.username == username_lower))
     
+    # [FIX] Identify current user type/ID
+    current_student_id = student.id if not isinstance(student, Staff) else None
+    current_staff_id = student.id if isinstance(student, Staff) else None
+
     if existing:
-        if existing.student_id != student.id:
+        is_mine = False
+        if current_student_id and existing.student_id == current_student_id:
+            is_mine = True
+        if current_staff_id and existing.staff_id == current_staff_id:
+            is_mine = True
+            
+        if not is_mine:
             raise HTTPException(status_code=400, detail="Bu username allaqachon olingan")
         else:
             # Already mine, just check if casing changed
@@ -298,26 +327,37 @@ async def set_username(
                  await db.commit()
             return {"success": True, "username": raw_username}
             
-    # If I had an old username, we want to update the existing record for THIS student
-    # This avoids "duplicate key value violates unique constraint" on student_id
-    current_taken = await db.scalar(select(TakenUsername).where(TakenUsername.student_id == student.id))
+    # If I had an old username, we want to update the existing record for THIS student/staff
+    # This avoids "duplicate key value violates unique constraint" on student_id/staff_id
+    
+    current_taken = None
+    if current_student_id:
+        current_taken = await db.scalar(select(TakenUsername).where(TakenUsername.student_id == current_student_id))
+    elif current_staff_id:
+        current_taken = await db.scalar(select(TakenUsername).where(TakenUsername.staff_id == current_staff_id))
     
     if current_taken:
         # Update existing record
         current_taken.username = username_lower
     else:
         # Insert new (always lowercase for uniqueness)
-        new_taken = TakenUsername(username=username_lower, student_id=student.id)
+        if current_student_id:
+             new_taken = TakenUsername(username=username_lower, student_id=current_student_id)
+        else:
+             new_taken = TakenUsername(username=username_lower, staff_id=current_staff_id)
         db.add(new_taken)
     
-    # Update Student record (store Mixed Case)
+    # Update Student/Staff record (store Mixed Case)
     student.username = raw_username
     
     # Also sync to Users table (if exists)
     from database.models import User
-    user_record = await db.scalar(select(User).where(User.hemis_login == student.hemis_login))
-    if user_record:
-        user_record.username = raw_username
+    # Staff might not have hemis_login always populated or same logic
+    search_key = getattr(student, 'hemis_login', None)
+    if search_key:
+        user_record = await db.scalar(select(User).where(User.hemis_login == search_key))
+        if user_record:
+            user_record.username = raw_username
     
     try:
         await db.commit()
@@ -346,18 +386,27 @@ async def check_username_availability(
         try:
             token = authorization.replace("Bearer ", "")
             student_id = None
+            staff_id = None
+            
             if token.startswith("student_id_"):
                 # DEV/TEST Token
                 student_id = int(token.replace("student_id_", ""))
+            elif token.startswith("staff_id_"):
+                # [FIX] DEV/TEST Staff Token
+                staff_id = int(token.replace("staff_id_", ""))
             elif token.startswith("jwt_token_for_"):
                 # TG Token
                 tid = int(token.replace("jwt_token_for_", ""))
                 tg_acc = await db.scalar(select(TgAccount).where(TgAccount.telegram_id == tid))
                 if tg_acc:
                     student_id = tg_acc.student_id
-            
+                    staff_id = tg_acc.staff_id
+
             if student_id and existing.student_id == student_id:
                 return {"available": True}
+            if staff_id and existing.staff_id == staff_id:
+                return {"available": True}
+                
         except:
              pass
     

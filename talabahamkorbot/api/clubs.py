@@ -32,9 +32,43 @@ async def get_all_clubs(
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
 ):
-    """List all available clubs."""
-    clubs = await db.scalars(select(Club))
-    return clubs.all()
+    """List all available clubs with member counts."""
+    from sqlalchemy import func
+    
+    # Subquery for member counts
+    subq = (
+        select(ClubMembership.club_id, func.count(ClubMembership.id).label('member_count'))
+        .group_by(ClubMembership.club_id)
+        .subquery()
+    )
+    
+    # Subquery for current user's memberships
+    my_subq = (
+        select(ClubMembership.club_id)
+        .where(ClubMembership.student_id == student.id)
+        .subquery()
+    )
+    
+    query = (
+        select(
+            Club, 
+            func.coalesce(subq.c.member_count, 0).label('members_count'),
+            (my_subq.c.club_id != None).label('is_joined')
+        )
+        .outerjoin(subq, Club.id == subq.c.club_id)
+        .outerjoin(my_subq, Club.id == my_subq.c.club_id)
+    )
+    
+    result = await db.execute(query)
+    
+    clubs_data = []
+    for club, members_count, is_joined in result.all():
+        data = ClubSchema.from_orm(club)
+        data.members_count = members_count
+        data.is_joined = is_joined
+        clubs_data.append(data)
+        
+    return clubs_data
 
 @router.post("/join")
 async def join_club(

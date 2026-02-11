@@ -1,0 +1,2860 @@
+Searching Employees (teacher)...
+FOUND in Employees (teacher): SAYDULLAYEV NURMUXAMMAD ZIYODULLA O‘G‘LI | ID: 3952411055
+{
+  "id": 746,
+  "meta_id": 968,
+  "full_name": "SAYDULLAYEV NURMUXAMMAD ZIYODULLA O\u2018G\u2018LI",
+  "short_name": "SAYDULLAYEV N. Z.",
+  "first_name": "NURMUXAMMAD",
+  "second_name": "SAYDULLAYEV",
+  "third_name": "ZIYODULLA O\u2018G\u2018LI",
+  "employee_id_number": "3952411055",
+  "gender": {
+    "code": "11",
+    "name": "Erkak"
+  },
+  "birth_date": 804643200,
+  "image": "https://hemis.jmcu.uz/static/crop/1/2/320__90_1260521677.jpg",
+  "image_full": "https://hemis.jmcu.uz/static/uploads/pi/f/a/fadcdc805d04868a0da0c45613333ded.jpg",
+  "year_of_enter": 2024,
+  "specialty": "",
+  "academicDegree": {
+    "code": "10",
+    "name": "Darajasiz"
+  },
+  "academicRank": {
+    "code": "10",
+    "name": "Unvonsiz"
+  },
+  "tutorGroups": [],
+  "department": {
+    "id": 5,
+    "name": "Ijtimoiy-gumanitar fanlar kafedrasi",
+    "code": "395-107-02",
+    "structureType": {
+      "code": "12",
+      "name": "Kafedra"
+    },
+    "localityType": {
+      "code": "11",
+      "name": "Mahalliy"
+    },
+    "parent": 43,
+    "active": true
+  },
+  "employmentForm": {
+    "code": "13",
+    "name": "O\u2018rindoshlik (tashqi)"
+  },
+  "employmentStaff": {
+    "code": "14",
+    "name": "0,25 stavka"
+  },
+  "staffPosition": {
+    "code": "11",
+    "name": "Stajer-o\u2018qituvchi"
+  },
+  "employeeStatus": {
+    "code": "11",
+    "name": "Ishlamoqda"
+  },
+  "employeeType": {
+    "code": "12",
+    "name": "Professor-o\u2018qituvchi xodim"
+  },
+  "contract_number": "01",
+  "decree_number": "01",
+  "contract_date": 1725408000,
+  "decree_date": 1725408000,
+  "created_at": 1728317688,
+  "updated_at": 1728317688,
+  "hash": "255b821fd8539edfccfeb6af72d419eab0296b4c595f96a65cad221e2154a07a",
+  "active": true
+}
+FOUND in Employees (teacher): ISAYEVA NISHONAXON SAYDULLAYEVNA | ID: 3952312020
+{
+  "id": 532,
+  "meta_id": 670,
+  "full_name": "ISAYEVA NISHONAXON SAYDULLAYEVNA",
+  "short_name": "ISAYEVA N. S.",
+  "first_name": "NISHONAXON",
+  "second_name": "ISAYEVA",
+  "third_name": "SAYDULLAYEVNA",
+  "employee_id_number": "3952312020",
+  "gender": {
+    "code": "12",
+    "name": "Ayol"
+  },
+  "birth_date": 524275200,
+  "image": "https://hemis.jmcu.uz/static/crop/1/0/320__90_101708875.jpg",
+  "image_full": "https://hemis.jmcu.uz/static/uploads/pi/6/e/6ee0fa21eba0817b6195bbac0c93e205.jpg",
+  "year_of_enter": 2023,
+  "specialty": "",
+  "academicDegree": {
+    "code": "10",
+    "name": "Darajasiz"
+  },
+  "academicRank": {
+    "code": "10",
+    "name": "Unvonsiz"
+  },
+  "tutorGroups": [],
+  "department": {
+    "id": 9,
+    "name": "Xalqaro va audiovizual jurnalistika kafedrasi",
+    "code": "395-103-01",
+    "structureType": {
+      "code": "12",
+      "name": "Kafedra"
+    },
+    "localityType": {
+      "code": "11",
+      "name": "Mahalliy"
+    },
+    "parent": 4,
+    "active": true
+  },
+  "employmentForm": {
+    "code": "11",
+    "name": "Asosiy ish joy"
+  },
+  "employmentStaff": {
+    "code": "11",
+    "name": "1,00 stavka"
+  },
+  "staffPosition": {
+    "code": "12",
+    "name": "Assistent"
+  },
+  "employeeStatus": {
+    "code": "11",
+    "name": "Ishlamoqda"
+  },
+  "employeeType": {
+    "code": "12",
+    "name": "Professor-o\u2018qituvchi xodim"
+  },
+  "contract_number": "23-0-4",
+  "decree_number": "23-04",
+  "contract_date": 1693785600,
+  "decree_date": 1693785600,
+  "created_at": 1695191811,
+  "updated_at": 1758809621,
+  "hash": "8ad918c44217601a7ee431a424d499d2cd4543363c240752a8f055ecada9dda8",
+  "active": true
+}
+Searching Employees (employee)...
+Searching Technical Staff...
+FOUND in Technical Staff: SAYDULLAYEV NURMUXAMMAD ZIYODULLA O‘G‘LI | ID: 3952411055
+{
+  "id": 746,
+  "meta_id": 968,
+  "full_name": "SAYDULLAYEV NURMUXAMMAD ZIYODULLA O\u2018G\u2018LI",
+  "short_name": "SAYDULLAYEV N. Z.",
+  "first_name": "NURMUXAMMAD",
+  "second_name": "SAYDULLAYEV",
+  "third_name": "ZIYODULLA O\u2018G\u2018LI",
+  "employee_id_number": "3952411055",
+  "gender": {
+    "code": "11",
+    "name": "Erkak"
+  },
+  "birth_date": 804643200,
+  "image": "https://hemis.jmcu.uz/static/crop/1/2/320__90_1260521677.jpg",
+  "image_full": "https://hemis.jmcu.uz/static/uploads/pi/f/a/fadcdc805d04868a0da0c45613333ded.jpg",
+  "year_of_enter": 2024,
+  "specialty": "",
+  "academicDegree": {
+    "code": "10",
+    "name": "Darajasiz"
+  },
+  "academicRank": {
+    "code": "10",
+    "name": "Unvonsiz"
+  },
+  "tutorGroups": [],
+  "department": {
+    "id": 5,
+    "name": "Ijtimoiy-gumanitar fanlar kafedrasi",
+    "code": "395-107-02",
+    "structureType": {
+      "code": "12",
+      "name": "Kafedra"
+    },
+    "localityType": {
+      "code": "11",
+      "name": "Mahalliy"
+    },
+    "parent": 43,
+    "active": true
+  },
+  "employmentForm": {
+    "code": "13",
+    "name": "O\u2018rindoshlik (tashqi)"
+  },
+  "employmentStaff": {
+    "code": "14",
+    "name": "0,25 stavka"
+  },
+  "staffPosition": {
+    "code": "11",
+    "name": "Stajer-o\u2018qituvchi"
+  },
+  "employeeStatus": {
+    "code": "11",
+    "name": "Ishlamoqda"
+  },
+  "employeeType": {
+    "code": "12",
+    "name": "Professor-o\u2018qituvchi xodim"
+  },
+  "contract_number": "01",
+  "decree_number": "01",
+  "contract_date": 1725408000,
+  "decree_date": 1725408000,
+  "created_at": 1728317688,
+  "updated_at": 1728317688,
+  "hash": "255b821fd8539edfccfeb6af72d419eab0296b4c595f96a65cad221e2154a07a",
+  "active": true
+}
+FOUND in Technical Staff: ISAYEVA NISHONAXON SAYDULLAYEVNA | ID: 3952312020
+{
+  "id": 532,
+  "meta_id": 670,
+  "full_name": "ISAYEVA NISHONAXON SAYDULLAYEVNA",
+  "short_name": "ISAYEVA N. S.",
+  "first_name": "NISHONAXON",
+  "second_name": "ISAYEVA",
+  "third_name": "SAYDULLAYEVNA",
+  "employee_id_number": "3952312020",
+  "gender": {
+    "code": "12",
+    "name": "Ayol"
+  },
+  "birth_date": 524275200,
+  "image": "https://hemis.jmcu.uz/static/crop/1/0/320__90_101708875.jpg",
+  "image_full": "https://hemis.jmcu.uz/static/uploads/pi/6/e/6ee0fa21eba0817b6195bbac0c93e205.jpg",
+  "year_of_enter": 2023,
+  "specialty": "",
+  "academicDegree": {
+    "code": "10",
+    "name": "Darajasiz"
+  },
+  "academicRank": {
+    "code": "10",
+    "name": "Unvonsiz"
+  },
+  "tutorGroups": [],
+  "department": {
+    "id": 9,
+    "name": "Xalqaro va audiovizual jurnalistika kafedrasi",
+    "code": "395-103-01",
+    "structureType": {
+      "code": "12",
+      "name": "Kafedra"
+    },
+    "localityType": {
+      "code": "11",
+      "name": "Mahalliy"
+    },
+    "parent": 4,
+    "active": true
+  },
+  "employmentForm": {
+    "code": "11",
+    "name": "Asosiy ish joy"
+  },
+  "employmentStaff": {
+    "code": "11",
+    "name": "1,00 stavka"
+  },
+  "staffPosition": {
+    "code": "12",
+    "name": "Assistent"
+  },
+  "employeeStatus": {
+    "code": "11",
+    "name": "Ishlamoqda"
+  },
+  "employeeType": {
+    "code": "12",
+    "name": "Professor-o\u2018qituvchi xodim"
+  },
+  "contract_number": "23-0-4",
+  "decree_number": "23-04",
+  "contract_date": 1693785600,
+  "decree_date": 1693785600,
+  "created_at": 1695191811,
+  "updated_at": 1758809621,
+  "hash": "8ad918c44217601a7ee431a424d499d2cd4543363c240752a8f055ecada9dda8",
+  "active": true
+}
+Searching Students...
+FOUND in Students: MA’RUFJANOV KAMRONBEK MASHRABJON O‘G‘LI | ID: 395251102006
+{
+  "id": 9161,
+  "meta_id": 42444,
+  "university": {
+    "code": "395",
+    "name": "O\u2018zbekiston jurnalistika va ommaviy kommunikatsiyalar universiteti"
+  },
+  "full_name": "MA\u2019RUFJANOV KAMRONBEK MASHRABJON O\u2018G\u2018LI",
+  "short_name": "MA\u2019RUFJANOV K. M.",
+  "first_name": "KAMRONBEK",
+  "second_name": "MA\u2019RUFJANOV",
+  "third_name": "MASHRABJON O\u2018G\u2018LI",
+  "gender": {
+    "code": "11",
+    "name": "Erkak"
+  },
+  "birth_date": 1176940800,
+  "student_id_number": "395251102006",
+  "image": "https://hemis.jmcu.uz/static/crop/3/2/320__90_320689287.jpg",
+  "image_full": "https://hemis.jmcu.uz/static/pi/7/3/738179eda2610be37404b01d24630c72.jpg",
+  "avg_gpa": 0,
+  "avg_grade": 0,
+  "total_credit": 0,
+  "country": {
+    "code": "UZ",
+    "name": "O\u2018zbekiston"
+  },
+  "province": {
+    "code": "1726",
+    "name": "Toshkent shahri",
+    "_parent": "1726"
+  },
+  "currentProvince": {
+    "code": "1726",
+    "name": "Toshkent shahri",
+    "_parent": "1726"
+  },
+  "district": {
+    "code": "1726266",
+    "name": "Yunusobod tumani",
+    "_parent": "1726"
+  },
+  "currentDistrict": {
+    "code": "1726290",
+    "name": "Yashnobod tumani",
+    "_parent": "1726"
+  },
+  "terrain": {
+    "code": "8933",
+    "name": "ABDURAHMONJOMIY"
+  },
+  "currentTerrain": {
+    "code": "9297",
+    "name": "ALBUXORIY"
+  },
+  "citizenship": {
+    "code": "11",
+    "name": "O\u2018zbekiston Respublikasi fuqarosi"
+  },
+  "studentStatus": {
+    "code": "11",
+    "name": "O\u2018qimoqda"
+  },
+  "_curriculum": 282,
+  "educationForm": {
+    "code": "11",
+    "name": "Kunduzgi"
+  },
+  "educationType": {
+    "code": "11",
+    "name": "Bakalavr"
+  },
+  "paymentForm": {
+    "code": "12",
+    "name": "To\u2018lov-shartnoma"
+  },
+  "studentType": {
+    "code": "13",
+    "name": "Superkontrakt"
+  },
+  "socialCategory": {
+    "code": "10",
+    "name": "Boshqa"
+  },
+  "povertyLevel": null,
+  "accommodation": {
+    "code": "11",
+    "name": "O\u2018z uyida"
+  },
+  "department": {
+    "id": 4,
+    "name": "Jurnalistika fakulteti",
+    "code": "395-103",
+    "structureType": {
+      "code": "11",
+      "name": "Fakultet"
+    },
+    "localityType": {
+      "code": "11",
+      "name": "Mahalliy"
+    },
+    "parent": null,
+    "active": true
+  },
+  "specialty": {
+    "id": 107,
+    "code": "60320100",
+    "name": "Jurnalistika"
+  },
+  "group": {
+    "id": 512,
+    "name": "25-18 JURNALISTIKA (RUS)",
+    "educationLang": {
+      "code": "12",
+      "name": "Rus"
+    }
+  },
+  "level": {
+    "code": "11",
+    "name": "1-kurs"
+  },
+  "semester": {
+    "id": 2000,
+    "code": "12",
+    "name": "2-semestr"
+  },
+  "educationYear": {
+    "code": "2025",
+    "name": "2025-2026",
+    "current": true
+  },
+  "year_of_enter": 2025,
+  "roommate_count": null,
+  "is_graduate": false,
+  "total_acload": null,
+  "other": ".",
+  "created_at": 1760333493,
+  "updated_at": 1769850734,
+  "hash": "76d773696b438aca7cc08f3bd6794014576679f1ff2ab7e10ab902286c8cb35d",
+  "validateUrl": "https://student.jmcu.uz/api/info/student?h=e79fb505-f08f-af6a-3fa1-f7fc7553dbc2",
+  "email": ""
+}
+FOUND in Students: SAYDULLAYEVA SEVARA NURIDDINOVNA | ID: 395251102001
+{
+  "id": 9156,
+  "meta_id": 40339,
+  "university": {
+    "code": "395",
+    "name": "O\u2018zbekiston jurnalistika va ommaviy kommunikatsiyalar universiteti"
+  },
+  "full_name": "SAYDULLAYEVA SEVARA NURIDDINOVNA",
+  "short_name": "SAYDULLAYEVA S. N.",
+  "first_name": "SEVARA",
+  "second_name": "SAYDULLAYEVA",
+  "third_name": "NURIDDINOVNA",
+  "gender": {
+    "code": "12",
+    "name": "Ayol"
+  },
+  "birth_date": 1199318400,
+  "student_id_number": "395251102001",
+  "image": "https://hemis.jmcu.uz/static/crop/4/9/320__90_491629945.jpg",
+  "image_full": "https://hemis.jmcu.uz/static/pi/b/2/b229aea5e7017bbf1acebd58483b5d80.jpg",
+  "avg_gpa": 0,
+  "avg_grade": 2.5,
+  "total_credit": 56,
+  "country": {
+    "code": "UZ",
+    "name": "O\u2018zbekiston"
+  },
+  "province": {
+    "code": "1708",
+    "name": "Jizzax viloyati",
+    "_parent": "1708"
+  },
+  "currentProvince": {
+    "code": "1726",
+    "name": "Toshkent shahri",
+    "_parent": "1726"
+  },
+  "district": {
+    "code": "1708212",
+    "name": "Sharof Rashidov tumani",
+    "_parent": "1708"
+  },
+  "currentDistrict": {
+    "code": "1726262",
+    "name": "Uchtepa tumani",
+    "_parent": "1726"
+  },
+  "terrain": {
+    "code": "2010",
+    "name": "UCHTEPA"
+  },
+  "currentTerrain": {
+    "code": "8845",
+    "name": "FARXOD"
+  },
+  "citizenship": {
+    "code": "11",
+    "name": "O\u2018zbekiston Respublikasi fuqarosi"
+  },
+  "studentStatus": {
+    "code": "11",
+    "name": "O\u2018qimoqda"
+  },
+  "_curriculum": 274,
+  "educationForm": {
+    "code": "11",
+    "name": "Kunduzgi"
+  },
+  "educationType": {
+    "code": "11",
+    "name": "Bakalavr"
+  },
+  "paymentForm": {
+    "code": "12",
+    "name": "To\u2018lov-shartnoma"
+  },
+  "studentType": {
+    "code": "13",
+    "name": "Superkontrakt"
+  },
+  "socialCategory": {
+    "code": "10",
+    "name": "Boshqa"
+  },
+  "povertyLevel": null,
+  "accommodation": {
+    "code": "14",
+    "name": "Ijaradagi uyda"
+  },
+  "department": {
+    "id": 43,
+    "name": "Xalqaro munosabatlar va ijtimoiy-gumanitar fanlar fakulteti",
+    "code": "395-107",
+    "structureType": {
+      "code": "11",
+      "name": "Fakultet"
+    },
+    "localityType": {
+      "code": "11",
+      "name": "Mahalliy"
+    },
+    "parent": null,
+    "active": true
+  },
+  "specialty": {
+    "id": 128,
+    "code": "60230108",
+    "name": "Filologiya va tillarni o'qitish (koreys tili)"
+  },
+  "group": {
+    "id": 490,
+    "name": "25-59 FILOLOGIYA VA TILLARNI O\u2018QITISH (KOREYS TILI)",
+    "educationLang": {
+      "code": "11",
+      "name": "O\u2018zbek"
+    }
+  },
+  "level": {
+    "code": "11",
+    "name": "1-kurs"
+  },
+  "semester": {
+    "id": 1936,
+    "code": "12",
+    "name": "2-semestr"
+  },
+  "educationYear": {
+    "code": "2025",
+    "name": "2025-2026",
+    "current": true
+  },
+  "year_of_enter": 2025,
+  "roommate_count": 6,
+  "is_graduate": false,
+  "total_acload": 1680,
+  "other": "2014-2025-yil Sharof Rashidov tuman  10-sonli umumiy o'rta ta'lim maktabi UM ",
+  "created_at": 1760330633,
+  "updated_at": 1769492954,
+  "hash": "c84b8ab53941582433fbfb6f0dd44a75be92b537329860de4c04ef8348d6ebf2",
+  "validateUrl": "https://student.jmcu.uz/api/info/student?h=46f40493-6065-fbd4-9356-6858bcee76a9",
+  "email": "Saydullayevas955@gmail.com"
+}
+FOUND in Students: SAYDULLAYEVA MUNISA ALISHER QIZI | ID: 395251101316
+{
+  "id": 8205,
+  "meta_id": 41648,
+  "university": {
+    "code": "395",
+    "name": "O\u2018zbekiston jurnalistika va ommaviy kommunikatsiyalar universiteti"
+  },
+  "full_name": "SAYDULLAYEVA MUNISA ALISHER QIZI",
+  "short_name": "SAYDULLAYEVA M. A.",
+  "first_name": "MUNISA",
+  "second_name": "SAYDULLAYEVA",
+  "third_name": "ALISHER QIZI",
+  "gender": {
+    "code": "12",
+    "name": "Ayol"
+  },
+  "birth_date": 1192492800,
+  "student_id_number": "395251101316",
+  "image": "https://hemis.jmcu.uz/static/crop/1/9/320__90_194745028.jpg",
+  "image_full": "https://hemis.jmcu.uz/static/pi/4/3/43326ca5eaac0d00659d09314078ca93.jpg",
+  "avg_gpa": 0,
+  "avg_grade": 1.33,
+  "total_credit": 48,
+  "country": {
+    "code": "UZ",
+    "name": "O\u2018zbekiston"
+  },
+  "province": {
+    "code": "1726",
+    "name": "Toshkent shahri",
+    "_parent": "1726"
+  },
+  "currentProvince": {
+    "code": "1726",
+    "name": "Toshkent shahri",
+    "_parent": "1726"
+  },
+  "district": {
+    "code": "1726294",
+    "name": "Chilonzor tumani",
+    "_parent": "1726"
+  },
+  "currentDistrict": {
+    "code": "1726294",
+    "name": "Chilonzor tumani",
+    "_parent": "1726"
+  },
+  "terrain": {
+    "code": "9355",
+    "name": "KATTAQOZIROBOD"
+  },
+  "currentTerrain": {
+    "code": "9355",
+    "name": "KATTAQOZIROBOD"
+  },
+  "citizenship": {
+    "code": "11",
+    "name": "O\u2018zbekiston Respublikasi fuqarosi"
+  },
+  "studentStatus": {
+    "code": "11",
+    "name": "O\u2018qimoqda"
+  },
+  "_curriculum": 287,
+  "educationForm": {
+    "code": "16",
+    "name": "Masofaviy"
+  },
+  "educationType": {
+    "code": "11",
+    "name": "Bakalavr"
+  },
+  "paymentForm": {
+    "code": "12",
+    "name": "To\u2018lov-shartnoma"
+  },
+  "studentType": {
+    "code": "11",
+    "name": "Oddiy"
+  },
+  "socialCategory": {
+    "code": "10",
+    "name": "Boshqa"
+  },
+  "povertyLevel": null,
+  "accommodation": {
+    "code": "11",
+    "name": "O\u2018z uyida"
+  },
+  "department": {
+    "id": 2,
+    "name": "PR va menejment fakulteti",
+    "code": "395-101",
+    "structureType": {
+      "code": "11",
+      "name": "Fakultet"
+    },
+    "localityType": {
+      "code": "11",
+      "name": "Mahalliy"
+    },
+    "parent": null,
+    "active": true
+  },
+  "specialty": {
+    "id": 73,
+    "code": "60320200",
+    "name": "Axborot xizmati va jamoatchilik bilan aloqalar"
+  },
+  "group": {
+    "id": 577,
+    "name": "25-100 AXBOROT XIZMATI VA JAMOATCHILIK BILAN ALOQALAR (MASOFAVIY)",
+    "educationLang": {
+      "code": "11",
+      "name": "O\u2018zbek"
+    }
+  },
+  "level": {
+    "code": "11",
+    "name": "1-kurs"
+  },
+  "semester": {
+    "id": 2040,
+    "code": "12",
+    "name": "2-semestr"
+  },
+  "educationYear": {
+    "code": "2025",
+    "name": "2025-2026",
+    "current": true
+  },
+  "year_of_enter": 2025,
+  "roommate_count": null,
+  "is_graduate": false,
+  "total_acload": 1440,
+  "other": "O'rta maktab\t32-sonli umumiy o'rta ta'lim maktabi\t2025\tUM 03451462",
+  "created_at": 1756533812,
+  "updated_at": 1770024213,
+  "hash": "3f59452374627a80043368318ee51c442e87f4028342f2ab882709e2884fa286",
+  "validateUrl": "https://student.jmcu.uz/api/info/student?h=d4e5f69b-7014-9c5b-dba1-af1aa6974bcc",
+  "email": ""
+}
+FOUND in Students: SAYDULLAYEVA NOZIMA G‘ULOMJON QIZI | ID: 395251100868
+{
+  "id": 7757,
+  "meta_id": 40261,
+  "university": {
+    "code": "395",
+    "name": "O\u2018zbekiston jurnalistika va ommaviy kommunikatsiyalar universiteti"
+  },
+  "full_name": "SAYDULLAYEVA NOZIMA G\u2018ULOMJON QIZI",
+  "short_name": "SAYDULLAYEVA N. G\u2018.",
+  "first_name": "NOZIMA",
+  "second_name": "SAYDULLAYEVA",
+  "third_name": "G\u2018ULOMJON QIZI",
+  "gender": {
+    "code": "12",
+    "name": "Ayol"
+  },
+  "birth_date": 1174348800,
+  "student_id_number": "395251100868",
+  "image": "https://hemis.jmcu.uz/static/crop/1/6/320__90_1615825947.jpg",
+  "image_full": "https://hemis.jmcu.uz/static/pi/f/f/ffdfcd1062eb6632d1a79bfe0852abef.jpg",
+  "avg_gpa": 0,
+  "avg_grade": 2.56,
+  "total_credit": 56,
+  "country": {
+    "code": "UZ",
+    "name": "O\u2018zbekiston"
+  },
+  "province": {
+    "code": "1714",
+    "name": "Namangan viloyati",
+    "_parent": "1714"
+  },
+  "currentProvince": {
+    "code": "1726",
+    "name": "Toshkent shahri",
+    "_parent": "1726"
+  },
+  "district": {
+    "code": "1714237",
+    "name": "Chust tumani",
+    "_parent": "1714"
+  },
+  "currentDistrict": {
+    "code": "1726266",
+    "name": "Yunusobod tumani",
+    "_parent": "1726"
+  },
+  "terrain": {
+    "code": "3824",
+    "name": "GULISTON"
+  },
+  "currentTerrain": {
+    "code": "8923",
+    "name": "YUNUSOTA"
+  },
+  "citizenship": {
+    "code": "11",
+    "name": "O\u2018zbekiston Respublikasi fuqarosi"
+  },
+  "studentStatus": {
+    "code": "11",
+    "name": "O\u2018qimoqda"
+  },
+  "_curriculum": 297,
+  "educationForm": {
+    "code": "11",
+    "name": "Kunduzgi"
+  },
+  "educationType": {
+    "code": "11",
+    "name": "Bakalavr"
+  },
+  "paymentForm": {
+    "code": "12",
+    "name": "To\u2018lov-shartnoma"
+  },
+  "studentType": {
+    "code": "11",
+    "name": "Oddiy"
+  },
+  "socialCategory": {
+    "code": "10",
+    "name": "Boshqa"
+  },
+  "povertyLevel": null,
+  "accommodation": {
+    "code": "14",
+    "name": "Ijaradagi uyda"
+  },
+  "department": {
+    "id": 43,
+    "name": "Xalqaro munosabatlar va ijtimoiy-gumanitar fanlar fakulteti",
+    "code": "395-107",
+    "structureType": {
+      "code": "11",
+      "name": "Fakultet"
+    },
+    "localityType": {
+      "code": "11",
+      "name": "Mahalliy"
+    },
+    "parent": null,
+    "active": true
+  },
+  "specialty": {
+    "id": 96,
+    "code": "60230101",
+    "name": "Filologiya va tillarni o\u2018qitish (ingliz tili)"
+  },
+  "group": {
+    "id": 553,
+    "name": "25-50 FILOLOGIYA VA TILLARNI O\u2018QITISH (INGLIZ TILI)",
+    "educationLang": {
+      "code": "12",
+      "name": "Rus"
+    }
+  },
+  "level": {
+    "code": "11",
+    "name": "1-kurs"
+  },
+  "semester": {
+    "id": 2120,
+    "code": "12",
+    "name": "2-semestr"
+  },
+  "educationYear": {
+    "code": "2025",
+    "name": "2025-2026",
+    "current": true
+  },
+  "year_of_enter": 2025,
+  "roommate_count": 6,
+  "is_graduate": false,
+  "total_acload": 1680,
+  "other": "2014-2025, Namangan viloyati, Chust tumani, 64-sonli umumiy o'rta ta'lim maktabi, ",
+  "created_at": 1756376159,
+  "updated_at": 1769492818,
+  "hash": "acb443df5e0a70d12a0ac6357c235ce720a010b9146be98a23d19e7bac544db1",
+  "validateUrl": "https://student.jmcu.uz/api/info/student?h=846f08f3-7342-5686-2e34-5c38adf8ab97",
+  "email": "ss8511029@gmail.com"
+}
+FOUND in Students: SAYDULLAYEVA MARJONA SAYDIVALI QIZI | ID: 395251100527
+{
+  "id": 7415,
+  "meta_id": 41039,
+  "university": {
+    "code": "395",
+    "name": "O\u2018zbekiston jurnalistika va ommaviy kommunikatsiyalar universiteti"
+  },
+  "full_name": "SAYDULLAYEVA MARJONA SAYDIVALI QIZI",
+  "short_name": "SAYDULLAYEVA M. S.",
+  "first_name": "MARJONA",
+  "second_name": "SAYDULLAYEVA",
+  "third_name": "SAYDIVALI QIZI",
+  "gender": {
+    "code": "12",
+    "name": "Ayol"
+  },
+  "birth_date": 1120435200,
+  "student_id_number": "395251100527",
+  "image": "https://hemis.jmcu.uz/static/crop/3/5/320__90_3515916324.jpg",
+  "image_full": "https://hemis.jmcu.uz/static/pi/a/b/ab146d92567bc5414addc68ef6c8aa83.jpg",
+  "avg_gpa": 0,
+  "avg_grade": 0,
+  "total_credit": 0,
+  "country": {
+    "code": "UZ",
+    "name": "O\u2018zbekiston"
+  },
+  "province": {
+    "code": "1726",
+    "name": "Toshkent shahri",
+    "_parent": "1726"
+  },
+  "currentProvince": {
+    "code": "1726",
+    "name": "Toshkent shahri",
+    "_parent": "1726"
+  },
+  "district": {
+    "code": "1726273",
+    "name": "Mirobod tumani",
+    "_parent": "1726"
+  },
+  "currentDistrict": {
+    "code": "1726273",
+    "name": "Mirobod tumani",
+    "_parent": "1726"
+  },
+  "terrain": {
+    "code": "9940",
+    "name": "FAYZIOBOD"
+  },
+  "currentTerrain": {
+    "code": "9940",
+    "name": "FAYZIOBOD"
+  },
+  "citizenship": {
+    "code": "11",
+    "name": "O\u2018zbekiston Respublikasi fuqarosi"
+  },
+  "studentStatus": {
+    "code": "11",
+    "name": "O\u2018qimoqda"
+  },
+  "_curriculum": 301,
+  "educationForm": {
+    "code": "16",
+    "name": "Masofaviy"
+  },
+  "educationType": {
+    "code": "11",
+    "name": "Bakalavr"
+  },
+  "paymentForm": {
+    "code": "12",
+    "name": "To\u2018lov-shartnoma"
+  },
+  "studentType": {
+    "code": "11",
+    "name": "Oddiy"
+  },
+  "socialCategory": {
+    "code": "10",
+    "name": "Boshqa"
+  },
+  "povertyLevel": null,
+  "accommodation": {
+    "code": "11",
+    "name": "O\u2018z uyida"
+  },
+  "department": {
+    "id": 43,
+    "name": "Xalqaro munosabatlar va ijtimoiy-gumanitar fanlar fakulteti",
+    "code": "395-107",
+    "structureType": {
+      "code": "11",
+      "name": "Fakultet"
+    },
+    "localityType": {
+      "code": "11",
+      "name": "Mahalliy"
+    },
+    "parent": null,
+    "active": true
+  },
+  "specialty": {
+    "id": 97,
+    "code": "60920100",
+    "name": "Ijtimoiy ish"
+  },
+  "group": {
+    "id": 539,
+    "name": "25-104 IJTIMOIY ISH",
+    "educationLang": {
+      "code": "11",
+      "name": "O\u2018zbek"
+    }
+  },
+  "level": {
+    "code": "11",
+    "name": "1-kurs"
+  },
+  "semester": {
+    "id": 2152,
+    "code": "12",
+    "name": "2-semestr"
+  },
+  "educationYear": {
+    "code": "2025",
+    "name": "2025-2026",
+    "current": true
+  },
+  "year_of_enter": 2025,
+  "roommate_count": 4,
+  "is_graduate": false,
+  "total_acload": null,
+  "other": "214-sonli umumiy o'rta ta'lim maktabi",
+  "created_at": 1756302029,
+  "updated_at": 1770032577,
+  "hash": "b925dd52ce95a02e977a07a8375bfad6e4c7dbe27689580b945c34fe6abf9f70",
+  "validateUrl": "https://student.jmcu.uz/api/info/student?h=b2236e92-de29-506c-f898-ba67c972de1f",
+  "email": ""
+}
+FOUND in Students: TOLIBOV KAMRONBEK SHOKIR O‘G‘LI | ID: 395251100172
+{
+  "id": 7060,
+  "meta_id": 42134,
+  "university": {
+    "code": "395",
+    "name": "O\u2018zbekiston jurnalistika va ommaviy kommunikatsiyalar universiteti"
+  },
+  "full_name": "TOLIBOV KAMRONBEK SHOKIR O\u2018G\u2018LI",
+  "short_name": "TOLIBOV K. SH.",
+  "first_name": "KAMRONBEK",
+  "second_name": "TOLIBOV",
+  "third_name": "SHOKIR O\u2018G\u2018LI",
+  "gender": {
+    "code": "11",
+    "name": "Erkak"
+  },
+  "birth_date": 1159660800,
+  "student_id_number": "395251100172",
+  "image": "https://hemis.jmcu.uz/static/crop/9/7/320__90_974370556.jpg",
+  "image_full": "https://hemis.jmcu.uz/static/pi/d/b/db2b70c772c093159cb6f27d45b4764b.jpg",
+  "avg_gpa": 0,
+  "avg_grade": 0,
+  "total_credit": 0,
+  "country": {
+    "code": "UZ",
+    "name": "O\u2018zbekiston"
+  },
+  "province": {
+    "code": "1712",
+    "name": "Navoiy viloyati",
+    "_parent": "1712"
+  },
+  "currentProvince": {
+    "code": "1726",
+    "name": "Toshkent shahri",
+    "_parent": "1726"
+  },
+  "district": {
+    "code": "1712251",
+    "name": "Xatirchi tumani",
+    "_parent": "1712"
+  },
+  "currentDistrict": {
+    "code": "1726266",
+    "name": "Yunusobod tumani",
+    "_parent": "1726"
+  },
+  "terrain": {
+    "code": "3229",
+    "name": "BUGIRDOQ"
+  },
+  "currentTerrain": {
+    "code": "8929",
+    "name": "MATONAT"
+  },
+  "citizenship": {
+    "code": "11",
+    "name": "O\u2018zbekiston Respublikasi fuqarosi"
+  },
+  "studentStatus": {
+    "code": "11",
+    "name": "O\u2018qimoqda"
+  },
+  "_curriculum": 282,
+  "educationForm": {
+    "code": "11",
+    "name": "Kunduzgi"
+  },
+  "educationType": {
+    "code": "11",
+    "name": "Bakalavr"
+  },
+  "paymentForm": {
+    "code": "11",
+    "name": "Davlat granti"
+  },
+  "studentType": {
+    "code": "11",
+    "name": "Oddiy"
+  },
+  "socialCategory": {
+    "code": "12",
+    "name": "1 va 2-guruh nogironligi bo\u2018lgan talabalar"
+  },
+  "povertyLevel": null,
+  "accommodation": {
+    "code": "15",
+    "name": "Talabalar turar joyida"
+  },
+  "department": {
+    "id": 4,
+    "name": "Jurnalistika fakulteti",
+    "code": "395-103",
+    "structureType": {
+      "code": "11",
+      "name": "Fakultet"
+    },
+    "localityType": {
+      "code": "11",
+      "name": "Mahalliy"
+    },
+    "parent": null,
+    "active": true
+  },
+  "specialty": {
+    "id": 107,
+    "code": "60320100",
+    "name": "Jurnalistika"
+  },
+  "group": {
+    "id": 515,
+    "name": "25-02 JURNALISTIKA ",
+    "educationLang": {
+      "code": "11",
+      "name": "O\u2018zbek"
+    }
+  },
+  "level": {
+    "code": "11",
+    "name": "1-kurs"
+  },
+  "semester": {
+    "id": 2000,
+    "code": "12",
+    "name": "2-semestr"
+  },
+  "educationYear": {
+    "code": "2025",
+    "name": "2025-2026",
+    "current": true
+  },
+  "year_of_enter": 2025,
+  "roommate_count": 5,
+  "is_graduate": false,
+  "total_acload": null,
+  "other": "\"Nurli maskan\" ixtisoslashtirilgan maktab-internat\t2025\tUM 03251564",
+  "created_at": 1756219093,
+  "updated_at": 1769850522,
+  "hash": "75d98b1dfa0e5190b3e779a895463501c4766bb49f1d59b6332847865f990ddb",
+  "validateUrl": "https://student.jmcu.uz/api/info/student?h=a7072bb6-3550-6883-5530-2fb2f7673d70",
+  "email": "kamron11@gmail.com"
+}
+FOUND in Students: TEMIROV KAMRONBEK MAXMUD O‘G‘LI | ID: 395241101135
+{
+  "id": 6421,
+  "meta_id": 37156,
+  "university": {
+    "code": "395",
+    "name": "O\u2018zbekiston jurnalistika va ommaviy kommunikatsiyalar universiteti"
+  },
+  "full_name": "TEMIROV KAMRONBEK MAXMUD O\u2018G\u2018LI",
+  "short_name": "TEMIROV K. M.",
+  "first_name": "KAMRONBEK",
+  "second_name": "TEMIROV",
+  "third_name": "MAXMUD O\u2018G\u2018LI",
+  "gender": {
+    "code": "11",
+    "name": "Erkak"
+  },
+  "birth_date": 1101340800,
+  "student_id_number": "395241101135",
+  "image": "https://hemis.jmcu.uz/static/crop/3/9/320__90_3905881971.jpg",
+  "image_full": "https://hemis.jmcu.uz/static/pi/6/d/6d1ad34c360809987e93b44ce2dbe649.jpg",
+  "avg_gpa": 4.42,
+  "avg_grade": 2.7,
+  "total_credit": 72,
+  "country": {
+    "code": "UZ",
+    "name": "O\u2018zbekiston"
+  },
+  "province": {
+    "code": "1727",
+    "name": "Toshkent viloyati",
+    "_parent": "1727"
+  },
+  "currentProvince": {
+    "code": "1727",
+    "name": "Toshkent viloyati",
+    "_parent": "1727"
+  },
+  "district": {
+    "code": "1727419",
+    "name": "Chirchiq shahri",
+    "_parent": "1727"
+  },
+  "currentDistrict": {
+    "code": "1727419",
+    "name": "Chirchiq shahri",
+    "_parent": "1727"
+  },
+  "terrain": {
+    "code": "7201",
+    "name": "10SONLIISTIQLOL"
+  },
+  "currentTerrain": {
+    "code": "7201",
+    "name": "10SONLIISTIQLOL"
+  },
+  "citizenship": {
+    "code": "11",
+    "name": "O\u2018zbekiston Respublikasi fuqarosi"
+  },
+  "studentStatus": {
+    "code": "11",
+    "name": "O\u2018qimoqda"
+  },
+  "_curriculum": 252,
+  "educationForm": {
+    "code": "13",
+    "name": "Sirtqi"
+  },
+  "educationType": {
+    "code": "11",
+    "name": "Bakalavr"
+  },
+  "paymentForm": {
+    "code": "12",
+    "name": "To\u2018lov-shartnoma"
+  },
+  "studentType": {
+    "code": "11",
+    "name": "Oddiy"
+  },
+  "socialCategory": {
+    "code": "10",
+    "name": "Boshqa"
+  },
+  "povertyLevel": null,
+  "accommodation": {
+    "code": "11",
+    "name": "O\u2018z uyida"
+  },
+  "department": {
+    "id": 35,
+    "name": "Sirtqi bo'limi",
+    "code": "395-105",
+    "structureType": {
+      "code": "11",
+      "name": "Fakultet"
+    },
+    "localityType": {
+      "code": "11",
+      "name": "Mahalliy"
+    },
+    "parent": null,
+    "active": true
+  },
+  "specialty": {
+    "id": 58,
+    "code": "60320200",
+    "name": "Axborot xizmati va jamoatchilik bilan aloqalar"
+  },
+  "group": {
+    "id": 479,
+    "name": "55-24 AXBOROT XIZMATI VA JAMOATCHILIK BILAN ALOQALAR 2024-2025 (SIRTQI)",
+    "educationLang": {
+      "code": "11",
+      "name": "O\u2018zbek"
+    }
+  },
+  "level": {
+    "code": "12",
+    "name": "2-kurs"
+  },
+  "semester": {
+    "id": 1771,
+    "code": "13",
+    "name": "3-semestr"
+  },
+  "educationYear": {
+    "code": "2025",
+    "name": "2025-2026",
+    "current": true
+  },
+  "year_of_enter": 2024,
+  "roommate_count": null,
+  "is_graduate": false,
+  "total_acload": 2160,
+  "other": "2022\t2-sonli umumiy o'rta ta'lim maktabi\tUM \u2116 1466091",
+  "created_at": 1727419015,
+  "updated_at": 1767645945,
+  "hash": "a091c005a163868403a4f0ce7f482d8d51415cbd93725466d10f57e130f7c0b6",
+  "validateUrl": "https://student.jmcu.uz/api/info/student?h=5f94ca1b-e9be-1439-3789-1de02acc9f95",
+  "email": ""
+}
+FOUND in Students: SAYDULLAYEVA MOHINUR FARHOD QIZI | ID: 395241101085
+{
+  "id": 6369,
+  "meta_id": 37011,
+  "university": {
+    "code": "395",
+    "name": "O\u2018zbekiston jurnalistika va ommaviy kommunikatsiyalar universiteti"
+  },
+  "full_name": "SAYDULLAYEVA MOHINUR FARHOD QIZI",
+  "short_name": "SAYDULLAYEVA M. F.",
+  "first_name": "MOHINUR",
+  "second_name": "SAYDULLAYEVA",
+  "third_name": "FARHOD QIZI",
+  "gender": {
+    "code": "12",
+    "name": "Ayol"
+  },
+  "birth_date": 1146700800,
+  "student_id_number": "395241101085",
+  "image": "https://hemis.jmcu.uz/static/crop/4/1/320__90_4140215194.jpg",
+  "image_full": "https://hemis.jmcu.uz/static/pi/9/a/9adb461b161565602bfe7290d19bbc06.jpg",
+  "avg_gpa": 3.92,
+  "avg_grade": 2.4,
+  "total_credit": 72,
+  "country": {
+    "code": "UZ",
+    "name": "O\u2018zbekiston"
+  },
+  "province": {
+    "code": "1724",
+    "name": "Sirdaryo viloyati",
+    "_parent": "1724"
+  },
+  "currentProvince": {
+    "code": "1724",
+    "name": "Sirdaryo viloyati",
+    "_parent": "1724"
+  },
+  "district": {
+    "code": "1724226",
+    "name": "Sardoba tumani",
+    "_parent": "1724"
+  },
+  "currentDistrict": {
+    "code": "1724226",
+    "name": "Sardoba tumani",
+    "_parent": "1724"
+  },
+  "terrain": {
+    "code": "6037",
+    "name": "YANGIQISHLOQ"
+  },
+  "currentTerrain": {
+    "code": "6037",
+    "name": "YANGIQISHLOQ"
+  },
+  "citizenship": {
+    "code": "11",
+    "name": "O\u2018zbekiston Respublikasi fuqarosi"
+  },
+  "studentStatus": {
+    "code": "11",
+    "name": "O\u2018qimoqda"
+  },
+  "_curriculum": 251,
+  "educationForm": {
+    "code": "13",
+    "name": "Sirtqi"
+  },
+  "educationType": {
+    "code": "11",
+    "name": "Bakalavr"
+  },
+  "paymentForm": {
+    "code": "12",
+    "name": "To\u2018lov-shartnoma"
+  },
+  "studentType": {
+    "code": "11",
+    "name": "Oddiy"
+  },
+  "socialCategory": {
+    "code": "10",
+    "name": "Boshqa"
+  },
+  "povertyLevel": null,
+  "accommodation": {
+    "code": "11",
+    "name": "O\u2018z uyida"
+  },
+  "department": {
+    "id": 35,
+    "name": "Sirtqi bo'limi",
+    "code": "395-105",
+    "structureType": {
+      "code": "11",
+      "name": "Fakultet"
+    },
+    "localityType": {
+      "code": "11",
+      "name": "Mahalliy"
+    },
+    "parent": null,
+    "active": true
+  },
+  "specialty": {
+    "id": 116,
+    "code": "60320100",
+    "name": "Jurnalistika"
+  },
+  "group": {
+    "id": 476,
+    "name": "51-24 JURNALISTIKA 2024-2025 (SIRTQI)",
+    "educationLang": {
+      "code": "11",
+      "name": "O\u2018zbek"
+    }
+  },
+  "level": {
+    "code": "12",
+    "name": "2-kurs"
+  },
+  "semester": {
+    "id": 1761,
+    "code": "13",
+    "name": "3-semestr"
+  },
+  "educationYear": {
+    "code": "2025",
+    "name": "2025-2026",
+    "current": true
+  },
+  "year_of_enter": 2024,
+  "roommate_count": null,
+  "is_graduate": false,
+  "total_acload": 2160,
+  "other": "2023, 9-sonli umumiy o'rta ta'lim maktabi,",
+  "created_at": 1727242758,
+  "updated_at": 1768990342,
+  "hash": "fa2285ea1492f2bed1aebe55762aa899453546d749e77c9088c6677b12ad6da7",
+  "validateUrl": "https://student.jmcu.uz/api/info/student?h=b3f1eb43-19f1-29ff-c9a3-7efcb53bffc9",
+  "email": "saydullayeva427@gmail.com"
+}
+FOUND in Students: SAYDULLAYEV MUZAFFAR RUSTAM O‘G‘LI | ID: 395241200009
+{
+  "id": 6253,
+  "meta_id": 43206,
+  "university": {
+    "code": "395",
+    "name": "O\u2018zbekiston jurnalistika va ommaviy kommunikatsiyalar universiteti"
+  },
+  "full_name": "SAYDULLAYEV MUZAFFAR RUSTAM O\u2018G\u2018LI",
+  "short_name": "SAYDULLAYEV M. R.",
+  "first_name": "MUZAFFAR",
+  "second_name": "SAYDULLAYEV",
+  "third_name": "RUSTAM O\u2018G\u2018LI",
+  "gender": {
+    "code": "11",
+    "name": "Erkak"
+  },
+  "birth_date": 996883200,
+  "student_id_number": "395241200009",
+  "image": "https://hemis.jmcu.uz/static/crop/3/5/320__90_3529252228.jpg",
+  "image_full": "https://hemis.jmcu.uz/static/pi/4/7/4713926c035090aa702993b2bfdb2257.jpg",
+  "avg_gpa": 4.13,
+  "avg_grade": 4.1,
+  "total_credit": 60,
+  "country": {
+    "code": "UZ",
+    "name": "O\u2018zbekiston"
+  },
+  "province": {
+    "code": "1724",
+    "name": "Sirdaryo viloyati",
+    "_parent": "1724"
+  },
+  "currentProvince": {
+    "code": "1724",
+    "name": "Sirdaryo viloyati",
+    "_parent": "1724"
+  },
+  "district": {
+    "code": "1724226",
+    "name": "Sardoba tumani",
+    "_parent": "1724"
+  },
+  "currentDistrict": {
+    "code": "1724226",
+    "name": "Sardoba tumani",
+    "_parent": "1724"
+  },
+  "terrain": {
+    "code": "6038",
+    "name": "BIRLASHGAN"
+  },
+  "currentTerrain": {
+    "code": "6038",
+    "name": "BIRLASHGAN"
+  },
+  "citizenship": {
+    "code": "11",
+    "name": "O\u2018zbekiston Respublikasi fuqarosi"
+  },
+  "studentStatus": {
+    "code": "11",
+    "name": "O\u2018qimoqda"
+  },
+  "_curriculum": 261,
+  "educationForm": {
+    "code": "11",
+    "name": "Kunduzgi"
+  },
+  "educationType": {
+    "code": "12",
+    "name": "Magistr"
+  },
+  "paymentForm": {
+    "code": "12",
+    "name": "To\u2018lov-shartnoma"
+  },
+  "studentType": {
+    "code": "11",
+    "name": "Oddiy"
+  },
+  "socialCategory": {
+    "code": "10",
+    "name": "Boshqa"
+  },
+  "povertyLevel": null,
+  "accommodation": {
+    "code": "14",
+    "name": "Ijaradagi uyda"
+  },
+  "department": {
+    "id": 36,
+    "name": "Magistratura bo'limi",
+    "code": "395-104",
+    "structureType": {
+      "code": "11",
+      "name": "Fakultet"
+    },
+    "localityType": {
+      "code": "11",
+      "name": "Mahalliy"
+    },
+    "parent": null,
+    "active": true
+  },
+  "specialty": {
+    "id": 113,
+    "code": "70320101",
+    "name": "Jurnalistika"
+  },
+  "group": {
+    "id": 456,
+    "name": "74-24 JURNALISTIKA",
+    "educationLang": {
+      "code": "11",
+      "name": "O\u2018zbek"
+    }
+  },
+  "level": {
+    "code": "12",
+    "name": "2-kurs"
+  },
+  "semester": {
+    "id": 1862,
+    "code": "14",
+    "name": "4-semestr"
+  },
+  "educationYear": {
+    "code": "2025",
+    "name": "2025-2026",
+    "current": true
+  },
+  "year_of_enter": 2024,
+  "roommate_count": null,
+  "is_graduate": true,
+  "total_acload": 1800,
+  "other": "2020-2024 Guliston davlat universiteti B00533086",
+  "created_at": 1726733773,
+  "updated_at": 1770454881,
+  "hash": "2306049c7d7551266e6e4ef8261375d3d77f48a2a0d703c2cb048ffb0b9893bc",
+  "validateUrl": "https://student.jmcu.uz/api/info/student?h=43ccbe82-142c-e858-b177-5eb0a7c1f987",
+  "email": ""
+}
+FOUND in Students: ALIJANOV KAMRONBEK XAYRULLAYEVICH | ID: 395241100962
+{
+  "id": 6158,
+  "meta_id": 42097,
+  "university": {
+    "code": "395",
+    "name": "O\u2018zbekiston jurnalistika va ommaviy kommunikatsiyalar universiteti"
+  },
+  "full_name": "ALIJANOV KAMRONBEK XAYRULLAYEVICH",
+  "short_name": "ALIJANOV K. X.",
+  "first_name": "KAMRONBEK",
+  "second_name": "ALIJANOV",
+  "third_name": "XAYRULLAYEVICH",
+  "gender": {
+    "code": "11",
+    "name": "Erkak"
+  },
+  "birth_date": 1168041600,
+  "student_id_number": "395241100962",
+  "image": "https://hemis.jmcu.uz/static/crop/1/9/320__90_1994370888.jpg",
+  "image_full": "https://hemis.jmcu.uz/static/pi/4/0/408252ee60dbf9588f4955e7c5ddc72a.jpg",
+  "avg_gpa": 3.43,
+  "avg_grade": 3.4,
+  "total_credit": 56,
+  "country": {
+    "code": "UZ",
+    "name": "O\u2018zbekiston"
+  },
+  "province": {
+    "code": "1726",
+    "name": "Toshkent shahri",
+    "_parent": "1726"
+  },
+  "currentProvince": {
+    "code": "1726",
+    "name": "Toshkent shahri",
+    "_parent": "1726"
+  },
+  "district": {
+    "code": "1726273",
+    "name": "Mirobod tumani",
+    "_parent": "1726"
+  },
+  "currentDistrict": {
+    "code": "1726273",
+    "name": "Mirobod tumani",
+    "_parent": "1726"
+  },
+  "terrain": {
+    "code": "10124",
+    "name": "YANGIQOYLIK"
+  },
+  "currentTerrain": {
+    "code": "10124",
+    "name": "YANGIQOYLIK"
+  },
+  "citizenship": {
+    "code": "11",
+    "name": "O\u2018zbekiston Respublikasi fuqarosi"
+  },
+  "studentStatus": {
+    "code": "11",
+    "name": "O\u2018qimoqda"
+  },
+  "_curriculum": 237,
+  "educationForm": {
+    "code": "11",
+    "name": "Kunduzgi"
+  },
+  "educationType": {
+    "code": "11",
+    "name": "Bakalavr"
+  },
+  "paymentForm": {
+    "code": "12",
+    "name": "To\u2018lov-shartnoma"
+  },
+  "studentType": {
+    "code": "11",
+    "name": "Oddiy"
+  },
+  "socialCategory": {
+    "code": "10",
+    "name": "Boshqa"
+  },
+  "povertyLevel": null,
+  "accommodation": {
+    "code": "11",
+    "name": "O\u2018z uyida"
+  },
+  "department": {
+    "id": 4,
+    "name": "Jurnalistika fakulteti",
+    "code": "395-103",
+    "structureType": {
+      "code": "11",
+      "name": "Fakultet"
+    },
+    "localityType": {
+      "code": "11",
+      "name": "Mahalliy"
+    },
+    "parent": null,
+    "active": true
+  },
+  "specialty": {
+    "id": 107,
+    "code": "60320100",
+    "name": "Jurnalistika"
+  },
+  "group": {
+    "id": 451,
+    "name": "22-24 JURNALISTIKA (RUS GURUHI)",
+    "educationLang": {
+      "code": "12",
+      "name": "Rus"
+    }
+  },
+  "level": {
+    "code": "12",
+    "name": "2-kurs"
+  },
+  "semester": {
+    "id": 1636,
+    "code": "14",
+    "name": "4-semestr"
+  },
+  "educationYear": {
+    "code": "2025",
+    "name": "2025-2026",
+    "current": true
+  },
+  "year_of_enter": 2024,
+  "roommate_count": 2,
+  "is_graduate": false,
+  "total_acload": 1680,
+  "other": "2024  Sergeli tuman kasb-hunar maktabi\t",
+  "created_at": 1726481023,
+  "updated_at": 1769850473,
+  "hash": "7a0d729c98932dbb0fb68b82744cfec0f0c59c5f499a4f11f15a6c8d5d91b1a2",
+  "validateUrl": "https://student.jmcu.uz/api/info/student?h=1467428b-0ec1-9e45-c21e-a5e6c6ce3d70",
+  "email": "kamrona623@gmail.com"
+}
+FOUND in Students: SAYDULLAYEVA MASHXURA AKMAL QIZI | ID: 395241100066
+{
+  "id": 5257,
+  "meta_id": 39578,
+  "university": {
+    "code": "395",
+    "name": "O\u2018zbekiston jurnalistika va ommaviy kommunikatsiyalar universiteti"
+  },
+  "full_name": "SAYDULLAYEVA MASHXURA AKMAL QIZI",
+  "short_name": "SAYDULLAYEVA M. A.",
+  "first_name": "MASHXURA",
+  "second_name": "SAYDULLAYEVA",
+  "third_name": "AKMAL QIZI",
+  "gender": {
+    "code": "12",
+    "name": "Ayol"
+  },
+  "birth_date": 1161907200,
+  "student_id_number": "395241100066",
+  "image": "https://hemis.jmcu.uz/static/crop/2/2/320__90_2276581774.jpg",
+  "image_full": "https://hemis.jmcu.uz/static/pi/9/f/9fc9031cde8c58eb656da071fcccff0a.jpg",
+  "avg_gpa": 4.5,
+  "avg_grade": 3.83,
+  "total_credit": 108,
+  "country": {
+    "code": "UZ",
+    "name": "O\u2018zbekiston"
+  },
+  "province": {
+    "code": "1718",
+    "name": "Samarqand viloyati",
+    "_parent": "1718"
+  },
+  "currentProvince": {
+    "code": "1726",
+    "name": "Toshkent shahri",
+    "_parent": "1726"
+  },
+  "district": {
+    "code": "1718224",
+    "name": "Payariq tumani",
+    "_parent": "1718"
+  },
+  "currentDistrict": {
+    "code": "1726283",
+    "name": "Sirg\u2018ali tumani",
+    "_parent": "1726"
+  },
+  "terrain": {
+    "code": "4509",
+    "name": "NAVROZ"
+  },
+  "currentTerrain": {
+    "code": "15620",
+    "name": "XONTEPA"
+  },
+  "citizenship": {
+    "code": "11",
+    "name": "O\u2018zbekiston Respublikasi fuqarosi"
+  },
+  "studentStatus": {
+    "code": "11",
+    "name": "O\u2018qimoqda"
+  },
+  "_curriculum": 232,
+  "educationForm": {
+    "code": "11",
+    "name": "Kunduzgi"
+  },
+  "educationType": {
+    "code": "11",
+    "name": "Bakalavr"
+  },
+  "paymentForm": {
+    "code": "11",
+    "name": "Davlat granti"
+  },
+  "studentType": {
+    "code": "11",
+    "name": "Oddiy"
+  },
+  "socialCategory": {
+    "code": "10",
+    "name": "Boshqa"
+  },
+  "povertyLevel": {
+    "code": "10",
+    "name": "Mavjud emas"
+  },
+  "accommodation": {
+    "code": "14",
+    "name": "Ijaradagi uyda"
+  },
+  "department": {
+    "id": 2,
+    "name": "PR va menejment fakulteti",
+    "code": "395-101",
+    "structureType": {
+      "code": "11",
+      "name": "Fakultet"
+    },
+    "localityType": {
+      "code": "11",
+      "name": "Mahalliy"
+    },
+    "parent": null,
+    "active": true
+  },
+  "specialty": {
+    "id": 73,
+    "code": "60320200",
+    "name": "Axborot xizmati va jamoatchilik bilan aloqalar"
+  },
+  "group": {
+    "id": 399,
+    "name": "25-24 AXBOROT XIZMATI VA JAMOATCHILIK BILAN ALOQALAR",
+    "educationLang": {
+      "code": "11",
+      "name": "O\u2018zbek"
+    }
+  },
+  "level": {
+    "code": "12",
+    "name": "2-kurs"
+  },
+  "semester": {
+    "id": 1596,
+    "code": "14",
+    "name": "4-semestr"
+  },
+  "educationYear": {
+    "code": "2025",
+    "name": "2025-2026",
+    "current": true
+  },
+  "year_of_enter": 2024,
+  "roommate_count": 4,
+  "is_graduate": false,
+  "total_acload": 3240,
+  "other": "Payariq tuman 3-son kasb-hunar maktabi",
+  "created_at": 1725541280,
+  "updated_at": 1769848201,
+  "hash": "a2c28803907af192ab832f286edb0b25326b9a65c2abd73a276ba9adffbe8cfb",
+  "validateUrl": "https://student.jmcu.uz/api/info/student?h=a8ffc740-72ef-d935-2bb1-09b5f7a2373e",
+  "email": ""
+}
+FOUND in Students: RISBEKOV KAMRONBEK AKRAM O‘G‘LI | ID: 395231100986
+{
+  "id": 5019,
+  "meta_id": 37598,
+  "university": {
+    "code": "395",
+    "name": "O\u2018zbekiston jurnalistika va ommaviy kommunikatsiyalar universiteti"
+  },
+  "full_name": "RISBEKOV KAMRONBEK AKRAM O\u2018G\u2018LI",
+  "short_name": "RISBEKOV K. A.",
+  "first_name": "KAMRONBEK",
+  "second_name": "RISBEKOV",
+  "third_name": "AKRAM O\u2018G\u2018LI",
+  "gender": {
+    "code": "11",
+    "name": "Erkak"
+  },
+  "birth_date": 1086739200,
+  "student_id_number": "395231100986",
+  "image": "https://hemis.jmcu.uz/static/crop/4/0/320__90_4054832414.jpg",
+  "image_full": "https://hemis.jmcu.uz/static/pi/5/e/5ecc121e91035efc1c21e021ba8dde6b.jpg",
+  "avg_gpa": 4.04,
+  "avg_grade": 4.13,
+  "total_credit": 88,
+  "country": {
+    "code": "UZ",
+    "name": "O\u2018zbekiston"
+  },
+  "province": {
+    "code": "1708",
+    "name": "Jizzax viloyati",
+    "_parent": "1708"
+  },
+  "currentProvince": {
+    "code": "1708",
+    "name": "Jizzax viloyati",
+    "_parent": "1708"
+  },
+  "district": {
+    "code": "1708401",
+    "name": "Jizzax shahri",
+    "_parent": "1708"
+  },
+  "currentDistrict": {
+    "code": "1708401",
+    "name": "Jizzax shahri",
+    "_parent": "1708"
+  },
+  "terrain": {
+    "code": "10066",
+    "name": "SAYXAN"
+  },
+  "currentTerrain": {
+    "code": "10066",
+    "name": "SAYXAN"
+  },
+  "citizenship": {
+    "code": "11",
+    "name": "O\u2018zbekiston Respublikasi fuqarosi"
+  },
+  "studentStatus": {
+    "code": "11",
+    "name": "O\u2018qimoqda"
+  },
+  "_curriculum": 214,
+  "educationForm": {
+    "code": "13",
+    "name": "Sirtqi"
+  },
+  "educationType": {
+    "code": "11",
+    "name": "Bakalavr"
+  },
+  "paymentForm": {
+    "code": "12",
+    "name": "To\u2018lov-shartnoma"
+  },
+  "studentType": {
+    "code": "11",
+    "name": "Oddiy"
+  },
+  "socialCategory": {
+    "code": "10",
+    "name": "Boshqa"
+  },
+  "povertyLevel": null,
+  "accommodation": {
+    "code": "11",
+    "name": "O\u2018z uyida"
+  },
+  "department": {
+    "id": 35,
+    "name": "Sirtqi bo'limi",
+    "code": "395-105",
+    "structureType": {
+      "code": "11",
+      "name": "Fakultet"
+    },
+    "localityType": {
+      "code": "11",
+      "name": "Mahalliy"
+    },
+    "parent": null,
+    "active": true
+  },
+  "specialty": {
+    "id": 89,
+    "code": "60411200",
+    "name": "Menejment ((mediamenejment))"
+  },
+  "group": {
+    "id": 362,
+    "name": "73-23 MENEJMENT (MEDIAMENEJMENT) SIRTQI",
+    "educationLang": {
+      "code": "11",
+      "name": "O\u2018zbek"
+    }
+  },
+  "level": {
+    "code": "13",
+    "name": "3-kurs"
+  },
+  "semester": {
+    "id": 1513,
+    "code": "15",
+    "name": "5-semestr"
+  },
+  "educationYear": {
+    "code": "2025",
+    "name": "2025-2026",
+    "current": true
+  },
+  "year_of_enter": 2023,
+  "roommate_count": null,
+  "is_graduate": false,
+  "total_acload": 2640,
+  "other": "2022, Jizzax shahridagi 20-umumiy o\u2018rta ta'lim maktabi, UM \u21161272100",
+  "created_at": 1697030628,
+  "updated_at": 1765135582,
+  "hash": "2d7c6868bfa153122304a5c09a03ffcfe4e2659e7f0c6473e0b5baef979d106f",
+  "validateUrl": "https://student.jmcu.uz/api/info/student?h=50c69b0a-b014-a441-0257-23e705dd2234",
+  "email": ""
+}
+FOUND in Students: SAYDULLAYEVA MUQADDAM SHAVQIDDIN QIZI | ID: 395231100577
+{
+  "id": 4600,
+  "meta_id": 37348,
+  "university": {
+    "code": "395",
+    "name": "O\u2018zbekiston jurnalistika va ommaviy kommunikatsiyalar universiteti"
+  },
+  "full_name": "SAYDULLAYEVA MUQADDAM SHAVQIDDIN QIZI",
+  "short_name": "SAYDULLAYEVA M. SH.",
+  "first_name": "MUQADDAM",
+  "second_name": "SAYDULLAYEVA",
+  "third_name": "SHAVQIDDIN QIZI",
+  "gender": {
+    "code": "12",
+    "name": "Ayol"
+  },
+  "birth_date": 1109635200,
+  "student_id_number": "395231100577",
+  "image": "https://hemis.jmcu.uz/static/crop/8/3/320__90_839297302.jpg",
+  "image_full": "https://hemis.jmcu.uz/static/pi/5/1/51dd817da9ec1f05ba3b72f099d8dbc0.jpg",
+  "avg_gpa": 4.54,
+  "avg_grade": 4.5,
+  "total_credit": 92,
+  "country": {
+    "code": "UZ",
+    "name": "O\u2018zbekiston"
+  },
+  "province": {
+    "code": "1718",
+    "name": "Samarqand viloyati",
+    "_parent": "1718"
+  },
+  "currentProvince": {
+    "code": "1718",
+    "name": "Samarqand viloyati",
+    "_parent": "1718"
+  },
+  "district": {
+    "code": "1718216",
+    "name": "Qo\u2018shrabot tumani",
+    "_parent": "1718"
+  },
+  "currentDistrict": {
+    "code": "1718216",
+    "name": "Qo\u2018shrabot tumani",
+    "_parent": "1718"
+  },
+  "terrain": null,
+  "currentTerrain": null,
+  "citizenship": {
+    "code": "11",
+    "name": "O\u2018zbekiston Respublikasi fuqarosi"
+  },
+  "studentStatus": {
+    "code": "11",
+    "name": "O\u2018qimoqda"
+  },
+  "_curriculum": 201,
+  "educationForm": {
+    "code": "13",
+    "name": "Sirtqi"
+  },
+  "educationType": {
+    "code": "11",
+    "name": "Bakalavr"
+  },
+  "paymentForm": {
+    "code": "12",
+    "name": "To\u2018lov-shartnoma"
+  },
+  "studentType": {
+    "code": "11",
+    "name": "Oddiy"
+  },
+  "socialCategory": {
+    "code": "10",
+    "name": "Boshqa"
+  },
+  "povertyLevel": null,
+  "accommodation": {
+    "code": "11",
+    "name": "O\u2018z uyida"
+  },
+  "department": {
+    "id": 35,
+    "name": "Sirtqi bo'limi",
+    "code": "395-105",
+    "structureType": {
+      "code": "11",
+      "name": "Fakultet"
+    },
+    "localityType": {
+      "code": "11",
+      "name": "Mahalliy"
+    },
+    "parent": null,
+    "active": true
+  },
+  "specialty": {
+    "id": 56,
+    "code": "60320100",
+    "name": "Jurnalistika (Bosma OAV jurnalistikasi)"
+  },
+  "group": {
+    "id": 348,
+    "name": "59-23 JURNALISTIKA: BOSMA OAV JURNALISTIKASI (SIRTQI)",
+    "educationLang": {
+      "code": "11",
+      "name": "O\u2018zbek"
+    }
+  },
+  "level": {
+    "code": "13",
+    "name": "3-kurs"
+  },
+  "semester": {
+    "id": 1383,
+    "code": "15",
+    "name": "5-semestr"
+  },
+  "educationYear": {
+    "code": "2025",
+    "name": "2025-2026",
+    "current": true
+  },
+  "year_of_enter": 2023,
+  "roommate_count": null,
+  "is_graduate": false,
+  "total_acload": 2760,
+  "other": "2023, Qo'shrabot tumani 42-umumiy o\u2018rta ta'lim maktabi, UM \u211601928957",
+  "created_at": 1694867167,
+  "updated_at": 1765610285,
+  "hash": "7d520e4c9c3e53aed23b72c9410057e7135f6226ce38aa05b311b54512862038",
+  "validateUrl": "https://student.jmcu.uz/api/info/student?h=7a23e202-b37a-ed6d-33a7-bdbf9290de1e",
+  "email": "saydullayevamuka@gmail.com"
+}
+FOUND in Students: KARIMJONOV KAMRONBEK DILSHOD O‘G‘LI | ID: 395231100496
+{
+  "id": 4521,
+  "meta_id": 39700,
+  "university": {
+    "code": "395",
+    "name": "O\u2018zbekiston jurnalistika va ommaviy kommunikatsiyalar universiteti"
+  },
+  "full_name": "KARIMJONOV KAMRONBEK DILSHOD O\u2018G\u2018LI",
+  "short_name": "KARIMJONOV K. D.",
+  "first_name": "KAMRONBEK",
+  "second_name": "KARIMJONOV",
+  "third_name": "DILSHOD O\u2018G\u2018LI",
+  "gender": {
+    "code": "11",
+    "name": "Erkak"
+  },
+  "birth_date": 1138838400,
+  "student_id_number": "395231100496",
+  "image": "https://hemis.jmcu.uz/static/crop/2/2/320__90_2245730433.jpg",
+  "image_full": "https://hemis.jmcu.uz/static/pi/c/f/cf651b2a4c6bbd5f54c0ff0b44ad48c7.jpg",
+  "avg_gpa": 4.43,
+  "avg_grade": 4.04,
+  "total_credit": 168,
+  "country": {
+    "code": "UZ",
+    "name": "O\u2018zbekiston"
+  },
+  "province": {
+    "code": "1727",
+    "name": "Toshkent viloyati",
+    "_parent": "1727"
+  },
+  "currentProvince": {
+    "code": "1727",
+    "name": "Toshkent viloyati",
+    "_parent": "1727"
+  },
+  "district": {
+    "code": "1727224",
+    "name": "Bo\u2018stonliq tumani",
+    "_parent": "1727"
+  },
+  "currentDistrict": {
+    "code": "1727224",
+    "name": "Bo\u2018stonliq tumani",
+    "_parent": "1727"
+  },
+  "terrain": {
+    "code": "6306",
+    "name": "NAMUNA"
+  },
+  "currentTerrain": {
+    "code": "6306",
+    "name": "NAMUNA"
+  },
+  "citizenship": {
+    "code": "11",
+    "name": "O\u2018zbekiston Respublikasi fuqarosi"
+  },
+  "studentStatus": {
+    "code": "11",
+    "name": "O\u2018qimoqda"
+  },
+  "_curriculum": 190,
+  "educationForm": {
+    "code": "11",
+    "name": "Kunduzgi"
+  },
+  "educationType": {
+    "code": "11",
+    "name": "Bakalavr"
+  },
+  "paymentForm": {
+    "code": "12",
+    "name": "To\u2018lov-shartnoma"
+  },
+  "studentType": {
+    "code": "11",
+    "name": "Oddiy"
+  },
+  "socialCategory": {
+    "code": "10",
+    "name": "Boshqa"
+  },
+  "povertyLevel": {
+    "code": "10",
+    "name": "Mavjud emas"
+  },
+  "accommodation": {
+    "code": "11",
+    "name": "O\u2018z uyida"
+  },
+  "department": {
+    "id": 2,
+    "name": "PR va menejment fakulteti",
+    "code": "395-101",
+    "structureType": {
+      "code": "11",
+      "name": "Fakultet"
+    },
+    "localityType": {
+      "code": "11",
+      "name": "Mahalliy"
+    },
+    "parent": null,
+    "active": true
+  },
+  "specialty": {
+    "id": 82,
+    "code": "60411200",
+    "name": "Menejment (mediamarketing va reklama)"
+  },
+  "group": {
+    "id": 329,
+    "name": "39-23 MENEJMENT (MEDIAMENEJMENT)",
+    "educationLang": {
+      "code": "11",
+      "name": "O\u2018zbek"
+    }
+  },
+  "level": {
+    "code": "13",
+    "name": "3-kurs"
+  },
+  "semester": {
+    "id": 1284,
+    "code": "16",
+    "name": "6-semestr"
+  },
+  "educationYear": {
+    "code": "2025",
+    "name": "2025-2026",
+    "current": true
+  },
+  "year_of_enter": 2023,
+  "roommate_count": null,
+  "is_graduate": false,
+  "total_acload": 5040,
+  "other": "2012-2023   Toshkent viloyat bo'stonliq tuymani   22 sonli umumiy o'rta talm maktabi   \u2116  01834129",
+  "created_at": 1694751011,
+  "updated_at": 1770024159,
+  "hash": "97d75a712e805f13fb005e0cea14c4a2018dd5649aaee908075da971a8749f93",
+  "validateUrl": "https://student.jmcu.uz/api/info/student?h=2a89b5c9-6a13-d916-c1eb-e2ae8507fb79",
+  "email": ""
+}
+FOUND in Students: SAYDULLAYEVA NILUFAR ABDUALIM QIZI | ID: 395231100253
+{
+  "id": 4245,
+  "meta_id": 42640,
+  "university": {
+    "code": "395",
+    "name": "O\u2018zbekiston jurnalistika va ommaviy kommunikatsiyalar universiteti"
+  },
+  "full_name": "SAYDULLAYEVA NILUFAR ABDUALIM QIZI",
+  "short_name": "SAYDULLAYEVA N. A.",
+  "first_name": "NILUFAR",
+  "second_name": "SAYDULLAYEVA",
+  "third_name": "ABDUALIM QIZI",
+  "gender": {
+    "code": "12",
+    "name": "Ayol"
+  },
+  "birth_date": 1095811200,
+  "student_id_number": "395231100253",
+  "image": "https://hemis.jmcu.uz/static/crop/7/0/320__90_707496582.jpg",
+  "image_full": "https://hemis.jmcu.uz/static/pi/7/1/718b71770421b6b68ca5fb242c8228eb.jpg",
+  "avg_gpa": 4.38,
+  "avg_grade": 4.6,
+  "total_credit": 112,
+  "country": {
+    "code": "UZ",
+    "name": "O\u2018zbekiston"
+  },
+  "province": {
+    "code": "1718",
+    "name": "Samarqand viloyati",
+    "_parent": "1718"
+  },
+  "currentProvince": {
+    "code": "1726",
+    "name": "Toshkent shahri",
+    "_parent": "1726"
+  },
+  "district": {
+    "code": "1718216",
+    "name": "Qo\u2018shrabot tumani",
+    "_parent": "1718"
+  },
+  "currentDistrict": {
+    "code": "1726266",
+    "name": "Yunusobod tumani",
+    "_parent": "1726"
+  },
+  "terrain": {
+    "code": "4377",
+    "name": "QOSHRABOT"
+  },
+  "currentTerrain": {
+    "code": "8919",
+    "name": "SEVINCH"
+  },
+  "citizenship": {
+    "code": "11",
+    "name": "O\u2018zbekiston Respublikasi fuqarosi"
+  },
+  "studentStatus": {
+    "code": "11",
+    "name": "O\u2018qimoqda"
+  },
+  "_curriculum": 181,
+  "educationForm": {
+    "code": "11",
+    "name": "Kunduzgi"
+  },
+  "educationType": {
+    "code": "11",
+    "name": "Bakalavr"
+  },
+  "paymentForm": {
+    "code": "12",
+    "name": "To\u2018lov-shartnoma"
+  },
+  "studentType": {
+    "code": "11",
+    "name": "Oddiy"
+  },
+  "socialCategory": {
+    "code": "10",
+    "name": "Boshqa"
+  },
+  "povertyLevel": null,
+  "accommodation": {
+    "code": "14",
+    "name": "Ijaradagi uyda"
+  },
+  "department": {
+    "id": 4,
+    "name": "Jurnalistika fakulteti",
+    "code": "395-103",
+    "structureType": {
+      "code": "11",
+      "name": "Fakultet"
+    },
+    "localityType": {
+      "code": "11",
+      "name": "Mahalliy"
+    },
+    "parent": null,
+    "active": true
+  },
+  "specialty": {
+    "id": 77,
+    "code": "60320100",
+    "name": "Jurnalistika: Iqtisodiy jurnalistika"
+  },
+  "group": {
+    "id": 324,
+    "name": "34-23 JURNALISTIKA: IQTISODIY JURNALISTIKA",
+    "educationLang": {
+      "code": "11",
+      "name": "O\u2018zbek"
+    }
+  },
+  "level": {
+    "code": "13",
+    "name": "3-kurs"
+  },
+  "semester": {
+    "id": 1212,
+    "code": "16",
+    "name": "6-semestr"
+  },
+  "educationYear": {
+    "code": "2025",
+    "name": "2025-2026",
+    "current": true
+  },
+  "year_of_enter": 2023,
+  "roommate_count": 5,
+  "is_graduate": false,
+  "total_acload": 3360,
+  "other": "2009-2020 samarqand viloyati qo'sh obod tumani  82 sonli umumiy o'rta talim maktabi  \u2116   0689988",
+  "created_at": 1694599803,
+  "updated_at": 1769850971,
+  "hash": "96ad2244eca76350d4e3492422fff90ca3c77cec2c0744a59ba66c8cf90050b1",
+  "validateUrl": "https://student.jmcu.uz/api/info/student?h=3d2d8a09-9c5e-72bc-3f37-cfd38126b8b4",
+  "email": "lady007clash@gmail.com"
+}
+FOUND in Students: TOSHPO‘LOTOV KAMRONBEK HABIBULLO O‘G‘LI | ID: 395221100285
+{
+  "id": 3077,
+  "meta_id": 43514,
+  "university": {
+    "code": "395",
+    "name": "O\u2018zbekiston jurnalistika va ommaviy kommunikatsiyalar universiteti"
+  },
+  "full_name": "TOSHPO\u2018LOTOV KAMRONBEK HABIBULLO O\u2018G\u2018LI",
+  "short_name": "TOSHPO\u2018LOTOV K. H.",
+  "first_name": "KAMRONBEK",
+  "second_name": "TOSHPO\u2018LOTOV",
+  "third_name": "HABIBULLO O\u2018G\u2018LI",
+  "gender": {
+    "code": "11",
+    "name": "Erkak"
+  },
+  "birth_date": 1094947200,
+  "student_id_number": "395221100285",
+  "image": "https://hemis.jmcu.uz/static/crop/7/8/320__90_783656284.jpg",
+  "image_full": "https://hemis.jmcu.uz/static/pi/2/5/253f86bff5d71914e389530e31594ccc.jpg",
+  "avg_gpa": 3.54,
+  "avg_grade": 3.6,
+  "total_credit": 168,
+  "country": {
+    "code": "UZ",
+    "name": "O\u2018zbekiston"
+  },
+  "province": {
+    "code": "1710",
+    "name": "Qashqadaryo viloyati",
+    "_parent": "1710"
+  },
+  "currentProvince": {
+    "code": "1726",
+    "name": "Toshkent shahri",
+    "_parent": "1726"
+  },
+  "district": {
+    "code": "1710232",
+    "name": "Kitob tumani",
+    "_parent": "1710"
+  },
+  "currentDistrict": {
+    "code": "1726287",
+    "name": "Yakkasaroy tumani",
+    "_parent": "1726"
+  },
+  "terrain": {
+    "code": "2497",
+    "name": "ALIQUSHCHI"
+  },
+  "currentTerrain": {
+    "code": "9217",
+    "name": "ARMUGON"
+  },
+  "citizenship": {
+    "code": "11",
+    "name": "O\u2018zbekiston Respublikasi fuqarosi"
+  },
+  "studentStatus": {
+    "code": "11",
+    "name": "O\u2018qimoqda"
+  },
+  "_curriculum": 136,
+  "educationForm": {
+    "code": "12",
+    "name": "Kechki"
+  },
+  "educationType": {
+    "code": "11",
+    "name": "Bakalavr"
+  },
+  "paymentForm": {
+    "code": "12",
+    "name": "To\u2018lov-shartnoma"
+  },
+  "studentType": {
+    "code": "11",
+    "name": "Oddiy"
+  },
+  "socialCategory": {
+    "code": "10",
+    "name": "Boshqa"
+  },
+  "povertyLevel": null,
+  "accommodation": {
+    "code": "14",
+    "name": "Ijaradagi uyda"
+  },
+  "department": {
+    "id": 4,
+    "name": "Jurnalistika fakulteti",
+    "code": "395-103",
+    "structureType": {
+      "code": "11",
+      "name": "Fakultet"
+    },
+    "localityType": {
+      "code": "11",
+      "name": "Mahalliy"
+    },
+    "parent": null,
+    "active": true
+  },
+  "specialty": {
+    "id": 50,
+    "code": "60320100",
+    "name": "Jurnalistika (Sport jurnalistikasi)"
+  },
+  "group": {
+    "id": 264,
+    "name": "57-22 JURNALISTIKA: SPORT JURNALISTIKASI ",
+    "educationLang": {
+      "code": "11",
+      "name": "O\u2018zbek"
+    }
+  },
+  "level": {
+    "code": "14",
+    "name": "4-kurs"
+  },
+  "semester": {
+    "id": 892,
+    "code": "18",
+    "name": "8-semestr"
+  },
+  "educationYear": {
+    "code": "2025",
+    "name": "2025-2026",
+    "current": true
+  },
+  "year_of_enter": 2022,
+  "roommate_count": null,
+  "is_graduate": false,
+  "total_acload": 4980,
+  "other": "2022, Qashqadaryo viloyati Kitob tumani 49-maktab UM\u21161297376",
+  "created_at": 1662725634,
+  "updated_at": 1770098345,
+  "hash": "ec9c2d101e8760510d6ae2996dafbc6b614aeefd76846603bfecfe8cb8b41952",
+  "validateUrl": "https://student.jmcu.uz/api/info/student?h=f23dc74f-913f-f312-e53a-884672572d38",
+  "email": "toshpulatooff@gmail.com"
+}
+FOUND in Students: SAYDULLAYEVA MEXRINISO QUDRAT QIZI | ID: 395211100812
+{
+  "id": 2514,
+  "meta_id": 39023,
+  "university": {
+    "code": "395",
+    "name": "O\u2018zbekiston jurnalistika va ommaviy kommunikatsiyalar universiteti"
+  },
+  "full_name": "SAYDULLAYEVA MEXRINISO QUDRAT QIZI",
+  "short_name": "SAYDULLAYEVA M. Q.",
+  "first_name": "MEXRINISO",
+  "second_name": "SAYDULLAYEVA",
+  "third_name": "QUDRAT QIZI",
+  "gender": {
+    "code": "12",
+    "name": "Ayol"
+  },
+  "birth_date": 1023321600,
+  "student_id_number": "395211100812",
+  "image": "https://hemis.jmcu.uz/static/crop/3/9/320__90_3926097726.jpg",
+  "image_full": "https://hemis.jmcu.uz/static/pi/c/2/c274ec1876f6343e04f48f8d435b9d59.jpg",
+  "avg_gpa": 3.19,
+  "avg_grade": 3.33,
+  "total_credit": 218,
+  "country": {
+    "code": "UZ",
+    "name": "O\u2018zbekiston"
+  },
+  "province": {
+    "code": "1722",
+    "name": "Surxondaryo viloyati",
+    "_parent": "1722"
+  },
+  "currentProvince": {
+    "code": "1722",
+    "name": "Surxondaryo viloyati",
+    "_parent": "1722"
+  },
+  "district": {
+    "code": "1722214",
+    "name": "Qumqo\u2018rg\u2018on tumani",
+    "_parent": "1722"
+  },
+  "currentDistrict": {
+    "code": "1722214",
+    "name": "Qumqo\u2018rg\u2018on tumani",
+    "_parent": "1722"
+  },
+  "terrain": null,
+  "currentTerrain": null,
+  "citizenship": {
+    "code": "11",
+    "name": "O\u2018zbekiston Respublikasi fuqarosi"
+  },
+  "studentStatus": {
+    "code": "11",
+    "name": "O\u2018qimoqda"
+  },
+  "_curriculum": 94,
+  "educationForm": {
+    "code": "13",
+    "name": "Sirtqi"
+  },
+  "educationType": {
+    "code": "11",
+    "name": "Bakalavr"
+  },
+  "paymentForm": {
+    "code": "12",
+    "name": "To\u2018lov-shartnoma"
+  },
+  "studentType": {
+    "code": "11",
+    "name": "Oddiy"
+  },
+  "socialCategory": {
+    "code": "10",
+    "name": "Boshqa"
+  },
+  "povertyLevel": null,
+  "accommodation": {
+    "code": "11",
+    "name": "O\u2018z uyida"
+  },
+  "department": {
+    "id": 35,
+    "name": "Sirtqi bo'limi",
+    "code": "395-105",
+    "structureType": {
+      "code": "11",
+      "name": "Fakultet"
+    },
+    "localityType": {
+      "code": "11",
+      "name": "Mahalliy"
+    },
+    "parent": null,
+    "active": true
+  },
+  "specialty": {
+    "id": 56,
+    "code": "60320100",
+    "name": "Jurnalistika (Bosma OAV jurnalistikasi)"
+  },
+  "group": {
+    "id": 187,
+    "name": "36-21 JURNALISTIKA: BOSMA OMMAVIY AXBOROT VOSITALARI JURNALISTIKA (SIRTQI) ",
+    "educationLang": {
+      "code": "11",
+      "name": "O\u2018zbek"
+    }
+  },
+  "level": {
+    "code": "15",
+    "name": "5-kurs"
+  },
+  "semester": {
+    "id": 596,
+    "code": "20",
+    "name": "10-semestr"
+  },
+  "educationYear": {
+    "code": "2025",
+    "name": "2025-2026",
+    "current": true
+  },
+  "year_of_enter": 2021,
+  "roommate_count": null,
+  "is_graduate": true,
+  "total_acload": 5544,
+  "other": "2020, Termiz shahar 16-sonli UM \u21160575867",
+  "created_at": 1632373139,
+  "updated_at": 1767950774,
+  "hash": "58f0bb632ee4eca801843eb10d8cb1190c7190453972b610f7c6699a17d2197a",
+  "validateUrl": "https://student.jmcu.uz/api/info/student?h=cc727715-895b-da23-1405-cb6b3d7b0ee1",
+  "email": ""
+}
+FOUND in Students: SAYDULLAYEV OYATULLO HAMIDULLO O‘G‘LI | ID: 395211100073
+{
+  "id": 1671,
+  "meta_id": 28159,
+  "university": {
+    "code": "395",
+    "name": "O\u2018zbekiston jurnalistika va ommaviy kommunikatsiyalar universiteti"
+  },
+  "full_name": "SAYDULLAYEV OYATULLO HAMIDULLO O\u2018G\u2018LI",
+  "short_name": "SAYDULLAYEV O. H.",
+  "first_name": "OYATULLO",
+  "second_name": "SAYDULLAYEV",
+  "third_name": "HAMIDULLO O\u2018G\u2018LI",
+  "gender": {
+    "code": "11",
+    "name": "Erkak"
+  },
+  "birth_date": 1096502400,
+  "student_id_number": "395211100073",
+  "image": "https://hemis.jmcu.uz/static/crop/2/5/320__90_2551789269.jpg",
+  "image_full": "https://hemis.jmcu.uz/static/pi/1/e/1ee5ab4aef938b6d435459c7845ae380.jpg",
+  "avg_gpa": 3.5,
+  "avg_grade": 3.44,
+  "total_credit": 220,
+  "country": {
+    "code": "UZ",
+    "name": "O\u2018zbekiston"
+  },
+  "province": {
+    "code": "1703",
+    "name": "Andijon viloyati",
+    "_parent": "1703"
+  },
+  "currentProvince": {
+    "code": "1726",
+    "name": "Toshkent shahri",
+    "_parent": "1726"
+  },
+  "district": {
+    "code": "1703203",
+    "name": "Andijon tumani",
+    "_parent": "1703"
+  },
+  "currentDistrict": {
+    "code": "1726277",
+    "name": "Shayxontoxur tumani",
+    "_parent": "1726"
+  },
+  "terrain": {
+    "code": "485",
+    "name": "AYRILISH"
+  },
+  "currentTerrain": {
+    "code": "10836",
+    "name": "GULBOZOR"
+  },
+  "citizenship": {
+    "code": "11",
+    "name": "O\u2018zbekiston Respublikasi fuqarosi"
+  },
+  "studentStatus": {
+    "code": "11",
+    "name": "O\u2018qimoqda"
+  },
+  "_curriculum": 69,
+  "educationForm": {
+    "code": "11",
+    "name": "Kunduzgi"
+  },
+  "educationType": {
+    "code": "11",
+    "name": "Bakalavr"
+  },
+  "paymentForm": {
+    "code": "12",
+    "name": "To\u2018lov-shartnoma"
+  },
+  "studentType": {
+    "code": "11",
+    "name": "Oddiy"
+  },
+  "socialCategory": {
+    "code": "10",
+    "name": "Boshqa"
+  },
+  "povertyLevel": null,
+  "accommodation": {
+    "code": "14",
+    "name": "Ijaradagi uyda"
+  },
+  "department": {
+    "id": 4,
+    "name": "Jurnalistika fakulteti",
+    "code": "395-103",
+    "structureType": {
+      "code": "11",
+      "name": "Fakultet"
+    },
+    "localityType": {
+      "code": "11",
+      "name": "Mahalliy"
+    },
+    "parent": null,
+    "active": true
+  },
+  "specialty": {
+    "id": 50,
+    "code": "60320100",
+    "name": "Jurnalistika (Sport jurnalistikasi)"
+  },
+  "group": {
+    "id": 135,
+    "name": "07-21 JURNALISTIKA: SPORT JURNALISTIKASI",
+    "educationLang": {
+      "code": "11",
+      "name": "O\u2018zbek"
+    }
+  },
+  "level": {
+    "code": "14",
+    "name": "4-kurs"
+  },
+  "semester": {
+    "id": 432,
+    "code": "18",
+    "name": "8-semestr"
+  },
+  "educationYear": {
+    "code": "2024",
+    "name": "2024-2025",
+    "current": false
+  },
+  "year_of_enter": 2021,
+  "roommate_count": null,
+  "is_graduate": false,
+  "total_acload": 6600,
+  "other": "2021-yil, 23-maktab, UM O 0008100",
+  "created_at": 1631545390,
+  "updated_at": 1768295054,
+  "hash": "171f8fb85b22aa01e0162ac7658f910691309685235dcbafbe23eeca25c8fd1e",
+  "validateUrl": "https://student.jmcu.uz/api/info/student?h=71c7184f-1f37-3a15-281a-bc0e5ce9a9aa",
+  "email": ""
+}

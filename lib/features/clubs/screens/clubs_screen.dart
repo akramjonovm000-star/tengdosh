@@ -9,54 +9,48 @@ class ClubsScreen extends StatefulWidget {
 }
 
 class _ClubsScreenState extends State<ClubsScreen> {
-  // Mock Data
-  final List<Map<String, dynamic>> _clubs = [
-    {
-      "id": 1,
-      "name": "Zakovat Klubi",
-      "description": "Universitetning intellektual salohiyatini oshirish maqsadi. Har haftalik o'yinlar.",
-      "members": 124,
-      "color": Colors.indigo,
-      "icon": Icons.psychology_rounded,
-      "joined": true,
-    },
-    {
-      "id": 2,
-      "name": "Kiber Sport",
-      "description": "CS:GO, Dota 2 va PUBG bo'yicha turnirlar. Universitet terma jamoasi.",
-      "members": 85,
-      "color": Colors.orange,
-      "icon": Icons.sports_esports_rounded,
-      "joined": false,
-    },
-    {
-      "id": 3,
-      "name": "IT Club",
-      "description": "Dasturlash, dizayn va startap loyihalar. Hackathonlar tashkil qilish.",
-      "members": 210,
-      "color": Colors.blue,
-      "icon": Icons.code_rounded,
-      "joined": false,
-    },
-    {
-      "id": 4,
-      "name": "Volontyorlar",
-      "description": "Xayriya va jamoat ishlari. Universitet tadbirlarida yordam.",
-      "members": 156,
-      "color": Colors.red,
-      "icon": Icons.favorite_rounded,
-      "joined": true,
-    },
-    {
-      "id": 5,
-      "name": "Ingliz tili (Speaking)",
-      "description": "Har kuni Speaking club. IELTS imtihoniga tayyorgarlik.",
-      "members": 98,
-      "color": Colors.teal,
-      "icon": Icons.language_rounded,
-      "joined": false,
-    },
-  ];
+  final DataService _dataService = DataService();
+  List<dynamic> _clubs = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadClubs();
+  }
+
+  Future<void> _loadClubs() async {
+    try {
+      final clubs = await _dataService.getClubs();
+      if (mounted) {
+        setState(() {
+          _clubs = clubs;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Klublarni yuklashda xatolik yuz berdi")),
+        );
+      }
+    }
+  }
+
+  IconData _getIconData(String? iconName) {
+    // Basic mapping or default
+    return Icons.groups_rounded;
+  }
+
+  Color _getColor(String? colorHex) {
+    if (colorHex == null || colorHex.isEmpty) return AppTheme.primaryBlue;
+    try {
+      return Color(int.parse(colorHex.replaceFirst('#', '0xFF')));
+    } catch (e) {
+      return AppTheme.primaryBlue;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,20 +62,47 @@ class _ClubsScreenState extends State<ClubsScreen> {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
       ),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(20),
-        itemCount: _clubs.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 16),
-        itemBuilder: (context, index) {
-          final club = _clubs[index];
-          return _buildClubCard(club);
-        },
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator())
+        : (_clubs.isEmpty 
+           ? _buildEmptyState()
+           : ListView.separated(
+              padding: const EdgeInsets.all(20),
+              itemCount: _clubs.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 16),
+              itemBuilder: (context, index) {
+                final club = _clubs[index];
+                return _buildClubCard(club);
+              },
+            )),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.groups_outlined, size: 80, color: Colors.grey[300]),
+          const SizedBox(height: 16),
+          Text(
+            "Hozircha klublar yo'q",
+            style: TextStyle(color: Colors.grey[600], fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "Tez orada yangi klublar qo'shiladi",
+            style: TextStyle(color: Colors.grey[400], fontSize: 14),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildClubCard(Map<String, dynamic> club) {
-    final bool isJoined = club['joined'];
+    final bool isJoined = club['is_joined'] ?? false;
+    final Color clubColor = _getColor(club['color']);
+    final IconData clubIcon = _getIconData(club['icon']);
     
     return Container(
       decoration: BoxDecoration(
@@ -109,10 +130,10 @@ class _ClubsScreenState extends State<ClubsScreen> {
                   width: 60,
                   height: 60,
                   decoration: BoxDecoration(
-                    color: (club['color'] as Color).withOpacity(0.1),
+                    color: clubColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Icon(club['icon'] as IconData, color: club['color'] as Color, size: 30),
+                  child: Icon(clubIcon, color: clubColor, size: 30),
                 ),
                 const SizedBox(width: 16),
                 
@@ -122,12 +143,12 @@ class _ClubsScreenState extends State<ClubsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        club['name'],
+                        club['name'] ?? 'Klub nomi',
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        "${club['members']} a'zo",
+                        "${club['members_count'] ?? 0} a'zo",
                         style: TextStyle(color: Colors.grey[500], fontSize: 12),
                       ),
                     ],
@@ -158,6 +179,10 @@ class _ClubsScreenState extends State<ClubsScreen> {
   }
 
   void _showClubDetails(Map<String, dynamic> club) {
+    final Color clubColor = _getColor(club['color']);
+    final IconData clubIcon = _getIconData(club['icon']);
+    final bool isJoined = club['is_joined'] ?? false;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -181,20 +206,20 @@ class _ClubsScreenState extends State<ClubsScreen> {
                       width: 80,
                       height: 80,
                       decoration: BoxDecoration(
-                        color: (club['color'] as Color).withOpacity(0.1),
+                        color: clubColor.withOpacity(0.1),
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(club['icon'] as IconData, color: club['color'] as Color, size: 40),
+                      child: Icon(clubIcon, color: clubColor, size: 40),
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      club['name'],
+                      club['name'] ?? 'Klub nomi',
                       style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      "${club['members']} ta ishtirokchi",
+                      "${club['members_count'] ?? 0} ta ishtirokchi",
                       style: TextStyle(color: Colors.grey[500], fontSize: 14),
                     ),
                     const SizedBox(height: 24),
@@ -204,7 +229,7 @@ class _ClubsScreenState extends State<ClubsScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      club['description'],
+                      club['description'] ?? 'Tavsif yo\'q',
                       style: TextStyle(color: Colors.grey[700], fontSize: 15, height: 1.5),
                     ),
                     const SizedBox(height: 30),
@@ -219,7 +244,7 @@ class _ClubsScreenState extends State<ClubsScreen> {
               child: SizedBox(
                 width: double.infinity,
                 height: 50,
-                child: club['joined']
+                child: isJoined
                   ? OutlinedButton(
                       onPressed: () => Navigator.pop(context),
                       style: OutlinedButton.styleFrom(
@@ -284,18 +309,31 @@ class _ClubsScreenState extends State<ClubsScreen> {
             child: const Text("Bekor qilish", style: TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              setState(() {
-                club['joined'] = true;
-                club['members'] += 1;
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text("Tabriklaymiz! Siz ${club['name']} a'zosi bo'ldingiz"),
-                  backgroundColor: Colors.green,
-                )
-              );
+              
+              final success = await _dataService.joinClub(club['id']);
+              
+              if (success) {
+                _loadClubs(); // Refresh list to show "A'zosiz"
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text("Tabriklaymiz! Siz ${club['name']} a'zosi bo'ldingiz"),
+                      backgroundColor: Colors.green,
+                    )
+                  );
+                }
+              } else {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Klubga a'zo bo'lishda xatolik yuz berdi"),
+                      backgroundColor: Colors.red,
+                    )
+                  );
+                }
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,

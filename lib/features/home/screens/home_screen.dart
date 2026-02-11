@@ -18,10 +18,6 @@ import 'package:talabahamkor_mobile/features/student_module/screens/election_scr
 import 'package:talabahamkor_mobile/features/social/screens/social_activity_screen.dart';
 import 'package:talabahamkor_mobile/features/documents/screens/documents_screen.dart';
 import 'package:talabahamkor_mobile/core/services/permission_service.dart'; // [NEW]
-import 'package:talabahamkor_mobile/features/tutor/screens/tutor_groups_screen.dart'; // [NEW]
-import 'package:talabahamkor_mobile/features/tutor/screens/tutor_activity_groups_screen.dart';
-import 'package:talabahamkor_mobile/features/tutor/screens/tutor_documents_groups_screen.dart';
-import 'package:talabahamkor_mobile/features/tutor/screens/tutor_certificates_groups_screen.dart';
 import '../../certificates/screens/certificates_screen.dart';
 import 'package:talabahamkor_mobile/features/home/widgets/management_dashboard.dart';
 import 'package:talabahamkor_mobile/features/tutor/screens/tutor_dashboard_screen.dart'; // [NEW]
@@ -30,7 +26,6 @@ import '../../clubs/screens/clubs_screen.dart';
 import '../../appeals/screens/appeals_screen.dart';
 import 'package:talabahamkor_mobile/features/notifications/screens/notifications_screen.dart';
 import 'package:talabahamkor_mobile/core/providers/notification_provider.dart';
-import '../../auth/widgets/password_update_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:async';
 
@@ -46,8 +41,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final DataService _dataService = DataService();
   Map<String, dynamic>? _profile;
   Map<String, dynamic>? _dashboard;
-  bool _isLoading = true;
-  Timer? _refreshTimer;
+  // bool _isLoading = true; // [REMOVED unused]
+  // Timer? _refreshTimer; // [REMOVED unused]
 
   List<AnnouncementModel> _announcements = [];
   BannerModel? _activeBanner; // [NEW]
@@ -125,9 +120,9 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       
       if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        // setState(() {
+        //   _isLoading = false;
+        // });
         
         // SYNC: Update Global Auth State so Profile Screen gets new data immediately
         if (_profile != null) {
@@ -137,32 +132,9 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       print("Error loading home data: $e");
       if (mounted) {
-        setState(() => _isLoading = false); // Still stop loading to show empty UI
+        // setState(() => _isLoading = false); // Still stop loading to show empty UI
       }
     }
-  }
-
-  void _logout() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("Chiqish"),
-        content: const Text("Tizimdan chiqmoqchimisiz?"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text("Yo'q"),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Provider.of<AuthProvider>(context, listen: false).logout();
-            },
-            child: const Text("Ha", style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -380,37 +352,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 32),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          Text(
-            title,
-            style: TextStyle(color: Colors.grey[600], fontSize: 12),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildStudentDashboard() {
     return Column(
@@ -764,12 +705,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  void _showMock(String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("$feature bo'limi tez orada ishga tushadi!")),
     );
   }
 }

@@ -265,7 +265,7 @@ async def login_via_hemis(
                     "id": staff.id,
                     "full_name": staff.full_name,
                     "role": staff.role,
-                    "image": me.get("image") or me.get("picture"),
+                    "image": getattr(staff, "image_url", None) or me.get("image") or me.get("picture"),
                     # Add other staff fields if needed
                 }
             }

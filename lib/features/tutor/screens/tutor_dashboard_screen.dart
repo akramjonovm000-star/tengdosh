@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:talabahamkor_mobile/features/home/screens/management/student_search_screen.dart'; // [FIXED PATH]
 import 'package:talabahamkor_mobile/features/home/screens/management/staff_search_screen.dart'; // [FIXED PATH]
 import 'package:talabahamkor_mobile/features/student_module/widgets/student_dashboard_widgets.dart';

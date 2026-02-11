@@ -136,20 +136,43 @@ class _StudentDetailViewState extends State<StudentDetailView> {
   }
 
   Widget _buildCenteredProfile(dynamic profile) {
+    bool isActive = profile['is_app_user'] == true;
+    String lastActive = profile['last_active'] != null 
+        ? "So'nggi faollik: ${profile['last_active'].toString().split('T')[0]}" 
+        : "Ilovaga kirmagan";
+
     return Column(
       children: [
-        Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.blue.withOpacity(0.2), width: 2),
-          ),
-          child: CircleAvatar(
-            radius: 60,
-            backgroundColor: Colors.grey[200],
-            backgroundImage: profile['image_url'] != null ? NetworkImage(profile['image_url']) : null,
-            child: profile['image_url'] == null ? const Icon(Icons.person, size: 60, color: Colors.grey) : null,
-          ),
+        Stack(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: isActive ? Colors.green : Colors.blue.withOpacity(0.2), width: 3),
+              ),
+              child: CircleAvatar(
+                radius: 60,
+                backgroundColor: Colors.grey[200],
+                backgroundImage: profile['image_url'] != null ? NetworkImage(profile['image_url']) : null,
+                child: profile['image_url'] == null ? const Icon(Icons.person, size: 60, color: Colors.grey) : null,
+              ),
+            ),
+            if (isActive)
+              Positioned(
+                bottom: 0,
+                right: 10,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                    boxShadow: [BoxShadow(color: Colors.white, spreadRadius: 2)],
+                  ),
+                  child: const Icon(Icons.check, size: 20, color: Colors.white),
+                ),
+              ),
+          ],
         ),
         const SizedBox(height: 20),
         Text(
@@ -161,19 +184,79 @@ class _StudentDetailViewState extends State<StudentDetailView> {
             color: Colors.black87,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
+        // Active Status Text
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: isActive ? Colors.green.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            isActive ? "Active User" : "Not Registered",
+            style: TextStyle(
+              fontSize: 12, 
+              color: isActive ? Colors.green[700] : Colors.grey[600],
+              fontWeight: FontWeight.w600
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        
+        // Main Info Grid-like Text
         Text(
-          "ID: ${profile['hemis_login'] ?? profile['hemis_id'] ?? ""} • ${profile['group_number'] ?? ""}",
+          "ID: ${profile['hemis_login'] ?? profile['hemis_id'] ?? ""} • Guruh: ${profile['group_number'] ?? ""}",
           textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.grey[600], fontSize: 14),
+          style: TextStyle(color: Colors.grey[800], fontSize: 15, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 4),
         Text(
           profile['faculty_name'] ?? "",
           textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.grey[500], fontSize: 13),
+          style: TextStyle(color: Colors.grey[600], fontSize: 13),
         ),
+        const SizedBox(height: 8),
+        
+        // Detailed Info Chips
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            if (profile['education_type'] != null)
+              _buildInfoChip(profile['education_type'], Colors.blue),
+            if (profile['education_form'] != null)
+              _buildInfoChip(profile['education_form'], Colors.orange),
+            if (profile['level_name'] != null)
+              _buildInfoChip("${profile['level_name']}", Colors.purple),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (profile['specialty_name'] != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              profile['specialty_name'],
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey[700], fontSize: 13, fontStyle: FontStyle.italic),
+            ),
+          ),
       ],
+    );
+  }
+
+  Widget _buildInfoChip(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 12, color: color.shade700, fontWeight: FontWeight.w500),
+      ),
     );
   }
 

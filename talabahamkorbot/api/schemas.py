@@ -97,7 +97,13 @@ class ClubSchema(BaseModel):
     id: int
     name: str
     description: Optional[str]
-    image_file_id: Optional[str]
+    icon: Optional[str] = None
+    color: Optional[str] = None
+    members_count: int = 0
+    is_joined: bool = False
+    image_file_id: Optional[str] = None
+    statute_link: Optional[str] = None
+    channel_link: Optional[str] = None
 
     class Config:
         from_attributes = True

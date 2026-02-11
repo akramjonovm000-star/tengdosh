@@ -303,6 +303,8 @@ class Staff(Base):
     phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
     position: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
+    username: Mapped[str | None] = mapped_column(String(50), nullable=True, unique=True) # [NEW]
+
     role: Mapped[StaffRole] = mapped_column(String(32), nullable=False)
     telegram_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     hemis_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True, index=True) # HEMIS ID
@@ -492,10 +494,14 @@ class TakenUsername(Base):
     
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
-    student_id: Mapped[int] = mapped_column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False, unique=True)
+    
+    student_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=True)
+    staff_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("staff.id", ondelete="CASCADE"), nullable=True) # [NEW]
+
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     
     student: Mapped["Student"] = relationship("Student")
+    staff: Mapped["Staff"] = relationship("Staff")
 
 # ============================================================
 # TELEGRAM ACCOUNT
