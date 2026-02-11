@@ -145,6 +145,27 @@ async def get_mgmt_faculties(
     from config import HEMIS_ADMIN_TOKEN
     
     f_id = getattr(staff, 'faculty_id', None)
+    s_role = getattr(staff, 'role', None)
+
+    # [NEW] Tutor Restriction: Only show faculties of assigned groups
+    if s_role == 'tyutor':
+        tg_stmt = select(TutorGroup.group_number).where(TutorGroup.tutor_id == staff.id)
+        group_numbers = (await db.execute(tg_stmt)).scalars().all()
+        
+        if group_numbers:
+            # Get faculties from students in these groups
+            stmt = (
+                select(Student.faculty_id, Student.faculty_name)
+                .where(Student.university_id == uni_id, Student.group_number.in_(group_numbers))
+                .distinct()
+            )
+            result = await db.execute(stmt)
+            faculties_data = result.all()
+            return {
+                "success": True, 
+                "data": [{"id": f[0], "name": f[1]} for f in faculties_data if f[0] and f[1]]
+            }
+        return {"success": True, "data": []}
     
     if HEMIS_ADMIN_TOKEN:
         faculties = await HemisService.get_faculties()
@@ -154,10 +175,6 @@ async def get_mgmt_faculties(
              filtered = [f for f in faculties if f['id'] in allowed_ids]
              
              if f_id:
-                 # Resolve if our faculty_id matches one of these
-                 # Check by name matching if id doesn't align (some IDs are internal)
-                 # But usually we map HEMIS IDs to our faculty_id during import
-                 # Let's trust local DB if f_id is set
                  pass 
              else:
                  return {"success": True, "data": filtered}
@@ -273,29 +290,35 @@ async def get_mgmt_specialties(
     
     # 1. Try Admin API (University-wide)
     if HEMIS_ADMIN_TOKEN:
-        # [FIX] Cascaded Filtering: If Form or Level provided, use Group List to find valid Specialties
-        if education_form or level_name:
-             groups = await HemisService.get_group_list(
-                 faculty_id=faculty_id,
-                 education_type=education_type,
-                 education_form=education_form,
-                 level_name=level_name
-             )
-             if groups:
-                 # Extract unique specialties from groups
-                 seen_ids = set()
-                 specs = []
-                 for g in groups:
-                     s = g.get("specialty", {})
-                     if s and s.get("name") and s.get("id") not in seen_ids:
-                         seen_ids.add(s.get("id"))
-                         specs.append(s.get("name"))
-                 return {"success": True, "data": sorted(specs)}
+        # [NEW] Check Tutor Restriction first
+        s_role = getattr(staff, 'role', None)
+        if s_role == 'tyutor':
+             # Fallback to Local DB logic for Tutors to ensure strict filtering by Group
+             pass
+        else:
+            # [FIX] Cascaded Filtering: If Form or Level provided, use Group List to find valid Specialties
+            if education_form or level_name:
+                 groups = await HemisService.get_group_list(
+                     faculty_id=faculty_id,
+                     education_type=education_type,
+                     education_form=education_form,
+                     level_name=level_name
+                 )
+                 if groups:
+                     # Extract unique specialties from groups
+                     seen_ids = set()
+                     specs = []
+                     for g in groups:
+                         s = g.get("specialty", {})
+                         if s and s.get("name") and s.get("id") not in seen_ids:
+                             seen_ids.add(s.get("id"))
+                             specs.append(s.get("name"))
+                     return {"success": True, "data": sorted(specs)}
 
-        # Default fallback to Specialty List if no deep filters
-        all_specs = await HemisService.get_specialty_list(faculty_id=faculty_id, education_type=education_type)
-        if all_specs:
-            return {"success": True, "data": sorted(list(set([s.get("name") for s in all_specs if s.get("name")])))}
+            # Default fallback to Specialty List if no deep filters
+            all_specs = await HemisService.get_specialty_list(faculty_id=faculty_id, education_type=education_type)
+            if all_specs:
+                return {"success": True, "data": sorted(list(set([s.get("name") for s in all_specs if s.get("name")])))}
 
     # 2. Fallback to Local DB
     uni_id = getattr(staff, 'university_id', None)
@@ -303,6 +326,14 @@ async def get_mgmt_specialties(
         Student.university_id == uni_id, 
         Student.specialty_name != None
     )
+    
+    # [NEW] Tutor Filter
+    s_role = getattr(staff, 'role', None)
+    if s_role == 'tyutor':
+        tg_stmt = select(TutorGroup.group_number).where(TutorGroup.tutor_id == staff.id)
+        group_numbers = (await db.execute(tg_stmt)).scalars().all()
+        stmt = stmt.where(Student.group_number.in_(group_numbers))
+        
     if faculty_id:
         stmt = stmt.where(Student.faculty_id == faculty_id)
     if education_type:
@@ -606,7 +637,40 @@ async def search_mgmt_students(
             admin_filters, page=1, limit=500
         )
         
+        # [NEW] Tutor Filter Logic in Admin API Path
+        # If user is Tutor, we must filter the results (items and count) to only their allowed groups
+        s_role = getattr(staff, 'role', None)
+        tutor_groups = []
+        if s_role == 'tyutor':
+             tg_stmt = select(TutorGroup.group_number).where(TutorGroup.tutor_id == staff.id)
+             tutor_groups = (await db.execute(tg_stmt)).scalars().all()
+             
         students = []
+        filtered_admin_items = []
+
+        # [NEW] Enhanced Tutor Fetching Strategy
+        if s_role == 'tyutor' and tutor_groups:
+             # Fetch ONLY the tutor's groups from API (Parallel Requests)
+             # This guarantees accurate counts (e.g. 196) vs Local DB (91)
+             admin_items, total_count = await HemisService.get_students_for_groups(tutor_groups, HEMIS_ADMIN_TOKEN)
+             
+             # Apply Search Query in Memory (since we fetched full group lists)
+             if query:
+                 q = query.lower()
+                 admin_items = [
+                     i for i in admin_items 
+                     if q in (i.get("full_name") or "").lower() 
+                     or q in (i.get("student_id_number") or "").lower()
+                     or q in str(i.get("id"))
+                 ]
+                 total_count = len(admin_items)
+                 
+        else:
+            # Standard Admin API Fetch (Dean / Rector)
+            admin_items, total_count = await HemisService.get_admin_student_list(
+                admin_filters, page=1, limit=500
+            )
+        
         if total_count > 0:
             # [NEW] Map Admin API Results to Local Database IDs (Optimization for Full Details)
             # Use student_id_number as the matching key for Students
@@ -644,7 +708,7 @@ async def search_mgmt_students(
         # Let's trust Admin API if it returns success (handled in service), but if 0, maybe check DB?
         # The service returns 0 on error.
         
-        if total_count == 0:
+        if total_count == 0 and s_role != 'tyutor': # Only fallback for non-tutors (tutors use strict filter above)
              # Fallback to DB if API failed or returned 0 (e.g. invalid filter ID or Short ID)
              # [FIX] Use search_filters for count, not just category_filters. 
              # search_filters includes the name/ID query logic.
@@ -653,6 +717,15 @@ async def search_mgmt_students(
              total_count = db_count
              
              # Fallback List (When Admin API returns 0)
+             stmt = select(Student).where(and_(*search_filters)).order_by(Student.full_name).limit(500)
+             result = await db.execute(stmt)
+             students = result.scalars().all()
+        
+        # Fallback for Tutors if API returned 0 (and filtered list is empty)
+        if total_count == 0 and s_role == 'tyutor':
+             count_stmt = select(func.count(Student.id)).where(and_(*search_filters))
+             total_count = (await db.execute(count_stmt)).scalar() or 0
+             
              stmt = select(Student).where(and_(*search_filters)).order_by(Student.full_name).limit(500)
              result = await db.execute(stmt)
              students = result.scalars().all()
@@ -740,10 +813,15 @@ async def get_mgmt_specialties(
     from config import HEMIS_ADMIN_TOKEN
     
     # 1. Try Admin API (University-wide)
+    # [NEW] Check Tutor Role
     if HEMIS_ADMIN_TOKEN:
-        all_specs = await HemisService.get_specialty_list(faculty_id=faculty_id, education_type=education_type)
-        if all_specs:
-            return {"success": True, "data": sorted(list(set([s.get("name") for s in all_specs if s.get("name")])))}
+        s_role = getattr(staff, 'role', None) 
+        if s_role == 'tyutor':
+            pass # Fallback to DB
+        else:
+            all_specs = await HemisService.get_specialty_list(faculty_id=faculty_id, education_type=education_type)
+            if all_specs:
+                return {"success": True, "data": sorted(list(set([s.get("name") for s in all_specs if s.get("name")])))}
 
     # 2. Fallback to Local DB
     uni_id = getattr(staff, 'university_id', None)
@@ -751,6 +829,14 @@ async def get_mgmt_specialties(
         Student.university_id == uni_id, 
         Student.specialty_name != None
     )
+    
+    # [NEW] Tutor Filter
+    s_role = getattr(staff, 'role', None)
+    if s_role == 'tyutor':
+        tg_stmt = select(TutorGroup.group_number).where(TutorGroup.tutor_id == staff.id)
+        group_numbers = (await db.execute(tg_stmt)).scalars().all()
+        stmt = stmt.where(Student.group_number.in_(group_numbers))
+
     if faculty_id:
         stmt = stmt.where(Student.faculty_id == faculty_id)
     if education_type:
@@ -857,26 +943,39 @@ async def get_mgmt_groups_simple(
 
     # 1. Try Admin API (University-wide)
     if HEMIS_ADMIN_TOKEN:
-        spec_id = None
-        if specialty_name:
-            # [FIX] Smarter resolution using Faculty and Form context
-            spec_id = await HemisService.resolve_specialty_id(
-                specialty_name, 
-                education_type,
+        # Check Tutor Role
+        s_role = getattr(staff, 'role', None)
+        tutor_groups = []
+        if s_role == 'tyutor':
+            from database.models import TutorGroup
+            tg_stmt = select(TutorGroup.group_number).where(TutorGroup.tutor_id == staff.id)
+            tutor_groups = (await db.execute(tg_stmt)).scalars().all()
+            
+            # If tutor, we must filter by these groups.
+            # Easiest way? Fetch all groups then filter? Or rely on DB fallback?
+            # Let's rely on DB fallback for consistency if HEMIS API doesn't support list-based group checking easily
+            pass 
+        else:
+            spec_id = None
+            if specialty_name:
+                # [FIX] Smarter resolution using Faculty and Form context
+                spec_id = await HemisService.resolve_specialty_id(
+                    specialty_name, 
+                    education_type,
+                    faculty_id=faculty_id,
+                    education_form=education_form
+                )
+    
+            all_groups = await HemisService.get_group_list(
                 faculty_id=faculty_id,
-                education_form=education_form
+                specialty_id=spec_id,
+                education_type=education_type,
+                education_form=education_form,
+                level_name=level_name
             )
-
-        all_groups = await HemisService.get_group_list(
-            faculty_id=faculty_id,
-            specialty_id=spec_id,
-            education_type=education_type,
-            education_form=education_form,
-            level_name=level_name
-        )
-        if all_groups:
-             group_names = [g.get("name") for g in all_groups if g.get("name")]
-             return {"success": True, "data": sorted(list(set(group_names)))}
+            if all_groups:
+                 group_names = [g.get("name") for g in all_groups if g.get("name")]
+                 return {"success": True, "data": sorted(list(set(group_names)))}
 
     # 2. Fallback to Local DB
     uni_id = getattr(staff, 'university_id', None)

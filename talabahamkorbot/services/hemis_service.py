@@ -1380,6 +1380,72 @@ class HemisService:
         return counts
 
     @staticmethod
+    async def get_students_for_groups(group_numbers: list[str], token: str) -> tuple[list[dict], int]:
+        """
+        Fetches full student list for the given group names.
+        Returns (list_of_students, total_count).
+        """
+        if not token or not group_numbers:
+            return [], 0
+            
+        all_students = []
+        true_total_count = 0
+        
+        try:
+            # We need to resolve each group name to an ID first
+            # We can use get_group_student_counts logic but instead of count, fetch list
+            client = await HemisService.get_client()
+            tasks = []
+            
+            for group_name in group_numbers:
+                group_id = await HemisService.resolve_group_id(group_name, token=token)
+                if group_id:
+                     url = f"{HemisService.BASE_URL}/data/student-list"
+                     # Limit 200 per group should be enough (groups are usually 20-30)
+                     # But if server ignores limit, we rely on pagination count
+                     tasks.append(client.get(
+                         url, 
+                         headers={"Authorization": f"Bearer {token}"},
+                         params={"_group": group_id, "limit": 200}
+                     ))
+            
+            if not tasks: return [], 0
+            
+            responses = await asyncio.gather(*tasks, return_exceptions=True)
+            for r in responses:
+                if isinstance(r, Exception):
+                    logger.error(f"Group fetch error: {r}")
+                    continue
+                if r.status_code == 200:
+                    data = r.json()
+                    items = data.get("data", {}).get("items", [])
+                    all_students.extend(items)
+                    
+                    # Accumulate True Total Count from Pagination
+                    pagination = data.get("data", {}).get("pagination", {})
+                    p_total = pagination.get("totalCount", 0)
+                    if p_total > 0:
+                        true_total_count += p_total
+                    else:
+                        # Fallback if pagination missing
+                        true_total_count += len(items)
+            
+            # If our fetched items are fewer than true total, we technically have partial data
+            # But specific use case here is mostly for "List" (which paginates anyway in app?)
+            # or "Search".
+            # For Search "Total Count" display, we MUST return true_total_count.
+            # But admin_items list will only have first page items. 
+            # This is acceptable compromise vs fetching all pages.
+            
+            # Ensure we don't return fewer than items we have (safety)
+            final_count = max(true_total_count, len(all_students))
+            
+            return all_students, final_count
+        except Exception as e:
+            logger.error(f"Error fetching students for groups: {e}")
+            return [], 0
+
+    @staticmethod
     async def get_faculties(token: str = None) -> list:
         """
         Fetches list of faculties (structureType="Fakultet") from /data/department-list.

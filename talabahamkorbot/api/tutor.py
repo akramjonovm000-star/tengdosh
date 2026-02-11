@@ -264,12 +264,13 @@ async def get_tutor_dashboard(
             select(func.count(Student.id)).where(Student.group_number.in_(group_numbers))
         )
 
-    # 2.1 Count Active Students (Logged in at least once - Local DB only)
+    # 2.1 Count Active Students (Logged into App - Has HEMIS Token)
+    # User requested to count students who logged into the app
     active_student_count = await db.scalar(
         select(func.count(Student.id))
         .where(
             Student.group_number.in_(group_numbers),
-            Student.last_active_at.is_not(None)
+            Student.hemis_token.is_not(None)
         )
     )
     

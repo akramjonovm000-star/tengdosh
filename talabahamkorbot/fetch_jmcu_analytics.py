@@ -193,7 +193,22 @@ def generate_report():
             
             for grp_name, grp_data in sorted_grps:
                 pct = (grp_data['active'] / grp_data['total'] * 100) if grp_data['total'] > 0 else 0
-                t_name = tutor_map.get(grp_name, "-")
+                
+                # Match group name (Full) with Tutor Map (Short codes)
+                t_name = "-"
+                
+                # Direct lookup
+                if grp_name in tutor_map:
+                    t_name = tutor_map[grp_name]
+                else:
+                    # Prefix lookup: Check if any key in tutor_map is a prefix of grp_name
+                    # Optimization: Extract the code (first word) from grp_name
+                    parts = grp_name.split(' ')
+                    if parts:
+                        code = parts[0]
+                        if code in tutor_map:
+                            t_name = tutor_map[code]
+                
                 report_lines.append(f"| {grp_name} | {t_name} | {grp_data['total']} | {grp_data['active']} | {pct:.1f}% |")
     
     with open("jmcu_analytics_report.md", "w") as f:

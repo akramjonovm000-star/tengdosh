@@ -464,7 +464,7 @@ async def login_via_hemis(
 
     # Update last login
     from datetime import datetime
-    student.last_login = datetime.utcnow()
+    student.last_active_at = datetime.utcnow()
     await db.commit()
     
     # [NEW] Log Activity (Login)
