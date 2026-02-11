@@ -1571,6 +1571,11 @@ async def get_management_activities(
     category: Optional[str] = None,
     faculty_id: Optional[int] = None,
     query: Optional[str] = None,
+    education_type: Optional[str] = None,
+    education_form: Optional[str] = None,
+    level_name: Optional[str] = None,
+    specialty_name: Optional[str] = None,
+    group_number: Optional[str] = None,
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     staff: Staff = Depends(get_current_staff),
@@ -1611,6 +1616,17 @@ async def get_management_activities(
             (UserActivity.name.ilike(f"%{query}%")) |
             (Student.hemis_login.ilike(f"%{query}%"))
         )
+
+    if education_type:
+        stmt = stmt.where(Student.education_type == education_type)
+    if education_form:
+        stmt = stmt.where(Student.education_form == education_form)
+    if level_name:
+        stmt = stmt.where(Student.level_name == level_name)
+    if specialty_name:
+        stmt = stmt.where(Student.specialty_name == specialty_name)
+    if group_number:
+        stmt = stmt.where(Student.group_number == group_number)
 
     # Pagination count
     count_stmt = select(func.count()).select_from(stmt.subquery())

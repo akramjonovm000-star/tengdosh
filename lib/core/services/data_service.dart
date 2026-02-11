@@ -1962,6 +1962,11 @@ class DataService {
     String? category,
     int? facultyId,
     String? query,
+    String? educationType,
+    String? educationForm,
+    String? levelName,
+    String? specialtyName,
+    String? groupNumber,
     int page = 1,
     int limit = 20,
   }) async {
@@ -1971,6 +1976,11 @@ class DataService {
       if (category != null) queryParams.add("category=${Uri.encodeComponent(category)}");
       if (facultyId != null) queryParams.add("faculty_id=$facultyId");
       if (query != null && query.isNotEmpty) queryParams.add("query=${Uri.encodeComponent(query)}");
+      if (educationType != null) queryParams.add("education_type=${Uri.encodeComponent(educationType)}");
+      if (educationForm != null) queryParams.add("education_form=${Uri.encodeComponent(educationForm)}");
+      if (levelName != null) queryParams.add("level_name=${Uri.encodeComponent(levelName)}");
+      if (specialtyName != null) queryParams.add("specialty_name=${Uri.encodeComponent(specialtyName)}");
+      if (groupNumber != null) queryParams.add("group_number=${Uri.encodeComponent(groupNumber)}");
       queryParams.add("page=$page");
       queryParams.add("limit=$limit");
 

@@ -18,17 +18,75 @@ class ActivityReviewScreen extends StatefulWidget {
 
 class _ActivityReviewScreenState extends State<ActivityReviewScreen> {
   final DataService _dataService = DataService();
+  final TextEditingController _searchController = TextEditingController();
+  
   bool _isLoading = true;
+  bool _isSearching = false;
   List<dynamic> _activities = [];
   int _totalCount = 0;
   int _currentPage = 1;
+  
+  // Filter States
   String? _selectedStatus;
+  String? _selectedEducationType;
+  String? _selectedEducationForm;
+  String? _selectedCourse;
+  int? _selectedFacultyId;
+  String? _selectedSpecialty;
+  String? _selectedGroup;
+
+  List<dynamic> _faculties = [];
+  List<String> _specialties = [];
+  List<String> _groups = [];
 
   @override
   void initState() {
     super.initState();
     _selectedStatus = widget.initialStatus;
-    _loadActivities();
+    _loadInitialData();
+  }
+
+  Future<void> _loadInitialData() async {
+    final faculties = await _dataService.getManagementFaculties();
+    if (mounted) {
+      setState(() {
+        _faculties = faculties;
+      });
+    }
+    _loadSpecialties();
+    _loadGroups();
+    _loadActivities(refresh: true);
+  }
+
+  Future<void> _loadSpecialties() async {
+    try {
+      final specs = await _dataService.getManagementSpecialties(
+        facultyId: _selectedFacultyId,
+        educationType: _selectedEducationType,
+      );
+      if (mounted) {
+        setState(() {
+          _specialties = List<String>.from(specs);
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _loadGroups() async {
+    try {
+      final groups = await _dataService.getManagementGroups(
+        facultyId: _selectedFacultyId,
+        educationType: _selectedEducationType,
+        educationForm: _selectedEducationForm,
+        specialtyName: _selectedSpecialty,
+        levelName: _selectedCourse != null ? "${_selectedCourse}-kurs" : null,
+      );
+      if (mounted) {
+        setState(() {
+          _groups = List<String>.from(groups);
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadActivities({bool refresh = false}) async {
@@ -42,6 +100,13 @@ class _ActivityReviewScreenState extends State<ActivityReviewScreen> {
     try {
       final res = await _dataService.getManagementActivities(
         status: _selectedStatus == "Barchasi" ? null : _selectedStatus,
+        query: _searchController.text.isNotEmpty ? _searchController.text : null,
+        facultyId: _selectedFacultyId,
+        educationType: _selectedEducationType,
+        educationForm: _selectedEducationForm,
+        levelName: _selectedCourse != null ? "${_selectedCourse}-kurs" : null,
+        specialtyName: _selectedSpecialty,
+        groupNumber: _selectedGroup,
         page: _currentPage,
       );
 
@@ -118,11 +183,28 @@ class _ActivityReviewScreenState extends State<ActivityReviewScreen> {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         actions: [
+          if (_selectedEducationType != null || _selectedEducationForm != null || _selectedCourse != null || _selectedFacultyId != null || _selectedSpecialty != null || _selectedGroup != null || _searchController.text.isNotEmpty)
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _selectedEducationType = null;
+                  _selectedEducationForm = null;
+                  _selectedCourse = null;
+                  _selectedFacultyId = null;
+                  _selectedSpecialty = null;
+                  _selectedGroup = null;
+                  _searchController.clear();
+                });
+                _loadActivities(refresh: true);
+              },
+              child: const Text("Tozalash", style: TextStyle(color: Colors.red)),
+            ),
           IconButton(icon: const Icon(Icons.refresh), onPressed: () => _loadActivities(refresh: true)),
         ],
       ),
       body: Column(
         children: [
+          _buildAdvancedFilters(),
           _buildFilterBar(),
           Expanded(
             child: _isLoading && _activities.isEmpty
@@ -146,6 +228,180 @@ class _ActivityReviewScreenState extends State<ActivityReviewScreen> {
                       ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAdvancedFilters() {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Column(
+        children: [
+          TextField(
+            controller: _searchController,
+            onChanged: (val) => _loadActivities(refresh: true),
+            decoration: InputDecoration(
+              hintText: "Ism yoki Hemis ID...",
+              prefixIcon: const Icon(Icons.search),
+              filled: true,
+              fillColor: Colors.grey[50],
+              contentPadding: const EdgeInsets.symmetric(vertical: 0),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _buildInlineDropdown<String>(
+                  hint: "Turi",
+                  value: _selectedEducationType,
+                  items: ["Bakalavr", "Magistr"].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 11)))).toList(),
+                  onChanged: (val) {
+                    setState(() {
+                      _selectedEducationType = val;
+                      _selectedCourse = null;
+                      _selectedSpecialty = null;
+                      _selectedGroup = null;
+                    });
+                    _loadSpecialties();
+                    _loadGroups();
+                    _loadActivities(refresh: true);
+                  },
+                ),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: _buildInlineDropdown<int>(
+                  hint: "Fakultet",
+                  value: _faculties.any((f) => f['id'] == _selectedFacultyId) ? _selectedFacultyId : null,
+                  items: _faculties.map((f) => DropdownMenuItem<int>(
+                    value: f['id'],
+                    child: Text(f['name'] ?? "", overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11)),
+                  )).toList(),
+                  onChanged: (val) {
+                    setState(() {
+                      _selectedFacultyId = val;
+                      _selectedSpecialty = null;
+                      _selectedGroup = null;
+                    });
+                    _loadSpecialties();
+                    _loadGroups();
+                    _loadActivities(refresh: true);
+                  },
+                ),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: _buildInlineDropdown<String>(
+                  hint: "Shakli",
+                  value: _selectedEducationForm,
+                  items: ["Kunduzgi", "Masofaviy", "Kechki", "Sirtqi"].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 11)))).toList(),
+                  onChanged: (val) {
+                    setState(() {
+                      _selectedEducationForm = val;
+                      _selectedGroup = null;
+                    });
+                    _loadGroups();
+                    _loadActivities(refresh: true);
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _buildInlineDropdown<String>(
+                  hint: "Kurs",
+                  value: (_selectedCourse != null && _selectedEducationType != null) ? "${_selectedEducationType}_$_selectedCourse" : null,
+                  items: [
+                    if (_selectedEducationType == null || _selectedEducationType == "Bakalavr")
+                      ...["1", "2", "3", "4"].map((e) => DropdownMenuItem(value: "Bakalavr_$e", child: Text("$e-kurs", style: const TextStyle(fontSize: 11)))),
+                    if (_selectedEducationType == null || _selectedEducationType == "Magistr")
+                      ...["1", "2"].map((e) => DropdownMenuItem(value: "Magistr_$e", child: Text("$e-kurs (M)", style: const TextStyle(fontSize: 11)))),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) {
+                      final parts = val.split('_');
+                      setState(() {
+                        _selectedEducationType = parts[0];
+                        _selectedCourse = parts[1];
+                      });
+                      _loadGroups();
+                      _loadActivities(refresh: true);
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: _buildInlineDropdown<String>(
+                  hint: "Yo'nalish",
+                  value: _specialties.contains(_selectedSpecialty) ? _selectedSpecialty : null,
+                  items: _specialties.map((s) => DropdownMenuItem(
+                    value: s,
+                    child: Text(s, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11)),
+                  )).toList(),
+                  onChanged: (val) {
+                    setState(() {
+                      _selectedSpecialty = val;
+                      _selectedGroup = null;
+                    });
+                    _loadGroups();
+                    _loadActivities(refresh: true);
+                  },
+                ),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: _buildInlineDropdown<String>(
+                  hint: "Guruh",
+                  value: _groups.contains(_selectedGroup) ? _selectedGroup : null,
+                  items: _groups.map((g) => DropdownMenuItem(
+                    value: g,
+                    child: Text(g, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11)),
+                  )).toList(),
+                  onChanged: (val) {
+                    setState(() => _selectedGroup = val);
+                    _loadActivities(refresh: true);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInlineDropdown<T>({
+    required String hint,
+    required T? value,
+    required List<DropdownMenuItem<T>> items,
+    required ValueChanged<T?> onChanged,
+  }) {
+    return Container(
+      height: 36,
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<T>(
+          isExpanded: true,
+          hint: Text(hint, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+          value: value,
+          items: items,
+          onChanged: onChanged,
+          icon: const Icon(Icons.arrow_drop_down, size: 18),
+        ),
       ),
     );
   }
