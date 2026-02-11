@@ -105,7 +105,7 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text("Talaba qidirish"),
+        title: const Text("Talabalar"),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
@@ -389,7 +389,7 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
             Icon(Icons.person_search, size: 64, color: Colors.grey),
             SizedBox(height: 16),
             Text(
-              "Talabalarni qidirish uchun\nfilterlarni tanlang yoki ismni yozing",
+              "Talabalarni ko'rish uchun\nfilterlarni tanlang yoki ismni yozing",
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey, fontSize: 16),
             ),
@@ -438,6 +438,27 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+                if ((s['activities_count'] ?? 0) > 0) ...[
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.local_activity, size: 12, color: Colors.orange),
+                        const SizedBox(width: 4),
+                        Text(
+                          "${s['activities_count']} ta faollik",
+                          style: const TextStyle(fontSize: 11, color: Colors.orange, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
             onTap: () {

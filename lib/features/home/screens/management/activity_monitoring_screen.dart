@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/services/data_service.dart';
 import '../../widgets/management_dashboard.dart';
+import 'student_search_screen.dart';
 
 class ActivityMonitoringScreen extends StatefulWidget {
   const ActivityMonitoringScreen({super.key});
@@ -47,6 +48,15 @@ class _ActivityMonitoringScreenState extends State<ActivityMonitoringScreen> {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const StudentSearchScreen()),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadData,

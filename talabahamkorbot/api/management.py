@@ -683,6 +683,20 @@ async def search_mgmt_students(
         count_stmt = select(func.count(Student.id)).where(and_(*search_filters))
         total_count = (await db.execute(count_stmt)).scalar() or 0
 
+    # [NEW] Enrich with Activity Counts
+    student_ids = [s.id for s in students if s.id]
+    activity_counts = {}
+    
+    if student_ids:
+        # Aggregate counts for these students
+        count_stmt = (
+            select(UserActivity.student_id, func.count(UserActivity.id))
+            .where(UserActivity.student_id.in_(student_ids))
+            .group_by(UserActivity.student_id)
+        )
+        count_res = await db.execute(count_stmt)
+        activity_counts = {row[0]: row[1] for row in count_res.all()}
+        
     return {
         "success": True, 
         "total_count": total_count,
@@ -698,7 +712,8 @@ async def search_mgmt_students(
                 "faculty_name": s.faculty_name,
                 "specialty_name": s.specialty_name,
                 "level_name": s.level_name,
-                "education_form": s.education_form
+                "education_form": s.education_form,
+                "activities_count": activity_counts.get(s.id, 0) # [NEW]
             } for s in students
         ]
     }
