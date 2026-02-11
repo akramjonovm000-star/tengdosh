@@ -27,7 +27,7 @@ router.include_router(analytics_router, prefix="/analytics", tags=["Analytics"])
 
 @router.get("/dashboard")
 async def get_management_dashboard(
-    staff: Any = Depends(get_current_student),
+    staff: Any = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -132,7 +132,7 @@ async def get_management_dashboard(
 
 @router.get("/faculties")
 async def get_mgmt_faculties(
-    staff: Any = Depends(get_current_student),
+    staff: Any = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
     # Security & Context
@@ -186,7 +186,7 @@ async def get_mgmt_faculties(
 async def get_mgmt_levels(
     faculty_id: int,
     education_type: str = None,
-    staff: Any = Depends(get_current_student),
+    staff: Any = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
     # Security: Ensure faculty belongs to staff's university
@@ -224,7 +224,7 @@ async def get_mgmt_levels(
 async def get_mgmt_groups(
     faculty_id: int,
     level_name: str,
-    staff: Any = Depends(get_current_student),
+    staff: Any = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
     # Security
@@ -265,7 +265,7 @@ async def get_mgmt_specialties(
     education_type: str = None,
     education_form: str = None,
     level_name: str = None,
-    staff: Any = Depends(get_current_student),
+    staff: Any = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
     from services.hemis_service import HemisService
@@ -321,7 +321,7 @@ async def get_mgmt_specialties(
 async def get_mgmt_groups(
     faculty_id: int,
     level_name: str,
-    staff: Any = Depends(get_current_student),
+    staff: Any = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
     # Security
@@ -363,7 +363,7 @@ async def get_mgmt_groups(
 @router.get("/groups/{group_number}/students")
 async def get_mgmt_group_students(
     group_number: str,
-    staff: Any = Depends(get_current_student),
+    staff: Any = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
     # Security
@@ -464,7 +464,7 @@ async def search_mgmt_students(
     level_name: str = None,
     specialty_name: str = None,
     group_number: str = None,
-    staff: Any = Depends(get_current_student),
+    staff: Any = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
     uni_id = getattr(staff, 'university_id', None)
@@ -733,7 +733,7 @@ async def search_mgmt_students(
 async def get_mgmt_specialties(
     faculty_id: int = None,
     education_type: str = None,
-    staff: Any = Depends(get_current_student),
+    staff: Any = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
     from services.hemis_service import HemisService
@@ -766,7 +766,7 @@ async def search_mgmt_staff(
     query: str = None,
     faculty_id: int = None,
     role: str = None,
-    staff: Any = Depends(get_current_student),
+    staff: Any = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -849,7 +849,7 @@ async def get_mgmt_groups_simple(
     education_form: str = None,
     specialty_name: str = None,
     level_name: str = None,
-    staff: Any = Depends(get_current_student),
+    staff: Any = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
     from services.hemis_service import HemisService
@@ -908,7 +908,7 @@ async def get_mgmt_groups_simple(
 @router.get("/students/{student_id}/full-details")
 async def get_mgmt_student_details(
     student_id: int,
-    staff: Any = Depends(get_current_student),
+    staff: Any = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
     try:
@@ -1032,7 +1032,7 @@ async def get_mgmt_student_details(
 
 @router.get("/analytics")
 async def get_mgmt_analytics(
-    staff: Any = Depends(get_current_student),
+    staff: Any = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -1048,7 +1048,7 @@ async def get_mgmt_analytics(
 
 @router.get("/ai-report")
 async def get_mgmt_ai_report(
-    staff: Any = Depends(get_current_student),
+    staff: Any = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -1081,7 +1081,7 @@ async def get_mgmt_ai_report(
 @router.post("/certificates/{cert_id}/download")
 async def send_student_cert_to_management(
     cert_id: int,
-    staff: Any = Depends(get_current_student),
+    staff: Any = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -1145,7 +1145,7 @@ async def send_student_cert_to_management(
 async def send_student_doc_to_management(
     doc_id: int,
     type: str = "document",
-    staff: Any = Depends(get_current_student),
+    staff: Any = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -1247,7 +1247,7 @@ async def get_mgmt_documents_archive(
     group_number: str = None,
     page: int = 1,
     limit: int = 50,
-    staff: Any = Depends(get_current_student),
+    staff: Any = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -1423,7 +1423,7 @@ async def export_mgmt_documents_zip(
     level_name: str = None,
     specialty_name: str = None,
     group_number: str = None,
-    staff: Any = Depends(get_current_student),
+    staff: Any = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -1602,6 +1602,7 @@ async def get_management_activities(
 
     uni_id = getattr(staff, 'university_id', None)
     f_id = getattr(staff, 'faculty_id', None)
+    role = str(getattr(staff, 'role', None)).lower()
     
     stmt = (
         select(UserActivity)
@@ -1609,17 +1610,19 @@ async def get_management_activities(
         .options(selectinload(UserActivity.student), selectinload(UserActivity.images))
     )
 
+    # 1. University Scoping
+    global_roles = ['owner', 'developer', 'rahbariyat', 'rektor', 'prorektor', 'yoshlar_yetakchisi', 'yoshlar_ittifoqi']
     if uni_id:
         stmt = stmt.where(Student.university_id == uni_id)
-    elif role not in ['owner', 'developer']:
+    elif role not in global_roles:
         # Restricted role but no uni_id -> no results for safety
         return {"success": True, "total": 0, "page": page, "limit": limit, "data": []}
 
-    # Scoped filtering
+    # 2. Faculty Scoping (Explicit filter takes precedence)
     if faculty_id:
         stmt = stmt.where(Student.faculty_id == faculty_id)
-    elif f_id and str(getattr(staff, 'role', None)).lower() != 'rahbariyat':
-        # Dekanat/Tyutor restriction (unless global rahbariyat)
+    elif f_id and role not in ['rahbariyat', 'owner', 'developer', 'rektor', 'prorektor', 'yoshlar_yetakchisi']:
+        # Dekanat/Tyutor restriction
         stmt = stmt.where(Student.faculty_id == f_id)
 
     if status:
@@ -1634,15 +1637,15 @@ async def get_management_activities(
         )
 
     if education_type:
-        stmt = stmt.where(Student.education_type == education_type)
+        stmt = stmt.where(Student.education_type.ilike(education_type))
     if education_form:
-        stmt = stmt.where(Student.education_form == education_form)
+        stmt = stmt.where(Student.education_form.ilike(education_form))
     if level_name:
-        stmt = stmt.where(Student.level_name == level_name)
+        stmt = stmt.where(Student.level_name.ilike(level_name))
     if specialty_name:
-        stmt = stmt.where(Student.specialty_name == specialty_name)
+        stmt = stmt.where(Student.specialty_name.ilike(specialty_name))
     if group_number:
-        stmt = stmt.where(Student.group_number == group_number)
+        stmt = stmt.where(Student.group_number.ilike(group_number))
 
     # Pagination count
     count_stmt = select(func.count()).select_from(stmt.subquery())

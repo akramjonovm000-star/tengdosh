@@ -59,12 +59,13 @@ async def get_dashboard_stats(
     
     # Base stmt for scoping
     def apply_scoping(stmt_obj):
+        global_roles = ['owner', 'developer', 'rahbariyat', 'rektor', 'prorektor', 'yoshlar_yetakchisi', 'yoshlar_ittifoqi']
         if uni_id:
             stmt_obj = stmt_obj.where(Student.university_id == uni_id)
-        elif role not in ['owner', 'developer']:
+        elif role not in global_roles:
             return None # Force failure
             
-        if f_id and role not in ['rahbariyat', 'owner', 'developer', 'rektor', 'prorektor']:
+        if f_id and role not in global_roles:
             stmt_obj = stmt_obj.where(Student.faculty_id == f_id)
         return stmt_obj
 
