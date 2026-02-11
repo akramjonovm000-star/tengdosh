@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import '../models/student.dart';
 // import '../constants/universities.dart'; // No longer needed
@@ -43,7 +42,7 @@ class AuthProvider with ChangeNotifier {
     try {
       _currentUser = await _authService.getSavedUser();
     } catch (e) {
-      print("Error loading user: $e");
+      debugPrint("Error loading user: $e");
       await _authService.logout();
     } finally {
       _isLoading = false;
@@ -93,7 +92,7 @@ class AuthProvider with ChangeNotifier {
       await _authService.saveProfileManually(json);
       notifyListeners();
     } catch (e) {
-      print("Error updating user state: $e");
+      debugPrint("Error updating user state: $e");
     }
   }
 
@@ -108,7 +107,7 @@ class AuthProvider with ChangeNotifier {
         await _authService.saveProfileManually(_currentUser!.toJson());
       }
     } catch (e) {
-      print("Failed to save new image locally: $e");
+      debugPrint("Failed to save new image locally: $e");
     }
     
     notifyListeners();

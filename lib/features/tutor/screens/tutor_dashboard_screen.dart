@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:talabahamkor_mobile/features/home/screens/management/student_search_screen.dart'; 
 // [FIXED] Removed unused staff_search_screen import
-import 'package:talabahamkor_mobile/features/home/widgets/dashboard_card.dart'; // [FIXED] Imported DashboardCard
+import 'package:talabahamkor_mobile/features/student_module/widgets/student_dashboard_widgets.dart'; // [FIXED] Correct path for DashboardCard
 
 // Import Tutor specific screens (will create stubs if needed)
 import 'package:talabahamkor_mobile/features/tutor/screens/tutor_groups_screen.dart'; 
