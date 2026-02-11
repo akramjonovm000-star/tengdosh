@@ -273,6 +273,47 @@ class _ActivityReviewScreenState extends State<ActivityReviewScreen> {
     );
   }
 
+  Widget _buildFilterBar() {
+    final statuses = [
+      {"label": "Barchasi", "value": "Barchasi"},
+      {"label": "Kutilmoqda", "value": "pending"},
+      {"label": "Tasdiqlangan", "value": "confirmed"},
+      {"label": "Rad etilgan", "value": "rejected"},
+    ];
+
+    return Container(
+      height: 60,
+      color: Colors.white,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        itemCount: statuses.length,
+        itemBuilder: (context, index) {
+          final s = statuses[index];
+          final isSelected = _selectedStatus == s['value'] || (_selectedStatus == null && s['value'] == "Barchasi");
+          
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ChoiceChip(
+              label: Text(s['label']!),
+              selected: isSelected,
+              onSelected: (val) {
+                if (val) {
+                  setState(() {
+                    _selectedStatus = s['value'];
+                    _isLoading = true;
+                    _activities = [];
+                  });
+                  _loadActivities(refresh: true);
+                }
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   void _showFilterSheet() {
     showModalBottomSheet(
       context: context,

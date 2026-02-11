@@ -652,18 +652,32 @@ async def search_mgmt_students(
         if s_role == 'tyutor' and tutor_groups:
              # Fetch ONLY the tutor's groups from API (Parallel Requests)
              # This guarantees accurate counts (e.g. 196) vs Local DB (91)
-             admin_items, total_count = await HemisService.get_students_for_groups(tutor_groups, HEMIS_ADMIN_TOKEN)
-             
-             # Apply Search Query in Memory (since we fetched full group lists)
-             if query:
-                 q = query.lower()
-                 admin_items = [
-                     i for i in admin_items 
-                     if q in (i.get("full_name") or "").lower() 
-                     or q in (i.get("student_id_number") or "").lower()
-                     or q in str(i.get("id"))
-                 ]
-                 total_count = len(admin_items)
+             try:
+                 # DEBUG LOGGING
+                 with open("tutor_debug.log", "a") as f:
+                     f.write(f"fetching groups: {tutor_groups}\n")
+                 
+                 admin_items, total_count = await HemisService.get_students_for_groups(tutor_groups, HEMIS_ADMIN_TOKEN)
+                 
+                 with open("tutor_debug.log", "a") as f:
+                     f.write(f"fetched items: {len(admin_items)}, total_count: {total_count}\n")
+
+                 # Apply Search Query in Memory (since we fetched full group lists)
+                 if query:
+                     q = query.lower()
+                     admin_items = [
+                         i for i in admin_items 
+                         if q in (i.get("full_name") or "").lower() 
+                         or q in (i.get("student_id_number") or "").lower()
+                         or q in str(i.get("id"))
+                     ]
+                     # Only update total_count if we are actively searching
+                     total_count = len(admin_items)
+             except Exception as e:
+                 with open("tutor_debug.log", "a") as f:
+                     f.write(f"ERROR: {e}\n")
+                 total_count = 0
+                 admin_items = []
                  
         else:
             # Standard Admin API Fetch (Dean / Rector)
