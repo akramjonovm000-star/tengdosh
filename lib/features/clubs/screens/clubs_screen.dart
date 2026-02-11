@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../../core/services/data_service.dart'; // [FIXED] Added Import
 
 class ClubsScreen extends StatefulWidget {
   const ClubsScreen({super.key});
@@ -110,7 +111,7 @@ class _ClubsScreenState extends State<ClubsScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04), // [FIXED] withOpacity -> withValues
             blurRadius: 15,
             offset: const Offset(0, 5),
           )
@@ -130,7 +131,7 @@ class _ClubsScreenState extends State<ClubsScreen> {
                   width: 60,
                   height: 60,
                   decoration: BoxDecoration(
-                    color: clubColor.withOpacity(0.1),
+                    color: clubColor.withValues(alpha: 0.1), // [FIXED]
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Icon(clubIcon, color: clubColor, size: 30),
@@ -160,7 +161,7 @@ class _ClubsScreenState extends State<ClubsScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
+                      color: Colors.green.withValues(alpha: 0.1), // [FIXED]
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Text(
@@ -206,7 +207,7 @@ class _ClubsScreenState extends State<ClubsScreen> {
                       width: 80,
                       height: 80,
                       decoration: BoxDecoration(
-                        color: clubColor.withOpacity(0.1),
+                        color: clubColor.withValues(alpha: 0.1), // [FIXED]
                         shape: BoxShape.circle,
                       ),
                       child: Icon(clubIcon, color: clubColor, size: 40),

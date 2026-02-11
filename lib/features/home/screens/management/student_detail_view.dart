@@ -249,13 +249,15 @@ class _StudentDetailViewState extends State<StudentDetailView> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1), // [FIXED]
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)), // [FIXED]
       ),
       child: Text(
         label,
-        style: TextStyle(fontSize: 12, color: color.shade700, fontWeight: FontWeight.w500),
+        // [FIXED] shade700 is only available on MaterialColor.
+        // Using alphaBlend to simulate darker shade or just using color.
+        style: TextStyle(fontSize: 12, color: Color.alphaBlend(Colors.black.withValues(alpha: 0.3), color), fontWeight: FontWeight.w500),
       ),
     );
   }
@@ -273,7 +275,7 @@ class _StudentDetailViewState extends State<StudentDetailView> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.indigo.withOpacity(0.3),
+            color: Colors.indigo.withValues(alpha: 0.3), // [FIXED]
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -292,7 +294,7 @@ class _StudentDetailViewState extends State<StudentDetailView> {
               const SizedBox(height: 4),
               Text(
                 "Akademik o'zlashtirish darajasi",
-                style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12),
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12), // [FIXED]
               ),
             ],
           ),
@@ -327,7 +329,7 @@ class _StudentDetailViewState extends State<StudentDetailView> {
           border: Border.all(color: Colors.grey.shade100),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.05),
+              color: color.withValues(alpha: 0.05), // [FIXED]
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),

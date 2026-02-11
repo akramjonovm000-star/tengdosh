@@ -595,7 +595,8 @@ async def hemis_callback(
         student.university_id = uni_id
         student.faculty_id = fac_id
         student.short_name = first_name
-        if image_url: student.image_url = image_url
+        if image_url and not (student.image_url and "static/uploads" in student.image_url):
+            student.image_url = image_url
     
     await db.commit()
     await db.refresh(student)

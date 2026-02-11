@@ -115,15 +115,10 @@ class DataService {
       }
       throw Exception("Server xatosi: ${response.statusCode}");
     } catch (e) {
-      print("Error uploading avatar: $e");
+      debugPrint("DataService: Error uploading avatar: $e"); // [FIXED] print -> debugPrint
       rethrow; // Pass error to UI
     }
   }
-
-  // Cache for Dashboard
-  Map<String, dynamic>? _dashboardCache;
-
-  DateTime? _lastDashboardFetch;
 
   // 2. Get Dashboard Stats (Via Backend Proxy for Real Data)
   Future<Map<String, dynamic>> getDashboardStats({bool refresh = false, String? semester}) async {
@@ -168,13 +163,13 @@ class DataService {
         try {
           await _dbService.saveCache('dashboard', studentId, result);
         } catch (e) {
-          print("Warning: Failed to cache dashboard: $e");
+          debugPrint("Warning: Failed to cache dashboard: $e"); // [FIXED]
         }
         
         return result; // RETURN LIVE DATA
       }
     } catch (e) {
-      print("Dashboard Sync Error: $e");
+      debugPrint("Dashboard Sync Error: $e"); // [FIXED]
     }
 
 
@@ -196,25 +191,6 @@ class DataService {
       "clubs_count": 0,
       "has_active_election": false
     };
-  }
-
-  Map<String, dynamic> _getMockProfile() {
-      return {
-        "id": "3902111",
-        "full_name": "Aliyev Vali Valiyevich",
-        "group_number": "315-21 Axborot Xavfsizligi",
-        "faculty": "Kiberxavfsizlik Fakulteti",
-        "phone": "+998901234567"
-      };
-  }
-
-  Map<String, dynamic> _getMockStats() {
-      return {
-        "gpa": 4.8,
-        "missed_hours": 12,
-        "activities_count": 12,
-        "clubs_count": 3
-      };
   }
 
   // Management Dashboard

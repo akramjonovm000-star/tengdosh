@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:talabahamkor_mobile/features/home/screens/management/student_search_screen.dart'; // [FIXED PATH]
-import 'package:talabahamkor_mobile/features/home/screens/management/staff_search_screen.dart'; // [FIXED PATH]
-import 'package:talabahamkor_mobile/features/student_module/widgets/student_dashboard_widgets.dart';
-import 'package:talabahamkor_mobile/core/services/data_service.dart';
+import 'package:talabahamkor_mobile/features/home/screens/management/student_search_screen.dart'; 
+// [FIXED] Removed unused staff_search_screen import
+import 'package:talabahamkor_mobile/features/home/widgets/dashboard_card.dart'; // [FIXED] Imported DashboardCard
 
 // Import Tutor specific screens (will create stubs if needed)
 import 'package:talabahamkor_mobile/features/tutor/screens/tutor_groups_screen.dart'; 
@@ -141,6 +140,13 @@ class TutorDashboardScreen extends StatelessWidget {
     );
   }
 
+  // [FIXED] Added missing method
+  void _showNotImplemented(BuildContext context, String feature) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("$feature bo'limi tez orada ishga tushadi")),
+    );
+  }
+
   Widget _buildGroupAttendanceCard(int studentCount, int groupCount) {
     // Mock Percentage for now, or calc from data
     int percentage = 85; 
@@ -157,7 +163,7 @@ class TutorDashboardScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.indigo.withOpacity(0.3),
+            color: Colors.indigo.withValues(alpha: 0.3), // [FIXED] withOpacity -> withValues
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -176,7 +182,7 @@ class TutorDashboardScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2), // [FIXED]
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -191,7 +197,7 @@ class TutorDashboardScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             child: LinearProgressIndicator(
               value: percentage / 100,
-              backgroundColor: Colors.white.withOpacity(0.1),
+              backgroundColor: Colors.white.withValues(alpha: 0.1), // [FIXED]
               valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
               minHeight: 12,
             ),
@@ -203,7 +209,7 @@ class TutorDashboardScreen extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("Faol Guruhlar", style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12)),
+                  Text("Faol Guruhlar", style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)), // [FIXED]
                   const SizedBox(height: 4),
                   Text("$groupCount", style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
                 ],
@@ -211,7 +217,7 @@ class TutorDashboardScreen extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text("Jami Talabalar", style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12)),
+                  Text("Jami Talabalar", style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)), // [FIXED]
                   const SizedBox(height: 4),
                   Text("$studentCount", style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
                 ],
@@ -246,12 +252,12 @@ class _StatCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.08),
+            color: color.withValues(alpha: 0.08), // [FIXED]
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(color: color.withOpacity(0.1), width: 1),
+        border: Border.all(color: color.withValues(alpha: 0.1), width: 1), // [FIXED]
       ),
       child: Column(
         children: [
@@ -270,3 +276,4 @@ class _StatCard extends StatelessWidget {
       ),
     );
   }
+} // [FIXED] Added missing closing brace
