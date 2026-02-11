@@ -847,8 +847,9 @@ class HemisService:
         client = await HemisService.get_client()
         try:
             url = f"{HemisService.BASE_URL}/data/group-list"
-            params = {
-                "limit": 1500,
+            # Default limit 200 (server max seems to be 200)
+            base_params = {
+                "limit": 200,
                 "_department": target_dept,
                 "_specialty": specialty_id,
                 "_education_type": norm_type,
@@ -856,24 +857,46 @@ class HemisService:
                 "_level": norm_level
             }
             # Remove None values
-            params = {k: v for k, v in params.items() if v is not None}
+            base_params = {k: v for k, v in base_params.items() if v is not None}
             
-            response = await HemisService.fetch_with_retry(
-                client, "GET", url, 
-                params=params,
-                headers={"Authorization": f"Bearer {auth_token}"}
-            )
-            if response.status_code == 200:
-                data = response.json().get("data", {})
-                items = data if isinstance(data, list) else data.get("items", [])
-                HemisService._cached_groups_map[cache_key] = items
-                # Also populate the legacy all-groups cache if no filters
-                if not any([faculty_id, specialty_id, education_type, education_form, level_name]):
-                    HemisService._cached_groups = items
-                return items
+            all_items = []
+            page = 1
+            
+            while True:
+                base_params["page"] = page
+                # Use standard client.get to handle pagination manually
+                response = await client.get(url, headers={"Authorization": f"Bearer {auth_token}"}, params=base_params, timeout=20)
+                
+                if response.status_code == 200:
+                    data_json = response.json()
+                    data = data_json.get("data", {})
+                    items = data.get("items", []) if isinstance(data, dict) else []
+                    
+                    if items:
+                        all_items.extend(items)
+                    
+                    # Check pagination
+                    pagination = data.get("pagination", {}) if isinstance(data, dict) else {}
+                    page_count = pagination.get("pageCount", 1)
+                    current_page = pagination.get("page", 1)
+                    
+                    if current_page >= page_count:
+                        break
+                    
+                    page += 1
+                else:
+                    logger.warning(f"Group list fetch page {page} failed: {response.status_code}")
+                    break
+            
+            HemisService._cached_groups_map[cache_key] = all_items
+            # Also populate the legacy all-groups cache if no filters
+            if not any([faculty_id, specialty_id, education_type, education_form, level_name]):
+                HemisService._cached_groups = all_items
+            return all_items
+
         except Exception as e:
-            logger.error(f"Error fetching group list: {e}")
-        return []
+            logger.error(f"Group list fetch failed: {e}")
+            return []
 
     @staticmethod
     async def resolve_group_id(group_name: str, token: str = None) -> Optional[int]:
@@ -901,12 +924,43 @@ class HemisService:
         
         # 2. Try matching by group prefix code (e.g. "25-23")
         import re
-        match = re.search(r'(\d+-\d+)', group_name)
+        # Match standard pattern: 2 digits - 2 digits (e.g. 25-23)
+        match = re.search(r'(\d{2}-\d{2})', group_name)
         if match:
-            group_prefix = match.group(1).replace("-", "")
-            for g in all_groups:
-                g_prefix = HemisService._normalize_name(g.get("name", ""))
-                if g_prefix.startswith(group_prefix):
+            group_prefix = match.group(1)
+            # Filter candidates by prefix first
+            candidates = [g for g in all_groups if group_prefix in g.get("name", "")]
+            
+            # If we have candidates, try to match the rest of the name
+            # Normalize and remove the prefix and common words
+            def clean_name(n):
+                n = HemisService._normalize_name(n)
+                return n.replace(group_prefix.replace("-", ""), "").replace("kunduzgi", "").replace("kechki", "").replace("sirtqi", "")
+
+            req_clean = clean_name(group_name)
+            
+            for g in candidates:
+                g_name = g.get("name", "")
+                g_clean = clean_name(g_name)
+                
+                # Loose match: if one contains the other
+                if req_clean in g_clean or g_clean in req_clean:
+                     gid = g.get("id")
+                     HemisService._resolved_group_ids[group_name] = gid
+                     return gid
+            
+            # Fallback: if only 1 candidate with that prefix, use it? 
+            # Risk: 25-23 Gr1 vs 25-23 Gr2. Better to be safe.
+            # But usually prefix + Specialty name is enough.
+            
+        # 3. Try matching by ignoring parenthesis content
+        # "25-23 AXBOROT ... (KUNDUZGI)" -> "25-23 AXBOROT ..."
+        base_name = re.sub(r'\(.*?\)', '', group_name).strip()
+        if base_name != group_name:
+             base_norm = HemisService._normalize_name(base_name)
+             for g in all_groups:
+                g_norm = HemisService._normalize_name(g.get("name", ""))
+                if base_norm in g_norm:
                     gid = g.get("id")
                     HemisService._resolved_group_ids[group_name] = gid
                     return gid

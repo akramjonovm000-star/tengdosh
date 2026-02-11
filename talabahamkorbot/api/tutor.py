@@ -243,12 +243,12 @@ async def get_tutor_dashboard(
         return {"success": True, "data": {"student_count": 0, "group_count": 0, "kpi": 0}}
         
     # 2. Count Total Students (FROM HEMIS API)
-    # Using special token for Tutors
-    HEMIS_TUTOR_SECRET = "LXjqwQE0Xemgq3E7LeB0tn2yMQWY0zXW"
+    from config import HEMIS_ADMIN_TOKEN
     from services.hemis_service import HemisService
     
     # We pass the group numbers (names) to the service
-    hemis_student_count = await HemisService.get_total_students_for_groups(group_numbers, HEMIS_TUTOR_SECRET)
+    # Use Admin Token to ensure we can see all groups (pagination + scope)
+    hemis_student_count = await HemisService.get_total_students_for_groups(group_numbers, HEMIS_ADMIN_TOKEN)
     
     # Fallback to DB if HEMIS returns 0 (maybe network error or empty)
     if hemis_student_count > 0:

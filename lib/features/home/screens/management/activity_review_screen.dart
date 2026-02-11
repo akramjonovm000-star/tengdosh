@@ -256,17 +256,22 @@ class _ActivityReviewScreenState extends State<ActivityReviewScreen> {
           const SizedBox(height: 8),
           Row(
             children: [
+              // 1. Turi (Bakalavr / Magistr)
               Expanded(
                 child: _buildInlineDropdown<String>(
                   hint: "Turi",
                   value: _selectedEducationType,
-                  items: ["Bakalavr", "Magistr"].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 11)))).toList(),
+                  items: ["Bakalavr", "Magistr"]
+                      .map((e) => DropdownMenuItem(
+                          value: e,
+                          child: Text(e, style: const TextStyle(fontSize: 11))))
+                      .toList(),
                   onChanged: (val) {
                     setState(() {
                       _selectedEducationType = val;
-                      _selectedCourse = null;
-                      _selectedSpecialty = null;
-                      _selectedGroup = null;
+                      _selectedCourse = null; // Reset Kurs
+                      _selectedSpecialty = null; // Reset Yo'nalish
+                      _selectedGroup = null; // Reset Guruh
                     });
                     _loadSpecialties();
                     _loadGroups();
@@ -275,19 +280,26 @@ class _ActivityReviewScreenState extends State<ActivityReviewScreen> {
                 ),
               ),
               const SizedBox(width: 4),
+              // 2. Fakultet
               Expanded(
                 child: _buildInlineDropdown<int>(
                   hint: "Fakultet",
-                  value: _faculties.any((f) => f['id'] == _selectedFacultyId) ? _selectedFacultyId : null,
-                  items: _faculties.map((f) => DropdownMenuItem<int>(
-                    value: f['id'],
-                    child: Text(f['name'] ?? "", overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11)),
-                  )).toList(),
+                  value: _faculties.any((f) => f['id'] == _selectedFacultyId)
+                      ? _selectedFacultyId
+                      : null,
+                  items: _faculties
+                      .map((f) => DropdownMenuItem<int>(
+                            value: f['id'],
+                            child: Text(f['name'] ?? "",
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 11)),
+                          ))
+                      .toList(),
                   onChanged: (val) {
                     setState(() {
                       _selectedFacultyId = val;
-                      _selectedSpecialty = null;
-                      _selectedGroup = null;
+                      _selectedSpecialty = null; // Reset Yo'nalish
+                      _selectedGroup = null; // Reset Guruh
                     });
                     _loadSpecialties();
                     _loadGroups();
@@ -296,15 +308,20 @@ class _ActivityReviewScreenState extends State<ActivityReviewScreen> {
                 ),
               ),
               const SizedBox(width: 4),
+              // 3. Shakli
               Expanded(
                 child: _buildInlineDropdown<String>(
                   hint: "Shakli",
                   value: _selectedEducationForm,
-                  items: ["Kunduzgi", "Masofaviy", "Kechki", "Sirtqi"].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontSize: 11)))).toList(),
+                  items: ["Kunduzgi", "Masofaviy", "Kechki", "Sirtqi"]
+                      .map((e) => DropdownMenuItem(
+                          value: e,
+                          child: Text(e, style: const TextStyle(fontSize: 11))))
+                      .toList(),
                   onChanged: (val) {
                     setState(() {
                       _selectedEducationForm = val;
-                      _selectedGroup = null;
+                      _selectedGroup = null; // Reset Guruh
                     });
                     _loadGroups();
                     _loadActivities(refresh: true);
@@ -316,42 +333,27 @@ class _ActivityReviewScreenState extends State<ActivityReviewScreen> {
           const SizedBox(height: 8),
           Row(
             children: [
+              // 4. Kurs (Dynamic based on Turi)
               Expanded(
                 child: _buildInlineDropdown<String>(
                   hint: "Kurs",
-                  value: (_selectedCourse != null && _selectedEducationType != null) ? "${_selectedEducationType}_$_selectedCourse" : null,
+                  value: _selectedCourse,
                   items: [
-                    if (_selectedEducationType == null || _selectedEducationType == "Bakalavr")
-                      ...["1", "2", "3", "4"].map((e) => DropdownMenuItem(value: "Bakalavr_$e", child: Text("$e-kurs", style: const TextStyle(fontSize: 11)))),
-                    if (_selectedEducationType == null || _selectedEducationType == "Magistr")
-                      ...["1", "2"].map((e) => DropdownMenuItem(value: "Magistr_$e", child: Text("$e-kurs (M)", style: const TextStyle(fontSize: 11)))),
+                    if (_selectedEducationType == "Magistr")
+                      ...["1", "2"].map((e) => DropdownMenuItem(
+                          value: e,
+                          child: Text("$e-kurs (M)",
+                              style: const TextStyle(fontSize: 11))))
+                    else
+                      ...["1", "2", "3", "4"].map((e) => DropdownMenuItem(
+                          value: e,
+                          child: Text("$e-kurs",
+                              style: const TextStyle(fontSize: 11)))),
                   ],
                   onChanged: (val) {
-                    if (val != null) {
-                      final parts = val.split('_');
-                      setState(() {
-                        _selectedEducationType = parts[0];
-                        _selectedCourse = parts[1];
-                      });
-                      _loadGroups();
-                      _loadActivities(refresh: true);
-                    }
-                  },
-                ),
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: _buildInlineDropdown<String>(
-                  hint: "Yo'nalish",
-                  value: _specialties.contains(_selectedSpecialty) ? _selectedSpecialty : null,
-                  items: _specialties.map((s) => DropdownMenuItem(
-                    value: s,
-                    child: Text(s, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11)),
-                  )).toList(),
-                  onChanged: (val) {
                     setState(() {
-                      _selectedSpecialty = val;
-                      _selectedGroup = null;
+                      _selectedCourse = val;
+                      _selectedGroup = null; // Reset Guruh
                     });
                     _loadGroups();
                     _loadActivities(refresh: true);
@@ -359,14 +361,46 @@ class _ActivityReviewScreenState extends State<ActivityReviewScreen> {
                 ),
               ),
               const SizedBox(width: 4),
+              // 5. Yo'nalish
+              Expanded(
+                child: _buildInlineDropdown<String>(
+                  hint: "Yo'nalish",
+                  value: _specialties.contains(_selectedSpecialty)
+                      ? _selectedSpecialty
+                      : null,
+                  items: _specialties
+                      .map((s) => DropdownMenuItem(
+                            value: s,
+                            child: Text(s,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 11)),
+                          ))
+                      .toList(),
+                  onChanged: (val) {
+                    setState(() {
+                      _selectedSpecialty = val;
+                      _selectedGroup = null; // Reset Guruh
+                    });
+                    _loadGroups();
+                    _loadActivities(refresh: true);
+                  },
+                ),
+              ),
+              const SizedBox(width: 4),
+              // 6. Guruh
               Expanded(
                 child: _buildInlineDropdown<String>(
                   hint: "Guruh",
-                  value: _groups.contains(_selectedGroup) ? _selectedGroup : null,
-                  items: _groups.map((g) => DropdownMenuItem(
-                    value: g,
-                    child: Text(g, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11)),
-                  )).toList(),
+                  value:
+                      _groups.contains(_selectedGroup) ? _selectedGroup : null,
+                  items: _groups
+                      .map((g) => DropdownMenuItem(
+                            value: g,
+                            child: Text(g,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 11)),
+                          ))
+                      .toList(),
                   onChanged: (val) {
                     setState(() => _selectedGroup = val);
                     _loadActivities(refresh: true);
