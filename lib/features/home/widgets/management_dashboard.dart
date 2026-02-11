@@ -6,6 +6,7 @@ import '../../student_module/widgets/student_dashboard_widgets.dart';
 import '../../../../core/services/data_service.dart';
 import '../../management/screens/management_archive_screen.dart';
 import '../../management/screens/management_appeals_screen.dart';
+import '../screens/management/activity_monitoring_screen.dart'; // [NEW]
 
 class ManagementDashboard extends StatelessWidget {
   final Map<String, dynamic>? stats;
@@ -40,7 +41,7 @@ class ManagementDashboard extends StatelessWidget {
                 },
                 borderRadius: BorderRadius.circular(16),
                 child: _StatCard(
-                  title: "Talaba qidirish",
+                  title: "Talabalar",
                   value: studentCount.toString(),
                   icon: Icons.people_alt_rounded,
                   color: Colors.blue,
@@ -95,7 +96,7 @@ class ManagementDashboard extends StatelessWidget {
               },
             ),
             DashboardCard(
-              title: "Xodimlar Monitoringi",
+              title: "Xodimlar monitoringi",
               icon: Icons.manage_accounts_rounded,
               color: Colors.deepPurple,
               onTap: () {
@@ -132,6 +133,17 @@ class ManagementDashboard extends StatelessWidget {
               icon: Icons.insights_rounded,
               color: Colors.indigo,
               onTap: () => _showNotImplemented(context, "Analitika"),
+            ),
+            DashboardCard(
+              title: "Faolliklar",
+              icon: Icons.analytics_rounded,
+              color: Colors.orange,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ActivityMonitoringScreen()),
+                );
+              },
             ),
           ],
         ),

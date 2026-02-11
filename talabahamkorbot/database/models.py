@@ -432,6 +432,11 @@ class Student(Base):
     ai_limit: Mapped[int] = mapped_column(Integer, default=25)
     ai_last_reset: Mapped[datetime | None] = mapped_column(DateTime(), nullable=True)
     custom_badge: Mapped[str | None] = mapped_column(String(32), nullable=True)
+
+    # --- Activity Metrics ---
+    last_active_at: Mapped[datetime | None] = mapped_column(DateTime(), nullable=True, index=True)
+    total_activity_count: Mapped[int] = mapped_column(Integer, default=0, index=True)
+    # ------------------------
     # ------------------------
     # --------------------------
 
@@ -843,6 +848,8 @@ class Club(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    icon: Mapped[str | None] = mapped_column(String(64), nullable=True) # Icon name (e.g. 'psychology')
+    color: Mapped[str | None] = mapped_column(String(16), nullable=True) # Hex color (e.g. '#FF5733')
     statute_link: Mapped[str | None] = mapped_column(String(500), nullable=True)
     channel_link: Mapped[str | None] = mapped_column(String(500), nullable=True)
     spreadsheet_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
@@ -1366,3 +1373,61 @@ class Banner(Base):
 
     def __repr__(self):
         return f"<Banner {self.id} - Active: {self.is_active}>"
+
+# ============================================================
+# ACTIVITY LOGGING & ANALYTICS
+# ============================================================
+
+class ActivityType(str, enum.Enum):
+    LOGIN = "login"
+    POST = "post"
+    LIKE = "like"
+    COMMENT = "comment"
+    REPOST = "repost"
+    CERTIFICATE = "certificate"
+    APPEAL = "appeal"
+    DOCUMENT = "document"
+
+class ActivityLog(Base):
+    __tablename__ = "activity_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    student_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=True, index=True)
+    staff_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("staff.id", ondelete="CASCADE"), nullable=True, index=True)
+    
+    faculty_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("faculties.id", ondelete="SET NULL"), nullable=True, index=True)
+    
+    activity_type: Mapped[str] = mapped_column(String(32), index=True) # from ActivityType
+    reference_id: Mapped[int | None] = mapped_column(Integer, nullable=True) # Post ID, Comment ID, etc.
+    meta_data: Mapped[dict | None] = mapped_column(JSON, nullable=True) # Extra info
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow, index=True)
+
+    student: Mapped["Student"] = relationship("Student")
+    staff: Mapped["Staff"] = relationship("Staff")
+    faculty: Mapped["Faculty"] = relationship("Faculty")
+
+class DailyActivityStats(Base):
+    __tablename__ = "daily_activity_stats"
+    __table_args__ = (
+        UniqueConstraint("date", "faculty_id", name="uq_daily_stats_faculty"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    date: Mapped[datetime] = mapped_column(DateTime(), index=True) # Truncated to day
+    faculty_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("faculties.id", ondelete="CASCADE"), nullable=True)
+    
+    total_active_students: Mapped[int] = mapped_column(Integer, default=0)
+    total_posts: Mapped[int] = mapped_column(Integer, default=0)
+    total_likes: Mapped[int] = mapped_column(Integer, default=0)
+    total_comments: Mapped[int] = mapped_column(Integer, default=0)
+    total_certificates: Mapped[int] = mapped_column(Integer, default=0)
+    total_appeals: Mapped[int] = mapped_column(Integer, default=0)
+    total_logins: Mapped[int] = mapped_column(Integer, default=0)
+    
+    avg_activity_score: Mapped[float] = mapped_column(default=0.0)
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    faculty: Mapped["Faculty"] = relationship("Faculty")

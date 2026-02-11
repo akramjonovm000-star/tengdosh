@@ -431,6 +431,24 @@ async def login_via_hemis(
     except Exception as e:
         logger.error(f"Failed to create prefetch task: {e}")
 
+    # Update last login
+    from datetime import datetime
+    student.last_login = datetime.utcnow()
+    await db.commit()
+    
+    # [NEW] Log Activity (Login)
+    from services.activity_service import ActivityService, ActivityType
+    # Background task preferred, but for now direct await
+    try:
+        await ActivityService.log_activity(
+            db=db,
+            user_id=student.id,
+            role='student',
+            activity_type=ActivityType.LOGIN
+        )
+    except Exception as e:
+        print(f"Login activity log error: {e}")
+
     return {
         "success": True,
         "data": {

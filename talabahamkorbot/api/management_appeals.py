@@ -177,5 +177,17 @@ async def resolve_appeal(
     appeal.status = 'resolved'
     appeal.updated_at = datetime.utcnow()
     await db.commit()
+    await db.refresh(appeal) # Refresh the appeal object after commit
+
+    # [NEW] Log Activity
+    from services.activity_service import ActivityService, ActivityType
+    await ActivityService.log_activity(
+        db=db,
+        user_id=staff.id, # Assuming 'staff' is the user resolving the appeal
+        role='management', # Or appropriate role for staff
+        activity_type=ActivityType.APPEAL_RESOLUTION, # A new activity type for resolution
+        ref_id=appeal.id
+    )
     
     return {"success": True, "message": "Murojaat yopildi"}
+```

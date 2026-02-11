@@ -99,6 +99,16 @@ async def create_post(
     await db.commit()
     await db.refresh(new_post)
     
+    # [NEW] Log Activity
+    from services.activity_service import ActivityService, ActivityType
+    await ActivityService.log_activity(
+        db=db,
+        user_id=student.id,
+        role='staff' if is_staff else 'student',
+        activity_type=ActivityType.POST,
+        ref_id=new_post.id
+    )
+    
     # Re-fetch with author to map response
     # Or just use the student object we have
     # Manually construct response to avoid lazy loading 'likes' on async session
@@ -422,27 +432,44 @@ async def get_post_by_id(
         )
         is_reposted = r_result.scalar_one_or_none() is not None
 
-    # --- VIEW COUNT LOGIC (Unique per User) ---
+    # --- VIEW COUNT LOGIC (30s Cooldown) ---
     is_staff = isinstance(student, Staff)
-    v_query = select(ChoyxonaPostView.id).where(ChoyxonaPostView.post_id == post_id)
+    v_query = select(ChoyxonaPostView).where(ChoyxonaPostView.post_id == post_id)
     if is_staff:
         v_query = v_query.where(ChoyxonaPostView.staff_id == student.id)
     else:
         v_query = v_query.where(ChoyxonaPostView.student_id == student.id)
     
     v_result = await db.execute(v_query.limit(1))
-    if not v_result.scalar_one_or_none():
-        # New View: Create record and increment count
+    existing_view = v_result.scalar_one_or_none()
+    
+    now = datetime.utcnow()
+    should_increment = False
+    
+    if existing_view:
+        # Check if 30 seconds passed since last view
+        if (now - existing_view.viewed_at).total_seconds() >= 30:
+            existing_view.viewed_at = now
+            should_increment = True
+    else:
+        # New View
         new_view = ChoyxonaPostView(
             post_id=post_id,
             student_id=student.id if not is_staff else None,
-            staff_id=student.id if is_staff else None
+            staff_id=student.id if is_staff else None,
+            viewed_at=now
         )
         db.add(new_view)
+        should_increment = True
+
+    if should_increment:
         # Atomic increment
         post.views_count = ChoyxonaPost.views_count + 1
         await db.commit()
         await db.refresh(post)
+    else:
+        # Just commit any other changes (if any) or pass
+        await db.commit()
 
     return _map_post_optimized(post, student, is_liked, is_reposted)
 
@@ -559,6 +586,17 @@ async def toggle_like(
         db.add(new_like)
         post.likes_count += 1
         liked = True
+
+        # [NEW] Log Activity
+        if not is_staff: # Only log student activity for now
+             from services.activity_service import ActivityService, ActivityType
+             await ActivityService.log_activity(
+                db=db,
+                user_id=student.id,
+                role='student',
+                activity_type=ActivityType.LIKE,
+                ref_id=post_id
+             )
 
     await db.commit()
     return {"status": "success", "liked": liked, "count": post.likes_count}
@@ -695,6 +733,17 @@ async def create_comment(
         raise HTTPException(status_code=500, detail=f"Izohni saqlashda xato: {str(e)}")
 
     await db.refresh(new_comment)
+    
+    # [NEW] Log Activity
+    if not is_staff:
+        from services.activity_service import ActivityService, ActivityType
+        await ActivityService.log_activity(
+            db=db,
+            user_id=student.id,
+            role='student',
+            activity_type=ActivityType.COMMENT,
+            ref_id=new_comment.id
+        )
     
     # Reload for response mapping
     try:

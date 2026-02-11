@@ -567,9 +567,42 @@ class DataService {
   }
 
   // 4. Get Clubs
+  Future<List<dynamic>> getClubs() async {
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConstants.backendUrl}/student/clubs/all'),
+        headers: await _getHeaders(),
+      ).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        return json.decode(utf8.decode(response.bodyBytes));
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching clubs: $e");
+    }
+    return [];
+  }
+
   Future<List<dynamic>> getMyClubs() async {
      if (useMock) return [];
      return [];
+  }
+
+  Future<bool> joinClub(int clubId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConstants.backendUrl}/student/clubs/join'),
+        headers: await _getHeaders(),
+        body: json.encode({'club_id': clubId}),
+      ).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        return true;
+      }
+    } catch (e) {
+      debugPrint("DataService: Error joining club: $e");
+    }
+    return false;
   }
 
   // Announcements
@@ -1933,5 +1966,33 @@ class DataService {
       debugPrint("DataService: Error predicting sentiment: $e");
       return "Tarmoq xatosi yoki server ishlamayapti.";
     }
+  }
+
+  // ===================================
+  // ANALYTICS & MONITORING
+  // ===================================
+
+  Future<Map<String, dynamic>> getAnalyticsDashboard() async {
+    final response = await _get('${ApiConstants.backendUrl}/management/analytics/dashboard');
+    if (response.statusCode == 200) {
+      return json.decode(utf8.decode(response.bodyBytes));
+    }
+    throw Exception('Failed to load dashboard stats');
+  }
+
+  Future<List<dynamic>> getActivityTrend() async {
+    final response = await _get('${ApiConstants.backendUrl}/management/analytics/trend?days=30');
+    if (response.statusCode == 200) {
+      return List<dynamic>.from(json.decode(utf8.decode(response.bodyBytes)));
+    }
+    return [];
+  }
+
+  Future<List<dynamic>> getFacultyActivityStats() async {
+    final response = await _get('${ApiConstants.backendUrl}/management/analytics/faculties');
+    if (response.statusCode == 200) {
+      return List<dynamic>.from(json.decode(utf8.decode(response.bodyBytes)));
+    }
+    return [];
   }
 }

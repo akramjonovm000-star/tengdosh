@@ -15,7 +15,11 @@ from services.ai_service import generate_answer_by_key
 from data.ai_prompts import AI_PROMPTS
 import json
 
+# [NEW] Import Analytics Router
+from api.analytics import router as analytics_router
+
 router = APIRouter(prefix="/management", tags=["Management"])
+router.include_router(analytics_router, prefix="/analytics", tags=["Analytics"])
 
 
 
