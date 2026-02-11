@@ -273,9 +273,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                 if (fullName == "Talaba") return "Foydalanuvchi";
 
                                 final parts = fullName.split(' ');
-                                if (parts.isNotEmpty) {
+                                if (parts.length >= 2) {
+                                   String name = parts[1];
+                                   return name.isNotEmpty ? name[0].toUpperCase() + name.substring(1).toLowerCase() : name;
+                                } else if (parts.isNotEmpty) {
                                    String first = parts[0];
-                                   return first[0].toUpperCase() + first.substring(1).toLowerCase();
+                                   return first.isNotEmpty ? first[0].toUpperCase() + first.substring(1).toLowerCase() : first;
                                 }
                                 
                                 return fullName;

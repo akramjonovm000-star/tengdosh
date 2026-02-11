@@ -147,9 +147,20 @@ class TutorDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildGroupAttendanceCard(int studentCount, int groupCount) {
-    // Mock Percentage for now, or calc from data
-    int percentage = 85; 
+  Widget _buildGroupAttendanceCard(int studentCount, int groupCount) { // Note: groupCount param is kept but unused if we use activeStudentCount from stats
+    // Retrieve data from stats
+    final int activeStudentCount = stats?['active_student_count'] ?? 0;
+    final int totalStudentCount = percentageBase(studentCount); // Use helper or direct
+
+    // Calculate percentage: (Active / Total) * 100
+    // If total is 0, avoid division by zero
+    double kpiPercent = 0.0;
+    if (studentCount > 0) {
+      kpiPercent = (activeStudentCount / studentCount) * 100;
+    }
+    
+    // Format to integer for display
+    int percentage = kpiPercent.round();
     
     return Container(
       width: double.infinity,
@@ -163,7 +174,7 @@ class TutorDashboardScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.indigo.withValues(alpha: 0.3), // [FIXED] withOpacity -> withValues
+            color: Colors.indigo.withValues(alpha: 0.3),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -182,7 +193,7 @@ class TutorDashboardScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2), // [FIXED]
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -197,7 +208,7 @@ class TutorDashboardScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             child: LinearProgressIndicator(
               value: percentage / 100,
-              backgroundColor: Colors.white.withValues(alpha: 0.1), // [FIXED]
+              backgroundColor: Colors.white.withValues(alpha: 0.1),
               valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
               minHeight: 12,
             ),
@@ -209,15 +220,15 @@ class TutorDashboardScreen extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("Faol Guruhlar", style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)), // [FIXED]
+                  Text("Faol Talabalar", style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)),
                   const SizedBox(height: 4),
-                  Text("$groupCount", style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                  Text("$activeStudentCount", style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
                 ],
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text("Jami Talabalar", style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)), // [FIXED]
+                  Text("Jami Talabalar", style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)),
                   const SizedBox(height: 4),
                   Text("$studentCount", style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
                 ],
@@ -228,6 +239,9 @@ class TutorDashboardScreen extends StatelessWidget {
       ),
     );
   }
+
+  // Helper to ensure we don't use 0
+  int percentageBase(int count) => count > 0 ? count : 1;
 }
 
 class _StatCard extends StatelessWidget {
