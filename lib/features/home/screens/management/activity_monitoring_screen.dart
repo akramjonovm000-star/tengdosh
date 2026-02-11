@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart'; // Ensure this package is available or mock charts
 import '../../../../core/services/data_service.dart';
 import '../../widgets/management_dashboard.dart';
 
