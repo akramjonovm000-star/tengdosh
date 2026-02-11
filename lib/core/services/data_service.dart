@@ -1949,11 +1949,73 @@ class DataService {
   // ===================================
 
   Future<Map<String, dynamic>> getAnalyticsDashboard() async {
-    final response = await _get('${ApiConstants.backendUrl}/management/analytics/dashboard');
+    final response = await _get(ApiConstants.managementAnalyticsDashboard);
     if (response.statusCode == 200) {
-      return json.decode(utf8.decode(response.bodyBytes));
+      final body = json.decode(utf8.decode(response.bodyBytes));
+      return body['success'] == true ? body['data'] : body;
     }
     throw Exception('Failed to load dashboard stats');
+  }
+
+  Future<Map<String, dynamic>> getManagementActivities({
+    String? status,
+    String? category,
+    int? facultyId,
+    String? query,
+    int page = 1,
+    int limit = 20,
+  }) async {
+    try {
+      final queryParams = <String>[];
+      if (status != null) queryParams.add("status=$status");
+      if (category != null) queryParams.add("category=${Uri.encodeComponent(category)}");
+      if (facultyId != null) queryParams.add("faculty_id=$facultyId");
+      if (query != null && query.isNotEmpty) queryParams.add("query=${Uri.encodeComponent(query)}");
+      queryParams.add("page=$page");
+      queryParams.add("limit=$limit");
+
+      String url = ApiConstants.managementActivities;
+      if (queryParams.isNotEmpty) {
+        url += "?${queryParams.join("&")}";
+      }
+
+      final response = await _get(url);
+      if (response.statusCode == 200) {
+        return json.decode(utf8.decode(response.bodyBytes));
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching management activities: $e");
+    }
+    return {"success": false, "data": [], "total": 0};
+  }
+
+  Future<bool> approveActivity(int activityId) async {
+    try {
+      final response = await _post("${ApiConstants.managementActivities}/$activityId/approve");
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        return body['success'] == true;
+      }
+    } catch (e) {
+      debugPrint("DataService: Error approving activity: $e");
+    }
+    return false;
+  }
+
+  Future<bool> rejectActivity(int activityId, String? comment) async {
+    try {
+      final response = await _post(
+        "${ApiConstants.managementActivities}/$activityId/reject",
+        body: {'comment': comment},
+      );
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        return body['success'] == true;
+      }
+    } catch (e) {
+      debugPrint("DataService: Error rejecting activity: $e");
+    }
+    return false;
   }
 
   Future<List<dynamic>> getActivityTrend() async {

@@ -48,40 +48,51 @@ async def get_dashboard_stats(
     if staff.role not in ['rahbariyat', 'owner', 'developer', 'rektor', 'prorektor', 'dekanat', 'tyutor']:
         raise HTTPException(status_code=403, detail="Ruxsat etilmagan")
 
-    # Base query
-    base_query = select(UserActivity)
-    
-    # Context filtering (Dekanat/Tyutor see only their scope)
-    # For now, we assume Dashboard shows GLOBAL stats for Rahbariyat.
-    # If Dekanat calls this, we might want to filter, but let's keep it simple for now.
+    # Base query for filtering
+    uni_id = getattr(staff, 'university_id', None)
+    f_id = getattr(staff, 'faculty_id', None)
+    s_role = str(getattr(staff, 'role', None)).lower()
 
-    # 1. Total Activity Count (All time)
-    total_activities = await db.scalar(select(func.count(UserActivity.id))) or 0
+    # 1. Filtered Base Stmt
+    base_stmt = select(func.count(UserActivity.id)).join(Student, UserActivity.student_id == Student.id).where(Student.university_id == uni_id)
     
-    # 2. Status Counts
-    # Use separate queries or group by for efficiency. Group by is better.
-    status_counts_res = await db.execute(
+    if f_id and s_role not in ['rahbariyat', 'owner', 'developer', 'rektor', 'prorektor']:
+        base_stmt = base_stmt.where(Student.faculty_id == f_id)
+
+    # 1. Total Activity Count
+    total_activities = await db.scalar(base_stmt) or 0
+    
+    # 2. Status Counts (Scoped)
+    status_stmt = (
         select(UserActivity.status, func.count(UserActivity.id))
-        .group_by(UserActivity.status)
+        .join(Student, UserActivity.student_id == Student.id)
+        .where(Student.university_id == uni_id)
     )
+    if f_id and s_role not in ['rahbariyat', 'owner', 'developer', 'rektor', 'prorektor']:
+        status_stmt = status_stmt.where(Student.faculty_id == f_id)
+        
+    status_counts_res = await db.execute(status_stmt.group_by(UserActivity.status))
     status_map = {r[0]: r[1] for r in status_counts_res.all()}
     
     pending_count = status_map.get("pending", 0)
-    # "confirmed" or "approved" - check model usage. Handlers use "confirmed".
     approved_count = status_map.get("confirmed", 0) 
     rejected_count = status_map.get("rejected", 0)
 
-    # 3. Activities this month
+    # 3. Activities this month (Scoped)
     start_of_month = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    activities_this_month = await db.scalar(
-        select(func.count(UserActivity.id)).where(UserActivity.created_at >= start_of_month)
-    ) or 0
+    month_stmt = base_stmt.where(UserActivity.created_at >= start_of_month)
+    activities_this_month = await db.scalar(month_stmt) or 0
     
-    # 4. Category Breakdown
-    cat_counts_res = await db.execute(
+    # 4. Category Breakdown (Scoped)
+    cat_stmt = (
         select(UserActivity.category, func.count(UserActivity.id))
-        .group_by(UserActivity.category)
+        .join(Student, UserActivity.student_id == Student.id)
+        .where(Student.university_id == uni_id)
     )
+    if f_id and s_role not in ['rahbariyat', 'owner', 'developer', 'rektor', 'prorektor']:
+        cat_stmt = cat_stmt.where(Student.faculty_id == f_id)
+        
+    cat_counts_res = await db.execute(cat_stmt.group_by(UserActivity.category))
     category_breakdown = {r[0]: r[1] for r in cat_counts_res.all()}
 
     return {

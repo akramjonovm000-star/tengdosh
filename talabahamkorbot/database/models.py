@@ -554,6 +554,7 @@ class UserActivity(Base):
     date: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
     status: Mapped[str] = mapped_column(String(32), default="pending", index=True)
+    moderator_comment: Mapped[str | None] = mapped_column(Text, nullable=True) # [NEW]
     created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow, index=True)
 
     student: Mapped["Student"] = relationship("Student", back_populates="activities")

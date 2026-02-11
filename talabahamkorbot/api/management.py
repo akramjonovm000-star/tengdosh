@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func, and_, or_, desc
 from sqlalchemy.orm import selectinload
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import zipfile
 import io
 import aiohttp
+from pydantic import BaseModel
 
 from api.dependencies import get_current_student, get_db
 from database.models import Student, Staff, TgAccount, UserActivity, TutorGroup
@@ -1554,4 +1555,138 @@ async def export_mgmt_documents_zip(
         logger = logging.getLogger(__name__)
         logger.error(f"Error sending ZIP: {e}")
         return {"success": False, "message": f"ZIP yuborishda xatolik yuz berdi: {str(e)}"}
+
+
+# ============================================================
+# SOCIAL ACTIVITY MODERATION [NEW]
+# ============================================================
+
+class ActivityModerationRequest(BaseModel):
+    comment: Optional[str] = None
+
+@router.get("/activities")
+async def get_mgmt_activities(
+    status: str = Query(None),
+    category: str = Query(None),
+    faculty_id: int = Query(None),
+    query: str = Query(None),
+    page: int = Query(1),
+    limit: int = Query(20),
+    staff: Any = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    List and filter student activities for management.
+    """
+    # Security Check
+    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or str(getattr(staff, 'role', None)).lower() in ['rahbariyat', 'dekanat', 'tyutor', 'rektor', 'prorektor', 'owner', 'developer']
+    if not is_mgmt:
+        raise HTTPException(status_code=403, detail="Ruxsat etilmagan")
+
+    uni_id = getattr(staff, 'university_id', None)
+    f_id = getattr(staff, 'faculty_id', None)
+    
+    stmt = (
+        select(UserActivity)
+        .join(Student, UserActivity.student_id == Student.id)
+        .options(selectinload(UserActivity.student), selectinload(UserActivity.images))
+        .where(Student.university_id == uni_id)
+    )
+
+    # Scoped filtering
+    if faculty_id:
+        stmt = stmt.where(Student.faculty_id == faculty_id)
+    elif f_id and str(getattr(staff, 'role', None)).lower() != 'rahbariyat':
+        # Dekanat/Tyutor restriction (unless global rahbariyat)
+        stmt = stmt.where(Student.faculty_id == f_id)
+
+    if status:
+        stmt = stmt.where(UserActivity.status == status)
+    if category:
+        stmt = stmt.where(UserActivity.category == category)
+    if query:
+        stmt = stmt.where(
+            (Student.full_name.ilike(f"%{query}%")) |
+            (UserActivity.name.ilike(f"%{query}%")) |
+            (Student.hemis_login.ilike(f"%{query}%"))
+        )
+
+    # Pagination count
+    count_stmt = select(func.count()).select_from(stmt.subquery())
+    total_count = await db.scalar(count_stmt) or 0
+
+    stmt = stmt.order_by(desc(UserActivity.created_at)).offset((page - 1) * limit).limit(limit)
+    result = await db.execute(stmt)
+    activities = result.scalars().all()
+
+    return {
+        "success": True,
+        "total": total_count,
+        "page": page,
+        "limit": limit,
+        "data": [
+            {
+                "id": a.id,
+                "student_id": a.student_id,
+                "student_full_name": a.student.full_name,
+                "faculty_name": a.student.faculty_name,
+                "category": a.category,
+                "name": a.name,
+                "description": a.description,
+                "date": a.date,
+                "status": a.status,
+                "moderator_comment": a.moderator_comment,
+                "created_at": a.created_at,
+                "images": [f"https://tengdosh.uzjoku.uz/api/v1/files?file_id={img.file_id}" for img in a.images]
+            } for a in activities
+        ]
+    }
+
+@router.post("/activities/{activity_id}/approve")
+async def approve_mgmt_activity(
+    activity_id: int,
+    staff: Any = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Approve a student activity.
+    """
+    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or str(getattr(staff, 'role', None)).lower() in ['rahbariyat', 'dekanat', 'tyutor', 'rektor', 'prorektor', 'owner', 'developer']
+    if not is_mgmt:
+        raise HTTPException(status_code=403, detail="Ruxsat etilmagan")
+
+    stmt = select(UserActivity).where(UserActivity.id == activity_id)
+    activity = (await db.execute(stmt)).scalar_one_or_none()
+    
+    if not activity:
+        raise HTTPException(status_code=404, detail="Faollik topilmadi")
+    
+    activity.status = "confirmed"
+    await db.commit()
+    return {"success": True, "message": "Faollik tasdiqlandi"}
+
+@router.post("/activities/{activity_id}/reject")
+async def reject_mgmt_activity(
+    activity_id: int,
+    req: ActivityModerationRequest,
+    staff: Any = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Reject a student activity with comment.
+    """
+    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or str(getattr(staff, 'role', None)).lower() in ['rahbariyat', 'dekanat', 'tyutor', 'rektor', 'prorektor', 'owner', 'developer']
+    if not is_mgmt:
+        raise HTTPException(status_code=403, detail="Ruxsat etilmagan")
+
+    stmt = select(UserActivity).where(UserActivity.id == activity_id)
+    activity = (await db.execute(stmt)).scalar_one_or_none()
+    
+    if not activity:
+        raise HTTPException(status_code=404, detail="Faollik topilmadi")
+    
+    activity.status = "rejected"
+    activity.moderator_comment = req.comment
+    await db.commit()
+    return {"success": True, "message": "Faollik rad etildi"}
 

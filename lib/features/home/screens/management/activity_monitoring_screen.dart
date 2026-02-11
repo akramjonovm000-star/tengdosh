@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/services/data_service.dart';
 import '../../widgets/management_dashboard.dart';
 import 'student_search_screen.dart';
+import 'activity_review_screen.dart'; // [NEW]
 
 class ActivityMonitoringScreen extends StatefulWidget {
   const ActivityMonitoringScreen({super.key});
@@ -110,32 +111,60 @@ class _ActivityMonitoringScreenState extends State<ActivityMonitoringScreen> {
       crossAxisSpacing: 16,
       mainAxisSpacing: 16,
       children: [
-        _buildStatCard("Jami Faolliklar", "${_dashboardStats!['total_activities']}", Icons.local_activity, Colors.blue),
-        _buildStatCard("Kutilmoqda", "${_dashboardStats!['pending_count']}", Icons.hourglass_empty, Colors.orange),
-        _buildStatCard("Tasdiqlangan", "${_dashboardStats!['approved_count']}", Icons.check_circle, Colors.green),
-        _buildStatCard("Bu Oy", "${_dashboardStats!['activities_this_month']}", Icons.calendar_today, Colors.purple),
+        _buildStatCard(
+          "Jami Faolliklar", 
+          "${_dashboardStats!['total_activities']}", 
+          Icons.local_activity, 
+          Colors.blue,
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ActivityReviewScreen(title: "Barcha Faolliklar", initialStatus: "Barchasi"))),
+        ),
+        _buildStatCard(
+            "Kutilmoqda", 
+            "${_dashboardStats!['pending_count']}", 
+            Icons.hourglass_empty, 
+            Colors.orange,
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ActivityReviewScreen(title: "Kutilayotgan Faolliklar", initialStatus: "pending"))),
+        ),
+        _buildStatCard(
+            "Tasdiqlangan", 
+            "${_dashboardStats!['approved_count']}", 
+            Icons.check_circle, 
+            Colors.green,
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ActivityReviewScreen(title: "Tasdiqlangan Faolliklar", initialStatus: "confirmed"))),
+        ),
+        _buildStatCard(
+            "Bu Oy", 
+            "${_dashboardStats!['activities_this_month']}", 
+            Icons.calendar_today, 
+            Colors.purple,
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ActivityReviewScreen(title: "Shu Oydagi Faolliklar", initialStatus: "Barchasi"))),
+        ),
       ],
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: color.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4)),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(height: 8),
-          Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-          Text(title, style: TextStyle(color: Colors.grey[600], fontSize: 13), textAlign: TextAlign.center),
-        ],
+  Widget _buildStatCard(String title, String value, IconData icon, Color color, {VoidCallback? onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(color: color.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4)),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 8),
+            Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            Text(title, style: TextStyle(color: Colors.grey[600], fontSize: 13), textAlign: TextAlign.center),
+          ],
+        ),
       ),
     );
   }

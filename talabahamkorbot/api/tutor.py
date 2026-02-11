@@ -242,9 +242,18 @@ async def get_tutor_dashboard(
     if not group_numbers:
         return {"success": True, "data": {"student_count": 0, "group_count": 0, "kpi": 0}}
         
-    # 2. Count Students
+    # 2. Count Total Students
     student_count = await db.scalar(
         select(func.count(Student.id)).where(Student.group_number.in_(group_numbers))
+    )
+
+    # 2.1 Count Active Students (Logged in at least once)
+    active_student_count = await db.scalar(
+        select(func.count(Student.id))
+        .where(
+            Student.group_number.in_(group_numbers),
+            Student.last_active_at.is_not(None)
+        )
     )
     
     # 3. KPI
@@ -268,6 +277,7 @@ async def get_tutor_dashboard(
         "success": True,
         "data": {
             "student_count": student_count,
+            "active_student_count": active_student_count or 0,
             "group_count": len(group_numbers),
             "kpi": kpi,
             "groups": group_numbers
