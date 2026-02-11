@@ -1995,4 +1995,12 @@ class DataService {
     }
     return [];
   }
+
+  Future<List<dynamic>> getRecentActivitySubmissions() async {
+    final response = await _get('${ApiConstants.backendUrl}/management/analytics/recent-submissions?limit=10');
+    if (response.statusCode == 200) {
+      return List<dynamic>.from(json.decode(utf8.decode(response.bodyBytes)));
+    }
+    return [];
+  }
 }

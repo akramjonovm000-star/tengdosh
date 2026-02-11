@@ -190,4 +190,3 @@ async def resolve_appeal(
     )
     
     return {"success": True, "message": "Murojaat yopildi"}
-```
