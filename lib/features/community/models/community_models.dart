@@ -362,12 +362,14 @@ class Message {
   final String timestamp;
   final bool isRead;
   final String? mediaUrl;
+  final DateTime createdAt;
 
   Message({
     required this.id,
     required this.content,
     required this.isMe,
     required this.timestamp,
+    required this.createdAt,
     this.isRead = false,
     this.mediaUrl,
   });
@@ -378,6 +380,9 @@ class Message {
       content: json['content'] ?? "",
       isMe: json['is_mine'] ?? false,
       timestamp: _formatTime(json['created_at']),
+      createdAt: json['created_at'] != null 
+          ? DateTime.parse(json['created_at']).toLocal() 
+          : DateTime.now(),
       isRead: json['is_read'] ?? false,
     );
   }

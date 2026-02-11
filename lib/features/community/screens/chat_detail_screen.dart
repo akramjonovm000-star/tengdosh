@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../models/community_models.dart';
 import '../services/chat_service.dart';
@@ -141,11 +142,66 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                       itemCount: _messages.length,
                       itemBuilder: (context, index) {
                         final msg = _messages[index];
-                        return _buildMessageBubble(msg);
+                        
+                        bool showDivider = false;
+                        if (index == _messages.length - 1) {
+                          showDivider = true;
+                        } else {
+                          final olderMsg = _messages[index + 1];
+                          if (msg.createdAt.year != olderMsg.createdAt.year ||
+                              msg.createdAt.month != olderMsg.createdAt.month ||
+                              msg.createdAt.day != olderMsg.createdAt.day) {
+                            showDivider = true;
+                          }
+                        }
+
+                        return Column(
+                          children: [
+                            if (showDivider) _buildDateDivider(msg.createdAt),
+                            _buildMessageBubble(msg),
+                          ],
+                        );
                       },
                     ),
           ),
           _buildInputArea(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDateDivider(DateTime date) {
+    String dateStr;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final msgDate = DateTime(date.year, date.month, date.day);
+
+    if (msgDate == today) {
+      dateStr = "Bugun";
+    } else if (msgDate == yesterday) {
+      dateStr = "Kecha";
+    } else {
+      dateStr = DateFormat('d-MMMM', 'uz').format(date);
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 20),
+      child: Row(
+        children: [
+          Expanded(child: Divider(color: Colors.grey[300], thickness: 0.5)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              dateStr,
+              style: TextStyle(
+                color: Colors.grey[500],
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Expanded(child: Divider(color: Colors.grey[300], thickness: 0.5)),
         ],
       ),
     );
