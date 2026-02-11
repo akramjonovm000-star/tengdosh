@@ -24,6 +24,7 @@ import 'package:talabahamkor_mobile/features/tutor/screens/tutor_documents_group
 import 'package:talabahamkor_mobile/features/tutor/screens/tutor_certificates_groups_screen.dart';
 import '../../certificates/screens/certificates_screen.dart';
 import 'package:talabahamkor_mobile/features/home/widgets/management_dashboard.dart';
+import 'package:talabahamkor_mobile/features/tutor/screens/tutor_dashboard_screen.dart'; // [NEW]
 import 'package:talabahamkor_mobile/features/profile/screens/subscription_screen.dart';
 import '../../clubs/screens/clubs_screen.dart';
 import '../../appeals/screens/appeals_screen.dart';
@@ -370,7 +371,7 @@ class _HomeScreenState extends State<HomeScreen> {
             if (auth.isManagement)
                ManagementDashboard(stats: _dashboard)
             else if (isTutor) 
-               _buildTutorDashboard()
+               TutorDashboardScreen(stats: _dashboard)
             else
                _buildStudentDashboard(),
           ],
@@ -379,97 +380,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildTutorDashboard() {
-     return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-            // Stats Row
-            Row(
-              children: [
-                Expanded(
-                  child: _buildStatCard(
-                    "Talabalar",
-                    "${_dashboard?['student_count'] ?? 0}",
-                    Icons.people_alt_rounded,
-                    Colors.blue,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildStatCard(
-                    "Guruhlar",
-                    "${_dashboard?['group_count'] ?? 0}",
-                    Icons.class_rounded,
-                    Colors.orange,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            
-            const Text(
-              "Menyu",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
-            ),
-            const SizedBox(height: 16),
-            
-            GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 1.1,
-              children: [
-                 DashboardCard(
-                   title: "Murojaatlar",
-                   icon: Icons.mark_chat_unread_rounded,
-                   color: Colors.indigo,
-                   onTap: () {
-                     Navigator.push(context, MaterialPageRoute(builder: (_) => const TutorGroupsScreen()));
-                   },
-                 ),
-                 DashboardCard(
-                   title: "KPI va Reyting",
-                   icon: Icons.bar_chart_rounded,
-                   color: Colors.green,
-                   onTap: () => _showMock("KPI"),
-                 ),
-                 DashboardCard(
-                   title: "Davomat Nazorati",
-                   icon: Icons.verified_user_rounded,
-                   color: Colors.redAccent,
-                   onTap: () => _showMock("Davomat"),
-                 ),
-                 DashboardCard(
-                   title: "Hujjatlar",
-                   icon: Icons.folder_shared_rounded,
-                   color: Colors.blueGrey,
-                   onTap: () {
-                     Navigator.push(context, MaterialPageRoute(builder: (_) => const TutorDocumentsGroupsScreen()));
-                   },
-                 ),
-                 DashboardCard(
-                   title: "Sertifikatlar",
-                   icon: Icons.workspace_premium_rounded,
-                   color: Colors.amber,
-                   onTap: () {
-                     Navigator.push(context, MaterialPageRoute(builder: (_) => const TutorCertificatesGroupsScreen()));
-                   },
-                 ),
-                 DashboardCard(
-                   title: "Faolliklar",
-                   icon: Icons.accessibility_new_rounded,
-                   color: Colors.deepPurple,
-                   onTap: () {
-                     Navigator.push(context, MaterialPageRoute(builder: (_) => const TutorActivityGroupsScreen()));
-                   },
-                 ),
-              ],
-            )
-        ],
-     );
-  }
 
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
     return Container(

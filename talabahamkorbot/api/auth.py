@@ -49,23 +49,37 @@ async def login_via_hemis(
         demo_login = "demo.rahbar"
         full_name = "Sanjar Botirovich"
         role = "rahbariyat"
+    elif login_clean == "nazokat" and pass_clean == "demo123":
+        demo_login = "demo.nazokat"
+        full_name = "SAATOVA NAZOKAT ALLAMBERGENOVNA"
+        role = "tyutor"
             
     logger.debug(f"DEBUG AUTH: demo_login='{demo_login}'")
             
     if demo_login:
-        if role == "tutor" or role == "rahbariyat":
+        if role in ["tutor", "tyutor", "rahbariyat"]:
             # Demo Staff Logic
             from database.models import Staff, StaffRole
-            # Check by ID OR JSHSHIR to avoid IntegrityError
-            target_hemis_id = 999999 if role == "tutor" else 888888
-            target_jshshir = "12345678901234" if role == "tutor" else "98765432109876"
-
-            demo_staff = await db.scalar(
-                select(Staff).where(
-                    (Staff.hemis_id.in_([999999, 888888])) | 
-                    (Staff.jshshir.in_(["12345678901234", "98765432109876"]))
+            
+            demo_staff = None
+            if demo_login == "demo.nazokat":
+                 # Fetch actual user 64
+                 demo_staff = await db.scalar(select(Staff).where(Staff.id == 64))
+                 if not demo_staff:
+                     # Fallback search by name if ID changed (though unlikely)
+                     demo_staff = await db.scalar(select(Staff).where(Staff.full_name.ilike("%Nazokat%")))
+            
+            if not demo_staff:     
+                # Check by ID OR JSHSHIR to avoid IntegrityError (Standard Demo Logic)
+                target_hemis_id = 999999 if role == "tutor" else 888888
+                target_jshshir = "12345678901234" if role == "tutor" else "98765432109876"
+    
+                demo_staff = await db.scalar(
+                    select(Staff).where(
+                        (Staff.hemis_id.in_([999999, 888888])) | 
+                        (Staff.jshshir.in_(["12345678901234", "98765432109876"]))
+                )
             )
-        )
             
             if not demo_staff:
                 demo_staff = Staff(
@@ -208,6 +222,23 @@ async def login_via_hemis(
              logger.warning(f"Login attempted by Staff {creds.login} (ID={h_id}) but not found in DB.")
              raise HTTPException(status_code=403, detail="Siz tizimda xodim sifatida topilmadingiz")
              
+        # [NEW] Gating for Tutor Module Development
+        # Allow if role is "tyutor" AND login is "nazokat" (handled by demo logic above) or explicitly whitelisted
+        # But this is OAuth flow, so "nazokat" login is not creds.login (creds.login is HEMIS ID/Login)
+        
+        # If the user is a Tutor, we check if they are allowed.
+        # Demo login bypasses this entire block (returns early).
+        # So this only affects real OAuth logins.
+        
+        # Check actual role from DB (more reliable)
+        real_role = staff.role.value if hasattr(staff.role, 'value') else staff.role
+        
+        if real_role == "tyutor":
+             # BLOCK ALL TUTORS FOR NOW
+             # Unless we add a whitelist mechanism later
+             logger.info(f"Blocking Tutor Login: {staff.full_name} ({staff.id})")
+             raise HTTPException(status_code=403, detail="Tyutorlar moduli bo'yicha texnik ishlar olib borilmoqda. Tizim tez orada ishga tushadi.")
+
         # Update Staff info
         if h_id and not staff.hemis_id:
             staff.hemis_id = int(h_id)
