@@ -53,28 +53,32 @@ async def get_dashboard_stats(
         raise HTTPException(status_code=403, detail="Ruxsat etilmagan")
 
     # Base query for filtering
-    uni_id = getattr(staff, 'university_id', None)
-    f_id = getattr(staff, 'faculty_id', None)
-    s_role = str(getattr(staff, 'role', None)).lower()
-
-    # 1. Filtered Base Stmt
-    base_stmt = select(func.count(UserActivity.id)).join(Student, UserActivity.student_id == Student.id).where(Student.university_id == uni_id)
+    uni_id = getattr(staff, "university_id", None)
+    f_id = getattr(staff, "faculty_id", None)
+    role = str(getattr(staff, "role", None)).lower()
     
-    if f_id and s_role not in ['rahbariyat', 'owner', 'developer', 'rektor', 'prorektor']:
-        base_stmt = base_stmt.where(Student.faculty_id == f_id)
+    # Base stmt for scoping
+    def apply_scoping(stmt_obj):
+        if uni_id:
+            stmt_obj = stmt_obj.where(Student.university_id == uni_id)
+        elif role not in ['owner', 'developer']:
+            return None # Force failure
+            
+        if f_id and role not in ['rahbariyat', 'owner', 'developer', 'rektor', 'prorektor']:
+            stmt_obj = stmt_obj.where(Student.faculty_id == f_id)
+        return stmt_obj
 
     # 1. Total Activity Count
-    total_activities = await db.scalar(base_stmt) or 0
+    base_count_stmt = select(func.count(UserActivity.id)).join(Student, UserActivity.student_id == Student.id)
+    base_count_stmt = apply_scoping(base_count_stmt)
+    if base_count_stmt is None:
+        return {"success": True, "data": DashboardStatsData(total_activities=0, pending_count=0, approved_count=0, rejected_count=0, activities_this_month=0, category_breakdown={})}
+    
+    total_activities = await db.scalar(base_count_stmt) or 0
     
     # 2. Status Counts (Scoped)
-    status_stmt = (
-        select(UserActivity.status, func.count(UserActivity.id))
-        .join(Student, UserActivity.student_id == Student.id)
-        .where(Student.university_id == uni_id)
-    )
-    if f_id and s_role not in ['rahbariyat', 'owner', 'developer', 'rektor', 'prorektor']:
-        status_stmt = status_stmt.where(Student.faculty_id == f_id)
-        
+    status_stmt = select(UserActivity.status, func.count(UserActivity.id)).join(Student, UserActivity.student_id == Student.id)
+    status_stmt = apply_scoping(status_stmt)
     status_counts_res = await db.execute(status_stmt.group_by(UserActivity.status))
     status_map = {r[0]: r[1] for r in status_counts_res.all()}
     
@@ -84,20 +88,14 @@ async def get_dashboard_stats(
 
     # 3. Activities this month (Scoped)
     start_of_month = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    month_stmt = base_stmt.where(UserActivity.created_at >= start_of_month)
+    month_stmt = select(func.count(UserActivity.id)).join(Student, UserActivity.student_id == Student.id).where(UserActivity.created_at >= start_of_month)
+    month_stmt = apply_scoping(month_stmt)
     activities_this_month = await db.scalar(month_stmt) or 0
     
     # 4. Category Breakdown (Scoped)
-    cat_stmt = (
-        select(UserActivity.category, func.count(UserActivity.id))
-        .join(Student, UserActivity.student_id == Student.id)
-        .where(Student.university_id == uni_id)
-    )
-    if f_id and s_role not in ['rahbariyat', 'owner', 'developer', 'rektor', 'prorektor']:
-        cat_stmt = cat_stmt.where(Student.faculty_id == f_id)
-        
+    cat_stmt = select(UserActivity.category, func.count(UserActivity.id)).join(Student, UserActivity.student_id == Student.id)
+    cat_stmt = apply_scoping(cat_stmt)
     cat_counts_res = await db.execute(cat_stmt.group_by(UserActivity.category))
-    # Sanitize: ensure keys are strings even if NULL in DB
     category_breakdown = {str(r[0] or "boshqa"): r[1] for r in cat_counts_res.all()}
 
     return {

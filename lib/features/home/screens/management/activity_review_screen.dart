@@ -133,7 +133,16 @@ class _ActivityReviewScreenState extends State<ActivityReviewScreen> {
     final success = await _dataService.approveActivity(id);
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Faollik tasdiqlandi")));
-      _loadActivities(refresh: true);
+      setState(() {
+        final index = _activities.indexWhere((a) => a['id'] == id);
+        if (index != -1) {
+          if (_selectedStatus != null && _selectedStatus != "Barchasi" && _selectedStatus != "confirmed") {
+            _activities.removeAt(index);
+          } else {
+            _activities[index]['status'] = 'confirmed';
+          }
+        }
+      });
     }
   }
 
@@ -168,7 +177,17 @@ class _ActivityReviewScreenState extends State<ActivityReviewScreen> {
       final success = await _dataService.rejectActivity(id, comment);
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Faollik rad etildi")));
-        _loadActivities(refresh: true);
+        setState(() {
+          final index = _activities.indexWhere((a) => a['id'] == id);
+          if (index != -1) {
+            if (_selectedStatus != null && _selectedStatus != "Barchasi" && _selectedStatus != "rejected") {
+              _activities.removeAt(index);
+            } else {
+              _activities[index]['status'] = 'rejected';
+              _activities[index]['moderator_comment'] = comment;
+            }
+          }
+        });
       }
     }
   }

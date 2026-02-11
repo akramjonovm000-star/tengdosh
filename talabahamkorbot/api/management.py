@@ -58,9 +58,18 @@ async def get_management_dashboard(
         tg_stmt = select(TutorGroup.group_number).where(TutorGroup.tutor_id == staff.id)
         group_numbers = (await db.execute(tg_stmt)).scalars().all()
         
-        total_students = await db.scalar(
-            select(func.count(Student.id)).where(Student.university_id == uni_id, Student.group_number.in_(group_numbers))
-        ) or 0
+        # [FIX] Use HEMIS API for Total Count (Admin Token for visibility)
+        from config import HEMIS_ADMIN_TOKEN
+        hemis_count = await HemisService.get_total_students_for_groups(group_numbers, HEMIS_ADMIN_TOKEN)
+        
+        if hemis_count > 0:
+            total_students = hemis_count
+        else:
+            # Fallback to DB
+            total_students = await db.scalar(
+                select(func.count(Student.id)).where(Student.university_id == uni_id, Student.group_number.in_(group_numbers))
+            ) or 0
+            
         platform_users = await db.scalar(
             select(func.count(Student.id))
             .where(Student.university_id == uni_id, Student.group_number.in_(group_numbers), Student.hemis_token != None)
@@ -1585,7 +1594,9 @@ async def get_management_activities(
     List and filter student activities for management.
     """
     # Security Check
-    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or str(getattr(staff, 'role', None)).lower() in ['rahbariyat', 'dekanat', 'tyutor', 'rektor', 'prorektor', 'owner', 'developer']
+    role = str(getattr(staff, 'role', None)).lower()
+    allowed_roles = ['rahbariyat', 'dekanat', 'tyutor', 'rektor', 'prorektor', 'owner', 'developer', 'yoshlar_yetakchisi', 'yoshlar_ittifoqi']
+    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or role in allowed_roles
     if not is_mgmt:
         raise HTTPException(status_code=403, detail="Ruxsat etilmagan")
 
@@ -1596,8 +1607,13 @@ async def get_management_activities(
         select(UserActivity)
         .join(Student, UserActivity.student_id == Student.id)
         .options(selectinload(UserActivity.student), selectinload(UserActivity.images))
-        .where(Student.university_id == uni_id)
     )
+
+    if uni_id:
+        stmt = stmt.where(Student.university_id == uni_id)
+    elif role not in ['owner', 'developer']:
+        # Restricted role but no uni_id -> no results for safety
+        return {"success": True, "total": 0, "page": page, "limit": limit, "data": []}
 
     # Scoped filtering
     if faculty_id:

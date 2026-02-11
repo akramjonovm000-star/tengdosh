@@ -30,14 +30,19 @@ async def get_tutor_document_stats(
 
     # 2. Optimized Aggregate Query
     from sqlalchemy import distinct
+    from config import HEMIS_ADMIN_TOKEN
+    from services.hemis_service import HemisService
     
+    # Fetch accurate totals from HEMIS
+    hemis_counts = await HemisService.get_group_student_counts(group_numbers, HEMIS_ADMIN_TOKEN)
+    
+    # Fetch uploaded counts from DB
     stmt = (
         select(
             Student.group_number,
-            func.count(Student.id).label("total_count"),
             func.count(distinct(UserDocument.student_id)).label("uploaded_count")
         )
-        .outerjoin(UserDocument, Student.id == UserDocument.student_id)
+        .join(UserDocument, Student.id == UserDocument.student_id)
         .where(Student.group_number.in_(group_numbers))
         .group_by(Student.group_number)
     )
@@ -45,18 +50,18 @@ async def get_tutor_document_stats(
     result = await db.execute(stmt)
     rows = result.all()
     
-    stats_map = {
-        r.group_number: {"total": r.total_count, "uploaded": r.uploaded_count}
-        for r in rows
-    }
+    uploaded_map = {r.group_number: r.uploaded_count for r in rows}
     
     data = []
     for gn in group_numbers:
-        s = stats_map.get(gn, {"total": 0, "uploaded": 0})
+        total = hemis_counts.get(gn, 0)
+        # Fallback if HEMIS failed for this group (e.g. 0) - maybe check DB?
+        # But we trust HEMIS more now.
+        
         data.append({
             "group_number": gn,
-            "total_students": s["total"],
-            "uploaded_students": s["uploaded"]
+            "total_students": total,
+            "uploaded_students": uploaded_map.get(gn, 0)
         })
         
     return {"success": True, "data": data}
@@ -616,14 +621,18 @@ async def get_tutor_certificate_stats(
     # 2. Optimized Aggregate Query
     from sqlalchemy import distinct
     from database.models import UserCertificate
+    from config import HEMIS_ADMIN_TOKEN
+    from services.hemis_service import HemisService
+    
+    # Fetch accurate totals from HEMIS
+    hemis_counts = await HemisService.get_group_student_counts(group_numbers, HEMIS_ADMIN_TOKEN)
     
     stmt = (
         select(
             Student.group_number,
-            func.count(Student.id).label("total_students"),
             func.count(distinct(UserCertificate.student_id)).label("students_with_certs")
         )
-        .outerjoin(UserCertificate, Student.id == UserCertificate.student_id)
+        .join(UserCertificate, Student.id == UserCertificate.student_id)
         .where(Student.group_number.in_(group_numbers))
         .group_by(Student.group_number)
     )
@@ -631,18 +640,15 @@ async def get_tutor_certificate_stats(
     result = await db.execute(stmt)
     rows = result.all()
     
-    stats_map = {
-        r.group_number: {"total": r.total_students, "uploaded": r.students_with_certs}
-        for r in rows
-    }
+    uploaded_map = {r.group_number: r.students_with_certs for r in rows}
     
     data = []
     for gn in group_numbers:
-        s = stats_map.get(gn, {"total": 0, "uploaded": 0})
+        total = hemis_counts.get(gn, 0)
         data.append({
             "group_number": gn,
-            "total_students": s["total"],
-            "uploaded_students": s["uploaded"]
+            "total_students": total,
+            "uploaded_students": uploaded_map.get(gn, 0)
         })
         
     return {"success": True, "data": data}

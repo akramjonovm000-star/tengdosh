@@ -1350,25 +1350,34 @@ class HemisService:
         """
         Calculates total students in the given list of group names using the provided token.
         """
+        counts = await HemisService.get_group_student_counts(group_numbers, token)
+        return sum(counts.values())
+
+    @staticmethod
+    async def get_group_student_counts(group_numbers: list[str], token: str) -> dict[str, int]:
+        """
+        Returns a dictionary mapping group_number -> student_count.
+        """
         if not token or not group_numbers:
-            return 0
+            return {}
             
-        total_students = 0
-        
+        counts = {}
         # We need to resolve each group name to an ID to query student count
-        # This might be slow if many groups, but Tutors usually have 1-5 groups.
         for group_name in group_numbers:
             # 1. Resolve Group ID
             group_id = await HemisService.resolve_group_id(group_name, token=token)
             if group_id:
                 # 2. Get Count for this Group
+                # Optimization: get_admin_student_count is cached? No, but lightweight.
                 count = await HemisService.get_admin_student_count(
                     {"_group": group_id}, 
                     token=token
                 )
-                total_students += count
+                counts[group_name] = count
+            else:
+                counts[group_name] = 0
                 
-        return total_students
+        return counts
 
     @staticmethod
     async def get_faculties(token: str = None) -> list:
