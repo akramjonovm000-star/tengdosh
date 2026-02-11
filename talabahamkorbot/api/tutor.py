@@ -242,12 +242,24 @@ async def get_tutor_dashboard(
     if not group_numbers:
         return {"success": True, "data": {"student_count": 0, "group_count": 0, "kpi": 0}}
         
-    # 2. Count Total Students
-    student_count = await db.scalar(
-        select(func.count(Student.id)).where(Student.group_number.in_(group_numbers))
-    )
+    # 2. Count Total Students (FROM HEMIS API)
+    # Using special token for Tutors
+    HEMIS_TUTOR_SECRET = "LXjqwQE0Xemgq3E7LeB0tn2yMQWY0zXW"
+    from services.hemis_service import HemisService
+    
+    # We pass the group numbers (names) to the service
+    hemis_student_count = await HemisService.get_total_students_for_groups(group_numbers, HEMIS_TUTOR_SECRET)
+    
+    # Fallback to DB if HEMIS returns 0 (maybe network error or empty)
+    if hemis_student_count > 0:
+        student_count = hemis_student_count
+    else:
+        # Fallback to local DB count
+        student_count = await db.scalar(
+            select(func.count(Student.id)).where(Student.group_number.in_(group_numbers))
+        )
 
-    # 2.1 Count Active Students (Logged in at least once)
+    # 2.1 Count Active Students (Logged in at least once - Local DB only)
     active_student_count = await db.scalar(
         select(func.count(Student.id))
         .where(

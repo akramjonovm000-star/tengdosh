@@ -798,10 +798,13 @@ class HemisService:
         specialty_id: int = None, 
         education_type: str = None, 
         education_form: str = None,
-        level_name: str = None
+        level_name: str = None,
+        token: str = None
     ):
         """Fetch list of groups from Admin API with optional filtering"""
-        if not HEMIS_ADMIN_TOKEN: return []
+        """Fetch list of groups from Admin API with optional filtering"""
+        auth_token = token or HEMIS_ADMIN_TOKEN
+        if not auth_token: return []
         
         # Cache key based on filters
         cache_key = (faculty_id, specialty_id, education_type, education_form, level_name)
@@ -858,7 +861,7 @@ class HemisService:
             response = await HemisService.fetch_with_retry(
                 client, "GET", url, 
                 params=params,
-                headers={"Authorization": f"Bearer {HEMIS_ADMIN_TOKEN}"}
+                headers={"Authorization": f"Bearer {auth_token}"}
             )
             if response.status_code == 200:
                 data = response.json().get("data", {})
@@ -873,9 +876,10 @@ class HemisService:
         return []
 
     @staticmethod
-    async def resolve_group_id(group_name: str) -> Optional[int]:
+    async def resolve_group_id(group_name: str, token: str = None) -> Optional[int]:
         """Find the matching group ID from the group list."""
-        if not HEMIS_ADMIN_TOKEN or not group_name: return None
+        auth_token = token or HEMIS_ADMIN_TOKEN
+        if not auth_token or not group_name: return None
         
         # Cache resolution
         if not hasattr(HemisService, "_resolved_group_ids"):
@@ -883,7 +887,7 @@ class HemisService:
         if group_name in HemisService._resolved_group_ids:
              return HemisService._resolved_group_ids[group_name]
 
-        all_groups = await HemisService.get_group_list()
+        all_groups = await HemisService.get_group_list(token=auth_token)
         req_norm = HemisService._normalize_name(group_name)
         
         # 1. Try exact or substantial substring match
@@ -1125,11 +1129,12 @@ class HemisService:
             return None
 
     @staticmethod
-    async def finish_student_survey(token: str, quiz_rule_id: int):
+    async def finish_student_survey(token: str, quiz_rule_id: int, base_url: Optional[str] = None):
         """POST /v1/student/survey-finish"""
         client = await HemisService.get_client()
+        final_base = base_url or HemisService.BASE_URL
         try:
-            url = f"{HemisService.BASE_URL}/student/survey-finish"
+            url = f"{final_base}/student/survey-finish"
             payload = {"quiz_rule_id": quiz_rule_id}
             response = await client.post(url, headers=HemisService.get_headers(token), json=payload)
             if response.status_code == 200:
@@ -1253,12 +1258,13 @@ class HemisService:
 
 
     @staticmethod
-    async def get_admin_student_count(filters: Dict[str, Any]) -> int:
+    async def get_admin_student_count(filters: Dict[str, Any], token: str = None) -> int:
         """
         Fetches total student count using HEMIS_ADMIN_TOKEN and /data/student-list.
         Allows filtering by any parameter (e.g., _department, _specialty, _group, _education_type).
         """
-        if not HEMIS_ADMIN_TOKEN:
+        auth_token = token or HEMIS_ADMIN_TOKEN
+        if not auth_token:
             return 0
             
         client = await HemisService.get_client()
@@ -1268,7 +1274,7 @@ class HemisService:
         params = {"limit": 1} # We only need the totalCount
         params.update(filters)
         
-        headers = {"Authorization": f"Bearer {HEMIS_ADMIN_TOKEN}"}
+        headers = {"Authorization": f"Bearer {auth_token}"}
         
         try:
             response = await client.get(url, headers=headers, params=params, timeout=10)

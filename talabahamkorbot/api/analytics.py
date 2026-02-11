@@ -15,13 +15,17 @@ router = APIRouter()
 # ============================================================
 from pydantic import BaseModel
 
-class DashboardStats(BaseModel):
+class DashboardStatsData(BaseModel):
     total_activities: int
     pending_count: int
     approved_count: int
     rejected_count: int
     activities_this_month: int
     category_breakdown: Dict[str, int]
+
+class DashboardStatsResponse(BaseModel):
+    success: bool
+    data: DashboardStatsData
     
 class RecentSubmissionItem(BaseModel):
     id: int
@@ -37,7 +41,7 @@ class RecentSubmissionItem(BaseModel):
 # ENDPOINTS
 # ============================================================
 
-@router.get("/dashboard", response_model=DashboardStats)
+@router.get("/dashboard", response_model=DashboardStatsResponse)
 async def get_dashboard_stats(
     staff: Staff = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
@@ -93,15 +97,19 @@ async def get_dashboard_stats(
         cat_stmt = cat_stmt.where(Student.faculty_id == f_id)
         
     cat_counts_res = await db.execute(cat_stmt.group_by(UserActivity.category))
-    category_breakdown = {r[0]: r[1] for r in cat_counts_res.all()}
+    # Sanitize: ensure keys are strings even if NULL in DB
+    category_breakdown = {str(r[0] or "boshqa"): r[1] for r in cat_counts_res.all()}
 
     return {
-        "total_activities": total_activities,
-        "pending_count": pending_count,
-        "approved_count": approved_count,
-        "rejected_count": rejected_count,
-        "activities_this_month": activities_this_month,
-        "category_breakdown": category_breakdown
+        "success": True,
+        "data": {
+            "total_activities": total_activities,
+            "pending_count": pending_count,
+            "approved_count": approved_count,
+            "rejected_count": rejected_count,
+            "activities_this_month": activities_this_month,
+            "category_breakdown": category_breakdown
+        }
     }
 
 @router.get("/recent-submissions", response_model=List[RecentSubmissionItem])

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_, desc
 from sqlalchemy.orm import selectinload
@@ -8,7 +8,8 @@ import io
 import aiohttp
 from pydantic import BaseModel
 
-from api.dependencies import get_current_student, get_db
+from api.dependencies import get_current_student, get_current_staff
+from database.db_connect import get_db
 from database.models import Student, Staff, TgAccount, UserActivity, TutorGroup
 from database.models import StaffRole
 from services.analytics_service import get_management_analytics
@@ -1565,14 +1566,14 @@ class ActivityModerationRequest(BaseModel):
     comment: Optional[str] = None
 
 @router.get("/activities")
-async def get_mgmt_activities(
-    status: str = Query(None),
-    category: str = Query(None),
-    faculty_id: int = Query(None),
-    query: str = Query(None),
-    page: int = Query(1),
-    limit: int = Query(20),
-    staff: Any = Depends(get_current_student),
+async def get_management_activities(
+    status: Optional[str] = None,
+    category: Optional[str] = None,
+    faculty_id: Optional[int] = None,
+    query: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    staff: Staff = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -1645,7 +1646,7 @@ async def get_mgmt_activities(
 @router.post("/activities/{activity_id}/approve")
 async def approve_mgmt_activity(
     activity_id: int,
-    staff: Any = Depends(get_current_student),
+    staff: Staff = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -1669,7 +1670,7 @@ async def approve_mgmt_activity(
 async def reject_mgmt_activity(
     activity_id: int,
     req: ActivityModerationRequest,
-    staff: Any = Depends(get_current_student),
+    staff: Staff = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
     """

@@ -29,7 +29,7 @@ class ApiConstants {
   static const String managementAppealsResolve = '$backendUrl/appeals'; // + /{id}/resolve
   static const String managementDocumentsArchive = '$backendUrl/management/archive';
   static const String aiClusterAppeals = '$backendUrl/ai/cluster-appeals';
-  static const String managementAnalyticsDashboard = '$backendUrl/analytics/dashboard'; // [NEW]
+  static const String managementAnalyticsDashboard = '$backendUrl/management/analytics/dashboard'; // [FIXED]
   static const String managementActivities = '$backendUrl/management/activities'; // [NEW]
   
   // Announcements
