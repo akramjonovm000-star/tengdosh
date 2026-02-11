@@ -32,6 +32,9 @@ class DataService {
   
   // Centralized Error Handling
   void _handleAuthError(http.Response response) {
+    // DISCONNECTION FIX: Do not trigger global auth update on 401.
+    // This allows the user to continue using cached data or retry without being blocked.
+    /*
     if (response.statusCode == 401) {
       try {
         final body = json.decode(response.body);
@@ -40,15 +43,16 @@ class DataService {
         }
       } catch (_) {}
     }
+    */
   }
 
-  Future<http.Response> _get(String url, {Duration timeout = const Duration(seconds: 30)}) async {
+  Future<http.Response> _get(String url, {Duration timeout = const Duration(seconds: 60)}) async {
     final response = await http.get(Uri.parse(url), headers: await _getHeaders()).timeout(timeout);
     _handleAuthError(response);
     return response;
   }
 
-  Future<http.Response> _post(String url, {Object? body, Duration timeout = const Duration(seconds: 15)}) async {
+  Future<http.Response> _post(String url, {Object? body, Duration timeout = const Duration(seconds: 45)}) async {
     final response = await http.post(
       Uri.parse(url), 
       headers: await _getHeaders(),

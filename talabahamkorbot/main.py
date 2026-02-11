@@ -217,4 +217,6 @@ MODE = os.environ.get("BOT_MODE", "WEBHOOK")
 
 if __name__ == "__main__":
     # Increased workers to 4 to prevent concurrency bottlenecks (e.g. during slow HEMIS or aggregate queries)
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False, workers=4)
+    # [REVERTED] 1 Worker caused App Disconnection (Performance Bottleneck). Back to 4.
+    # [FIX] Increase Keep-Alive to 75s to prevent "Connection Closed" errors on mobile NAT.
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False, workers=4, timeout_keep_alive=75)

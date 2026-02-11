@@ -88,6 +88,7 @@ class Post {
       targetSpecialtyId: json['target_specialty_name'],
       authorIsPremium: json['author_is_premium'] ?? false, // NEW
       authorCustomBadge: json['author_custom_badge'], // NEW
+      views: json['views_count'] ?? 0,
       pollOptions: json['poll_options'] != null ? List<String>.from(json['poll_options']) : null,
       pollVotes: json['poll_votes'] != null ? List<int>.from(json['poll_votes']) : null,
       userVote: json['user_vote_index'],

@@ -135,7 +135,7 @@ async def build_student_context(session: AsyncSession, student_id: int) -> str:
     try:
         if student.hemis_token:
             # A. API Method
-            grades_data = await HemisService.get_student_performance_details(student.hemis_token)
+            grades_data = await HemisService.get_student_subject_list(student.hemis_token)
             
             # B. Fallback to Scrape if API empty but we have credentials
             if not grades_data and student.hemis_login and student.hemis_password:

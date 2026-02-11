@@ -446,7 +446,7 @@ class _CommentSheetState extends State<CommentSheet> {
                     const SizedBox(width: 12),
                     Icon(Icons.remove_red_eye, size: 14, color: Colors.grey[400]),
                     const SizedBox(width: 4),
-                    Text("Ko'rildi", style: TextStyle(fontSize: 12, color: Colors.grey[600])), 
+                    Text("${post.views}", style: TextStyle(fontSize: 12, color: Colors.grey[600])), 
                   ],
                 )
               ],

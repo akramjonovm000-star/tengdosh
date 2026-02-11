@@ -397,39 +397,44 @@ class _PostCardState extends State<PostCard> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-               _buildActionButton(
-                 icon: Icons.chat_bubble_outline, 
-                 label: "$_commentCount",
-                 onTap: () {
-                   showModalBottomSheet(
-                     context: context,
-                     isScrollControlled: true, 
-                     backgroundColor: Colors.transparent,
-                     builder: (context) => CommentSheet(
-                       post: widget.post,
-                       onCommentCountChanged: (newCount) {
-                         setState(() => _commentCount = newCount);
-                       },
-                     )
-                   );
-                 } 
-               ),
-               _buildActionButton(
-                 icon: _isReposted ? Icons.repeat : Icons.repeat, 
-                 label: "$_repostCount", 
-                 color: _isReposted ? Colors.green : null,
-                 onTap: _toggleRepost
-               ),
-               _buildActionButton(
-                 icon: _isLiked ? Icons.favorite : Icons.favorite_border, 
-                 label: "$_likeCount", 
-                 color: _isLiked ? Colors.red : null,
-                 onTap: _toggleLike
-               ),
-               IconButton(
-                 icon: const Icon(Icons.share_outlined, color: Colors.grey, size: 20),
-                 onPressed: _showShareOptions, 
-               )
+                _buildActionButton(
+                  icon: Icons.remove_red_eye_outlined, 
+                  label: "${widget.post.views}", 
+                  onTap: () {} // Views are read-only
+                ),
+                _buildActionButton(
+                  icon: Icons.chat_bubble_outline, 
+                  label: "$_commentCount",
+                  onTap: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true, 
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => CommentSheet(
+                        post: widget.post,
+                        onCommentCountChanged: (newCount) {
+                          setState(() => _commentCount = newCount);
+                        },
+                      )
+                    );
+                  } 
+                ),
+                _buildActionButton(
+                  icon: _isReposted ? Icons.repeat : Icons.repeat, 
+                  label: "$_repostCount", 
+                  color: _isReposted ? Colors.green : null,
+                  onTap: _toggleRepost
+                ),
+                _buildActionButton(
+                  icon: _isLiked ? Icons.favorite : Icons.favorite_border, 
+                  label: "$_likeCount", 
+                  color: _isLiked ? Colors.red : null,
+                  onTap: _toggleLike
+                ),
+                IconButton(
+                  icon: const Icon(Icons.share_outlined, color: Colors.grey, size: 20),
+                  onPressed: _showShareOptions, 
+                )
             ],
           )
         ],

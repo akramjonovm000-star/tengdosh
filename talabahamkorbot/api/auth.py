@@ -10,43 +10,10 @@ from services.university_service import UniversityService
 from api.schemas import HemisLoginRequest, StudentProfileSchema
 import logging
 
-from api.schemas import HemisLoginRequest, StudentProfileSchema
-import logging
-
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-async def _get_or_create_academic_context(db: AsyncSession, uni_name: str, fac_name: str = None):
-    """Maps names to IDs, creating records if they don't exist."""
-    from database.models import University, Faculty
-    if not uni_name:
-        return None, None
-        
-    # 1. University
-    uni = await db.scalar(select(University).where(University.name == uni_name))
-    if not uni:
-        # Check for similar names or use a default code
-        uni_code = uni_name.replace(" ", "_").upper()[:32]
-        uni = University(name=uni_name, uni_code=uni_code)
-        db.add(uni)
-        await db.flush()
-        logger.info(f"Created new University: {uni_name}")
-    
-    uni_id = uni.id
-    fac_id = None
-    
-    # 2. Faculty
-    if fac_name:
-        fac = await db.scalar(select(Faculty).where(Faculty.university_id == uni_id, Faculty.name == fac_name))
-        if not fac:
-            fac_code = "AUTO_" + fac_name.replace(" ", "_")[:59]
-            fac = Faculty(university_id=uni_id, faculty_code=fac_code, name=fac_name)
-            db.add(fac)
-            await db.flush()
-            logger.info(f"Created new Faculty: {fac_name} for University {uni_id}")
-        fac_id = fac.id
-        
-    return uni_id, fac_id
+from utils.academic import get_or_create_academic_context
 
 @router.post("/hemis")
 @router.post("/hemis/")
@@ -90,22 +57,24 @@ async def login_via_hemis(
             # Demo Staff Logic
             from database.models import Staff, StaffRole
             # Check by ID OR JSHSHIR to avoid IntegrityError
+            target_hemis_id = 999999 if role == "tutor" else 888888
+            target_jshshir = "12345678901234" if role == "tutor" else "98765432109876"
+
             demo_staff = await db.scalar(
                 select(Staff).where(
                     (Staff.hemis_id.in_([999999, 888888])) | 
                     (Staff.jshshir.in_(["12345678901234", "98765432109876"]))
-                )
             )
+        )
             
             if not demo_staff:
                 demo_staff = Staff(
                     full_name=full_name,
-                    jshshir="12345678901234" if role == "tutor" else "98765432109876",
+                    jshshir=target_jshshir,
                     role=role, 
-                    hemis_id=999999 if role == "tutor" else 888888,
+                    hemis_id=target_hemis_id,
                     phone="998901234567",
-                    university_id=1,
-                    university_name="O‘zbekiston jurnalistika va ommaviy kommunikatsiyalar universiteti"
+                    university_id=1
                 )
                 db.add(demo_staff)
                 await db.commit()
@@ -330,8 +299,7 @@ async def login_via_hemis(
     st_status = get_name("studentStatus")
     image_url = me.get("image") or me.get("picture") or me.get("image_url")
 
-    # Mapping Names -> IDs for Community Filtering
-    uni_id, fac_id = await _get_or_create_academic_context(db, uni_name, fac_name)
+    uni_id, fac_id = await get_or_create_academic_context(db, uni_name, fac_name)
 
     # Parse Role
     raw_type = me.get("type", "student")
@@ -554,8 +522,7 @@ async def hemis_callback(
     fac_name = me.get("faculty", {}).get("name") if isinstance(me.get("faculty"), dict) else me.get("faculty_name") or ""
     image_url = me.get("image") or me.get("picture") or me.get("image_url")
     
-    # Map IDs
-    uni_id, fac_id = await _get_or_create_academic_context(db, uni_name, fac_name)
+    uni_id, fac_id = await get_or_create_academic_context(db, uni_name, fac_name)
 
     if not student:
         student = Student(

@@ -1,7 +1,9 @@
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
+from aiogram.fsm.storage.redis import RedisStorage
+from redis.asyncio import Redis
 
-from config import BOT_TOKEN
+from config import BOT_TOKEN, REDIS_URL
 
 
 bot = Bot(
@@ -9,4 +11,8 @@ bot = Bot(
     default=DefaultBotProperties(parse_mode="HTML"),
 )
 
-dp = Dispatcher()
+# Use Redis Storage for FSM to support multiple workers
+redis = Redis.from_url(REDIS_URL)
+storage = RedisStorage(redis=redis)
+
+dp = Dispatcher(storage=storage)

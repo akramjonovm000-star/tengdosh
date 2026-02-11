@@ -233,8 +233,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-            if (auth.isAuthUpdateRequired)
-              const PasswordUpdateDialog(),
+// DISCONNECTION FIX: Removed PasswordUpdateDialog to prevent blocking UI
+            // if (auth.isAuthUpdateRequired)
+            //   const PasswordUpdateDialog(),
           ],
         );
       },

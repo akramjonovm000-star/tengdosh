@@ -12,10 +12,27 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
+from sqlalchemy.types import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db_connect import Base
 
+
+# ============================================================
+# BOT STATE MANAGEMENT (FSM)
+# ============================================================
+
+class BotFSM(Base):
+    __tablename__ = "bot_fsm"
+
+    # Composite PK: Chat + User
+    chat_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    
+    state: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    data: Mapped[dict] = mapped_column(JSON, default={}, nullable=True)
+    
+    updated_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow, onupdate=datetime.utcnow)
 
 # ============================================================
 # ENUM ROLLAR
@@ -952,6 +969,7 @@ class ChoyxonaPost(Base):
     likes_count: Mapped[int] = mapped_column(Integer, default=0)
     comments_count: Mapped[int] = mapped_column(Integer, default=0)
     reposts_count: Mapped[int] = mapped_column(Integer, default=0)
+    views_count: Mapped[int] = mapped_column(Integer, default=0)
 
     # Relationships
     student: Mapped["Student | None"] = relationship("Student")
@@ -962,9 +980,26 @@ class ChoyxonaPost(Base):
     comments: Mapped[list["ChoyxonaComment"]] = relationship("ChoyxonaComment", back_populates="post", cascade="all, delete-orphan")
     likes: Mapped[list["ChoyxonaPostLike"]] = relationship("ChoyxonaPostLike", back_populates="post", cascade="all, delete-orphan")
     reposts: Mapped[list["ChoyxonaPostRepost"]] = relationship("ChoyxonaPostRepost", back_populates="post", cascade="all, delete-orphan")
+    views: Mapped[list["ChoyxonaPostView"]] = relationship("ChoyxonaPostView", back_populates="post", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<ChoyxonaPost {self.id} by {self.student_id} ({self.category_type})>"
+
+
+class ChoyxonaPostView(Base):
+    __tablename__ = "choyxona_post_views"
+    __table_args__ = (UniqueConstraint('post_id', 'student_id', name='_user_post_view_uc'),)
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    post_id: Mapped[int] = mapped_column(Integer, ForeignKey("choyxona_posts.id", ondelete="CASCADE"), nullable=False)
+    student_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=True)
+    staff_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("staff.id", ondelete="CASCADE"), nullable=True)
+    viewed_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
+    
+    post: Mapped["ChoyxonaPost"] = relationship("ChoyxonaPost", back_populates="views")
+
+    def __repr__(self):
+        return f"<ChoyxonaPostView {self.id} on Post {self.post_id} by Student {self.student_id}>"
 
 
 class ChoyxonaComment(Base):
@@ -1117,7 +1152,8 @@ class StudentNotification(Base):
     
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     body: Mapped[str] = mapped_column(Text, nullable=False)
-    type: Mapped[str] = mapped_column(String(50), default="info") # 'grade', 'info', 'alert'
+    type: Mapped[str] = mapped_column(String(50), default="info") # 'grade', 'info', 'alert', 'message'
+    data: Mapped[str | None] = mapped_column(Text, nullable=True) # Extra context e.g. chat_id or link
     is_read: Mapped[bool] = mapped_column(Boolean, default=False)
     
     created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow, index=True)

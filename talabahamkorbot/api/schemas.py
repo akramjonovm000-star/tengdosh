@@ -181,6 +181,7 @@ class PostResponseSchema(BaseModel):
     likes_count: int = 0
     comments_count: int = 0
     reposts_count: int = 0
+    views_count: int = 0
     is_liked_by_me: bool = False
     is_reposted_by_me: bool = False
     is_mine: bool = False

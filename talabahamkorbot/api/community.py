@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import List
 
 from database.db_connect import AsyncSessionLocal
-from database.models import Student, Staff, ChoyxonaPost, ChoyxonaPostLike, ChoyxonaPostRepost, ChoyxonaComment
+from database.models import Student, Staff, ChoyxonaPost, ChoyxonaPostLike, ChoyxonaPostRepost, ChoyxonaComment, ChoyxonaPostView
 from api.dependencies import get_current_student, get_db
 from utils.student_utils import format_name
 from api.dependencies import get_current_student, get_db
@@ -117,6 +117,7 @@ async def create_post(
         target_specialty_name=new_post.target_specialty_name,
         likes_count=0,
         is_liked_by_me=False,
+        views_count=0,
         author_is_premium=is_premium,
         author_custom_badge=custom_badge
     )
@@ -366,6 +367,7 @@ def _map_post_optimized(post: ChoyxonaPost, current_user, is_liked: bool, is_rep
         likes_count=post.likes_count,
         comments_count=post.comments_count,
         reposts_count=post.reposts_count,
+        views_count=post.views_count,
         
         is_liked_by_me=is_liked,
         is_reposted_by_me=is_reposted,
@@ -420,7 +422,29 @@ async def get_post_by_id(
         )
         is_reposted = r_result.scalar_one_or_none() is not None
 
-    return _map_post_optimized(post, post.student, student.id, is_liked, is_reposted)
+    # --- VIEW COUNT LOGIC (Unique per User) ---
+    is_staff = isinstance(student, Staff)
+    v_query = select(ChoyxonaPostView.id).where(ChoyxonaPostView.post_id == post_id)
+    if is_staff:
+        v_query = v_query.where(ChoyxonaPostView.staff_id == student.id)
+    else:
+        v_query = v_query.where(ChoyxonaPostView.student_id == student.id)
+    
+    v_result = await db.execute(v_query.limit(1))
+    if not v_result.scalar_one_or_none():
+        # New View: Create record and increment count
+        new_view = ChoyxonaPostView(
+            post_id=post_id,
+            student_id=student.id if not is_staff else None,
+            staff_id=student.id if is_staff else None
+        )
+        db.add(new_view)
+        # Atomic increment
+        post.views_count = ChoyxonaPost.views_count + 1
+        await db.commit()
+        await db.refresh(post)
+
+    return _map_post_optimized(post, student, is_liked, is_reposted)
 
 @router.put("/posts/{post_id}", response_model=PostResponseSchema)
 async def update_post(
@@ -594,40 +618,42 @@ async def create_comment(
     
     # ... (access checks)
     # 2. Verify Access (User must have same context as post)
-    if post.category_type == 'university' and post.target_university_id != student.university_id:
+    # [FIX] Use getattr for safety (Staff vs Student)
+    student_uni_id = getattr(student, 'university_id', None)
+    student_fac_id = getattr(student, 'faculty_id', None)
+    student_spec_name = getattr(student, 'specialty_name', None)
+
+    if post.category_type == 'university' and post.target_university_id != student_uni_id:
         raise HTTPException(status_code=403, detail="Siz bu universitet postiga yozolmaysiz")
     
-    if post.category_type == 'faculty' and (post.target_university_id != student.university_id or post.target_faculty_id != student.faculty_id):
+    if post.category_type == 'faculty' and (post.target_university_id != student_uni_id or post.target_faculty_id != student_fac_id):
         raise HTTPException(status_code=403, detail="Siz bu fakultet postiga yozolmaysiz")
         
-    if post.category_type == 'specialty' and (post.target_specialty_name != student.specialty_name):
+    if post.category_type == 'specialty' and (post.target_specialty_name != student_spec_name):
          raise HTTPException(status_code=403, detail="Siz bu yo'nalish postiga yozolmaysiz")
 
     # 3. Create Comment Logic with Depth Control & Notifications
-    from database.models import ChoyxonaComment, Notification
+    from database.models import ChoyxonaComment, Notification, Staff
     
     final_reply_to_id = data.reply_to_comment_id
     reply_to_user_id = None
+    reply_to_staff_id = None
     notification_recipient_id = None
+    notification_recipient_staff_id = None
     
     if final_reply_to_id:
         parent_comment = await db.get(ChoyxonaComment, final_reply_to_id)
         if not parent_comment:
             raise HTTPException(status_code=404, detail="Javob berilayotgan komment topilmadi")
         
-        # Depth Logic: Max 2 levels (Root -> Reply)
-        # If parent implies it IS a reply (has parent), we use ITS parent as root.
-        # UPDATE: User requested deep context. We keep the Immediate Parent.
-        # if parent_comment.reply_to_comment_id is not None:
-        #      final_reply_to_id = parent_comment.reply_to_comment_id
-        
-        # Track who we are effectively replying to (The user who wrote the comment we clicked on)
         reply_to_user_id = parent_comment.student_id
         reply_to_staff_id = parent_comment.staff_id
-        notification_recipient_id = parent_comment.student_id # Staff notification support TBD
+        notification_recipient_id = parent_comment.student_id 
         notification_recipient_staff_id = parent_comment.staff_id
 
-    is_staff = isinstance(student, Staff)
+    # [FIX] Safer is_staff check
+    is_staff = isinstance(student, Staff) or getattr(student, 'hemis_role', None) == 'staff' or getattr(student, 'role', None) == 'staff'
+    
     new_comment = ChoyxonaComment(
         post_id=post_id,
         student_id=student.id if not is_staff else None,
@@ -642,38 +668,53 @@ async def create_comment(
     post.comments_count += 1 
     
     # Create Notification
-    if notification_recipient_id and notification_recipient_id != student.id:
-        # Avoid duplicate notifications? For now, every reply sends one.
-        # Clean User Name for message
-        # [NEW] Push Notification
-        # Fetch recipient object for token
-        recipient = await db.get(Student, notification_recipient_id)
-        if recipient and recipient.fcm_token:
-            title = "💬 Yangi javob"
-            body = f"@{student.username or 'student'} sizning commentingizga javob yozdi"
-            await NotificationService.send_push(
-                token=recipient.fcm_token,
-                title=title,
-                body=body,
-                data={"type": "reply", "post_id": str(post_id)}
-            )
+    try:
+        if notification_recipient_id and notification_recipient_id != student.id:
+            # Avoid duplicate notifications? For now, every reply sends one.
+            # Clean User Name for message
+            # [NEW] Push Notification
+            # Fetch recipient object for token
+            recipient = await db.get(Student, notification_recipient_id)
+            if recipient and recipient.fcm_token:
+                title = "💬 Yangi javob"
+                # [FIX] Safer username access for Staff
+                username = getattr(student, 'username', None) or "foydalanuvchi"
+                body = f"@{username} sizning commentingizga javob yozdi"
+                await NotificationService.send_push(
+                    token=recipient.fcm_token,
+                    title=title,
+                    body=body,
+                    data={"type": "reply", "post_id": str(post_id)}
+                )
 
-    await db.commit()
+        await db.commit()
+    except Exception as e:
+        import traceback
+        logger.error(f"--- ERROR in create_comment (Save/Notif): {str(e)} ---\n{traceback.format_exc()}")
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Izohni saqlashda xato: {str(e)}")
+
     await db.refresh(new_comment)
     
     # Reload for response mapping
-    query = select(ChoyxonaComment).options(
-        selectinload(ChoyxonaComment.student),
-        selectinload(ChoyxonaComment.reply_to_user), # Eager load reply user
-        selectinload(ChoyxonaComment.parent_comment),
-        selectinload(ChoyxonaComment.likes), # Required for _map_comment
-        selectinload(ChoyxonaComment.post)   # Required for _map_comment (author check)
-    ).where(ChoyxonaComment.id == new_comment.id)
-    
-    result = await db.execute(query)
-    new_comment = result.scalar_one()
+    try:
+        query = select(ChoyxonaComment).options(
+            selectinload(ChoyxonaComment.student),
+            selectinload(ChoyxonaComment.reply_to_user), # Eager load reply user
+            selectinload(ChoyxonaComment.parent_comment),
+            selectinload(ChoyxonaComment.likes), # Required for _map_comment
+            selectinload(ChoyxonaComment.post)   # Required for _map_comment (author check)
+        ).where(ChoyxonaComment.id == new_comment.id)
+        
+        result = await db.execute(query)
+        new_comment = result.scalar_one()
 
-    return _map_comment(new_comment, new_comment.student, student.id)
+        # [FIX] Match _map_comment signature (comment, current_user)
+        return _map_comment(new_comment, student)
+    except Exception as e:
+        import traceback
+        logger.error(f"--- ERROR in create_comment (Mapping/Response): {str(e)} ---\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Izohni ko'rsatishda xato: {str(e)}")
 
 
 @router.get("/posts/{post_id}/comments", response_model=List[CommentResponseSchema])

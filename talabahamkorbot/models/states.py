@@ -1,130 +1,4 @@
-# ============================================================
-#                   BASE STATE SYSTEM (Aiogram 3)
-# ============================================================
-
-import inspect
-from typing import Any, Optional, Type, no_type_check
-from aiogram.types import TelegramObject
-
-
-class State:
-    """Single state object"""
-
-    def __init__(self, state: Optional[str] = None, group_name: Optional[str] = None):
-        self._state = state
-        self._group_name = group_name
-        self._group: Optional[Type["StatesGroup"]] = None
-
-    @property
-    def group(self):
-        if not self._group:
-            raise RuntimeError("State has no group!")
-        return self._group
-
-    @property
-    def state(self):
-        if self._state is None or self._state == "*":
-            return self._state
-
-        if self._group_name is None and self._group:
-            group = self._group.__full_group_name__
-        elif self._group_name:
-            group = self._group_name
-        else:
-            group = "@"
-
-        return f"{group}:{self._state}"
-
-    def set_parent(self, group):
-        from models.states import StatesGroup  # circular fix
-        if not issubclass(group, StatesGroup):
-            raise ValueError("Parent must be StatesGroup child")
-        self._group = group
-
-    def __set_name__(self, owner, name):
-        if self._state is None:
-            self._state = name
-        self.set_parent(owner)
-
-    def __call__(self, event: TelegramObject, raw_state: Optional[str] = None):
-        if self.state == "*":
-            return True
-        return raw_state == self.state
-
-    def __eq__(self, other):
-        if isinstance(other, State):
-            return self.state == other.state
-        if isinstance(other, str):
-            return self.state == other
-        return False
-
-    def __hash__(self):
-        return hash(self.state)
-
-    def __str__(self):
-        return f"<State '{self.state}'>"
-
-    __repr__ = __str__
-
-
-class StatesGroupMeta(type):
-
-    @no_type_check
-    def __new__(mcs, name, bases, namespace, **kwargs):
-        cls = super().__new__(mcs, name, bases, namespace)
-
-        states = []
-        childs = []
-
-        for key, arg in namespace.items():
-            if isinstance(arg, State):
-                states.append(arg)
-            elif inspect.isclass(arg) and issubclass(arg, StatesGroup):
-                childs.append(arg)
-                arg.__parent__ = cls
-
-        cls.__parent__ = None
-        cls.__childs__ = tuple(childs)
-        cls.__states__ = tuple(states)
-        cls.__state_names__ = tuple(s.state for s in states)
-
-        return cls
-
-    @property
-    def __full_group_name__(cls):
-        if cls.__parent__:
-            return cls.__parent__.__full_group_name__ + "." + cls.__name__
-        return cls.__name__
-
-    @property
-    def __all_childs__(cls):
-        result = cls.__childs__
-        for c in cls.__childs__:
-            result += c.__all_childs__
-        return result
-
-    @property
-    def __all_states__(cls):
-        result = cls.__states__
-        for c in cls.__childs__:
-            result += c.__all_states__
-        return result
-
-    @property
-    def __all_states_names__(cls):
-        return tuple(s.state for s in cls.__all_states__ if s.state)
-
-    def __contains__(cls, item):
-        if isinstance(item, str):
-            return item in cls.__all_states_names__
-        if isinstance(item, State):
-            return item in cls.__all_states__
-        return False
-
-
-class StatesGroup(metaclass=StatesGroupMeta):
-    pass
-
+from aiogram.fsm.state import State, StatesGroup
 
 # Predefined simple states
 default_state = State()
@@ -173,6 +47,7 @@ class OwnerStates(StatesGroup):
     # Kanal sozlamalari
     waiting_channel_add_decision = State()
     waiting_channel_forward = State()
+    confirming_channel_save = State()
     confirming_channel_save = State()
     confirming_channel_delete = State()
 
@@ -247,7 +122,6 @@ class CertificateAddStates(StatesGroup):
     FILE = State()
     WAIT_FOR_APP_FILE = State() # [NEW] Specifically for App-initiated flow
 
-from aiogram.fsm.state import State, StatesGroup
 
 class PhoneCollectState(StatesGroup):
     WAITING_PHONE = State()
@@ -262,8 +136,6 @@ class FeedbackStates(StatesGroup):
     waiting_message = State()
     reappealing = State()
     WAIT_FOR_APP_FILE = State() # [NEW] Specifically for App-initiated flow
-
-from aiogram.fsm.state import StatesGroup, State
 
 
 class RahbBroadcastStates(StatesGroup):
@@ -285,7 +157,6 @@ class MobilePushStates(StatesGroup):
     waiting_body = State()
     confirming = State()
 
-from aiogram.fsm.state import StatesGroup, State
 
 class RahbAppealStates(StatesGroup):
     viewing = State()
@@ -294,8 +165,6 @@ class RahbAppealStates(StatesGroup):
 class DekanatAppealStates(StatesGroup):
     viewing = State()
     replying = State()
-
-
 
 
 class StaffStudentLookupStates(StatesGroup):

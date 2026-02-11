@@ -16,7 +16,7 @@ engine = create_async_engine(
     DATABASE_URL,
     echo=echo_sql,
     future=True,
-    pool_size=10,
+    pool_size=200,
     max_overflow=20,
     pool_timeout=60,
     pool_recycle=1800,

@@ -29,7 +29,12 @@ class HemisService:
     async def fetch_with_retry(client: httpx.AsyncClient, method: str, url: str, **kwargs):
         """
         Robust fetch with retries for network errors.
+        [FIX] Remap hemis.jmcu.uz to student.jmcu.uz for internal network reachability.
         """
+        if "hemis.jmcu.uz" in url:
+            url = url.replace("hemis.jmcu.uz", "student.jmcu.uz")
+            logger.info(f"INTERNAL REMAP: {url}")
+
         tries = 3
         last_exception = None
         for i in range(tries):
@@ -54,9 +59,9 @@ class HemisService:
     @classmethod
     async def get_client(cls):
         if cls._client is None or cls._client.is_closed:
-            # Optimized restrictions for faster connection setup
-            # Increased limits to avoid bottlenecks under load
-            limits = httpx.Limits(max_keepalive_connections=50, max_connections=200)
+            # Optimized restrictions to avoid IP Blocking
+            # Reduced limits to stay under University Firewall radar
+            limits = httpx.Limits(max_keepalive_connections=5, max_connections=10)
             timeout = httpx.Timeout(30.0, connect=10.0) # Increased to 30s
             cls._client = httpx.AsyncClient(
                 verify=False,
@@ -103,11 +108,16 @@ class HemisService:
             elif response.status_code in [401, 403]:
                 status = "AUTH_ERROR"
             
-            # Cache for 2 minutes to reduce latency
-            HemisService._auth_cache[cache_key] = {
-                "status": status,
-                "expiry": now + timedelta(minutes=2)
-            }
+            # Cache for 2 minutes ONLY IF OK (Don't cache errors)
+            if status == "OK":
+                HemisService._auth_cache[cache_key] = {
+                    "status": status,
+                    "expiry": now + timedelta(minutes=2)
+                }
+            else:
+                 # If error, remove from cache so we retry immediately next time
+                 if cache_key in HemisService._auth_cache:
+                     del HemisService._auth_cache[cache_key]
             return status
         except Exception as e:
             logger.error(f"Auth Check error: {e}")
@@ -156,6 +166,9 @@ class HemisService:
                 client, "POST", url, data=json_payload
             )
             
+            # [DEBUG] Log Headers to verify if IP is being forwarded
+            if hasattr(response.request, 'headers'):
+                 logger.info(f"DEBUG OUTGOING HEADERS: {response.request.headers}")
             logger.info(f"Auth Response: {response.status_code}")
             
             if response.status_code == 200:
@@ -229,6 +242,9 @@ class HemisService:
         if base_url:
             domain = base_url
             if domain.endswith("/rest/v1"): domain = domain.replace("/rest/v1", "")
+            # [FIX] Remap hemis.jmcu.uz to student.jmcu.uz for internal network reachability
+            if "hemis.jmcu.uz" in domain:
+                 domain = domain.replace("hemis.jmcu.uz", "student.jmcu.uz")
             token_url = f"{domain}/oauth/access-token"
 
         try:
@@ -273,6 +289,11 @@ class HemisService:
         
         # Ensure rest_url uses the correct base
         rest_base = base_url or HemisService.BASE_URL
+        # [FIX] Internal Remap
+        if rest_base and "hemis.jmcu.uz" in rest_base:
+             rest_base = rest_base.replace("hemis.jmcu.uz", "student.jmcu.uz")
+             domain = domain.replace("hemis.jmcu.uz", "student.jmcu.uz")
+
         rest_url = f"{rest_base}/account/me"
         # Updated fields per user suggestion
         oauth_profile_url = f"{domain}/oauth/api/user?fields=id,uuid,type,name,login,picture,email,university_id,phone"
@@ -1058,7 +1079,7 @@ class HemisService:
         client = await HemisService.get_client()
         final_base = base_url or HemisService.BASE_URL
         try:
-            url = f"{final_base}/education/survey-start"
+            url = f"{final_base}/student/survey-start"
             payload = {"id": survey_id, "lang": "UZ"}
             response = await client.post(url, headers=HemisService.get_headers(token), json=payload)
             if response.status_code == 200:
@@ -1074,7 +1095,7 @@ class HemisService:
         client = await HemisService.get_client()
         final_base = base_url or HemisService.BASE_URL
         try:
-            url = f"{final_base}/education/survey-answer"
+            url = f"{final_base}/student/survey-answer"
             payload = {
                 "question_id": question_id,
                 "button_type": button_type,

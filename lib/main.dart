@@ -31,6 +31,7 @@ void main() async {
   }
 
   // FIX: Force DIRECT connection to avoid "Connection refused" on random ports (Simulators often inherit bad Proxies)
+  // RESTORED: User confirmed this was working at 11am. Direct connection might be needed for mobile data to bypass bad proxies.
   HttpOverrides.global = DirectHttpOverrides(); 
   
   runApp(

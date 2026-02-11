@@ -43,6 +43,7 @@ DATABASE_URL = (
 DOMAIN = os.environ.get("DOMAIN", "tengdoshbozor.uz")
 WEBHOOK_BASE_PATH = "/webhook/bot"
 WEBHOOK_URL = os.environ.get("WEBHOOK_URL", f"https://{DOMAIN}{WEBHOOK_BASE_PATH}")
+REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/1") # DB 1 for FSM
 
 # ⚙️ --- Boshqa sozlamalar --- ⚙️
 LOG_LEVEL = "INFO"

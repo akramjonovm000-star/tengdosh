@@ -12,6 +12,7 @@ from database.models import Student, Staff, StaffRole
 from config import HEMIS_CLIENT_ID, HEMIS_CLIENT_SECRET, HEMIS_REDIRECT_URL, HEMIS_AUTH_URL, HEMIS_TOKEN_URL, BOT_USERNAME
 from services.hemis_service import HemisService
 from api.schemas import StudentProfileSchema # Re-use schemas
+from utils.academic import get_or_create_academic_context
 
 router = APIRouter(prefix="/oauth", tags=["OAuth"])
 authlog_router = APIRouter(tags=["AuthLog"])
@@ -172,7 +173,7 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
                 student.education_form = rest_me.get("educationForm", {}).get("name") if isinstance(rest_me.get("educationForm"), dict) else rest_me.get("education_form")
                 
                 # Re-sync IDs based on names
-                uni_id, fac_id = await _get_or_create_academic_context(db, student.university_name, student.faculty_name)
+                uni_id, fac_id = await get_or_create_academic_context(db, student.university_name, student.faculty_name)
                 student.university_id = uni_id
                 student.faculty_id = fac_id
                 await db.commit()
