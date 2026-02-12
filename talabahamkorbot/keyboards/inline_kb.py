@@ -456,9 +456,22 @@ def get_retry_channel_forward_kb() -> InlineKeyboardMarkup:
 # TALABA ASOSIY MENYUSI
 # ============================================================
 
-def get_student_main_menu_kb(led_clubs: list = None, is_election_admin: bool = False, has_active_election: bool = False, is_developer: bool = False) -> InlineKeyboardMarkup:
+def get_student_main_menu_kb(led_clubs: list = None, is_election_admin: bool = False, has_active_election: bool = False, is_developer: bool = False, banner_index: int = 0, total_banners: int = 0) -> InlineKeyboardMarkup:
     """ Talaba asosiy menyusi """
-    rows = [
+    rows = []
+    
+    # BANNER NAVIGATION (Carousel)
+    if total_banners > 1:
+        nav_row = []
+        prev_idx = (banner_index - 1) % total_banners
+        next_idx = (banner_index + 1) % total_banners
+        
+        nav_row.append(InlineKeyboardButton(text="⬅️", callback_data=f"main_banner:{prev_idx}"))
+        nav_row.append(InlineKeyboardButton(text=f"{banner_index + 1}/{total_banners}", callback_data="noop"))
+        nav_row.append(InlineKeyboardButton(text="➡️", callback_data=f"main_banner:{next_idx}"))
+        rows.append(nav_row)
+
+    rows.extend([
         [InlineKeyboardButton(text="👤 Profilim", callback_data="student_profile")],
         [InlineKeyboardButton(text="🏛 Akademik bo'lim", callback_data="student_academic_menu")],
         [InlineKeyboardButton(text="🤖 AI Yordamchi", callback_data="ai_assistant_main")],
@@ -473,7 +486,7 @@ def get_student_main_menu_kb(led_clubs: list = None, is_election_admin: bool = F
         [
             InlineKeyboardButton(text="📨 Murojaatlar", callback_data="student_feedback_menu")
         ],
-    ]
+    ])
     
     if has_active_election:
         rows.insert(-1, [InlineKeyboardButton(text="🗳 Saylov", callback_data="student_election")])

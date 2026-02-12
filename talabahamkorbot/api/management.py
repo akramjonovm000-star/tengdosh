@@ -85,9 +85,17 @@ async def get_management_dashboard(
         total_staff = 1 # Just the tutor themselves or 0 if counting others
         
     elif f_id:
-        total_students = await db.scalar(
-            select(func.count(Student.id)).where(Student.university_id == uni_id, Student.faculty_id == f_id)
-        ) or 0
+        # Dean level
+        from config import HEMIS_ADMIN_TOKEN
+        if HEMIS_ADMIN_TOKEN:
+             # Use Admin API for accurate HEMIS count, but scope it to THIS faculty
+             admin_filters = {"_department": f_id}
+             _, total_students = await HemisService.get_admin_student_list(admin_filters, limit=1)
+        else:
+             total_students = await db.scalar(
+                 select(func.count(Student.id)).where(Student.university_id == uni_id, Student.faculty_id == f_id)
+             ) or 0
+             
         platform_users = await db.scalar(
             select(func.count(Student.id))
             .where(Student.university_id == uni_id, Student.faculty_id == f_id, Student.hemis_token != None)
@@ -573,8 +581,8 @@ async def search_mgmt_students(
              start_dept_override = True
 
         # 3. Standard Faculty Filter (only if not overridden)
-        if not start_dept_override and faculty_id:
-            admin_filters["_department"] = faculty_id
+        if not start_dept_override and effective_faculty_id:
+            admin_filters["_department"] = effective_faculty_id
             
         if education_type and not start_dept_override:
             # Standard Education Type mapping
@@ -608,7 +616,7 @@ async def search_mgmt_students(
             spec_id = await HemisService.resolve_specialty_id(
                 specialty_name, 
                 education_type, 
-                faculty_id=faculty_id,
+                faculty_id=effective_faculty_id,
                 education_form=education_form
             )
             if spec_id:

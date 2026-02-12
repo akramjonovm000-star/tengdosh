@@ -1604,14 +1604,12 @@ async def owner_process_banner_link(message: Message, state: FSMContext, session
              pass
         final_link = link_text
         
-    # Oldingi bannerlarni nofaol qilish
-    await session.execute(
-        select(Banner).where(Banner.is_active == True)
-    )
-    # Update logic is tricky with select, better to update directly
-    # Or just set all to False
-    from sqlalchemy import update
-    await session.execute(update(Banner).where(Banner.is_active == True).values(is_active=False))
+    # Oldingi bannerlarni nofaol qilish - O'CHIRILDI (Carousel uchun)
+    # await session.execute(
+    #     select(Banner).where(Banner.is_active == True)
+    # )
+    # from sqlalchemy import update
+    # await session.execute(update(Banner).where(Banner.is_active == True).values(is_active=False))
     
     # Yangi bannerni saqlash
     new_banner = Banner(
