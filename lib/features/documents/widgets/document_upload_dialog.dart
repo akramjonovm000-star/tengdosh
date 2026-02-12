@@ -75,7 +75,18 @@ class _DocumentUploadDialogState extends State<DocumentUploadDialog> {
 
   void _startPolling() {
     _pollingTimer?.cancel();
-    _pollingTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
+    
+    // Immediate initial check
+    _dataService.checkDocUploadStatus(_sessionId).then((status) {
+      if (status['status'] == 'uploaded' && mounted) {
+        _pollingTimer?.cancel();
+        setState(() {
+          _isReceived = true;
+        });
+      }
+    });
+
+    _pollingTimer = Timer.periodic(const Duration(seconds: 1), (timer) async {
       final status = await _dataService.checkDocUploadStatus(_sessionId);
       if (status['status'] == 'uploaded') {
         timer.cancel();

@@ -1195,8 +1195,51 @@ class HemisService:
                 return response.json()
             return None
         except Exception as e:
-            logger.error(f"Error fetching teachers: {e}") # Changed error message to reflect new functionality
+            logger.error(f"Error fetching teachers: {e}") 
             return None
+
+    @staticmethod
+    async def get_rent_subsidy_report(token: str, edu_year: int = None, base_url: Optional[str] = None):
+        """
+        Get rent subsidy report (ijara).
+        Default edu_year to current year.
+        """
+        client = await HemisService.get_client()
+        final_base = base_url or HemisService.BASE_URL
+        url = f"{final_base}/billing/subsidy-rent-report"
+        
+        if not edu_year:
+            # Heuristic: if month > 8 (Sep), use current year, else prev year
+            now = datetime.now()
+            if now.month >= 9:
+                edu_year = now.year
+            else:
+                edu_year = now.year - 1
+                
+        payload = {"eduYear": edu_year}
+        
+        try:
+            response = await HemisService.fetch_with_retry(
+                client, "POST", url,
+                headers=HemisService.get_headers(token),
+                json=payload
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                # Structure: data -> data -> data -> [list]
+                outer_data = data.get("data", {})
+                inner_data = outer_data.get("data", {})
+                
+                if isinstance(inner_data, dict):
+                     items = inner_data.get("data")
+                     if isinstance(items, list):
+                         return items
+                return []
+            return []
+        except Exception as e:
+            logger.error(f"Rent Subsidy Error: {e}")
+            return []
 
     # --- Surveys (So'rovnomalar) ---
     

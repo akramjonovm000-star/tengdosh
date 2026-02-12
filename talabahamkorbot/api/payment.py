@@ -3,12 +3,13 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from services.payment_service import PaymentService, PaymeHandler, PaymeException
-from api.dependencies import get_current_student, get_db
+from services.hemis_service import HemisService 
+from api.dependencies import get_current_student, get_db, get_current_token
 from database.db_connect import AsyncSessionLocal
 from database.models import Student
 from config import PAYME_KEY
 
-router = APIRouter(prefix="/payment", tags=["Payment"])
+router = APIRouter(tags=["Payment"])
 security = HTTPBasic()
 
 @router.get("/payme-url")
@@ -35,6 +36,20 @@ def get_payme_url(amount: int = 10000, current_student: Student = Depends(get_cu
         "order_id": order_id
     }
     """
+    
+@router.get("/subsidy")
+async def get_rent_subsidy(
+    year: int = None,
+    token: str = Depends(get_current_token)
+):
+    """
+    Get rent subsidy report (Ijara).
+    """
+    data = await HemisService.get_rent_subsidy_report(token, edu_year=year)
+    return {
+        "success": True,
+        "data": data
+    }
 
 @router.post("/payme")
 async def payme_webhook(

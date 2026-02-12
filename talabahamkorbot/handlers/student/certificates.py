@@ -257,15 +257,15 @@ async def on_mobile_certificate_upload(message: Message, state: FSMContext, sess
     else:
         file_id = message.document.file_id
         
-    # Update DB (Overwrite for single certificate upload flow)
-    pending.file_ids = file_id
-    await session.commit()
-    
     # Notify User
     await message.answer(
         "✅ <b>Sertifikat qabul qilindi!</b>\n\n"
         "Iltimos, ilovaga qayting va <b>'Saqlash'</b> tugmasini bosing.",
         parse_mode="HTML"
     )
+
+    # Update DB (Overwrite for single certificate upload flow)
+    pending.file_ids = file_id
+    await session.commit()
     
     await state.clear()

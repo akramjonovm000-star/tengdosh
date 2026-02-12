@@ -47,6 +47,11 @@ async def get_current_user_token_data(authorization: str = Header(None)):
     logger.error(f"Auth failed: Invalid Token Format: {authorization[:25]}")
     raise HTTPException(status_code=401, detail="Invalid Token Format")
 
+async def get_current_token(authorization: str = Header(None)):
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing Authorization Header")
+    return authorization.replace("Bearer ", "")
+
 async def get_current_user_id(token_data: dict = Depends(get_current_user_token_data)):
     # Legacy support if needed, but better to use token_data directly
     return token_data["id"]

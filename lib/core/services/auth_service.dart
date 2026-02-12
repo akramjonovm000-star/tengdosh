@@ -258,6 +258,7 @@ class AuthService {
       } else {
         return {'success': false, 'message': body['detail'] ?? "Xatolik yuz berdi"};
       }
+    } catch (e) {
       return {'success': false, 'message': "Tarmoq xatosi: $e"};
     }
   }

@@ -764,10 +764,18 @@ async def feedback_reappeal(call: CallbackQuery, state: FSMContext):
 # ============================
 from database.models import PendingUpload
 
-@router.message(FeedbackStates.WAIT_FOR_APP_FILE, F.photo | F.document | F.video)
-async def on_mobile_feedback_upload(message: Message, state: FSMContext, session: AsyncSession):
+@router.message(FeedbackStates.WAIT_FOR_APP_FILE)
+async def debug_mobile_feedback_upload(message: Message, state: FSMContext):
+    logger.info(f"🚨 DEBUG: WAIT_FOR_APP_FILE state hit! content_type={message.content_type}, user={message.from_user.id}")
+    # If it's a photo/doc/video, it should have been caught by the next handler if it was before this one.
+    # But if this one is AFTER, it will catch everything.
+    # Let's move the main handler ABOVE this or just add logging inside the main one.
+    # Actually, I already have logging inside on_mobile_feedback_upload.
+    # If it's not showing, it's NOT EVEN HITTING THIS ROUTER or this state.
+    
     student = await get_student(message, session)
     if not student:
+        logger.warning(f"DEBUG: user {user_id} not found in students table.")
         return await message.answer("Siz talaba emassiz.")
 
     # Find active pending upload for this student
@@ -779,29 +787,46 @@ async def on_mobile_feedback_upload(message: Message, state: FSMContext, session
     )
 
     if not pending:
+        logger.warning(f"DEBUG: No pending feedback upload for student {student.id}")
         await state.clear()
         return await message.answer("Hozirda faol murojaat yuklash so'rovi mavjud emas.")
 
     # Save File ID
+    file_id = None
+    file_type = "document" # default
+    
     if message.photo:
         file_id = message.photo[-1].file_id
+        file_type = "photo"
     elif message.video:
         file_id = message.video.file_id
-    else:
+        file_type = "video"
+    elif message.document:
         file_id = message.document.file_id
-        
-    # Update DB
-    pending.file_ids = file_id
-    await session.commit()
+        file_type = "document"
     
-    # Notify User
+    logger.info(f"DEBUG: Received {file_type} for session {pending.session_id}, file_id={file_id}")
+
+    if not file_id:
+        logger.error(f"DEBUG: file_id is missing for {content_type} from {user_id}")
+        return await message.answer("⚠️ Faylni qabul qilishda xatolik yuz berdi. Iltimos qaytadan yuboring.")
+
+    # [Instant Response Pattern] - Notify User first
     await message.answer(
         "✅ <b>Fayl qabul qilindi!</b>\n\n"
         "Iltimos, ilovaga qayting va <b>'Yuborish'</b> tugmasini bosing.",
         parse_mode="HTML"
     )
+
+    # Update DB
+    pending.file_ids = file_id
+    # We might want to store the type somewhere, but PendindUpload doesn't have file_type field?
+    # Actually models.py line 934: file_ids: Mapped[str] = mapped_column(Text, default="")
+    # It doesn't have file_type. But create_feedback uses it.
     
+    await session.commit()
     await state.clear()
+    logger.info(f"DEBUG: Feedback upload processed and session committed for {user_id}")
 
 
 @router.message(FeedbackStates.reappealing)

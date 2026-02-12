@@ -173,8 +173,17 @@ async def probe():
         try:
              # We need to mock the client or just call it if it uses the singleton
              # The method gets its own client.
-             success, error = await HemisService.change_password(student.hemis_token, "WrongPassword123")
-             print(f"Service Call Result: Success={success}, Error={error}")
+             # We need to inspect the response inside api, but here we can only see result.
+             # So we will modify the Service or rely on the script to mimic it exactly.
+             
+             # Let's mimic what HemisService.change_password does but PRINT the body
+             print("Mimicking HemisService.change_password logic to see BODY:")
+             url_me = f"{base_url}/account/me"
+             payload_pass = {"password": "WrongPassword123"}
+             resp = await client.post(url_me, json=payload_pass, headers=headers)
+             print(f"Status: {resp.status_code}")
+             print(f"Body: {resp.text}")
+             
         except Exception as e:
              print(f"Service Call Error: {e}")
 

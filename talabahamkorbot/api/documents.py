@@ -45,7 +45,16 @@ from aiogram.fsm.storage.base import StorageKey
 
 async def set_bot_state(user_id: int, state):
     from bot import dp, bot
-    key = StorageKey(bot_id=bot.id, chat_id=user_id, user_id=user_id)
+    from config import BOT_TOKEN
+    
+    bot_id = bot.id
+    if bot_id is None:
+        try:
+            bot_id = int(BOT_TOKEN.split(":")[0])
+        except:
+            print("Failed to derive bot_id from token")
+            
+    key = StorageKey(bot_id=bot_id, chat_id=user_id, user_id=user_id)
     # Convert state object to string if needed
     state_str = state.state if hasattr(state, "state") else str(state)
     await dp.storage.set_state(key, state_str)

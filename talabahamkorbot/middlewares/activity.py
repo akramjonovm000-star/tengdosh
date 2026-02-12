@@ -58,7 +58,8 @@ class ActivityMiddleware(BaseMiddleware):
                     .where(TgAccount.telegram_id == user.id)
                     .values(last_active=now)
                 )
-                await session.commit()
+                # await session.commit()
+                # Defer commit to handler or session close to reduce latency per message
                 
                 # Update cache
                 self.cache[user.id] = now

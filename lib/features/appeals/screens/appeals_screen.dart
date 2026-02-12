@@ -729,7 +729,7 @@ class _CreateAppealSheetState extends State<CreateAppealSheet> {
           }
 
           // 2. Poll Status
-          _statusTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
+          _statusTimer = Timer.periodic(const Duration(seconds: 1), (timer) async {
                final status = await _service.checkUploadStatus(_sessionId!);
                if (status == 'uploaded') {
                    timer.cancel();
@@ -737,6 +737,14 @@ class _CreateAppealSheetState extends State<CreateAppealSheet> {
                    if (mounted) Navigator.pop(context); // Close dialog
                    await _finalizeAfterUpload();
                }
+          });
+          // Immediate first call
+          _service.checkUploadStatus(_sessionId!).then((status) async {
+              if (status == 'uploaded' && _statusTimer?.isActive == true) {
+                  _statusTimer?.cancel();
+                  if (mounted) Navigator.pop(context);
+                  await _finalizeAfterUpload();
+              }
           });
 
       } else {

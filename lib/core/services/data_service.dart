@@ -799,9 +799,30 @@ class DataService {
     return await _backgroundRefreshSchedule(studentId);
   }
 
+  // 12. Get Rent Subsidy Report
+  Future<List<dynamic>> getRentSubsidyReport({int? year}) async {
+    try {
+      String url = '${ApiConstants.backendUrl}/payment/subsidy';
+      if (year != null) {
+        url += '?year=$year';
+      }
+      
+      final response = await _get(url);
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) {
+          return body['data'];
+        }
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching subsidy report: $e");
+    }
+    return [];
+  }
+
   Future<List<Lesson>> _backgroundRefreshSchedule(int studentId) async {
     try {
-      final response = await _get(ApiConstants.schedule);
+      final response = await _get(ApiConstants.scheduleList);
       if (response.statusCode == 200) {
         final body = json.decode(response.body);
         if (body['success'] == true) {
@@ -2127,34 +2148,5 @@ class DataService {
     return [];
   }
 
-  // Change Password
-  Future<bool> changePassword(String newPassword) async {
-    try {
-      final response = await _post(
-        '${ApiConstants.backendUrl}/student/password',
-        body: {'password': newPassword},
-      );
-
-      if (response.statusCode == 200) {
-        final body = json.decode(response.body);
-        if (body['success'] == true) {
-          // Update locally stored password too
-          await _authService.updateSavedPassword(newPassword);
-          return true;
-        }
-      } else {
-         // Handle error safely
-         try {
-            final body = json.decode(response.body);
-            throw Exception(body['detail'] ?? "Xatolik yuz berdi");
-         } catch(_) {
-            throw Exception("Xatolik yuz berdi: ${response.statusCode}");
-         }
-      }
-    } catch (e) {
-      debugPrint("Change Password Error: $e");
-      rethrow;
-    }
-    return false;
   }
 }

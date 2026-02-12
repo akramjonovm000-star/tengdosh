@@ -806,15 +806,15 @@ async def on_mobile_upload_photo(message: Message, state: FSMContext, session: A
     file_id = message.photo[-1].file_id
     current_ids.append(file_id)
     
-    # Update DB
-    pending.file_ids = ",".join(current_ids)
-    await session.commit()
-    
     count = len(current_ids)
     
     if count == 5:
-         await state.clear()
          await message.answer(f"✅ <b>Rasm qabul qilindi ({count}/5)</b>\n\nCheklovga yetildi. Ilovada davom eting.")
+         await state.clear()
     else:
          await message.answer(f"✅ <b>Rasm qabul qilindi ({count}/5)</b>\n\nYana {5-count} ta rasm yuborishingiz mumkin.")
+
+    # Update DB
+    pending.file_ids = ",".join(current_ids)
+    await session.commit()
 

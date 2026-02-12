@@ -284,16 +284,16 @@ async def on_mobile_document_upload(message: Message, state: FSMContext, session
     else:
         file_id = message.document.file_id
         
-    # Update DB (Overwrite for single document upload flow)
-    pending.file_ids = file_id
-    await session.commit()
-    
     # Notify User
     await message.answer(
         "✅ <b>Hujjat qabul qilindi!</b>\n\n"
         "Iltimos, ilovaga qayting va <b>'Saqlash'</b> tugmasini bosing.",
         parse_mode="HTML"
     )
+
+    # Update DB (Overwrite for single document upload flow)
+    pending.file_ids = file_id
+    await session.commit()
     
     # State remains or clears? Usually we keep it until they leave or we can clear
     # Clearing state is better once we got the file.

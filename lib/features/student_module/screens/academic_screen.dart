@@ -6,6 +6,7 @@ import 'schedule_screen.dart';
 import 'grades_screen.dart';
 import 'subjects_screen.dart';
 import '../../academic/screens/survey_list_screen.dart';
+import 'finance/subsidy_screen.dart';
 
 class AcademicScreen extends StatefulWidget {
   const AcademicScreen({super.key});
@@ -154,7 +155,8 @@ class _AcademicScreenState extends State<AcademicScreen> {
             _buildMenuItem(context, "Imtihonlar", Icons.edit_document, Colors.redAccent),
             _buildMenuItem(context, "Reyting Daftarchasi", Icons.history_edu_rounded, Colors.teal),
             _buildMenuItem(context, "So'rovnomalar", Icons.poll_rounded, Colors.indigo),
-            _buildMenuItem(context, "Ma'lumotlarni yangilash", Icons.person_outline, Colors.blueGrey),
+            _buildMenuItem(context, "Ijara – Subsidiya", Icons.monetization_on_rounded, Colors.tealAccent.shade700),
+            // _buildMenuItem(context, "Ma'lumotlarni yangilash", Icons.person_outline, Colors.blueGrey),
           ],
         ), // Column
       ), // SingleChildScrollView

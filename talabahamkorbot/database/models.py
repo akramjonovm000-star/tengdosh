@@ -928,7 +928,7 @@ class PendingUpload(Base):
     __tablename__ = "pending_uploads"
 
     session_id: Mapped[str] = mapped_column(String(64), primary_key=True) # UUID from App
-    student_id: Mapped[int] = mapped_column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    student_id: Mapped[int] = mapped_column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
     category: Mapped[str | None] = mapped_column(String(64), nullable=True) # e.g. 'passport', 'boshqa'
     title: Mapped[str | None] = mapped_column(String(128), nullable=True) # Custom title for 'Other'
     file_ids: Mapped[str] = mapped_column(Text, default="") # Comma-separated list of file_ids

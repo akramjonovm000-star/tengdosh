@@ -21,12 +21,23 @@ async def set_bot_state(user_id: int, state):
     # We need to access FSM storage directly
     # Ideally reuse Dispatcher logic, but simplified here:
     from bot import dp, bot
+    from config import BOT_TOKEN
     
+    bot_id = bot.id
+    if bot_id is None:
+        try:
+            bot_id = int(BOT_TOKEN.split(":")[0])
+        except:
+            print("Failed to derive bot_id from token")
+            
     # Construct StorageKey
-    key = StorageKey(bot_id=bot.id, chat_id=user_id, user_id=user_id)
+    key = StorageKey(bot_id=bot_id, chat_id=user_id, user_id=user_id)
+    
+    # Convert state object to string if needed
+    state_str = state.state if hasattr(state, "state") else str(state)
     
     # Set state
-    await dp.storage.set_state(key, state)
+    await dp.storage.set_state(key, state_str)
 
 @router.get("/")
 @router.get("")

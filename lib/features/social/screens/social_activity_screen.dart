@@ -60,10 +60,11 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
       );
       
       // Start Polling
-      _pollingTimer?.cancel();
-      _pollingTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
-         _checkStatus(sessionId);
-      });
+    _pollingTimer?.cancel();
+    _checkStatus(sessionId); // Initial call
+    _pollingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+       _checkStatus(sessionId);
+    });
       
     } catch (e) {
       debugPrint("Upload Init Error: $e");
