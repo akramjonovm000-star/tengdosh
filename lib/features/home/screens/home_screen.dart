@@ -62,7 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadData();
-      PermissionService.requestInitialPermissions();
+      // PermissionService.requestInitialPermissions(); // [DEBUG] Disabled to fix build error
     });
   }
 
