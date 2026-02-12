@@ -5,15 +5,15 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
 
 from database.db_connect import get_db
-from database.models import Student, StudentFeedback, Faculty
-from api.dependencies import get_current_student
+from database.models import Student, StudentFeedback, Faculty, Staff, FeedbackReply
+from api.dependencies import get_current_staff, get_db
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/management/appeals", tags=["Management Appeals"])
 
 @router.get("/stats")
 async def get_appeals_stats(
-    staff: Any = Depends(get_current_student),
+    staff: Staff = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
     # 1. Auth Check
@@ -99,7 +99,7 @@ async def get_appeals_list(
     faculty: Optional[str] = None,
     ai_topic: Optional[str] = None,
     assigned_role: Optional[str] = None,
-    staff: Any = Depends(get_current_student),
+    staff: Staff = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
     # Auth Check
@@ -158,10 +158,88 @@ async def get_appeals_list(
         } for a in appeals
     ]
 
+@router.get("/{id}")
+async def get_appeal_detail(
+    id: int,
+    staff: Staff = Depends(get_current_staff),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get detailed appeal thread for management.
+    """
+    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) in ['rahbariyat', 'admin', 'owner']
+    if not is_mgmt:
+        raise HTTPException(status_code=403, detail="Faqat rahbariyat uchun")
+
+    stmt = (
+        select(StudentFeedback)
+        .where(StudentFeedback.id == id)
+        .options(
+            selectinload(StudentFeedback.replies), 
+            selectinload(StudentFeedback.children),
+            selectinload(StudentFeedback.student)
+        )
+    )
+    appeal = await db.scalar(stmt)
+    
+    if not appeal:
+        raise HTTPException(status_code=404, detail="Murojaat topilmadi")
+        
+    messages = []
+    
+    # 1. Root Message
+    messages.append({
+        "id": appeal.id,
+        "sender": "me",
+        "text": appeal.text,
+        "time": appeal.created_at.strftime("%H:%M") if appeal.created_at else "--:--",
+        "timestamp": appeal.created_at or datetime.utcnow(),
+        "file_id": appeal.file_id
+    })
+    
+    # 2. Staff Replies
+    for reply in (appeal.replies or []):
+        messages.append({
+            "id": reply.id,
+            "sender": "staff",
+            "text": reply.text or "[Fayl]",
+            "time": reply.created_at.strftime("%H:%M") if reply.created_at else "--:--",
+            "timestamp": reply.created_at or datetime.utcnow(),
+            "file_id": reply.file_id
+        })
+        
+    # 3. Student Follow-ups
+    for child in (appeal.children or []):
+        messages.append({
+            "id": child.id,
+            "sender": "me",
+            "text": child.text,
+            "time": child.created_at.strftime("%H:%M") if child.created_at else "--:--",
+            "timestamp": child.created_at or datetime.utcnow(),
+            "file_id": child.file_id
+        })
+
+    messages.sort(key=lambda x: x['timestamp'])
+
+    return {
+        "id": appeal.id,
+        "title": f"Murojaat #{appeal.id}",
+        "status": appeal.status,
+        "date": appeal.created_at.strftime("%d.%m.%Y"),
+        "student": {
+            "name": appeal.student_full_name or (appeal.student.full_name if appeal.student else "Noma'lum"),
+            "faculty": appeal.student_faculty,
+            "group": appeal.student_group,
+            "phone": appeal.student_phone,
+            "is_anonymous": appeal.is_anonymous
+        },
+        "messages": messages
+    }
+
 @router.post("/{id}/resolve")
 async def resolve_appeal(
     id: int,
-    staff: Any = Depends(get_current_student),
+    staff: Staff = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
     is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) in ['rahbariyat', 'admin', 'owner']
@@ -190,3 +268,43 @@ async def resolve_appeal(
     )
     
     return {"success": True, "message": "Murojaat yopildi"}
+
+@router.post("/{id}/reply")
+async def reply_to_appeal(
+    id: int,
+    text: str = Body(..., embed=True),
+    staff: Staff = Depends(get_current_staff),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Management reply to an appeal.
+    Sets status to 'answered'.
+    """
+    # 1. Auth Check
+    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) in ['rahbariyat', 'admin', 'owner']
+    if not is_mgmt:
+        raise HTTPException(status_code=403, detail="Faqat rahbariyat uchun")
+
+    # 2. Fetch Appeal
+    stmt = select(StudentFeedback).where(StudentFeedback.id == id)
+    appeal = (await db.execute(stmt)).scalar_one_or_none()
+    
+    if not appeal:
+        raise HTTPException(status_code=404, detail="Murojaat topilmadi")
+
+    # 3. Create Reply
+    reply = FeedbackReply(
+        feedback_id=id,
+        staff_id=staff.id,
+        text=text
+    )
+    db.add(reply)
+
+    # 4. Update Status
+    appeal.status = 'answered'
+    appeal.assigned_staff_id = staff.id
+    appeal.updated_at = datetime.utcnow()
+    
+    await db.commit()
+    
+    return {"success": True, "message": "Javob yuborildi"}

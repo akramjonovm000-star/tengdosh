@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:talabahamkor_mobile/core/theme/app_theme.dart';
 import '../models/appeal_model.dart';
 import '../services/appeal_service.dart';
+import 'management_appeal_detail_screen.dart';
 import 'package:intl/intl.dart';
 
 class ManagementAppealsScreen extends StatefulWidget {
@@ -335,14 +336,16 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
       statusLabel = appeal.status == 'resolved' ? "HAL QILINDI" : "JAVOB BERILDI";
     }
     
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2))],
-      ),
+    return GestureDetector(
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ManagementAppealDetailScreen(appealId: appeal.id))),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2))],
+        ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -386,10 +389,10 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text("Kimga: ${appeal.assignedRole}", style: TextStyle(fontSize: 12, color: Colors.grey[600], fontStyle: FontStyle.italic)),
-              if (appeal.status != 'resolved' && appeal.status != 'replied')
+              if (appeal.status == 'pending' || appeal.status == 'processing')
                 TextButton(
-                  onPressed: () => _resolveAppeal(appeal.id),
-                  child: const Text("Yopish"),
+                  onPressed: () => _showReplyDialog(appeal.id),
+                  child: const Text("Javob berish"),
                 )
             ],
           ),
@@ -397,7 +400,56 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
       ),
     );
   }
+
+  void _showReplyDialog(int id) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Murojaatga javob"),
+        content: TextField(
+          controller: controller,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            hintText: "Javob matnini kiriting...",
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Bekor qilish")),
+          ElevatedButton(
+            onPressed: () async {
+              final text = controller.text.trim();
+              if (text.isEmpty) return;
+              
+              Navigator.pop(context);
+              await _replyToAppeal(id, text);
+            },
+            child: const Text("Yuborish"),
+          ),
+        ],
+      ),
+    );
+  }
   
+  Future<void> _replyToAppeal(int id, String text) async {
+    try {
+      await _service.replyAppeal(id, text);
+      _loadData(); // Refresh
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Javob muvaffaqiyatli yuborildi"), backgroundColor: Colors.green)
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Xatolik: $e"), backgroundColor: Colors.red)
+        );
+      }
+    }
+  }
+
   Future<void> _resolveAppeal(int id) async {
     try {
       await _service.resolveAppeal(id);

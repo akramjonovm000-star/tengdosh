@@ -140,15 +140,12 @@ async def get_mgmt_faculties(
     if not uni_id:
         raise HTTPException(status_code=400, detail="Universitet aniqlanmadi")
 
-    # 1. Try to fetch official faculties from HEMIS (Admin Token)
-    from services.hemis_service import HemisService
-    from config import HEMIS_ADMIN_TOKEN
-    
     f_id = getattr(staff, 'faculty_id', None)
     s_role = getattr(staff, 'role', None)
 
     # [NEW] Tutor Restriction: Only show faculties of assigned groups
     if s_role == 'tyutor':
+        from database.models import TutorGroup
         tg_stmt = select(TutorGroup.group_number).where(TutorGroup.tutor_id == staff.id)
         group_numbers = (await db.execute(tg_stmt)).scalars().all()
         
@@ -166,18 +163,6 @@ async def get_mgmt_faculties(
                 "data": [{"id": f[0], "name": f[1]} for f in faculties_data if f[0] and f[1]]
             }
         return {"success": True, "data": []}
-    
-    if HEMIS_ADMIN_TOKEN:
-        faculties = await HemisService.get_faculties()
-        if faculties:
-             # Filter only specific faculties for this University structure
-             allowed_ids = [4, 2, 43]
-             filtered = [f for f in faculties if f['id'] in allowed_ids]
-             
-             if f_id:
-                 pass 
-             else:
-                 return {"success": True, "data": filtered}
 
     # 2. Local DB Lookup (Respect restricted f_id)
     stmt = (

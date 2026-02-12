@@ -33,9 +33,11 @@ class RecentSubmissionItem(BaseModel):
     faculty_name: Optional[str]
     category: str
     name: str
+    description: Optional[str] = None
     date: str
     status: str
     created_at: datetime
+    images: List[str] = []
 
 # ============================================================
 # ENDPOINTS
@@ -118,11 +120,14 @@ async def get_recent_submissions(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Get latest submitted activities.
+    Get latest submitted activities with images and descriptions.
     """
     stmt = (
         select(UserActivity)
-        .options(selectinload(UserActivity.student)) # Eager load student
+        .options(
+            selectinload(UserActivity.student),
+            selectinload(UserActivity.images)
+        )
         .order_by(desc(UserActivity.created_at))
         .limit(limit)
     )
@@ -137,15 +142,30 @@ async def get_recent_submissions(
             student_name = act.student.full_name
             faculty_name = act.student.faculty_name
             
+        activity_images = []
+        if act.images:
+            # Construct full URLs for static images
+            # Assuming file_id is a relative path like 'static/uploads/...' or similar
+            # Or just use file_id if it's already a full URL/suitable for frontend
+            for img in act.images:
+                url = img.file_id
+                if url and not url.startswith(('http', '/')):
+                    url = f"https://tengdosh.uzjoku.uz/{url}" 
+                elif url and url.startswith('static/'):
+                    url = f"https://tengdosh.uzjoku.uz/{url}"
+                activity_images.append(url)
+
         items.append({
             "id": act.id,
             "student_name": student_name,
             "faculty_name": faculty_name,
             "category": act.category,
             "name": act.name,
+            "description": act.description,
             "date": act.date or "",
             "status": act.status,
-            "created_at": act.created_at
+            "created_at": act.created_at,
+            "images": activity_images
         })
         
     return items

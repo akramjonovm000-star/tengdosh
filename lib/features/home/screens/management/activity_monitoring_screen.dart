@@ -241,6 +241,210 @@ class _ActivityMonitoringScreenState extends State<ActivityMonitoringScreen> {
     }
   }
 
+  String _getStatusLabel(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending': return 'KUTILMOQDA';
+      case 'confirmed':
+      case 'approved': return 'TASDIQLANGAN';
+      case 'rejected': return 'RAD ETILGAN';
+      default: return status.toUpperCase();
+    }
+  }
+
+  Future<void> _approve(int id) async {
+    final success = await DataService().approveActivity(id);
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Faollik tasdiqlandi")));
+      _loadData();
+    }
+  }
+
+  Future<void> _reject(int id) async {
+    String? comment;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        final controller = TextEditingController();
+        return AlertDialog(
+          title: const Text("Rad etish"),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(hintText: "Sababini kiriting (ixtiyoriy)"),
+            maxLines: 3,
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Bekor qilish")),
+            ElevatedButton(
+              onPressed: () {
+                comment = controller.text;
+                Navigator.pop(context, true);
+              },
+              child: const Text("Rad etish"),
+            ),
+          ],
+        );
+      }
+    );
+
+    if (confirmed == true) {
+      final success = await DataService().rejectActivity(id, comment);
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Faollik rad etildi")));
+        _loadData();
+      }
+    }
+  }
+
+  void _showActivityDetails(dynamic item) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (_, controller) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
+              Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
+              const SizedBox(height: 16),
+              Expanded(
+                child: ListView(
+                  controller: controller,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: _getColorForCategory(item['category'] ?? '').withOpacity(0.1),
+                          child: Icon(Icons.star, color: _getColorForCategory(item['category'] ?? ''), size: 24),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(item['name'] ?? "Nomsiz", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                              Text("${item['student_name']} • ${item['category']}", style: TextStyle(color: Colors.grey[600])),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    if (item['images'] != null && (item['images'] as List).isNotEmpty) ...[
+                      const Text("Rasmlar", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        height: 200,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: (item['images'] as List).length,
+                          itemBuilder: (context, idx) => Padding(
+                            padding: const EdgeInsets.only(right: 12),
+                            child: GestureDetector(
+                              onTap: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (_) => Dialog(
+                                    backgroundColor: Colors.transparent,
+                                    child: Stack(
+                                      alignment: Alignment.topRight,
+                                      children: [
+                                        InteractiveViewer(child: Image.network(item['images'][idx])),
+                                        IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: () => Navigator.pop(context)),
+                                      ],
+                                    ),
+                                  )
+                                );
+                              },
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.network(
+                                  item['images'][idx],
+                                  width: 200,
+                                  height: 200,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Container(width: 200, color: Colors.grey[100], child: const Icon(Icons.broken_image, color: Colors.grey)),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+
+                    const Text("Tavsif", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    const SizedBox(height: 8),
+                    Text(
+                      item['description'] ?? "Tavsif mavjud emas",
+                      style: TextStyle(color: Colors.grey[800], height: 1.5, fontSize: 15),
+                    ),
+                    const SizedBox(height: 24),
+
+                    Row(
+                      children: [
+                        const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
+                        const SizedBox(width: 8),
+                        Text(item['date'] ?? "", style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                      ],
+                    ),
+                    const SizedBox(height: 32),
+                    
+                    if (item['status'] == 'pending') ...[
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.red,
+                                side: const BorderSide(color: Colors.red),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              onPressed: () {
+                                Navigator.pop(context);
+                                _reject(item['id']);
+                              },
+                              child: const Text("Rad etish"),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              onPressed: () {
+                                Navigator.pop(context);
+                                _approve(item['id']);
+                              },
+                              child: const Text("Tasdiqlash"),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildRecentSubmissions() {
     if (_recentSubmissions.isEmpty) {
       return const Center(child: Text("So'nggi arizalar mavjud emas", style: TextStyle(color: Colors.grey)));
@@ -271,6 +475,7 @@ class _ActivityMonitoringScreenState extends State<ActivityMonitoringScreen> {
               borderRadius: BorderRadius.circular(12),
               side: BorderSide(color: Colors.grey.shade200)),
           child: ListTile(
+            onTap: () => _showActivityDetails(item),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             leading: CircleAvatar(
               backgroundColor: _getColorForCategory(item['category'] ?? '').withOpacity(0.1),
@@ -281,7 +486,7 @@ class _ActivityMonitoringScreenState extends State<ActivityMonitoringScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 4),
-                Text("${item['student_name']} • ${item['category']}", style: TextStyle(fontSize: 12)),
+                Text("${item['student_name']} • ${item['category']}", style: const TextStyle(fontSize: 12)),
                 Text(item['date'] ?? "", style: TextStyle(color: Colors.grey[500], fontSize: 11)),
               ],
             ),
@@ -296,7 +501,7 @@ class _ActivityMonitoringScreenState extends State<ActivityMonitoringScreen> {
                 children: [
                   Icon(statusIcon, color: statusColor, size: 14),
                   const SizedBox(width: 4),
-                  Text(status.toUpperCase(), style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold)),
+                  Text(_getStatusLabel(status), style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),

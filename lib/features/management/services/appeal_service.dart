@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:talabahamkor_mobile/core/constants/api_constants.dart';
 import 'package:talabahamkor_mobile/core/services/data_service.dart';
 import '../models/appeal_model.dart';
+import '../../appeals/models/appeal_model.dart' as student_models; // Reuse detail models
 import 'package:http/http.dart' as http;
 
 class AppealService {
@@ -57,6 +58,30 @@ class AppealService {
       return json.decode(response.body);
     } else {
       throw Exception('AI Tahlil xatosi');
+    }
+  }
+
+  Future<void> replyAppeal(int id, String text) async {
+    final url = '${ApiConstants.managementAppealsResolve}/$id/reply';
+    final response = await _dataService.authPost(
+      url,
+      body: {'text': text},
+    );
+    
+    if (response.statusCode != 200) {
+       throw Exception('Javob yuborishda xatolik yuz berdi');
+    }
+  }
+
+  Future<student_models.AppealDetail> getAppealDetail(int id) async {
+    final url = '${ApiConstants.managementAppealsResolve}/$id';
+    final response = await _dataService.authGet(url);
+    
+    if (response.statusCode == 200) {
+      final body = json.decode(response.body);
+      return student_models.AppealDetail.fromJson(body);
+    } else {
+      throw Exception('Murojaat tafsilotlarini yuklab bo\'lmadi');
     }
   }
 }
