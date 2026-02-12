@@ -148,13 +148,6 @@ class _SubsidyScreenState extends State<SubsidyScreen> {
                           ),
                           const Divider(height: 24),
                           _buildInfoRow(
-                            Icons.check_circle, 
-                            "Ariza holati", 
-                            "Tasdiqlangan", 
-                            valueColor: Colors.green
-                          ),
-                          const Divider(height: 24),
-                          _buildInfoRow(
                             Icons.person, 
                             "Ijaraga beruvchi (PINFL)", 
                             "${_payments.first['renterPinfl'] ?? 'Noma\'lum'}"
