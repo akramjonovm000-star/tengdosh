@@ -614,6 +614,23 @@ class DataService {
     return null;
   }
 
+  // [NEW] Get multiple banners for carousel
+  Future<List<BannerModel>> getActiveBanners() async {
+    try {
+      final response = await _get('${ApiConstants.banner}/list');
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) {
+           final List<dynamic> list = body['data'];
+           return list.map((item) => BannerModel.fromJson(item)).toList();
+        }
+      }
+    } catch (e) {
+      debugPrint("Error fetching banners list: $e");
+    }
+    return [];
+  }
+
   Future<void> trackBannerClick(int bannerId) async {
     try {
       await _post('${ApiConstants.banner}/click/$bannerId');

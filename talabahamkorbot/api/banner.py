@@ -44,6 +44,38 @@ async def get_active_banner(
         "created_at": banner.created_at.isoformat()
     }
 
+@router.get("/list")
+async def get_all_active_banners(
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Fetch ALL active banners for the carousel.
+    """
+    stmt = (
+        select(Banner)
+        .where(Banner.is_active == True)
+        .order_by(desc(Banner.id))
+    )
+    result = await db.execute(stmt)
+    banners = result.scalars().all()
+    
+    data = []
+    for b in banners:
+        # Increment view count for each (optional, or do it on client side when viewed)
+        # For now, we won't auto-increment on fetch to avoid spamming analytics
+        data.append({
+            "id": b.id,
+            "active": True,
+            "image_file_id": b.image_file_id,
+            "link": b.link,
+            "created_at": b.created_at.isoformat() if b.created_at else None
+        })
+        
+    return {
+        "success": True,
+        "data": data
+    }
+
 @router.post("/click/{banner_id}")
 async def track_banner_click(
     banner_id: int,

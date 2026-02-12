@@ -931,33 +931,48 @@ async def get_mgmt_groups_simple(
     from services.hemis_service import HemisService
     from config import HEMIS_ADMIN_TOKEN
 
+    # [NEW] Scoping Logic for Deans
+    s_role = getattr(staff, 'role', None) or ""
+    f_id_restricted = getattr(staff, 'faculty_id', None)
+    global_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
+    is_global = (
+        getattr(staff, 'hemis_role', None) == 'rahbariyat' or 
+        s_role in global_roles
+    )
+    
+    effective_faculty_id = faculty_id
+    if not is_global and f_id_restricted:
+        effective_faculty_id = f_id_restricted
+        
+    # [FIX] Translate to HEMIS ID for Admin API
+    h_fac_id = effective_faculty_id
+    if effective_faculty_id == 36: h_fac_id = 4
+    elif effective_faculty_id == 34: h_fac_id = 2
+    elif effective_faculty_id == 35: h_fac_id = 43
+    
+    # [FIX] Translate to DB ID for DB Query
+    db_fac_id = effective_faculty_id
+    if effective_faculty_id == 4: db_fac_id = 36
+    elif effective_faculty_id == 2: db_fac_id = 34
+    elif effective_faculty_id == 43: db_fac_id = 35
+
     # 1. Try Admin API (University-wide)
     if HEMIS_ADMIN_TOKEN:
-        # Check Tutor Role
-        s_role = getattr(staff, 'role', None)
-        tutor_groups = []
         if s_role == 'tyutor':
-            from database.models import TutorGroup
-            tg_stmt = select(TutorGroup.group_number).where(TutorGroup.tutor_id == staff.id)
-            tutor_groups = (await db.execute(tg_stmt)).scalars().all()
-            
-            # If tutor, we must filter by these groups.
-            # Easiest way? Fetch all groups then filter? Or rely on DB fallback?
-            # Let's rely on DB fallback for consistency if HEMIS API doesn't support list-based group checking easily
+            # Fallback to local DB for Tutors
             pass 
         else:
             spec_id = None
             if specialty_name:
-                # [FIX] Smarter resolution using Faculty and Form context
                 spec_id = await HemisService.resolve_specialty_id(
                     specialty_name, 
                     education_type,
-                    faculty_id=faculty_id,
+                    faculty_id=h_fac_id, # Use translated ID
                     education_form=education_form
                 )
     
             all_groups = await HemisService.get_group_list(
-                faculty_id=faculty_id,
+                faculty_id=h_fac_id, # Use translated ID
                 specialty_id=spec_id,
                 education_type=education_type,
                 education_form=education_form,
@@ -969,32 +984,32 @@ async def get_mgmt_groups_simple(
 
     # 2. Fallback to Local DB
     uni_id = getattr(staff, 'university_id', None)
-    f_id = getattr(staff, 'faculty_id', None)
-    s_role = getattr(staff, 'role', None)
-    
-    filters = [
+    stmt = select(Student.group_number).where(
         Student.university_id == uni_id, 
         Student.group_number != None
-    ]
+    )
     
-    # Role-based restriction
     if s_role == 'tyutor':
         from database.models import TutorGroup
         tg_stmt = select(TutorGroup.group_number).where(TutorGroup.tutor_id == staff.id)
         group_numbers = (await db.execute(tg_stmt)).scalars().all()
-        filters.append(Student.group_number.in_(group_numbers))
-    # [FIX] Translate HEMIS ID to DB ID for filtering
-    if faculty_id == 4: faculty_id = 36
-    elif faculty_id == 2: faculty_id = 34
-    elif faculty_id == 43: faculty_id = 35
-
-    if f_id:
-        filters.append(Student.faculty_id == f_id)
+        stmt = stmt.where(Student.group_number.in_(group_numbers))
         
-    if faculty_id: filters.append(Student.faculty_id == faculty_id)
-    if level_name: filters.append(Student.level_name == level_name)
+    if db_fac_id:
+        stmt = stmt.where(Student.faculty_id == db_fac_id)
+    if education_type:
+        stmt = stmt.where(Student.education_type.ilike(f"%{education_type}%"))
+    if education_form:
+        stmt = stmt.where(Student.education_form.ilike(f"%{education_form}%"))
+    if level_name:
+        # Standardize for DB
+        lvl_db = level_name
+        if "-kurs" not in level_name.lower(): lvl_db = f"{level_name}-kurs"
+        stmt = stmt.where(Student.level_name.ilike(lvl_db))
+    if specialty_name:
+        stmt = stmt.where(Student.specialty_name == specialty_name)
         
-    result = await db.execute(select(Student.group_number).where(and_(*filters)).distinct().order_by(Student.group_number))
+    result = await db.execute(stmt.distinct().order_by(Student.group_number))
     groups = result.scalars().all()
     
     return {"success": True, "data": groups}
