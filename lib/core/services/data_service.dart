@@ -801,24 +801,46 @@ class DataService {
 
   Future<List<Lesson>> _backgroundRefreshSchedule(int studentId) async {
     try {
-      final response = await _get(ApiConstants.scheduleList);
-
+      final response = await _get(ApiConstants.schedule);
       if (response.statusCode == 200) {
         final body = json.decode(response.body);
-        final data = body['data'];
-        final List<dynamic> items = (data is List) ? data : (data['items'] ?? []);
-        
-        // DISABLED LOCAL CACHE: No update
-        // await _dbService.saveCache('schedule', studentId, {'items': items});
-        
-        return items.map((json) => Lesson.fromJson(json)).toList();
+        if (body['success'] == true) {
+          final List<dynamic> items = body['data'];
+          // await _dbService.saveCache('schedule', studentId, {'items': items});
+          return items.map((json) => Lesson.fromJson(json)).toList();
+        }
       }
     } catch (e) {
-      print("Schedule Sync Error: $e");
+      debugPrint("Schedule Sync Error: $e");
     }
     return [];
   }
 
+  // Change Password
+  Future<bool> changePassword(String newPassword) async {
+    try {
+      final response = await _post(
+        '${ApiConstants.backendUrl}/student/password',
+        body: {'password': newPassword},
+      );
+
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) {
+          // Update locally stored password too
+          await _authService.updateSavedPassword(newPassword);
+          return true;
+        }
+      } else {
+        final body = json.decode(response.body);
+        throw Exception(body['detail'] ?? "Xatolik yuz berdi");
+      }
+    } catch (e) {
+      debugPrint("Change Password Error: $e");
+      rethrow;
+    }
+    return false;
+  }
 
 
   // 12. Get Detailed Grades (O'zlashtirish)
@@ -2067,5 +2089,36 @@ class DataService {
       return List<dynamic>.from(json.decode(utf8.decode(response.bodyBytes)));
     }
     return [];
+  }
+
+  // Change Password
+  Future<bool> changePassword(String newPassword) async {
+    try {
+      final response = await _post(
+        '${ApiConstants.backendUrl}/student/password',
+        body: {'password': newPassword},
+      );
+
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) {
+          // Update locally stored password too
+          await _authService.updateSavedPassword(newPassword);
+          return true;
+        }
+      } else {
+         // Handle error safely
+         try {
+            final body = json.decode(response.body);
+            throw Exception(body['detail'] ?? "Xatolik yuz berdi");
+         } catch(_) {
+            throw Exception("Xatolik yuz berdi: ${response.statusCode}");
+         }
+      }
+    } catch (e) {
+      debugPrint("Change Password Error: $e");
+      rethrow;
+    }
+    return false;
   }
 }

@@ -258,8 +258,19 @@ class AuthService {
       } else {
         return {'success': false, 'message': body['detail'] ?? "Xatolik yuz berdi"};
       }
-    } catch (e) {
       return {'success': false, 'message': "Tarmoq xatosi: $e"};
+    }
+  }
+
+  Future<void> updateSavedPassword(String newPassword) async {
+    final prefs = await _getPrefs;
+    // We don't store raw password in prefs usually for security, 
+    // but if we did (for auto-login), we would update it here.
+    // However, we DO need to invalidate/update current session if needed.
+    // For now, let's assume we just keep the token.
+    // But if we have a 'remember me' functional that uses stored creds:
+    if (prefs.containsKey('user_password')) {
+       await prefs.setString('user_password', newPassword);
     }
   }
 }

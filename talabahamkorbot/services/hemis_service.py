@@ -141,6 +141,40 @@ class HemisService:
             return []
 
     @staticmethod
+    async def change_password(token: str, new_password: str, base_url: Optional[str] = None):
+        client = await HemisService.get_client()
+        final_base = base_url or HemisService.BASE_URL
+        url = f"{final_base}/account/me"
+        
+        # Try standard payload for Yii2/Laravel user update
+        payload = {
+            "password": new_password,
+            # Some systems might require confirmation or old password
+            # "password_confirm": new_password 
+        }
+        
+        try:
+            # Using POST for update (some APIs use PUT, but probe showed both 401, POST is safer for partial)
+            response = await HemisService.fetch_with_retry(
+                client, "POST", url, 
+                headers=HemisService.get_headers(token), 
+                json=payload
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("success") is False:
+                     return False, data.get("error", "Xatolik yuz berdi")
+                return True, None
+            elif response.status_code == 422: # Validation Error
+                return False, "Parol talablarga javob bermaydi (min 6 belgi)"
+            else:
+                return False, f"Server xatosi: {response.status_code}"
+        except Exception as e:
+            logger.error(f"Change Password Error: {e}")
+            return False, str(e)
+
+    @staticmethod
     async def authenticate(login: str, password: str, base_url: Optional[str] = None):
         client = await HemisService.get_client()
         

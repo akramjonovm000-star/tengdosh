@@ -154,6 +154,7 @@ class _AcademicScreenState extends State<AcademicScreen> {
             _buildMenuItem(context, "Imtihonlar", Icons.edit_document, Colors.redAccent),
             _buildMenuItem(context, "Reyting Daftarchasi", Icons.history_edu_rounded, Colors.teal),
             _buildMenuItem(context, "So'rovnomalar", Icons.poll_rounded, Colors.indigo),
+            _buildMenuItem(context, "Parolni o'zgartirish", Icons.lock_reset, Colors.blueGrey),
           ],
         ), // Column
       ), // SingleChildScrollView
@@ -208,6 +209,8 @@ class _AcademicScreenState extends State<AcademicScreen> {
                await Navigator.push(context, MaterialPageRoute(builder: (_) => const SubjectsScreen()));
             } else if (title == "So'rovnomalar") {
                await Navigator.push(context, MaterialPageRoute(builder: (_) => const SurveyListScreen()));
+            } else if (title == "Parolni o'zgartirish") {
+               _showChangePasswordDialog(context);
             } else {
                ScaffoldMessenger.of(context).showSnackBar(
                  SnackBar(content: Text("$title bo'limi tez orada ishga tushadi")),
@@ -252,6 +255,89 @@ class _AcademicScreenState extends State<AcademicScreen> {
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color),
         ),
       ],
+    );
+  }
+
+  void _showChangePasswordDialog(BuildContext context) {
+    final TextEditingController passController = TextEditingController();
+    bool isSaving = false;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Text("Parolni o'zgartirish"),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                   const Text(
+                    "Diqqat! Bu harakat HEMIS tizimidagi (student.jmcu.uz) parolingizni ham o'zgartiradi.",
+                    style: TextStyle(fontSize: 13, color: Colors.orange, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    "Yangi parol kamida 6 belgidan iborat bo'lishi kerak.",
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: passController,
+                    decoration: const InputDecoration(
+                      labelText: "Yangi parol",
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  if (isSaving)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 16),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Bekor qilish", style: TextStyle(color: Colors.grey)),
+                ),
+                ElevatedButton(
+                  onPressed: isSaving ? null : () async {
+                    if (passController.text.trim().isEmpty) return;
+                    
+                    setDialogState(() => isSaving = true);
+                    
+                    try {
+                      await _dataService.changePassword(passController.text.trim());
+                      if (mounted) {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Parol muvaffaqiyatli yangilandi"), backgroundColor: Colors.green),
+                        );
+                      }
+                    } catch (e) {
+                      setDialogState(() => isSaving = false);
+                      // Clean error message
+                      String error = e.toString().replaceAll("Exception:", "").trim();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("Xatolik: $error"), backgroundColor: Colors.red),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryBlue,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: const Text("Saqlash"),
+                ),
+              ],
+            );
+          }
+        );
+      },
     );
   }
 }

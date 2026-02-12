@@ -533,3 +533,41 @@ async def get_student_public_profile(
     data['is_registered_bot'] = True if tg_acc else False
     
     return data
+
+class PasswordUpdateSchema(BaseModel):
+    password: str
+
+@router.post("/password")
+async def update_password(
+    data: PasswordUpdateSchema,
+    student: Student = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Update REMOTE password (on Student.jmcu.uz) AND local password.
+    Directly changes password on Hemis system.
+    """
+    from services.hemis_service import HemisService
+    from services.university_service import UniversityService
+    from fastapi import HTTPException
+    
+    base_url = UniversityService.get_api_url(student.hemis_login)
+
+    # 1. Change password on Hemis
+    success, error = await HemisService.change_password(student.hemis_token, data.password, base_url=base_url)
+    
+    if not success:
+         # If failed, it might be token expired? But assuming active session.
+         raise HTTPException(status_code=400, detail=f"Hemisda parolni o'zgartirib bo'lmadi: {error}")
+
+    # 2. Verify connection with NEW password to get NEW TOKEN (Sometimes token invalidates after pass change)
+    new_token, error_auth = await HemisService.authenticate(student.hemis_login, data.password, base_url=base_url)
+    
+    if new_token:
+        student.hemis_token = new_token
+    
+    # 3. Update Local DB
+    student.hemis_password = data.password
+    await db.commit()
+    
+    return {"success": True, "message": "Parol muvaffaqiyatli o'zgartirildi"}

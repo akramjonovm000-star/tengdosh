@@ -21,7 +21,12 @@ class FacultyPerformance(BaseModel):
     resolved: int
     rate: float
 
+class TopTarget(BaseModel):
+    role: str
+    count: int
+
 class AppealStats(BaseModel):
-    total_active: int
-    total_resolved: int
+    total: int
+    counts: dict
     faculty_performance: List[FacultyPerformance]
+    top_targets: List[TopTarget]
