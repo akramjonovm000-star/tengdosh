@@ -542,10 +542,10 @@ async def search_mgmt_students(
     if education_type: category_filters.append(Student.education_type.ilike(f"%{education_type}%"))
     if education_form: category_filters.append(Student.education_form.ilike(f"%{education_form}%"))
     if level_name:
-        # Standardize Level for DB
+        # Standardize Level for DB (Ensure case-insensitive and exact match)
         lvl_db = level_name
-        if "-kurs" not in level_name: lvl_db = f"{level_name}-kurs"
-        category_filters.append(Student.level_name == lvl_db)
+        if "-kurs" not in level_name.lower(): lvl_db = f"{level_name}-kurs"
+        category_filters.append(Student.level_name.ilike(lvl_db))
     if specialty_name: category_filters.append(Student.specialty_name == specialty_name)
     if group_number: category_filters.append(Student.group_number == group_number)
 
@@ -627,7 +627,7 @@ async def search_mgmt_students(
             spec_id = await HemisService.resolve_specialty_id(
                 specialty_name, 
                 education_type, 
-                faculty_id=effective_faculty_id,
+                faculty_id=hemis_faculty_id, # [FIX] Use HEMIS ID
                 education_form=education_form
             )
             if spec_id:
@@ -637,7 +637,7 @@ async def search_mgmt_students(
                 return {"success": True, "total_count": 0, "app_users_count": 0, "data": []}
                 
         if group_number:
-            grp_id = await HemisService.resolve_group_id(group_number)
+            grp_id = await HemisService.resolve_group_id(group_number, faculty_id=hemis_faculty_id)
             if grp_id:
                 admin_filters["_group"] = grp_id
             else:

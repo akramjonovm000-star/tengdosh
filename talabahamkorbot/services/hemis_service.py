@@ -899,7 +899,7 @@ class HemisService:
             return []
 
     @staticmethod
-    async def resolve_group_id(group_name: str, token: str = None) -> Optional[int]:
+    async def resolve_group_id(group_name: str, token: str = None, faculty_id: int = None) -> Optional[int]:
         """Find the matching group ID from the group list."""
         auth_token = token or HEMIS_ADMIN_TOKEN
         if not auth_token or not group_name: return None
@@ -909,8 +909,9 @@ class HemisService:
              HemisService._resolved_group_ids = {}
         if group_name in HemisService._resolved_group_ids:
              return HemisService._resolved_group_ids[group_name]
-
-        all_groups = await HemisService.get_group_list(token=auth_token)
+        
+        # Pass faculty_id if provided
+        all_groups = await HemisService.get_group_list(token=auth_token, faculty_id=faculty_id)
         req_norm = HemisService._normalize_name(group_name)
         
         # 1. Try exact or substantial substring match

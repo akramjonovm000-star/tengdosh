@@ -73,11 +73,8 @@ router.include_router(management_appeals_router, tags=["Management Appeals"])
 router.include_router(tutor_router, tags=["Tutor"])
 
 
+
 # 6. GENERIC STUDENT PROFILE (Wildcard /{student_id} at the end)
 # This MUST be last to avoid catching specific /student/... routes
 router.include_router(student_router, prefix="/student", tags=["Student"])
-
-# 7. WEB APP (Mini App)
-from .webapp import router as webapp_router
-router.include_router(webapp_router, tags=["Web App"])
 
