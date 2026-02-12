@@ -1,74 +1,58 @@
 import asyncio
-import sys
 import os
-import argparse
-from datetime import datetime
+import sys
+import json
 
-sys.path.append(os.getcwd())
+# Add project root to path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from aiogram.types import Update, Message, Chat, User, CallbackQuery
-from main import dp, bot
+from bot import dp, bot
+from aiogram.types import Update, Message, PhotoSize, User, Chat
+from handlers import setup_routers
+from models.states import DocumentAddStates
+from aiogram.fsm.storage.base import StorageKey
 
-# Mock User
-TEST_USER = User(id=7476703866, is_bot=False, first_name="Test", username="testuser")
-TEST_CHAT = Chat(id=7476703866, type="private")
-
-def get_message_update(text):
-    message = Message(
-        message_id=123,
-        date=datetime.now(),
-        chat=TEST_CHAT,
-        from_user=TEST_USER,
-        text=text
-    )
-    return Update(update_id=1, message=message)
-
-def get_callback_update(data):
-    message = Message(
-        message_id=123,
-        date=datetime.now(),
-        chat=TEST_CHAT,
-        from_user=TEST_USER,
-        text="Menu Message"
-    )
-    callback = CallbackQuery(
-        id="cb_123",
-        from_user=TEST_USER,
-        chat_instance="1",
-        message=message,
-        data=data
-    )
-    return Update(update_id=1, callback_query=callback)
-
-async def main():
-    parser = argparse.ArgumentParser(description="Simulate Telegram Updates")
-    parser.add_argument("type", choices=["message", "callback"], help="Update type")
-    parser.add_argument("data", help="Message text or callback data")
-    
-    args = parser.parse_args()
-
-    # MANUAL ROUTER REGISTRATION (Since we don't run FastAPI lifespan)
-    from handlers import setup_routers
+async def simulate_photo_update():
+    # Setup routers (important!)
     root_router = setup_routers()
     if root_router not in dp.sub_routers:
         dp.include_router(root_router)
-    print("✅ Routers registered manually for simulation.")
-    
-    print(f"🚀 Simulating {args.type.upper()}: '{args.data}'...")
-    
-    if args.type == "message":
-        update = get_message_update(args.data)
-    else:
-        update = get_callback_update(args.data)
         
-    try:
-        # Feed update to dispatcher
-        await dp.feed_update(bot, update)
-        print("✅ Update processed successfully!")
-    except Exception as e:
-        print("❌ CRITICAL ERROR DURING PROCESSING:")
-        import traceback
-        traceback.print_exc()
+    user_id = 7476703866
+    
+    # 1. Ensure state is set
+    key = StorageKey(bot_id=bot.id, chat_id=user_id, user_id=user_id)
+    await dp.storage.set_state(key, DocumentAddStates.WAIT_FOR_APP_FILE)
+    print(f"State set to: {await dp.storage.get_state(key)}")
+    
+    # 2. Construct Update
+    # Realistic update from logs
+    payload = {
+        "update_id": 290015280, 
+        "message": {
+            "message_id": 18551, 
+            "from": {"id": 7476703866, "is_bot": False, "first_name": "Javohirxon", "username": "Javohirxon_Rahimxonov", "language_code": "en"}, 
+            "chat": {"id": 7476703866, "first_name": "Javohirxon", "username": "Javohirxon_Rahimxonov", "type": "private"}, 
+            "date": 1770917718, 
+            "photo": [
+                {"file_id": "AgACAgIAAxkBAAJId2mOD1bhieTNb8w5KMCmDkGzv_P7AAJ1GWsbSL5xSNfeoMsfRwNeAQADAgADcwADOgQ", "file_unique_id": "AQADdRlrG0i-cUh4", "file_size": 1526, "width": 90, "height": 63}, 
+                {"file_id": "AgACAgIAAxkBAAJId2mOD1bhieTNb8w5KMCmDkGzv_P7AAJ1GWsbSL5xSNfeoMsfRwNeAQADAgADbQADOgQ", "file_unique_id": "AQADdRlrG0i-cUhy", "file_size": 10112, "width": 267, "height": 188}
+            ]
+        }
+    }
+    
+    update = Update.model_validate(payload, context={"bot": bot})
+    
+    # 3. Feed update
+    print("Feeding update to dispatcher...")
+    # Use a dummy session to avoid real DB calls if needed, or just let it fail at DB step if handler matches
+    from database.db_connect import AsyncSessionLocal
+    async with AsyncSessionLocal() as session:
+        # We need to inject session into data if we call manually, 
+        # but dp.feed_update will use middlewares.
+        # Feed through dp to see if it matches.
+        result = await dp.feed_update(bot, update)
+        print(f"Feed result: {result}")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(simulate_photo_update())

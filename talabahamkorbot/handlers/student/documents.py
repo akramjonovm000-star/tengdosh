@@ -112,13 +112,17 @@ async def open_user_document(call: CallbackQuery, session: AsyncSession):
         if doc.file_type == "photo":
             await call.message.answer_photo(doc.file_id, caption=caption, parse_mode="HTML")
         else:
-            await call.message.answer_document(doc.file_id, caption=caption, parse_mode="HTML")
+            try:
+                await call.message.answer_document(doc.file_id, caption=caption, parse_mode="HTML")
+            except Exception as e:
+                # Self-healing: If sent as document but it's actually a photo
+                if "can't use file of type Photo as Document" in str(e):
+                    doc.file_type = "photo"
+                    await session.commit()
+                    await call.message.answer_photo(doc.file_id, caption=caption, parse_mode="HTML")
+                else:
+                    raise e
             
-        # Add a small menu to go back? User said "Asosiy menyuga qaytish tugmasi bo'lsin" (in last message)
-        # Assuming asking for a "Back to Main Menu" button attached to the FILE message or a followup?
-        # Usually file messages can't have callbacks easily if media group, but single file can.
-        # Adding a followup message with button is safer.
-        
         await call.message.answer(
             "Quyidagi tugma orqali menyuga qaytishingiz mumkin:",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🏠 Asosiy menyu", callback_data="go_student_home")]])

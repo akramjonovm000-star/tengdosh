@@ -136,11 +136,47 @@ async def probe():
              print(f"Status: {resp.status_code}, Body: {resp.text}")
         except: pass
         
-        print(f"\n--- 9. Probing POST /account/me (student[phone]) ---")
+        # 10. Probing POST /account/me (PASSWORD ONLY) - This is what current code does
+        print(f"\n--- 10. Probing POST /account/me (Password ONLY) ---")
         try:
-             resp = await client.post(url_me, json={"student": {"phone": current_phone}}, headers=headers)
-             print(f"Status: {resp.status_code}, Body: {resp.text}")
+             resp = await client.post(url_me, json={"password": "WrongPassword123"}, headers=headers)
+             print(f"Status: {resp.status_code}")
+             if resp.status_code != 200:
+                 print(f"Body: {resp.text}")
         except: pass
+
+        # 11. Probing POST /account/me (Password + Confirm ONLY)
+        print(f"\n--- 11. Probing POST /account/me (Password + Confirm ONLY) ---")
+        try:
+             resp = await client.post(url_me, json={"password": "WrongPassword123", "password_confirm": "WrongPassword123"}, headers=headers)
+             print(f"Status: {resp.status_code}")
+             if resp.status_code != 200:
+                 print(f"Body: {resp.text}")
+        except: pass
+
+        # 12. Probing POST /account/me (Password + Current Phone/Email)
+        print(f"\n--- 12. Probing POST /account/me (Password + Phone + Email) ---")
+        try:
+             payload_full = {
+                 "password": "WrongPassword123",
+                 "phone": current_phone,
+                 "email": student.email or ""
+             }
+             resp = await client.post(url_me, json=payload_full, headers=headers)
+             print(f"Status: {resp.status_code}")
+             if resp.status_code != 200:
+                 print(f"Body: {resp.text}")
+        except: pass
+
+        # 13. Call HemisService.change_password directly
+        print(f"\n--- 13. Calling HemisService.change_password directly ---")
+        try:
+             # We need to mock the client or just call it if it uses the singleton
+             # The method gets its own client.
+             success, error = await HemisService.change_password(student.hemis_token, "WrongPassword123")
+             print(f"Service Call Result: Success={success}, Error={error}")
+        except Exception as e:
+             print(f"Service Call Error: {e}")
 
 if __name__ == "__main__":
     asyncio.run(probe())

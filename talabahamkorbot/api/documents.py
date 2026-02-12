@@ -198,13 +198,24 @@ async def send_existing_doc_to_bot(
     # 3. Send via Bot
     try:
         caption = f"📄 <b>{doc.title}</b>\nKategoriya: {doc.category}"
-        if doc.file_type == "photo":
-            await bot.send_photo(tg_account.telegram_id, doc.file_id, caption=caption, parse_mode="HTML")
-        else:
-            await bot.send_document(tg_account.telegram_id, doc.file_id, caption=caption, parse_mode="HTML")
+        try:
+            if doc.file_type == "photo":
+                await bot.send_photo(tg_account.telegram_id, doc.file_id, caption=caption, parse_mode="HTML")
+            else:
+                await bot.send_document(tg_account.telegram_id, doc.file_id, caption=caption, parse_mode="HTML")
+        except Exception as e:
+            # Self-healing: If sent as document but it's actually a photo
+            if "can't use file of type Photo as Document" in str(e) or "Bad Request: document_invalid" in str(e):
+                logger.info(f"Self-healing: Document {doc.id} is actually a photo. Updating...")
+                doc.file_type = "photo"
+                await db.commit()
+                await bot.send_photo(tg_account.telegram_id, doc.file_id, caption=caption, parse_mode="HTML")
+            else:
+                raise e
             
         return {"success": True, "message": "Hujjat Telegramingizga yuborildi!"}
     except Exception as e:
+        logger.error(f"Error sending doc to bot: {e}")
         return {"success": False, "message": f"Botda xatolik: {str(e)}"}
 
 @router.delete("/{doc_id}")
