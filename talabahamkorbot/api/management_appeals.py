@@ -11,7 +11,9 @@ from pydantic import BaseModel
 
 router = APIRouter(prefix="/management/appeals", tags=["Management Appeals"])
 
-@router.get("/stats")
+from api.schemas_appeals import AppealStats as AppealStatsModel, AppealItem
+
+@router.get("/stats", response_model=AppealStatsModel)
 async def get_appeals_stats(
     staff: Staff = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
@@ -104,7 +106,7 @@ async def get_appeals_stats(
         "top_targets": top_targets
     }
 
-@router.get("/list")
+@router.get("/list", response_model=List[AppealItem])
 async def get_appeals_list(
     page: int = 1,
     limit: int = 20,

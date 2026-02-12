@@ -617,7 +617,7 @@ class DataService {
   // [NEW] Get multiple banners for carousel
   Future<List<BannerModel>> getActiveBanners() async {
     try {
-      final response = await _get('${ApiConstants.banner}/list');
+      final response = await _get('${ApiConstants.backendUrl}/banner/list');
       if (response.statusCode == 200) {
         final body = json.decode(response.body);
         if (body['success'] == true) {
