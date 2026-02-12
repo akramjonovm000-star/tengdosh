@@ -38,6 +38,8 @@ async def get_appeals_stats(
     f_id = getattr(staff, 'faculty_id', None)
     if current_role in dean_level_roles and f_id:
         stmt = stmt.where(Student.faculty_id == f_id)
+        # [NEW] Enforce Bakalavr Only
+        stmt = stmt.where(Student.education_type.ilike("Bakalavr"))
         
     stmt = stmt.group_by(StudentFeedback.status)
     rows = (await db.execute(stmt)).all()
@@ -124,8 +126,13 @@ async def get_appeals_list(
     
     # [NEW] Faculty Scoping for Deans
     f_id = getattr(staff, 'faculty_id', None)
+    current_role = getattr(staff, 'role', None) 
+    dean_level_roles = [StaffRole.DEKAN, StaffRole.DEKAN_ORINBOSARI, StaffRole.DEKAN_YOSHLAR, StaffRole.DEKANAT]
+    
     if current_role in dean_level_roles and f_id:
         query = query.where(Student.faculty_id == f_id)
+        # [NEW] Enforce Bakalavr Only
+        query = query.where(Student.education_type.ilike("Bakalavr"))
     elif faculty:
         if status == 'active': # Custom filter for Pending+Processing
              query = query.where(StudentFeedback.status.in_(['pending', 'processing']))
@@ -200,8 +207,13 @@ async def get_appeal_detail(
     
     # [NEW] Faculty Scoping for Deans
     f_id = getattr(staff, 'faculty_id', None)
+    current_role = getattr(staff, 'role', None)
+    dean_level_roles = [StaffRole.DEKAN, StaffRole.DEKAN_ORINBOSARI, StaffRole.DEKAN_YOSHLAR, StaffRole.DEKANAT]
+    
     if current_role in dean_level_roles and f_id:
         stmt = stmt.where(Student.faculty_id == f_id)
+        # [NEW] Enforce Bakalavr Only
+        stmt = stmt.where(Student.education_type.ilike("Bakalavr"))
         
     appeal = await db.scalar(stmt)
     

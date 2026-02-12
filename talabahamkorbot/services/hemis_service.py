@@ -735,20 +735,24 @@ class HemisService:
         if exact:
             candidates = exact
 
-        # 5. [NEW] Narrow by Context (Faculty or Sirtqi Dept)
+        # 5. Narrow by Context (Specialized departments or Faculty)
         context_candidates = []
         
-        # A. Sirtqi Context (Prioritize Dept 35)
-        # Check if form is Sirtqi (13/Sirtqi)
+        # A. Sirtqi/Magistr Context (Specialized departments)
         is_sirtqi = education_form and ("Sirtqi" in education_form or str(education_form) == "13")
+        is_mag = education_type and ("Magistr" in education_type or str(education_type) == "12")
         
         if is_sirtqi:
             sirtqi_matches = [c for c in candidates if c.get("department", {}).get("id") == 35]
             if sirtqi_matches:
                 context_candidates = sirtqi_matches
+        elif is_mag:
+            mag_matches = [c for c in candidates if c.get("department", {}).get("id") == 16]
+            if mag_matches:
+                context_candidates = mag_matches
         
         # B. Faculty Context (Prioritize Selected Faculty)
-        elif faculty_id:
+        if not context_candidates and faculty_id:
             faculty_matches = [c for c in candidates if c.get("department", {}).get("id") == faculty_id]
             if faculty_matches:
                 context_candidates = faculty_matches

@@ -88,11 +88,12 @@ async def get_management_dashboard(
         # Dean level
         from config import HEMIS_ADMIN_TOKEN
         if HEMIS_ADMIN_TOKEN:
-             # [FIX] Map DB ID to HEMIS ID for accurate Admin API filtering
+             # [FIX] Map Local DB ID to correct HEMIS ID for Admin API filtering
              h_fac_id = f_id
-             if f_id == 36: h_fac_id = 4
-             elif f_id == 34: h_fac_id = 2
-             elif f_id == 35: h_fac_id = 43
+             if f_id == 36: h_fac_id = 4 # Jurnalistika
+             elif f_id == 34: h_fac_id = 2 # PR
+             elif f_id == 42: h_fac_id = 35 # SIRTQI
+             elif f_id == 37: h_fac_id = 16 # MAGISTRATURA
              
              # Use Admin API for accurate HEMIS count, but scope it to THIS faculty
              admin_filters = {"_department": h_fac_id}
@@ -206,6 +207,27 @@ async def get_mgmt_faculties(
         "data": [{"id": f[0], "name": f[1]} for f in faculties_data]
     }
 
+@router.get("/education-types")
+async def get_mgmt_education_types(
+    staff: Any = Depends(get_current_staff)
+):
+    """
+    Get available education types based on role.
+    Deans are restricted to Bakalavr.
+    """
+    global_mgmt_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
+    
+    current_role = getattr(staff, 'role', None) or ""
+    is_global = (
+        getattr(staff, 'hemis_role', None) == 'rahbariyat' or 
+        current_role in global_mgmt_roles
+    )
+
+    if is_global:
+        return {"success": True, "data": ["Bakalavr", "Magistr"]}
+    
+    return {"success": True, "data": ["Bakalavr"]}
+
 @router.get("/faculties/{faculty_id}/levels")
 async def get_mgmt_levels(
     faculty_id: int,
@@ -220,13 +242,25 @@ async def get_mgmt_levels(
     
     # Normalize faculty_id for comparison
     request_fac_id = faculty_id
-    if faculty_id == 4: request_fac_id = 36
-    elif faculty_id == 2: request_fac_id = 34
-    elif faculty_id == 43: request_fac_id = 35
+    if faculty_id == 4: request_fac_id = 36 # Jurnalistika
+    elif faculty_id == 2: request_fac_id = 34 # PR
+    elif faculty_id == 35: request_fac_id = 42 # SIRTQI
+    elif faculty_id == 16: request_fac_id = 37 # MAGISTRATURA
     
     if f_id and f_id != request_fac_id:
         raise HTTPException(status_code=403, detail="Sizga boshqa fakultet ma'lumotlari ruxsat berilmagan")
     
+    # [NEW] Scoping Logic for Deans (Restricted to Bakalavr)
+    global_mgmt_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
+    is_global = (
+        getattr(staff, 'hemis_role', None) == 'rahbariyat' or 
+        s_role in global_mgmt_roles
+    )
+    
+    if not is_global and f_id:
+        # Dean level restriction
+        education_type = "Bakalavr"
+
     # Base filter (Use DB ID)
     filters = [Student.faculty_id == request_fac_id, Student.university_id == uni_id]
     
@@ -244,6 +278,7 @@ async def get_mgmt_levels(
     result = await db.execute(
         select(Student.level_name)
         .where(*filters)
+        .where(Student.education_type.ilike(f"%{education_type}%") if education_type else True)
         .distinct()
         .order_by(Student.level_name)
     )
@@ -264,9 +299,10 @@ async def get_mgmt_groups(
     
     # Normalize
     request_fac_id = faculty_id
-    if faculty_id == 4: request_fac_id = 36
-    elif faculty_id == 2: request_fac_id = 34
-    elif faculty_id == 43: request_fac_id = 35
+    if faculty_id == 4: request_fac_id = 36 # Jurnalistika
+    elif faculty_id == 2: request_fac_id = 34 # PR
+    elif faculty_id == 35: request_fac_id = 42 # SIRTQI
+    elif faculty_id == 16: request_fac_id = 37 # MAGISTRATURA
     
     if f_id and f_id != request_fac_id:
         raise HTTPException(status_code=403, detail="Sizga boshqa fakultet ma'lumotlari ruxsat berilmagan")
@@ -315,6 +351,10 @@ async def get_mgmt_specialties(
         getattr(staff, 'hemis_role', None) == 'rahbariyat' or 
         s_role in global_roles
     )
+
+    # [NEW] Enforce Bakalavr for Deans
+    if not is_global and f_id_restricted:
+        education_type = "Bakalavr"
     
     effective_faculty_id = faculty_id
     if not is_global and f_id_restricted:
@@ -322,15 +362,17 @@ async def get_mgmt_specialties(
         
     # [FIX] Translate to HEMIS ID for Admin API
     h_fac_id = effective_faculty_id
-    if effective_faculty_id == 36: h_fac_id = 4
-    elif effective_faculty_id == 34: h_fac_id = 2
-    elif effective_faculty_id == 35: h_fac_id = 43
+    if effective_faculty_id == 36: h_fac_id = 4 # Jurnalistika
+    elif effective_faculty_id == 34: h_fac_id = 2 # PR
+    elif effective_faculty_id == 42: h_fac_id = 35 # SIRTQI
+    elif effective_faculty_id == 37: h_fac_id = 16 # MAGISTRATURA
     
     # [FIX] Translate to DB ID for DB Query
     db_fac_id = effective_faculty_id
     if effective_faculty_id == 4: db_fac_id = 36
     elif effective_faculty_id == 2: db_fac_id = 34
-    elif effective_faculty_id == 43: db_fac_id = 35
+    elif effective_faculty_id == 35: db_fac_id = 42
+    elif effective_faculty_id == 16: db_fac_id = 37
 
     # 1. Try Admin API (University-wide)
     if HEMIS_ADMIN_TOKEN:
@@ -500,8 +542,14 @@ async def search_mgmt_students(
     if uni_id is None:
         return {"success": True, "total_count": 0, "app_users_count": 0, "data": []}
     
-    # [FIX] Smart Filter Mapping (Frontend sends Form as Type)
-    # Corrects "Turi" dropdown sending "Kunduzgi", "Sirtqi" etc.
+    # [FIX] Normalize empty strings from frontend
+    if education_type in ["", "All", "-1", "none"]: education_type = None
+    if education_form in ["", "All", "-1", "none"]: education_form = None
+    if level_name in ["", "All", "-1", "none"]: level_name = None
+    if specialty_name in ["", "All", "-1", "none"]: specialty_name = None
+    if group_number in ["", "All", "-1", "none"]: group_number = None
+
+    # [FIX] Smart Filter Mapping (Frontend sends Form as Type sometimes)
     known_forms = ["Kunduzgi", "Kechki", "Sirtqi", "Masofaviy"]
     if education_type and education_type in known_forms:
         education_form = education_type
@@ -518,6 +566,8 @@ async def search_mgmt_students(
     effective_faculty_id = faculty_id
     if not is_global and f_id_restricted:
         effective_faculty_id = f_id_restricted
+        # [NEW] Enforce Bakalavr for Deans
+        education_type = "Bakalavr"
 
     # 3. Base category filters (University + Dropdowns)
     category_filters = [Student.university_id == uni_id]
@@ -531,12 +581,14 @@ async def search_mgmt_students(
     # Map Known DB IDs to HEMIS IDs
     if effective_faculty_id == 36: hemis_faculty_id = 4
     elif effective_faculty_id == 34: hemis_faculty_id = 2
-    elif effective_faculty_id == 35: hemis_faculty_id = 43
+    elif effective_faculty_id == 42: hemis_faculty_id = 35 # [FIX] SIRTQI
+    elif effective_faculty_id == 37: hemis_faculty_id = 16 # [FIX] MAGISTRATURA
     
     # Map Known HEMIS IDs to DB IDs
     if effective_faculty_id == 4: db_faculty_id = 36
     elif effective_faculty_id == 2: db_faculty_id = 34
-    elif effective_faculty_id == 43: db_faculty_id = 35
+    elif effective_faculty_id == 35: db_faculty_id = 42 # [FIX] SIRTQI
+    elif effective_faculty_id == 16: db_faculty_id = 37 # [FIX] MAGISTRATURA
     
     if db_faculty_id: category_filters.append(Student.faculty_id == db_faculty_id)
     if education_type: category_filters.append(Student.education_type.ilike(f"%{education_type}%"))
@@ -546,8 +598,8 @@ async def search_mgmt_students(
         lvl_db = level_name
         if "-kurs" not in level_name.lower(): lvl_db = f"{level_name}-kurs"
         category_filters.append(Student.level_name.ilike(lvl_db))
-    if specialty_name: category_filters.append(Student.specialty_name == specialty_name)
-    if group_number: category_filters.append(Student.group_number == group_number)
+    if specialty_name: category_filters.append(Student.specialty_name.ilike(f"%{specialty_name}%"))
+    if group_number: category_filters.append(Student.group_number.ilike(f"%{group_number}%"))
 
     # 4. Tutor specific restrictions
     if s_role == StaffRole.TYUTOR:
@@ -578,17 +630,15 @@ async def search_mgmt_students(
         admin_filters = {}
         
         # --- CUSTOM LOGIC FOR THIS UNIVERSITY ---
-        # 1. Handle Magistr -> Department 36 (Magistratura bo'limi)
+        # 1. Handle Magistr -> Department 16 (Magistratura bo'limi)
         start_dept_override = False
         if education_type and "Magistr" in education_type:
-             admin_filters["_department"] = 36
+             admin_filters["_department"] = 16 # [FIX] 
              start_dept_override = True
              
         # 2. Handle Sirtqi -> Department 35 (Sirtqi bo'limi)
-        # Note: If both Magistr and Sirtqi are selected (unlikely combo), Sirtqi overrides here or vice versa.
-        # Let's prioritize Magistr if present, else Sirtqi.
         if not start_dept_override and education_form and "Sirtqi" in education_form:
-             admin_filters["_department"] = 35
+             admin_filters["_department"] = 35 # [FIX]
              start_dept_override = True
 
         # 3. Standard Faculty Filter (only if not overridden)
@@ -940,21 +990,33 @@ async def get_mgmt_groups_simple(
         s_role in global_roles
     )
     
+    # [NEW] Enforce Bakalavr for Deans
+    if not is_global and f_id_restricted:
+        education_type = "Bakalavr"
+
     effective_faculty_id = faculty_id
     if not is_global and f_id_restricted:
         effective_faculty_id = f_id_restricted
         
     # [FIX] Translate to HEMIS ID for Admin API
     h_fac_id = effective_faculty_id
-    if effective_faculty_id == 36: h_fac_id = 4
-    elif effective_faculty_id == 34: h_fac_id = 2
-    elif effective_faculty_id == 35: h_fac_id = 43
+    if effective_faculty_id == 36: h_fac_id = 4 # Jurnalistika
+    elif effective_faculty_id == 34: h_fac_id = 2 # PR
+    elif effective_faculty_id == 42: h_fac_id = 35 # SIRTQI
+    elif effective_faculty_id == 37: h_fac_id = 16 # MAGISTRATURA
     
     # [FIX] Translate to DB ID for DB Query
     db_fac_id = effective_faculty_id
     if effective_faculty_id == 4: db_fac_id = 36
     elif effective_faculty_id == 2: db_fac_id = 34
-    elif effective_faculty_id == 43: db_fac_id = 35
+    elif effective_faculty_id == 35: db_fac_id = 42
+    elif effective_faculty_id == 16: db_fac_id = 37
+    
+    # [FIX] Smart Normalize empty strings for group search
+    if education_type in ["", "All", "-1", "none"]: education_type = None
+    if education_form in ["", "All", "-1", "none"]: education_form = None
+    if specialty_name in ["", "All", "-1", "none"]: specialty_name = None
+    if level_name in ["", "All", "-1", "none"]: level_name = None
 
     # 1. Try Admin API (University-wide)
     if HEMIS_ADMIN_TOKEN:
@@ -1365,12 +1427,18 @@ async def get_mgmt_documents_archive(
     from database.models import UserDocument, UserCertificate
     
     # 1. Security & Role Resolution
-    global_mgmt_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR]
+    dean_level_roles = [StaffRole.DEKAN, StaffRole.DEKAN_ORINBOSARI, StaffRole.DEKAN_YOSHLAR, StaffRole.DEKANAT]
+    global_mgmt_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
+    
     staff_role = getattr(staff, 'role', None) or getattr(staff, 'hemis_role', None)
-    is_mgmt = staff_role == 'rahbariyat' or staff_role in global_mgmt_roles or staff_role == StaffRole.TYUTOR
+    is_mgmt = staff_role == 'rahbariyat' or staff_role in global_mgmt_roles or staff_role == StaffRole.TYUTOR or staff_role in dean_level_roles
     
     if not is_mgmt:
         raise HTTPException(status_code=403, detail="Faqat rahbariyat uchun")
+
+    # [NEW] Enforce Bakalavr for Deans
+    if staff_role in dean_level_roles:
+        education_type = "Bakalavr"
         
     uni_id = getattr(staff, 'university_id', None)
     if not uni_id:
@@ -1389,10 +1457,18 @@ async def get_mgmt_documents_archive(
         if not group_number and tutor_group_names:
             group_number = tutor_group_names[0] # Simplification for now
 
+    # [FIX] Normalize empty strings from frontend
+    if education_type in ["", "All", "-1", "none"]: education_type = None
+    if education_form in ["", "All", "-1", "none"]: education_form = None
+    if level_name in ["", "All", "-1", "none"]: level_name = None
+    if specialty_name in ["", "All", "-1", "none"]: specialty_name = None
+    if group_number in ["", "All", "-1", "none"]: group_number = None
+
     # [FIX] Translate HEMIS ID to DB ID
-    if faculty_id == 4: faculty_id = 36
-    elif faculty_id == 2: faculty_id = 34
-    elif faculty_id == 43: faculty_id = 35
+    if faculty_id == 4: faculty_id = 36 # Jurnalistika
+    elif faculty_id == 2: faculty_id = 34 # PR
+    elif faculty_id == 35: faculty_id = 42 # SIRTQI
+    elif faculty_id == 16: faculty_id = 37 # MAGISTRATURA
 
     # 3. Base category filters
     category_filters = [Student.university_id == uni_id]
@@ -1553,9 +1629,18 @@ async def export_mgmt_documents_zip(
     from aiogram.types import BufferedInputFile
     
     # 1. Security Check
-    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) == 'rahbariyat'
+    dean_level_roles = [StaffRole.DEKAN, StaffRole.DEKAN_ORINBOSARI, StaffRole.DEKAN_YOSHLAR, StaffRole.DEKANAT]
+    global_mgmt_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
+    
+    staff_role = getattr(staff, 'role', None) or getattr(staff, 'hemis_role', None)
+    is_mgmt = staff_role == 'rahbariyat' or staff_role in global_mgmt_roles or staff_role in dean_level_roles
+    
     if not is_mgmt:
         raise HTTPException(status_code=403, detail="Faqat rahbariyat uchun")
+
+    # [NEW] Enforce Bakalavr for Deans
+    if staff_role in dean_level_roles:
+        education_type = "Bakalavr"
         
     uni_id = getattr(staff, 'university_id', None)
     f_id = getattr(staff, 'faculty_id', None)
@@ -1742,6 +1827,10 @@ async def get_management_activities(
     elif f_id and role not in ['rahbariyat', 'owner', 'developer', 'rektor', 'prorektor', 'yoshlar_yetakchisi']:
         # Dekanat/Tyutor restriction
         stmt = stmt.where(Student.faculty_id == f_id)
+        # [NEW] Enforce Bakalavr Only for Deans
+        dean_and_tutor_roles = ['dekan', 'dekan_orinbosari', 'dekan_yoshlar', 'dekanat', 'tyutor']
+        if role in dean_and_tutor_roles:
+             stmt = stmt.where(Student.education_type.ilike("Bakalavr"))
 
     if status:
         stmt = stmt.where(UserActivity.status == status)
