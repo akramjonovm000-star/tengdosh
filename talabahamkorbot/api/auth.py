@@ -41,10 +41,14 @@ async def login_via_hemis(
             demo_login = "demo.tutor"
             full_name = "Demo Tyutor"
             role = "tutor"
-        elif login_clean == "tyutor_demo":
+        elif login_clean == "tyutor_demo" and pass_clean == "123":
             demo_login = "demo.tutor_new"
             full_name = "Yangi Demo Tyutor"
             role = "tutor"
+        elif login_clean == "dekanat" and pass_clean == "123":
+            demo_login = "demo.dekanat"
+            full_name = "Dekanat (Demo)"
+            role = "dekan"
     elif login_clean == "sanjar_botirovich" and pass_clean == "102938":
         demo_login = "demo.rahbar"
         full_name = "Sanjar Botirovich"
@@ -57,7 +61,7 @@ async def login_via_hemis(
     logger.debug(f"DEBUG AUTH: demo_login='{demo_login}'")
             
     if demo_login:
-        if role in ["tutor", "tyutor", "rahbariyat"]:
+        if role in ["tutor", "tyutor", "rahbariyat", "dekan"]:
             # Demo Staff Logic
             from database.models import Staff, StaffRole
             
@@ -68,6 +72,11 @@ async def login_via_hemis(
                  if not demo_staff:
                      # Fallback search by name if ID changed (though unlikely)
                      demo_staff = await db.scalar(select(Staff).where(Staff.full_name.ilike("%Nazokat%")))
+            elif demo_login == "demo.dekanat":
+                 # Fetch actual user 80
+                 demo_staff = await db.scalar(select(Staff).where(Staff.id == 80))
+                 if not demo_staff:
+                     demo_staff = await db.scalar(select(Staff).where(Staff.username == "dekanat"))
             
             if not demo_staff:     
                 # Check by ID OR JSHSHIR to avoid IntegrityError (Standard Demo Logic)

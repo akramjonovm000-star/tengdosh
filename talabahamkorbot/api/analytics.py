@@ -51,7 +51,7 @@ async def get_dashboard_stats(
     """
     Get KPI stats for Social Activities (UserActivity).
     """
-    if staff.role not in ['rahbariyat', 'owner', 'developer', 'rektor', 'prorektor', 'dekanat', 'tyutor']:
+    if staff.role not in ['rahbariyat', 'owner', 'developer', 'rektor', 'prorektor', 'yoshlar_prorektor', 'dekan', 'dekan_orinbosari', 'dekan_yoshlar', 'dekanat', 'tyutor']:
         raise HTTPException(status_code=403, detail="Ruxsat etilmagan")
 
     # Base query for filtering
@@ -61,7 +61,7 @@ async def get_dashboard_stats(
     
     # Base stmt for scoping
     def apply_scoping(stmt_obj):
-        global_roles = ['owner', 'developer', 'rahbariyat', 'rektor', 'prorektor', 'yoshlar_yetakchisi', 'yoshlar_ittifoqi']
+        global_roles = ['owner', 'developer', 'rahbariyat', 'rektor', 'prorektor', 'yoshlar_prorektor', 'yoshlar_yetakchisi', 'yoshlar_ittifoqi']
         if uni_id:
             stmt_obj = stmt_obj.where(Student.university_id == uni_id)
         elif role not in global_roles:

@@ -1629,3 +1629,121 @@ async def owner_process_banner_link(message: Message, state: FSMContext, session
         parse_mode="HTML"
     )
     await state.clear()
+
+
+# =============================================================
+#  📌 REPLY KEYBOARD HANDLERS (TEXT COMMANDS)
+# =============================================================
+
+@router.message(F.text == "🏛 OTM va fakultetlar")
+async def msg_owner_universities(message: Message, state: FSMContext, session: AsyncSession):
+    await state.clear()
+    staff = await _ensure_owner(message, session)
+    if not staff: return
+
+    result = await session.execute(select(University).order_by(University.id))
+    universities = result.scalars().all()
+
+    if not universities:
+        await message.answer(
+            "🏛 OTMlar ro'yxati bo'sh.\n\n"
+            "Yangi OTM qo'shish uchun <b>uni_code</b> kiriting.",
+            parse_mode="HTML",
+            reply_markup=get_back_inline_kb("owner_menu")
+        )
+        await state.set_state(OwnerStates.entering_uni_code)
+        return
+
+    text = "🏛 <b>Mavjud universitetlar:</b>\n\n"
+    for i, uni in enumerate(universities, 1):
+        text += f"{i}. {uni.name} (<code>{uni.uni_code}</code>)\n"
+
+    text += "\nSozlash uchun raqamlardan birini tanlang:"
+
+    await message.answer(
+        text,
+        parse_mode="HTML",
+        reply_markup=get_numbered_universities_kb(universities)
+    )
+
+@router.message(F.text == "👥 Xodim / talaba importi")
+async def msg_owner_import(message: Message, state: FSMContext, session: AsyncSession):
+    staff = await _ensure_owner(message, session)
+    if not staff: return
+
+    await state.set_state(OwnerStates.main_menu)
+    await message.answer(
+        "👥 Xodimlar va talabalarni import qilish bo‘limi.\n\n"
+        "Hozircha import funksiyasi '🏛 OTM va fakultetlar' bo‘limi orqali amalga oshiriladi.",
+        reply_markup=get_back_inline_kb("owner_menu"),
+    )
+
+@router.message(F.text == "📢 Umumiy e'lon yuborish")
+async def msg_owner_broadcast(message: Message, state: FSMContext, session: AsyncSession):
+    staff = await _ensure_owner(message, session)
+    if not staff: return
+
+    await state.set_state(OwnerStates.broadcasting_message)
+    await message.answer(
+        "📢 <b>Keng qamrovli xabar (Broadcast)</b>\n\n"
+        "Barcha foydalanuvchilarga (talaba va xodimlarga) xabar yuboriladi.\n"
+        "Matn, rasm, video yoki hujjat yuborishingiz mumkin.\n\n"
+        "👇 Xabarni yuboring:",
+        reply_markup=get_back_inline_kb("owner_ann_menu"),
+        parse_mode="HTML"
+    )
+
+@router.message(F.text == "👨‍💻 Developerlar boshqaruvi")
+async def msg_owner_dev(message: Message, state: FSMContext, session: AsyncSession):
+    staff = await _ensure_owner(message, session)
+    if not staff: return
+
+    user_id = message.from_user.id
+    # Check privileges
+    is_privileged = (user_id == OWNER_TELEGRAM_ID or staff.role in [StaffRole.OWNER, StaffRole.DEVELOPER])
+
+    result = await session.execute(
+        select(Staff).where(Staff.role == StaffRole.DEVELOPER, Staff.is_active == True)
+    )
+    developers = result.scalars().all()
+
+    text = "👨‍💻 <b>Developerlar (Dasturchilar) ro'yxati</b>\n\n"
+    if not developers:
+        text += "Hozircha developerlar yo'q."
+    else:
+        for i, dev in enumerate(developers, 1):
+            text += f"{i}. {dev.full_name} (ID: {dev.telegram_id})\n"
+
+    await message.answer(
+        text,
+        reply_markup=get_owner_developers_kb(developers) if is_privileged else get_back_inline_kb("owner_menu"),
+        parse_mode="HTML"
+    )
+    await state.clear()
+
+@router.message(F.text == "⚙️ Bot sozlamalari")
+async def msg_owner_settings(message: Message, state: FSMContext, session: AsyncSession):
+    staff = await _ensure_owner(message, session)
+    if not staff: return
+
+    await message.answer(
+        "⚙️ Bot umumiy sozlamalari.\n\n"
+        "Keyingi bosqichda real sozlamalar bilan to‘ldiriladi.",
+        reply_markup=get_back_inline_kb("owner_menu"),
+    )
+    await state.set_state(OwnerStates.main_menu)
+
+
+@router.message(F.text == "🏠 Bosh menyu")
+async def msg_owner_main_menu(message: Message, state: FSMContext, session: AsyncSession):
+    await state.set_state(OwnerStates.main_menu)
+    text = await get_owner_dashboard_text(session)
+    # We send Inline Keyboard to transition user to the new standard, 
+    # but since they clicked a Reply button, they might be confused.
+    # Ideally we should send the Reply Keyboard again if we want to support it fully.
+    # But for now, let's just make it work.
+    await message.answer(
+        text,
+        reply_markup=get_owner_main_menu_inline_kb(),
+        parse_mode="HTML"
+    )

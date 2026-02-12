@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc, or_
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
 
 from database.db_connect import get_db
-from database.models import Student, StudentFeedback, Faculty, Staff, FeedbackReply
+from database.models import Student, StudentFeedback, Faculty, Staff, FeedbackReply, StaffRole
 from api.dependencies import get_current_staff, get_db
 from pydantic import BaseModel
 
@@ -17,9 +17,14 @@ async def get_appeals_stats(
     db: AsyncSession = Depends(get_db)
 ):
     # 1. Auth Check
-    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) in ['rahbariyat', 'admin', 'owner']
+    dean_level_roles = [StaffRole.DEKAN, StaffRole.DEKAN_ORINBOSARI, StaffRole.DEKAN_YOSHLAR, StaffRole.DEKANAT]
+    global_mgmt_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
+    
+    current_role = getattr(staff, 'role', None) or ""
+    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or current_role in global_mgmt_roles or current_role in dean_level_roles
+    
     if not is_mgmt:
-        raise HTTPException(status_code=403, detail="Faqat rahbariyat uchun")
+        raise HTTPException(status_code=403, detail="Faqat rahbariyat yoki dekanat uchun")
         
     uni_id = getattr(staff, 'university_id', None)
     if not uni_id:
@@ -28,7 +33,13 @@ async def get_appeals_stats(
     
     # 2. Overall Counts
     stmt = select(StudentFeedback.status, func.count(StudentFeedback.id)).join(Student)\
-        .where(Student.university_id == uni_id).group_by(StudentFeedback.status)
+        .where(Student.university_id == uni_id)
+        
+    f_id = getattr(staff, 'faculty_id', None)
+    if current_role in dean_level_roles and f_id:
+        stmt = stmt.where(Student.faculty_id == f_id)
+        
+    stmt = stmt.group_by(StudentFeedback.status)
     rows = (await db.execute(stmt)).all()
     
     counts = {"pending": 0, "processing": 0, "resolved": 0, "replied": 0}
@@ -111,7 +122,11 @@ async def get_appeals_list(
     
     query = select(StudentFeedback).join(Student).where(Student.university_id == uni_id)
     
-    if status:
+    # [NEW] Faculty Scoping for Deans
+    f_id = getattr(staff, 'faculty_id', None)
+    if current_role in dean_level_roles and f_id:
+        query = query.where(Student.faculty_id == f_id)
+    elif faculty:
         if status == 'active': # Custom filter for Pending+Processing
              query = query.where(StudentFeedback.status.in_(['pending', 'processing']))
         # Special case for "resolved" to include "replied"
@@ -173,13 +188,21 @@ async def get_appeal_detail(
 
     stmt = (
         select(StudentFeedback)
+        .join(Student)
         .where(StudentFeedback.id == id)
+        .where(Student.university_id == uni_id)
         .options(
             selectinload(StudentFeedback.replies), 
             selectinload(StudentFeedback.children),
             selectinload(StudentFeedback.student)
         )
     )
+    
+    # [NEW] Faculty Scoping for Deans
+    f_id = getattr(staff, 'faculty_id', None)
+    if current_role in dean_level_roles and f_id:
+        stmt = stmt.where(Student.faculty_id == f_id)
+        
     appeal = await db.scalar(stmt)
     
     if not appeal:

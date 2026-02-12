@@ -2,7 +2,7 @@ from fastapi import Header, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from database.db_connect import AsyncSessionLocal
-from database.models import TgAccount, Student, User
+from database.models import TgAccount, Student, User, StudentNotification
 
 async def get_db():
     async with AsyncSessionLocal() as session:

@@ -33,12 +33,20 @@ async def get_management_dashboard(
     """
     Get university-wide statistics for management dashboard.
     """
-    # 1. Role Check (Explicit for Rahbariyat, Tyutor, Rector, and Prorektor)
+    # 1. Role Check (Explicit for Rahbariyat, Tyutor, Rector, Deans, and Prorektor)
+    dean_level_roles = [StaffRole.DEKAN, StaffRole.DEKAN_ORINBOSARI, StaffRole.DEKAN_YOSHLAR, StaffRole.DEKANAT]
     global_mgmt_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR]
-    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) in global_mgmt_roles or getattr(staff, 'role', None) == StaffRole.TYUTOR
+    
+    current_role = getattr(staff, 'role', None) or ""
+    is_mgmt = (
+        getattr(staff, 'hemis_role', None) == 'rahbariyat' or 
+        current_role in global_mgmt_roles or 
+        current_role in dean_level_roles or
+        current_role == StaffRole.TYUTOR
+    )
     
     if not is_mgmt:
-        raise HTTPException(status_code=403, detail="Faqat rahbariyat, tyutor yoki rektorat uchun")
+        raise HTTPException(status_code=403, detail="Faqat rahbariyat, dekanat yoki tyutorlar uchun")
 
     uni_id = getattr(staff, 'university_id', None)
     if not uni_id:
@@ -494,13 +502,26 @@ async def search_mgmt_students(
         education_form = education_type
         education_type = None
     
-    # 1. Base category filters (University + Dropdowns)
+    # 1. Scoping Logic
+    s_role = getattr(staff, 'role', None) or ""
+    f_id_restricted = getattr(staff, 'faculty_id', None)
+    global_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
+    
+    is_global = s_role in global_roles or getattr(staff, 'hemis_role', None) == 'rahbariyat'
+    
+    # 2. Determine effective faculty filter
+    effective_faculty_id = faculty_id
+    if not is_global and f_id_restricted:
+        effective_faculty_id = f_id_restricted
+
+    # 3. Base category filters (University + Dropdowns)
     category_filters = [Student.university_id == uni_id]
+    
     # Custom Faculty ID Mapping for Local DB (Admin to Local)
-    db_faculty_id = faculty_id
-    if faculty_id == 4: db_faculty_id = 36   # Jurnalistika
-    elif faculty_id == 2: db_faculty_id = 34 # PR
-    elif faculty_id == 43: db_faculty_id = 35 # Xalqaro
+    db_faculty_id = effective_faculty_id
+    if effective_faculty_id == 4: db_faculty_id = 36   # Jurnalistika
+    elif effective_faculty_id == 2: db_faculty_id = 34 # PR
+    elif effective_faculty_id == 43: db_faculty_id = 35 # Xalqaro
     
     if db_faculty_id: category_filters.append(Student.faculty_id == db_faculty_id)
     if education_type: category_filters.append(Student.education_type.ilike(f"%{education_type}%"))
@@ -509,20 +530,14 @@ async def search_mgmt_students(
     if specialty_name: category_filters.append(Student.specialty_name == specialty_name)
     if group_number: category_filters.append(Student.group_number == group_number)
 
-    # 1a. Tutor and Dean specific restrictions
-    s_role = getattr(staff, 'role', None)
-    f_id = getattr(staff, 'faculty_id', None)
-    
-    if s_role == 'tyutor':
+    # 4. Tutor specific restrictions
+    if s_role == StaffRole.TYUTOR:
         tg_stmt = select(TutorGroup.group_number).where(TutorGroup.tutor_id == staff.id)
         tg_res = await db.execute(tg_stmt)
         allowed_groups = tg_res.scalars().all()
         category_filters.append(Student.group_number.in_(allowed_groups))
-    elif f_id:
-        # Deans are restricted to their faculty
-        category_filters.append(Student.faculty_id == f_id)
 
-    # 2. Search filters (Dropdowns + Query)
+    # 5. Search filters (Dropdowns + Query)
     search_filters = list(category_filters)
     if query:
         search_filters.append(
