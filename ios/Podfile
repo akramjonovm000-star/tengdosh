@@ -36,6 +36,10 @@ target 'Runner' do
   pod 'SDWebImageWebPCoder', :modular_headers => true
   pod 'libwebp', :modular_headers => true
   
+  # Fix GoogleUtilities/Firebase header issues
+  pod 'GoogleUtilities', :modular_headers => true
+  pod 'FirebaseCore', :modular_headers => true
+  
   target 'RunnerTests' do
     inherit! :search_paths
   end
