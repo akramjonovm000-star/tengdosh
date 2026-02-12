@@ -842,6 +842,42 @@ class DataService {
     return false;
   }
 
+  // Update Profile (Phone, Email, Password)
+  Future<bool> updateProfile(String phone, String email, String? newPassword) async {
+    try {
+      final Map<String, dynamic> body = {
+        'phone': phone,
+        'email': email,
+      };
+      if (newPassword != null && newPassword.isNotEmpty) {
+        body['password'] = newPassword;
+      }
+      
+      final response = await _post(
+        '${ApiConstants.backendUrl}/student/profile',
+        body: body,
+      );
+
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) {
+          // If password changed, update locally stored password too
+          if (newPassword != null && newPassword.isNotEmpty) {
+             await _authService.updateSavedPassword(newPassword);
+          }
+          return true;
+        }
+      } else {
+        final body = json.decode(response.body);
+        throw Exception(body['detail'] ?? "Xatolik yuz berdi");
+      }
+    } catch (e) {
+      debugPrint("Update Profile Error: $e");
+      rethrow;
+    }
+    return false;
+  }
+
 
   // 12. Get Detailed Grades (O'zlashtirish)
   Future<List<dynamic>> getGrades({String? semester, bool forceRefresh = false}) async {

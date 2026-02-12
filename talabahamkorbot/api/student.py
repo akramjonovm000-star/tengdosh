@@ -571,3 +571,59 @@ async def update_password(
     await db.commit()
     
     return {"success": True, "message": "Parol muvaffaqiyatli o'zgartirildi"}
+
+
+class ProfileUpdateSchema(BaseModel):
+    phone: str
+    email: str
+    password: str = None # Optional
+
+@router.post("/profile")
+async def update_profile(
+    data: ProfileUpdateSchema,
+    student: Student = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Update Student Profile (Phone, Email, Password) on HEMIS and Local DB.
+    """
+    from services.hemis_service import HemisService
+    from services.university_service import UniversityService
+    from fastapi import HTTPException
+    
+    base_url = UniversityService.get_api_url(student.hemis_login)
+
+    # 1. Prepare Data for HEMIS
+    update_data = {
+        "phone": data.phone,
+        "email": data.email
+    }
+    
+    # If password is provided, add it to payload
+    if data.password and len(data.password) > 0:
+        if len(data.password) < 6:
+            raise HTTPException(status_code=400, detail="Parol kamida 6 belgidan iborat bo'lishi kerak")
+        update_data["password"] = data.password
+        # HEMIS might require password confirmation field too
+        update_data["confirmation"] = data.password 
+
+    # 2. Call Hemis API
+    success, error = await HemisService.update_account(student.hemis_token, update_data, base_url=base_url)
+    
+    if not success:
+         raise HTTPException(status_code=400, detail=f"Hemisda ma'lumotlarni yangilab bo'lmadi: {error}")
+
+    # 3. Handle Password Change (Re-auth)
+    if data.password and len(data.password) > 0:
+        new_token, error_auth = await HemisService.authenticate(student.hemis_login, data.password, base_url=base_url)
+        if new_token:
+            student.hemis_token = new_token
+            student.hemis_password = data.password
+    
+    # 4. Update Local DB
+    student.phone = data.phone
+    student.email = data.email
+    
+    await db.commit()
+    
+    return {"success": True, "message": "Ma'lumotlar muvaffaqiyatli yangilandi"}

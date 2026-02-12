@@ -141,6 +141,36 @@ class HemisService:
             return []
 
     @staticmethod
+    async def update_account(token: str, data: dict, base_url: Optional[str] = None):
+        """
+        Update user profile data (phone, email, password) on HEMIS.
+        Endpoint: POST /account/update
+        """
+        client = await HemisService.get_client()
+        final_base = base_url or HemisService.BASE_URL
+        url = f"{final_base}/account/update"
+        
+        try:
+            response = await HemisService.fetch_with_retry(
+                client, "POST", url, 
+                headers=HemisService.get_headers(token), 
+                json=data
+            )
+            
+            if response.status_code == 200:
+                res_data = response.json()
+                if res_data.get("success") is False:
+                     return False, res_data.get("error", "Xatolik yuz berdi")
+                return True, None
+            elif response.status_code == 422: # Validation Error
+                return False, "Ma'lumotlar noto'g'ri (Parol min 6 belgi)"
+            else:
+                return False, f"Server xatosi: {response.status_code}"
+        except Exception as e:
+            logger.error(f"Update Account Error: {e}")
+            return False, str(e)
+
+    @staticmethod
     async def change_password(token: str, new_password: str, base_url: Optional[str] = None):
         client = await HemisService.get_client()
         final_base = base_url or HemisService.BASE_URL

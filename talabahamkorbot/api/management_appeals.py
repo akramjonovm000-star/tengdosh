@@ -100,8 +100,8 @@ async def get_appeals_stats(
         top_targets.sort(key=lambda x: x["count"], reverse=True)
         
         return {
-            "total": total,
-            "counts": counts,
+            "total_active": counts["pending"] + counts["processing"],
+            "total_resolved": counts["resolved"] + counts["replied"],
             "faculty_performance": faculty_performance,
             "top_targets": top_targets
         }
@@ -110,8 +110,10 @@ async def get_appeals_stats(
         import logging
         logger = logging.getLogger(__name__)
         logger.error(f"APPEALS_STATS ERROR: {e}")
-        logger.error(traceback.format_exc())
-        return {"total": 0, "counts": {}, "faculty_performance": [], "top_targets": []}
+        print(f"APPEALS_STATS ERROR: {e}") # Print to stdout for journalctl
+        traceback.print_exc()
+        # Expose error to user temporarily for debugging
+        raise HTTPException(status_code=500, detail=f"Murojaatlarni yuklab bo'lmadi: {str(e)}")
 
 @router.get("/list", response_model=List[AppealItem])
 async def get_appeals_list(
