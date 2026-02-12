@@ -765,8 +765,11 @@ async def feedback_reappeal(call: CallbackQuery, state: FSMContext):
 from database.models import PendingUpload
 
 @router.message(FeedbackStates.WAIT_FOR_APP_FILE)
-async def debug_mobile_feedback_upload(message: Message, state: FSMContext):
-    logger.info(f"🚨 DEBUG: WAIT_FOR_APP_FILE state hit! content_type={message.content_type}, user={message.from_user.id}")
+async def debug_mobile_feedback_upload(message: Message, state: FSMContext, session: AsyncSession):
+    user_id = message.from_user.id
+    content_type = message.content_type
+    
+    logger.info(f"🚨 DEBUG: WAIT_FOR_APP_FILE state hit! content_type={content_type}, user={user_id}")
     # If it's a photo/doc/video, it should have been caught by the next handler if it was before this one.
     # But if this one is AFTER, it will catch everything.
     # Let's move the main handler ABOVE this or just add logging inside the main one.

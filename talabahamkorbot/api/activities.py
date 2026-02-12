@@ -195,3 +195,67 @@ async def create_activity(
         "status": new_act.status,
         "images": image_response
     }
+
+
+@router.delete("/{activity_id}")
+async def delete_activity(
+    activity_id: int,
+    student: Student = Depends(get_premium_student),
+    db: AsyncSession = Depends(get_db)
+):
+    """Delete a specific activity."""
+    act = await db.get(UserActivity, activity_id)
+    if not act:
+        raise HTTPException(status_code=404, detail="Activity not found")
+        
+    if act.student_id != student.id:
+        raise HTTPException(status_code=403, detail="Not your activity")
+        
+    # Delete images from DB (Cascade should handle it if configured, but let's be safe)
+    # SQLAlchemy relationship cascade="all, delete" usually handles this if model is set up right.
+    # UserActivity model -> images = relationship(..., cascade="all, delete-orphan")
+    
+    await db.delete(act)
+    await db.commit()
+    
+    return {"status": "deleted", "id": activity_id}
+
+
+@router.patch("/{activity_id}")
+async def update_activity(
+    activity_id: int,
+    category: str = Form(None),
+    name: str = Form(None),
+    description: str = Form(None),
+    date: str = Form(None),
+    student: Student = Depends(get_premium_student),
+    db: AsyncSession = Depends(get_db)
+):
+    """Update activity details (Partial)."""
+    act = await db.get(UserActivity, activity_id)
+    if not act:
+        raise HTTPException(status_code=404, detail="Activity not found")
+        
+    if act.student_id != student.id:
+        raise HTTPException(status_code=403, detail="Not your activity")
+        
+    if category: act.category = category
+    if name: act.name = name
+    if description: act.description = description
+    if date: act.date = date
+    
+    # Optional: Reset status to pending if it was rejected
+    if act.status == "rejected":
+        act.status = "pending"
+        
+    await db.commit()
+    await db.refresh(act)
+    
+    return {
+        "id": act.id,
+        "category": act.category,
+        "name": act.name,
+        "description": act.description,
+        "date": act.date,
+        "status": act.status
+    }

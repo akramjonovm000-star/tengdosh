@@ -111,6 +111,12 @@ class ActivityAddStates(StatesGroup):
     CONFIRM = State()
 
 
+class ActivityEditStates(StatesGroup):
+    waiting_name = State()
+    waiting_description = State()
+    waiting_date = State()
+
+
 class DocumentAddStates(StatesGroup):
     TITLE = State() # NEW
     CATEGORY = State()

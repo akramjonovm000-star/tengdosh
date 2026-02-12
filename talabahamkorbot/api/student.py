@@ -107,6 +107,7 @@ async def get_my_profile(
         parts = fn.split()
         data['last_name'] = parts[0].title()
         data['first_name'] = parts[1].title()
+        data['short_name'] = parts[1].title()
     else:
         # Fallback
         data['first_name'] = student.short_name or student.full_name
