@@ -2148,5 +2148,4 @@ class DataService {
     return [];
   }
 
-  }
 }
