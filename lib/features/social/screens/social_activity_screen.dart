@@ -18,8 +18,9 @@ import 'package:talabahamkor_mobile/features/social/models/social_activity.dart'
 class AddActivitySheet extends StatefulWidget {
   final List<String> categories;
   final Function(SocialActivity, String?) onSave;
+  final SocialActivity? activity; // For Edit Mode
 
-  const AddActivitySheet({super.key, required this.categories, required this.onSave});
+  const AddActivitySheet({super.key, required this.categories, required this.onSave, this.activity});
 
   @override
   State<AddActivitySheet> createState() => _AddActivitySheetState();
@@ -40,8 +41,55 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
   Timer? _pollingTimer;
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.activity != null) {
+      // Edit Mode Initialization
+      _step = 2; // Direct to Form
+      // Map category back to UI label if needed, or simple usage
+      // Here assuming category is key, might need reverse mapping or just use capital
+      // For simplicity, let's use the activity category directly, or try to match one from widget.categories
+      _selectedCategory = _matchCategory(widget.activity!.category);
+      
+      _titleController.text = widget.activity!.title;
+      _descController.text = widget.activity!.description;
+      try {
+        _selectedDate = DateFormat('dd.MM.yyyy').parse(widget.activity!.date);
+      } catch (_) {
+        _selectedDate = DateTime.now();
+      }
+      
+      // Images for edit?
+      // Currently API doesn't support adding/removing images in PATCH easily without complex logic.
+      // We will disable image upload for Edit Mode in this MVP or show existing count.
+      _uploadedCount = widget.activity!.imageUrls.length;
+    }
+  }
+
+  String _matchCategory(String key) {
+    // Simple reverse toggle or just Capitalize
+    // Actually our UI uses specific labels ("To'garak", etc.)
+    // We should try to find matching label from widget.categories
+    // But widget.categories has "To'garak", "Yutuqlar" etc.
+    // keys are "togarak", "yutuqlar"
+    // Let's do a best effort match
+    final map = {
+      "togarak": "To'garak",
+      "marifat": "Ma'rifat darslari",
+      "madaniy": "Madaniy tashriflar",
+      "sport": "Sport",
+      "volontyorlik": "Volontyorlik",
+      "yutuqlar": "Yutuqlar",
+      "boshqa": "Boshqa"
+    };
+    return map[key.toLowerCase()] ?? "Boshqa";
+  }
+
+  @override
   void dispose() {
     _pollingTimer?.cancel();
+    _titleController.dispose();
+    _descController.dispose();
     super.dispose();
   }
 
@@ -98,6 +146,8 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
 
   @override
   Widget build(BuildContext context) {
+    bool isEdit = widget.activity != null;
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
       decoration: const BoxDecoration(
@@ -114,7 +164,7 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Row(
               children: [
-                if (_step == 2) ...[
+                if (_step == 2 && !isEdit) ...[
                   IconButton(
                     icon: const Icon(Icons.arrow_back), 
                     onPressed: () => setState(() => _step = 1),
@@ -125,7 +175,9 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
                 ],
                 Expanded(
                   child: Text(
-                    _step == 1 ? "Kategoriyani tanlang" : "Ma'lumotlarni kiriting",
+                    isEdit 
+                      ? "Faollikni tahrirlash"
+                      : (_step == 1 ? "Kategoriyani tanlang" : "Ma'lumotlarni kiriting"),
                     style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -141,7 +193,7 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
           const Divider(),
           
           Expanded(
-            child: _step == 1 ? _buildCategoryStep() : _buildFormStep(),
+            child: _step == 1 ? _buildCategoryStep() : _buildFormStep(isEdit),
           ),
         ],
       ),
@@ -194,7 +246,7 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
     );
   }
 
-  Widget _buildFormStep() {
+  Widget _buildFormStep(bool isEdit) {
     String titleLabel = "Faollik nomi";
     String titleHint = "Nomini kiriting...";
     String descLabel = "Faollik tavsifi";
@@ -287,7 +339,19 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
                 ),
                 const SizedBox(height: 16),
                 
-                _buildImageUploadBlock(),
+                // Hide Image Upload block in Edit Mode (simplification)
+                if (!isEdit) _buildImageUploadBlock()
+                else 
+                   Container(
+                     padding: const EdgeInsets.all(12),
+                     decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(8)),
+                     child: const Row(children: [
+                        Icon(Icons.info_outline, color: Colors.grey),
+                        SizedBox(width: 8),
+                        Expanded(child: Text("Rasmlarni tahrirlash uchun o'chirib qayta yarating."))
+                     ]),
+                   ),
+
                 const SizedBox(height: 16),
                 
                 GestureDetector(
@@ -341,7 +405,7 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
                   backgroundColor: AppTheme.primaryBlue,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
-                child: const Text("Saqlash", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                child: Text(isEdit ? "Yangilash" : "Saqlash", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
               ),
             ),
           ),
@@ -467,20 +531,20 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
       return;
     }
     
-    // Check if image uploaded
-    if (_uploadedCount == 0) {
+    // Check if image uploaded (ONLY FOR NEW)
+    if (widget.activity == null && _uploadedCount == 0) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Iltimos, avval rasm yuklang!")));
       return;
     }
 
     final newActivity = SocialActivity(
-      id: "0", 
+      id: widget.activity?.id ?? "0", 
       category: _selectedCategory!,
       title: _titleController.text,
       description: _descController.text,
       date: DateFormat('dd.MM.yyyy').format(_selectedDate!),
-      status: "pending",
-      imageUrls: [], // No local images
+      status: widget.activity?.status ?? "pending",
+      imageUrls: widget.activity?.imageUrls ?? [],
     );
 
     widget.onSave(newActivity, _uploadSessionId);
@@ -569,6 +633,8 @@ class _SocialActivityScreenState extends State<SocialActivityScreen> {
                       return ActivityCard(
                         activity: _getFilteredActivities()[index],
                         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SocialActivityDetailScreen(activity: _getFilteredActivities()[index]))),
+                        onEdit: (act) => _showEditSheet(act),
+                        onDelete: (act) => _deleteActivity(act),
                       );
                     },
                   ),
@@ -990,13 +1056,92 @@ class _SocialActivityScreenState extends State<SocialActivityScreen> {
       ),
     );
   }
+  void _showEditSheet(SocialActivity activity) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => AddActivitySheet(
+        categories: _categories.where((c) => c != "Barchasi").toList(),
+        activity: activity,
+        onSave: (updatedActivity, _) async {
+           try {
+             String apiCat = _getCategoryKey(updatedActivity.category);
+             
+             final res = await Provider.of<DataService>(context, listen: false).editActivity(
+                updatedActivity.id,
+                apiCat,
+                updatedActivity.title,
+                updatedActivity.description,
+                updatedActivity.date
+             );
+             
+             if (!mounted) return;
+             if (res != null) {
+               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faollik yangilandi!')));
+               // Update locally
+               setState(() {
+                 final index = _activities.indexWhere((a) => a.id == updatedActivity.id);
+                 if (index != -1) {
+                   _activities[index] = res; // Use returned object directly which has correct image urls etc
+                 } else {
+                   _loadActivities();
+                 }
+               });
+             }
+           } catch (e) {
+             if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Xatolik: $e')));
+           }
+        },
+      ),
+    );
+  }
+
+  Future<void> _deleteActivity(SocialActivity activity) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("O'chirish"),
+        content: const Text("Haqiqatan ham ushbu faollikni o'chirmoqchimisiz?"),
+        actions: [
+           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Yo'q", style: TextStyle(color: Colors.grey))),
+           TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Ha, o'chirish", style: TextStyle(color: Colors.red))),
+        ],
+      )
+    );
+    
+    if (confirm == true) {
+      try {
+        final success = await Provider.of<DataService>(context, listen: false).deleteActivity(activity.id);
+        if (success) {
+           setState(() {
+             _activities.removeWhere((a) => a.id == activity.id);
+           });
+           if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("O'chirildi!")));
+        } else {
+           if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Xatolik yuz berdi")));
+        }
+      } catch (e) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Xatolik: $e")));
+      }
+    }
+  }
+
 }
 
 class ActivityCard extends StatefulWidget {
   final SocialActivity activity;
   final VoidCallback onTap;
+  final Function(SocialActivity) onEdit;
+  final Function(SocialActivity) onDelete;
 
-  const ActivityCard({super.key, required this.activity, required this.onTap});
+  const ActivityCard({
+    super.key, 
+    required this.activity, 
+    required this.onTap,
+    required this.onEdit,
+    required this.onDelete
+  });
 
   @override
   State<ActivityCard> createState() => _ActivityCardState();
@@ -1182,19 +1327,66 @@ class _ActivityCardState extends State<ActivityCard> {
                           Text(widget.activity.date, style: TextStyle(color: Colors.grey[500], fontSize: 13, fontWeight: FontWeight.w500)),
                         ],
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(statusIcon, size: 14, color: statusColor),
-                            const SizedBox(width: 4),
-                            Text(statusText, style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 11)),
-                          ],
-                        ),
+                      
+                      // Status Badge & Menu
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: statusColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(statusIcon, size: 14, color: statusColor),
+                                const SizedBox(width: 4),
+                                Text(statusText, style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 11)),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          
+                          // 3-DOT MENU
+                          Container(
+                            width: 32,
+                            height: 32,
+                            margin: const EdgeInsets.only(left: 4),
+                            child: PopupMenuButton<String>(
+                              padding: EdgeInsets.zero,
+                              icon: const Icon(Icons.more_vert, size: 22, color: Colors.black),
+                              onSelected: (value) {
+                                if (value == 'edit') {
+                                  widget.onEdit(widget.activity);
+                                } else if (value == 'delete') {
+                                  widget.onDelete(widget.activity);
+                                }
+                              },
+                              itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                                const PopupMenuItem<String>(
+                                  value: 'edit',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.edit, color: Colors.blue, size: 20),
+                                      SizedBox(width: 8),
+                                      Text('Tahrirlash'),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuItem<String>(
+                                  value: 'delete',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.delete, color: Colors.red, size: 20),
+                                      SizedBox(width: 8),
+                                      Text("O'chirish"),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        ],
                       ),
                     ],
                   ),
@@ -1213,6 +1405,6 @@ class _ActivityCardState extends State<ActivityCard> {
       ),
     );
   }
-
+}
 
 }
