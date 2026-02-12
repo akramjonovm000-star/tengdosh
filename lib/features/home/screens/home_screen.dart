@@ -149,7 +149,223 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // ... [build and other methods unchanged until _buildStudentDashboard] ...
+  @override
+  Widget build(BuildContext context) {
+    // 1. Get Auth Provider at the top level of build
+    final auth = Provider.of<AuthProvider>(context);
+
+    // Screens for BottomNav
+    final List<Widget> screens = [
+      _buildHomeContent(),           // 0: Home (Dashboard)
+      const StudentModuleScreen(),   // 1: Yangiliklar
+      auth.isManagement ? const ManagementAiScreen() : const AiScreen(), // 2: AI (Different for Management)
+      const CommunityScreen(),       // 3: Choyxona
+      const ProfileScreen(),         // 4: Profile
+    ];
+
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        return Stack(
+          children: [
+            Scaffold(
+              backgroundColor: AppTheme.backgroundWhite, 
+              body: SafeArea(
+                child: screens[_currentIndex],
+              ),
+              bottomNavigationBar: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+                ),
+                child: BottomNavigationBar(
+                  currentIndex: _currentIndex,
+                  selectedItemColor: AppTheme.primaryBlue,
+                  unselectedItemColor: Colors.grey,
+                  showUnselectedLabels: true,
+                  type: BottomNavigationBarType.fixed,
+                  backgroundColor: Colors.white,
+                  elevation: 0,
+                  onTap: (index) {
+                    final isPremium = auth.currentUser?.isPremium ?? false;
+                    
+                    // Guard Market (1)
+                    if (index == 1) {
+                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Bozor bo'limi tez kunda ishga tushadi"),
+                          duration: Duration(seconds: 2),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                      return;
+                    }
+
+                    // Guard AI (2)
+                    if (index == 2 && !auth.isManagement && !isPremium) {
+                      _showPremiumDialog();
+                      return;
+                    }
+                    setState(() => _currentIndex = index);
+                  },
+                  items: const [
+                    BottomNavigationBarItem(icon: Icon(Icons.grid_view_rounded), label: "Asosiy"),
+                    BottomNavigationBarItem(icon: Icon(Icons.shopping_bag_rounded), label: "Bozor"),
+                    BottomNavigationBarItem(icon: Icon(Icons.smart_toy_rounded), label: "AI"),
+                    BottomNavigationBarItem(icon: Icon(Icons.forum_rounded), label: "Choyxona"),
+                    BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: "Profil"),
+                  ],
+                ),
+              ),
+            ),
+// DISCONNECTION FIX: Removed PasswordUpdateDialog to prevent blocking UI
+            // if (auth.isAuthUpdateRequired)
+            //   const PasswordUpdateDialog(),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildHomeContent() {
+    final auth = Provider.of<AuthProvider>(context);
+    final student = auth.currentUser;
+    final isTutor = auth.isTutor;
+    
+    return RefreshIndicator(
+      onRefresh: () async => _loadData(refresh: true),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _currentIndex = 4; // Switch to Profile Screen
+                    });
+                  },
+                  child: CircleAvatar(
+                    radius: 24,
+                    backgroundColor: Colors.grey[200],
+                    child: () {
+                       final url = student?.imageUrl;
+                       if (url != null && url.isNotEmpty) {
+                         return ClipOval(
+                           child: CachedNetworkImage(
+                             imageUrl: url,
+                             width: 48,
+                             height: 48,
+                             fit: BoxFit.cover,
+                             placeholder: (context, url) => const Icon(Icons.person, color: Colors.grey),
+                             errorWidget: (context, url, error) => const Icon(Icons.person, color: Colors.grey),
+                           ),
+                         );
+                       }
+                       return const Icon(Icons.person, color: Colors.grey);
+                    }(),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              "Salom, ${() {
+                                if (student == null) return "Foydalanuvchi";
+                                
+                                final fullName = student.fullName;
+                                if (fullName == "Talaba") return "Foydalanuvchi";
+
+                                final parts = fullName.split(' ');
+                                if (parts.length >= 2) {
+                                   String name = parts[1];
+                                   return name.isNotEmpty ? name[0].toUpperCase() + name.substring(1).toLowerCase() : name;
+                                } else if (parts.isNotEmpty) {
+                                   String first = parts[0];
+                                   return first.isNotEmpty ? first[0].toUpperCase() + first.substring(1).toLowerCase() : first;
+                                }
+                                
+                                return fullName;
+                              }()}!",
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ),
+                          if (student?.isPremium == true) ...[
+                            const SizedBox(width: 6),
+                            GestureDetector(
+                              onTap: () {
+                                 Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionScreen()));
+                              },
+                              child: student?.customBadge != null
+                                  ? Text(student!.customBadge!, style: const TextStyle(fontSize: 20))
+                                  : const Icon(Icons.verified, color: Colors.blue, size: 20),
+                            ),
+                          ]
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppTheme.accentGreen, shape: BoxShape.circle)),
+                          const SizedBox(width: 6),
+                          Text(
+                            auth.isManagement ? "Rahbariyat" : (isTutor ? "Tyutor" : "Online"), 
+                            style: TextStyle(color: Colors.grey[600], fontSize: 12)
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Consumer<NotificationProvider>(
+                  builder: (context, notificationProvider, _) => Stack(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.notifications_none_rounded, size: 28),
+                        onPressed: () async {
+                          await Navigator.push(context, MaterialPageRoute(builder: (_) => NotificationsScreen()));
+                          notificationProvider.refreshUnreadCount();
+                        },
+                      ),
+                      if (notificationProvider.unreadCount > 0)
+                        Positioned(
+                          right: 12,
+                          top: 12,
+                          child: IgnorePointer(
+                            child: Container(
+                              width: 8, 
+                              height: 8, 
+                              decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle)
+                            ),
+                          )
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            if (auth.isManagement)
+               ManagementDashboard(stats: _dashboard)
+            else if (isTutor) 
+               TutorDashboardScreen(stats: _dashboard)
+            else
+               _buildStudentDashboard(),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildStudentDashboard() {
     return Column(
