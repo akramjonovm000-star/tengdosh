@@ -293,29 +293,33 @@ class _AcademicScreenState extends State<AcademicScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                        const Text(
-                        "Telefon va Emailni o'zgartirsangiz, HEMIS tizimida (student.jmcu.uz) ham o'zgaradi.",
-                        style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold),
+                        "Telefon va Emailni o'zgartirish uchun dekanatga murojaat qiling.",
+                        style: TextStyle(fontSize: 12, color: Colors.orange, fontWeight: FontWeight.bold),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16),
                       TextField(
                         controller: phoneCtrl,
+                        readOnly: true,
                         decoration: const InputDecoration(
                           labelText: "Telefon raqam",
                           border: OutlineInputBorder(),
                           prefixIcon: Icon(Icons.phone),
+                          filled: true,
+                          fillColor: Color(0xFFF5F5F5),
                         ),
-                        keyboardType: TextInputType.phone,
                       ),
                       const SizedBox(height: 12),
                       TextField(
                         controller: emailCtrl,
+                        readOnly: true,
                         decoration: const InputDecoration(
                           labelText: "Email",
                           border: OutlineInputBorder(),
                           prefixIcon: Icon(Icons.email),
+                          filled: true,
+                          fillColor: Color(0xFFF5F5F5),
                         ),
-                        keyboardType: TextInputType.emailAddress,
                       ),
                       const Divider(height: 24),
                       const Align(

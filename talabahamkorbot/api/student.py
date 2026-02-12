@@ -585,7 +585,9 @@ async def update_profile(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Update Student Profile (Phone, Email, Password) on HEMIS and Local DB.
+    Update Student Profile.
+    Currently only supports Password update due to API limitations.
+    Phone/Email are read-only in HEMIS API for students.
     """
     from services.hemis_service import HemisService
     from services.university_service import UniversityService
@@ -593,37 +595,29 @@ async def update_profile(
     
     base_url = UniversityService.get_api_url(student.hemis_login)
 
-    # 1. Prepare Data for HEMIS
-    update_data = {
-        "phone": data.phone,
-        "email": data.email
-    }
-    
-    # If password is provided, add it to payload
+    # 1. Update Password if provided
     if data.password and len(data.password) > 0:
         if len(data.password) < 6:
             raise HTTPException(status_code=400, detail="Parol kamida 6 belgidan iborat bo'lishi kerak")
-        update_data["password"] = data.password
-        # HEMIS might require password confirmation field too
-        update_data["confirmation"] = data.password 
+        
+        # Use change_password which uses POST /account/me
+        success, error = await HemisService.change_password(student.hemis_token, data.password, base_url=base_url)
+        
+        if not success:
+             raise HTTPException(status_code=400, detail=f"Hemisda parolni o'zgartirib bo'lmadi: {error}")
 
-    # 2. Call Hemis API
-    success, error = await HemisService.update_account(student.hemis_token, update_data, base_url=base_url)
-    
-    if not success:
-         raise HTTPException(status_code=400, detail=f"Hemisda ma'lumotlarni yangilab bo'lmadi: {error}")
-
-    # 3. Handle Password Change (Re-auth)
-    if data.password and len(data.password) > 0:
+        # Re-auth
         new_token, error_auth = await HemisService.authenticate(student.hemis_login, data.password, base_url=base_url)
         if new_token:
             student.hemis_token = new_token
             student.hemis_password = data.password
+            await db.commit()
+            return {"success": True, "message": "Parol muvaffaqiyatli yangilandi"}
+        else:
+            return {"success": True, "message": "Parol o'zgardi, lekin qayta kirishda xatolik. Iltimos qayta kiring."}
+
+    # If no password provided, just return success (since phone/email are read-only)
+    # We do NOT update local phone/email if they differ because we can't push to HEMIS.
+    # Optionally, we could sync FROM Hemis? But getProfile does that.
     
-    # 4. Update Local DB
-    student.phone = data.phone
-    student.email = data.email
-    
-    await db.commit()
-    
-    return {"success": True, "message": "Ma'lumotlar muvaffaqiyatli yangilandi"}
+    return {"success": True, "message": "Ma'lumotlar yangilandi (faqat parol o'zgarishi mumkin)"}

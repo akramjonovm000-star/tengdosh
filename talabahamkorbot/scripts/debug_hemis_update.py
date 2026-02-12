@@ -32,45 +32,115 @@ async def probe():
         
         headers = HemisService.get_headers(student.hemis_token)
         client = await HemisService.get_client()
-
-        # Test Data (using existing data to avoid messing up too much, or minor change)
-        # We'll just try to "update" the phone to the SAME value or append a dot if possible (but validation might fail).
-        # Better just send necessary fields.
         
-        phone = student.phone or "998901234567"
-        email = student.email or "test@example.com"
-        
-        payload = {
-            "phone": phone,
-            "email": email
-        }
-        
-        print(f"\n--- Probing POST /account/update ---")
-        url_update = f"{base_url}/account/update"
-        try:
-            resp = await client.post(url_update, json=payload, headers=headers)
-            print(f"Status: {resp.status_code}")
-            print(f"Body: {resp.text}")
-        except Exception as e:
-            print(f"Error: {e}")
-
-        print(f"\n--- Probing POST /account/me (with phone/email) ---")
         url_me = f"{base_url}/account/me"
+        url_update = f"{base_url}/account/update"
+
+        current_phone = student.phone or "998901234567"
+        if len(current_phone) > 5:
+            new_phone = current_phone[:-1] + ("1" if current_phone[-1] != "1" else "2")
+        else:
+            new_phone = "998901234567"
+
+        # 1. Test PUT /account/me (JSON)
+        print(f"\n--- 1. Probing PUT /account/me (JSON) ---")
+        payload_me = {"phone": new_phone, "email": student.email or ""}
         try:
-            resp = await client.post(url_me, json=payload, headers=headers)
+            resp = await client.put(url_me, json=payload_me, headers=headers)
+            print(f"Status: {resp.status_code}")
+            if resp.status_code == 200:
+                 data = resp.json().get("data", {})
+                 print(f"Server Phone: {data.get('phone')} (Sent: {new_phone})")
+                 if data.get("phone") == new_phone: print("SUCCESS: PUT /account/me Updated!")
+            else:
+                 print(f"Body: {resp.text}")
+        except Exception as e:
+            print(f"Error: {e}")
+
+        # 2. Test POST /account/update (Form Data)
+        print(f"\n--- 2. Probing POST /account/update (Form Data) ---")
+        payload_update = {"phone": current_phone, "email": student.email or ""}
+        try:
+            # removing Content-Type header to let httpx set it for data=
+            h = headers.copy()
+            if "Content-Type" in h: del h["Content-Type"]
+            
+            resp = await client.post(url_update, data=payload_update, headers=h)
             print(f"Status: {resp.status_code}")
             print(f"Body: {resp.text}")
         except Exception as e:
             print(f"Error: {e}")
 
-        # Check if PUT works
-        print(f"\n--- Probing PUT /account/me (with phone/email) ---")
+        # 3. Test POST /account/me (Form Data)
+        print(f"\n--- 3. Probing POST /account/me (Form Data) ---")
         try:
-            resp = await client.put(url_me, json=payload, headers=headers)
+            h = headers.copy()
+            if "Content-Type" in h: del h["Content-Type"]
+            
+            resp = await client.post(url_me, data=payload_me, headers=h)
+            print(f"Status: {resp.status_code}")
+            if resp.status_code == 200:
+                 data = resp.json().get("data", {})
+                 print(f"Server Phone: {data.get('phone')} (Sent: {new_phone})")
+                 if data.get("phone") == new_phone: print("SUCCESS: POST /account/me (Form) Updated!")
+            else:
+                 print(f"Body: {resp.text}")
+        except Exception as e:
+             print(f"Error: {e}")
+             
+        # 4. Test POST /account/update (Form Data + Password)
+        print(f"\n--- 4. Probing POST /account/update (Form Data + Password) ---")
+        payload_update_pass = {"phone": current_phone, "password": "WrongPassword123"}
+        try:
+            h = headers.copy()
+            if "Content-Type" in h: del h["Content-Type"]
+            resp = await client.post(url_update, data=payload_update_pass, headers=h)
             print(f"Status: {resp.status_code}")
             print(f"Body: {resp.text}")
         except Exception as e:
             print(f"Error: {e}")
+
+        # 5. Test POST /account/update with Wrapped Payloads (JSON)
+        print(f"\n--- 5. Probing POST /account/update (Wrapped JSON) ---")
+        wrappers = ["Student", "Account", "User", "data", "model"]
+        for w in wrappers:
+            print(f"Testing wrapper: {w}")
+            payload_wrapped = {w: {"phone": current_phone, "email": student.email}}
+            try:
+                resp = await client.post(url_update, json=payload_wrapped, headers=headers)
+                print(f"Status: {resp.status_code}, Body: {resp.text}")
+            except: pass
+
+        # 7. Test POST /account/me with Confirmation (Suspect this causes 400)
+        print(f"\n--- 7. Probing POST /account/me (Phone + Password + Confirmation) ---")
+        payload_me_confirm = {
+            "phone": current_phone,
+            "email": student.email or "",
+            "password": "WrongPassword123",
+            "confirmation": "WrongPassword123" 
+        }
+        try:
+             resp = await client.post(url_me, json=payload_me_confirm, headers=headers)
+             print(f"Status: {resp.status_code}, Body: {resp.text}")
+        except: pass
+        
+        print(f"\n--- 8. Probing POST /account/me (Phone + Password + password_confirm) ---")
+        payload_me_pc = {
+            "phone": current_phone,
+            "email": student.email or "",
+            "password": "WrongPassword123",
+            "password_confirm": "WrongPassword123" 
+        }
+        try:
+             resp = await client.post(url_me, json=payload_me_pc, headers=headers)
+             print(f"Status: {resp.status_code}, Body: {resp.text}")
+        except: pass
+        
+        print(f"\n--- 9. Probing POST /account/me (student[phone]) ---")
+        try:
+             resp = await client.post(url_me, json={"student": {"phone": current_phone}}, headers=headers)
+             print(f"Status: {resp.status_code}, Body: {resp.text}")
+        except: pass
 
 if __name__ == "__main__":
     asyncio.run(probe())

@@ -256,6 +256,8 @@ from database.models import PendingUpload
 
 @router.message(DocumentAddStates.WAIT_FOR_APP_FILE, F.photo | F.document)
 async def on_mobile_document_upload(message: Message, state: FSMContext, session: AsyncSession):
+    print(f"DEBUG: on_mobile_document_upload triggered for {message.from_user.id}")
+    print(f"DEBUG: on_mobile_document_upload triggered for {message.from_user.id}")
     student = await get_student(message, session)
     if not student:
         return await message.answer("Siz talaba emassiz.")
@@ -292,5 +294,17 @@ async def on_mobile_document_upload(message: Message, state: FSMContext, session
     # State remains or clears? Usually we keep it until they leave or we can clear
     # Clearing state is better once we got the file.
     await state.clear()
+
+
+@router.message()
+async def on_fallback_debug(message: Message, state: FSMContext):
+    current_state = await state.get_state()
+    print(f"DEBUG: Fallback triggered for {message.from_user.id}. State: {current_state}")
+    if message.photo:
+        print(f"DEBUG: Message contains photo")
+    elif message.document:
+        print(f"DEBUG: Message contains document")
+    else:
+        print(f"DEBUG: Message content type: {message.content_type}")
 
 
