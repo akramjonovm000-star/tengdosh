@@ -300,15 +300,6 @@ async def on_mobile_document_upload(message: Message, state: FSMContext, session
     await state.clear()
 
 
-@router.message()
-async def on_fallback_debug(message: Message, state: FSMContext):
-    current_state = await state.get_state()
-    print(f"DEBUG: Fallback triggered for {message.from_user.id}. State: {current_state}")
-    if message.photo:
-        print(f"DEBUG: Message contains photo")
-    elif message.document:
-        print(f"DEBUG: Message contains document")
-    else:
-        print(f"DEBUG: Message content type: {message.content_type}")
+
 
 

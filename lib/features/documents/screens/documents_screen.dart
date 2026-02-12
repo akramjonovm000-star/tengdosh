@@ -115,7 +115,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       child: _isHemisLoading
           ? const Center(child: CircularProgressIndicator())
           : _hemisDocuments.isEmpty
-              ? _buildEmptyState("HEMIS hujjatlari topilmadi")
+              ? _buildEmptyState("HEMIS hujjatlari topilmadi", onRefresh: _loadHemisDocs)
               : ListView.separated(
                   padding: const EdgeInsets.all(20),
                   itemCount: _hemisDocuments.length,
@@ -200,7 +200,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
               ? Stack(
                   children: [
                     ListView(), // specific Pull-to-refresh need scrollable
-                    Center(child: _buildEmptyState("Hali hech qanday hujjat yuklanmagan")),
+                    Center(child: _buildEmptyState("Hali hech qanday hujjat yuklanmagan", onRefresh: _loadUserDocs)),
                     Positioned(bottom: 0, left: 0, right: 0, child: _buildUploadButton()),
                   ],
                 )
@@ -296,22 +296,42 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     );
   }
 
-  Widget _buildEmptyState(String message) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(Icons.folder_copy_outlined, size: 80, color: Colors.grey[200]),
-        const SizedBox(height: 16),
-        Text(
-          "Ma'lumot yo'q",
-          style: TextStyle(color: Colors.grey[400], fontSize: 16, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          message,
-          style: TextStyle(color: Colors.grey[400], fontSize: 13),
-        ),
-      ],
+  Widget _buildEmptyState(String message, {VoidCallback? onRefresh}) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryBlue.withOpacity(0.05),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.folder_off_outlined, size: 60, color: AppTheme.primaryBlue.withOpacity(0.5)),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            message,
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 16,
+              fontWeight: FontWeight.w600
+            ),
+            textAlign: TextAlign.center,
+          ),
+          if (onRefresh != null) ...[
+            const SizedBox(height: 16),
+            TextButton.icon(
+              onPressed: onRefresh,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text("Yangilash"),
+              style: TextButton.styleFrom(
+                foregroundColor: AppTheme.primaryBlue,
+              ),
+            ),
+          ]
+        ],
+      ),
     );
   }
 

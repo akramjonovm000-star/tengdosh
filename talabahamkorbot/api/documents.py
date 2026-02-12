@@ -5,7 +5,7 @@ from sqlalchemy import select
 
 from database.models import Student, TgAccount
 from database.db_connect import get_session
-from api.dependencies import get_current_student
+from api.dependencies import get_current_student, get_current_token
 from services.hemis_service import HemisService
 from bot import bot
 from aiogram.types import BufferedInputFile
