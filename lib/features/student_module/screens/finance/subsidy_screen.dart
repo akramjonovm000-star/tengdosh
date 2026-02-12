@@ -114,6 +114,54 @@ class _SubsidyScreenState extends State<SubsidyScreen> {
                       ],
                     ),
                   ),
+
+                  const SizedBox(height: 16),
+                  
+                  // Contract Info Card
+                  if (_payments.isNotEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.03),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "Shartnoma ma'lumotlari",
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 12),
+                          _buildInfoRow(
+                            Icons.description, 
+                            "Shartnoma ID", 
+                            "${_payments.first['rentContractId'] ?? 'Noma\'lum'}"
+                          ),
+                          const Divider(height: 24),
+                          _buildInfoRow(
+                            Icons.check_circle, 
+                            "Ariza holati", 
+                            "Tasdiqlangan", 
+                            valueColor: Colors.green
+                          ),
+                          const Divider(height: 24),
+                          _buildInfoRow(
+                            Icons.person, 
+                            "Ijaraga beruvchi (PINFL)", 
+                            "${_payments.first['renterPinfl'] ?? 'Noma\'lum'}"
+                          ),
+                        ],
+                      ),
+                    ),
                   
                   const SizedBox(height: 24),
                   const Text(
@@ -201,6 +249,42 @@ class _SubsidyScreenState extends State<SubsidyScreen> {
               ),
             ),
           ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value, {Color? valueColor}) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.blue.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: Colors.blue, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold, 
+                  fontSize: 14,
+                  color: valueColor ?? Colors.black
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
