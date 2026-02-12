@@ -1683,13 +1683,13 @@ async def msg_owner_broadcast(message: Message, state: FSMContext, session: Asyn
     staff = await _ensure_owner(message, session)
     if not staff: return
 
-    await state.set_state(OwnerStates.broadcasting_message)
+    # User requested to open the Announcement Menu instead of direct broadcast
+    await state.clear()
+    
     await message.answer(
-        "📢 <b>Keng qamrovli xabar (Broadcast)</b>\n\n"
-        "Barcha foydalanuvchilarga (talaba va xodimlarga) xabar yuboriladi.\n"
-        "Matn, rasm, video yoki hujjat yuborishingiz mumkin.\n\n"
-        "👇 Xabarni yuboring:",
-        reply_markup=get_back_inline_kb("owner_ann_menu"),
+        "📢 <b>E'lonlar va Bannerlar bo'limi</b>\n\n"
+        "Quyidagi amallardan birini tanlang:",
+        reply_markup=get_owner_announcement_menu_kb(),
         parse_mode="HTML"
     )
 

@@ -40,7 +40,11 @@ from utils.owner_stats import get_owner_dashboard_text
 @router.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext, session: AsyncSession):
     logger.info(f"cmd_start reached for user {message.from_user.id}")
-    await state.clear()
+    try:
+        await state.clear()
+    except Exception as e:
+        logger.error(f"State clear error: {e}")
+        
     tg_id = message.from_user.id
 
     account = await session.scalar(
@@ -215,6 +219,40 @@ async def cmd_start(message: Message, state: FSMContext, session: AsyncSession):
         # ===================== BOSHQA HOLAT =====================
         return await message.answer(
             "⚠️ Sizning rolingiz aniqlanmadi. /start ni qayta yuboring."
+        )
+
+    # ===================== OWNER AUTO-LOGIN (BYPASS HEMIS) =====================
+    if tg_id == OWNER_TELEGRAM_ID:
+        # Create Owner Account automatically
+        logger.info("Owner detected in /start. Creating account...")
+        
+        # Check if Owner Staff exists
+        owner_staff = await session.scalar(select(Staff).where(Staff.role == StaffRole.OWNER))
+        if not owner_staff:
+             owner_staff = Staff(
+                 full_name="System Owner",
+                 jshshir="OWNER_JSHSHIR",
+                 role=StaffRole.OWNER,
+                 is_active=True,
+                 university_id=None # Global owner
+             )
+             session.add(owner_staff)
+             await session.flush()
+        
+        account = TgAccount(
+            telegram_id=tg_id, 
+            staff_id=owner_staff.id, 
+            current_role=StaffRole.OWNER.value
+        )
+        session.add(account)
+        await session.commit()
+        
+        # Show Dashboard immediately
+        text = await get_owner_dashboard_text(session)
+        return await message.answer(
+            text,
+            reply_markup=get_owner_main_menu_inline_kb(),
+            parse_mode="HTML"
         )
 
     # ===================== AGAR RO‘YXATDAN O‘TMAGAN BO‘LSA =====================

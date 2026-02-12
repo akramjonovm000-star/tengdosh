@@ -48,7 +48,7 @@ async def login_via_hemis(
         elif login_clean == "dekanat" and pass_clean == "123":
             demo_login = "demo.dekanat"
             full_name = "Dekanat (Demo)"
-            role = "dekan"
+            role = "rahbariyat"
     elif login_clean == "sanjar_botirovich" and pass_clean == "102938":
         demo_login = "demo.rahbar"
         full_name = "Sanjar Botirovich"
@@ -269,7 +269,7 @@ async def login_via_hemis(
             "success": True,
             "data": {
                 "token": token_str,
-                "role": staff.role.value if hasattr(staff.role, 'value') else staff.role, # e.g. "tyutor"
+                "role": "rahbariyat" if (staff.role.value if hasattr(staff.role, 'value') else staff.role) in ["dekan", "dekan_orinbosari", "dekan_yoshlar", "dekanat", "rahbariyat", "rektor", "prorektor", "yoshlar_prorektor"] else (staff.role.value if hasattr(staff.role, 'value') else staff.role), 
                 "profile": {
                     "id": staff.id,
                     "full_name": staff.full_name,

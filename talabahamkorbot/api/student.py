@@ -42,8 +42,14 @@ async def get_my_profile(
             role_label = "O'qituvchi"
         elif student.role == "tutor":
             role_label = "Tyutor"
-        elif student.role == "dekan":
-            role_label = "Dekan"
+        elif student.role in ["dekan", "dekan_orinbosari", "dekan_yoshlar", "dekanat"]:
+            role_label = "Dekanat"
+            if student.role == "dekan": role_label = "Dekan"
+            elif student.role == "dekan_orinbosari": role_label = "Dekan o'rinbosari"
+            elif student.role == "dekan_yoshlar": role_label = "Dekan (yoshlar)"
+            
+            # [CRITICAL] Mask as rahbariyat for the UI to open the management module
+            frontend_role_code = "rahbariyat"
             
         # [FIX] Use employee_id_number as the primary ID (hemis_login) for staff
         staff_id = getattr(student, 'employee_id_number', None) or str(student.hemis_id) if student.hemis_id else h_login
