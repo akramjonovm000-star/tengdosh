@@ -294,8 +294,151 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ... [buildGpaCard and AnnouncementCard unchanged] ...
-  
+  Widget _buildGpaCard() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppTheme.primaryBlue, Color(0xFF0052CC)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -20,
+            top: -20,
+            child: Container(
+              width: 150,
+              height: 150,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.1),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Row(
+              children: [
+                Container(
+                  width: 90,
+                  height: 90,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.1),
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      SizedBox(
+                        width: 90,
+                        height: 90,
+                        child: CircularProgressIndicator(
+                          value: (_dashboard?['gpa'] ?? 0.0) / 5.0,
+                          strokeWidth: 8,
+                          strokeCap: StrokeCap.round, 
+                          valueColor: const AlwaysStoppedAnimation(Colors.white),
+                          backgroundColor: Colors.white.withOpacity(0.2),
+                        ),
+                      ),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            "${_dashboard?['gpa']?.toStringAsFixed(1) ?? '0.0'}", 
+                            style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold, height: 1.0)
+                          ),
+                          Text("GPA", style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 10)),
+                        ],
+                      )
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 24),
+                Expanded(
+                  child: Text(
+                    (_dashboard?['gpa'] ?? 0.0) >= 4.5 ? "A'lo natija! 🏆" : 
+                    (_dashboard?['gpa'] ?? 0.0) >= 4.0 ? "Yaxshi natija! 👏" :
+                    (_dashboard?['gpa'] ?? 0.0) >= 3.0 ? "Yomon emas 👍" : "Harakat qiling 💪",
+                    style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)
+                  ),
+                )
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAnnouncementModelCard(AnnouncementModel announcement) {
+    return GestureDetector(
+      onTap: () async {
+        if (announcement.link != null) {
+          final uri = Uri.parse(announcement.link!);
+          final success = await _dataService.markAnnouncementModelAsRead(announcement.id);
+          
+          if (success) {
+            setState(() {
+              _announcements.removeWhere((a) => a.id == announcement.id);
+            });
+            // Auto scroll to next or GPA if empty
+            if (_pageController.hasClients) {
+               _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+            }
+          }
+          
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppTheme.primaryBlue.withOpacity(0.2)),
+          image: announcement.imageUrl != null ? DecorationImage(
+            image: CachedNetworkImageProvider(announcement.imageUrl!),
+            fit: BoxFit.cover,
+            colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.4), BlendMode.darken),
+          ) : null,
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Text(
+                announcement.title,
+                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (announcement.content != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  announcement.content!,
+                  style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   // [NEW] Banner Carousel Widget
   Widget _buildBannerCarousel() {
     return Stack(
