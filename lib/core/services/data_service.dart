@@ -542,7 +542,57 @@ class DataService {
     }
   }
 
+  // Edit Activity
+  Future<SocialActivity?> editActivity(String id, String category, String name, String description, String date) async {
+    final token = await _authService.getToken();
+    final uri = Uri.parse('${ApiConstants.activities}/$id');
+    
+    final request = http.MultipartRequest('PATCH', uri);
+    request.headers['Authorization'] = 'Bearer $token';
+    
+    // For PATCH, we use Form data as defined in FastAPI endpoint
+    request.fields['category'] = category;
+    request.fields['name'] = name;
+    request.fields['description'] = description;
+    request.fields['date'] = date;
+    
+    try {
+      final response = await request.send();
+      final respStr = await response.stream.bytesToString();
+      
+      if (response.statusCode == 200) {
+        return SocialActivity.fromJson(json.decode(respStr));
+      } else {
+        debugPrint("Edit Activity Error: ${response.statusCode} - $respStr");
+        throw Exception("Tahrirlashda xatolik: ${response.statusCode}");
+      }
+    } catch (e) {
+      debugPrint("Edit Activity Exception: $e");
+      rethrow;
+    }
+  }
+
+  // Delete Activity
+  Future<bool> deleteActivity(String id) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('${ApiConstants.activities}/$id'),
+        headers: await _getHeaders(),
+      );
+      
+      if (response.statusCode == 200) {
+        return true;
+      }
+      debugPrint("Delete Activity Error: ${response.statusCode}");
+      return false;
+    } catch (e) {
+      debugPrint("Delete Activity Exception: $e");
+      return false;
+    }
+  }
+
   // 4. Get Clubs
+
   Future<List<dynamic>> getClubs() async {
     try {
       final response = await http.get(
