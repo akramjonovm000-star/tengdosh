@@ -211,6 +211,8 @@ class _AcademicScreenState extends State<AcademicScreen> {
                await Navigator.push(context, MaterialPageRoute(builder: (_) => const SubjectsScreen()));
             } else if (title == "So'rovnomalar") {
                await Navigator.push(context, MaterialPageRoute(builder: (_) => const SurveyListScreen()));
+            } else if (title == "Ijara – Subsidiya") {
+               await Navigator.push(context, MaterialPageRoute(builder: (_) => const SubsidyScreen()));
             } else if (title == "Ma'lumotlarni yangilash") {
                _showUpdateProfileDialog(context);
             } else {
