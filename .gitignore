@@ -48,3 +48,4 @@ talabahamkorbot/*.log
 talabahamkorbot/*.sql
 talabahamkorbot/*.zip
 talabahamkorbot/.env
+talabahamkorbot/static/uploads/
