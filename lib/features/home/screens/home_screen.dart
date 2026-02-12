@@ -175,215 +175,7 @@ class _HomeScreenState extends State<HomeScreen> {
               bottomNavigationBar: Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
-                ),
-                child: BottomNavigationBar(
-                  currentIndex: _currentIndex,
-                  selectedItemColor: AppTheme.primaryBlue,
-                  unselectedItemColor: Colors.grey,
-                  showUnselectedLabels: true,
-                  type: BottomNavigationBarType.fixed,
-                  backgroundColor: Colors.white,
-                  elevation: 0,
-                  onTap: (index) {
-                    final isPremium = auth.currentUser?.isPremium ?? false;
-                    
-                    // Guard Market (1)
-                    if (index == 1) {
-                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Bozor bo'limi tez kunda ishga tushadi"),
-                          duration: Duration(seconds: 2),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                      return;
-                    }
-
-                    // Guard AI (2)
-                    if (index == 2 && !auth.isManagement && !isPremium) {
-                      _showPremiumDialog();
-                      return;
-                    }
-                    setState(() => _currentIndex = index);
-                  },
-                  items: const [
-                    BottomNavigationBarItem(icon: Icon(Icons.grid_view_rounded), label: "Asosiy"),
-                    BottomNavigationBarItem(icon: Icon(Icons.shopping_bag_rounded), label: "Bozor"),
-                    BottomNavigationBarItem(icon: Icon(Icons.smart_toy_rounded), label: "AI"),
-                    BottomNavigationBarItem(icon: Icon(Icons.forum_rounded), label: "Choyxona"),
-                    BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: "Profil"),
-                  ],
-                ),
-              ),
-            ),
-// DISCONNECTION FIX: Removed PasswordUpdateDialog to prevent blocking UI
-            // if (auth.isAuthUpdateRequired)
-            //   const PasswordUpdateDialog(),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildHomeContent() {
-    final auth = Provider.of<AuthProvider>(context);
-    final student = auth.currentUser;
-    final isTutor = auth.isTutor;
-    
-    return RefreshIndicator(
-      onRefresh: () async => _loadData(refresh: true),
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _currentIndex = 4; // Switch to Profile Screen
-                    });
-                  },
-                  child: CircleAvatar(
-                    radius: 24,
-                    backgroundColor: Colors.grey[200],
-                    child: () {
-                       final url = student?.imageUrl;
-                       if (url != null && url.isNotEmpty) {
-                         return ClipOval(
-                           child: CachedNetworkImage(
-                             imageUrl: url,
-                             width: 48,
-                             height: 48,
-                             fit: BoxFit.cover,
-                             placeholder: (context, url) => const Icon(Icons.person, color: Colors.grey),
-                             errorWidget: (context, url, error) => const Icon(Icons.person, color: Colors.grey),
-                           ),
-                         );
-                       }
-                       return const Icon(Icons.person, color: Colors.grey);
-                    }(),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              "Salom, ${() {
-                                if (student == null) return "Foydalanuvchi";
-                                
-                                final fullName = student.fullName;
-                                if (fullName == "Talaba") return "Foydalanuvchi";
-
-                                final parts = fullName.split(' ');
-                                if (parts.length >= 2) {
-                                   String name = parts[1];
-                                   return name.isNotEmpty ? name[0].toUpperCase() + name.substring(1).toLowerCase() : name;
-                                } else if (parts.isNotEmpty) {
-                                   String first = parts[0];
-                                   return first.isNotEmpty ? first[0].toUpperCase() + first.substring(1).toLowerCase() : first;
-                                }
-                                
-                                return fullName;
-                              }()}!",
-                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                            ),
-                          ),
-                          if (student?.isPremium == true) ...[
-                            const SizedBox(width: 6),
-                            GestureDetector(
-                              onTap: () {
-                                 Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionScreen()));
-                              },
-                              child: student?.customBadge != null
-                                  ? Text(student!.customBadge!, style: const TextStyle(fontSize: 20))
-                                  : const Icon(Icons.verified, color: Colors.blue, size: 20),
-                            ),
-                          ]
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppTheme.accentGreen, shape: BoxShape.circle)),
-                          const SizedBox(width: 6),
-                          Text(
-                            auth.isManagement ? "Rahbariyat" : (isTutor ? "Tyutor" : "Online"), 
-                            style: TextStyle(color: Colors.grey[600], fontSize: 12)
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                Consumer<NotificationProvider>(
-                  builder: (context, notificationProvider, _) => Stack(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.notifications_none_rounded, size: 28),
-                        onPressed: () async {
-                          await Navigator.push(context, MaterialPageRoute(builder: (_) => NotificationsScreen()));
-                          notificationProvider.refreshUnreadCount();
-                        },
-                      ),
-                      if (notificationProvider.unreadCount > 0)
-                        Positioned(
-                          right: 12,
-                          top: 12,
-                          child: IgnorePointer(
-                            child: Container(
-                              width: 8, 
-                              height: 8, 
-                              decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle)
-                            ),
-                          )
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            if (auth.isManagement)
-               ManagementDashboard(stats: _dashboard)
-            else if (isTutor) 
-               TutorDashboardScreen(stats: _dashboard)
-            else
-               _buildStudentDashboard(),
-          ],
-        ),
-      ),
-    );
-  }
-      auth.isManagement ? const ManagementAiScreen() : const AiScreen(), // 2: AI (Different for Management)
-      const CommunityScreen(),       // 3: Choyxona
-      const ProfileScreen(),         // 4: Profile
-    ];
-
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, child) {
-        return Stack(
-          children: [
-            Scaffold(
-              backgroundColor: AppTheme.backgroundWhite, 
-              body: SafeArea(
-                child: screens[_currentIndex],
-              ),
-              bottomNavigationBar: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
                 ),
                 child: BottomNavigationBar(
                   currentIndex: _currentIndex,
@@ -740,7 +532,7 @@ class _HomeScreenState extends State<HomeScreen> {
               height: 150,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
               ),
             ),
           ),
@@ -753,7 +545,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   height: 90,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withValues(alpha: 0.1),
                   ),
                   child: Stack(
                     alignment: Alignment.center,
@@ -766,7 +558,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           strokeWidth: 8,
                           strokeCap: StrokeCap.round, 
                           valueColor: const AlwaysStoppedAnimation(Colors.white),
-                          backgroundColor: Colors.white.withOpacity(0.2),
+                          backgroundColor: Colors.white.withValues(alpha: 0.2),
                         ),
                       ),
                       Column(
@@ -776,7 +568,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             "${_dashboard?['gpa']?.toStringAsFixed(1) ?? '0.0'}", 
                             style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold, height: 1.0)
                           ),
-                          Text("GPA", style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 10)),
+                          Text("GPA", style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 10)),
                         ],
                       )
                     ],
@@ -825,14 +617,14 @@ class _HomeScreenState extends State<HomeScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppTheme.primaryBlue.withOpacity(0.2)),
+          border: Border.all(color: AppTheme.primaryBlue.withValues(alpha: 0.2)),
           image: announcement.imageUrl != null ? DecorationImage(
             image: CachedNetworkImageProvider(announcement.imageUrl!),
             fit: BoxFit.cover,
-            colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.4), BlendMode.darken),
+            colorFilter: ColorFilter.mode(Colors.black.withValues(alpha: 0.4), BlendMode.darken),
           ) : null,
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+            BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
           ],
         ),
         child: Padding(
@@ -851,7 +643,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 4),
                 Text(
                   announcement.content!,
-                  style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13),
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -893,7 +685,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     shape: BoxShape.circle,
                     color: _currentBannerIndex == index 
                         ? Colors.white 
-                        : Colors.white.withOpacity(0.5),
+                        : Colors.white.withValues(alpha: 0.5),
                   ),
                 );
               }),
@@ -925,7 +717,7 @@ class _HomeScreenState extends State<HomeScreen> {
             fit: BoxFit.cover,
           ),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
+            BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
           ],
         ),
       ),
