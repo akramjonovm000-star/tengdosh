@@ -398,8 +398,9 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   void _showReplyDialog(int id) {
     final controller = TextEditingController();
