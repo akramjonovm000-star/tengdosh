@@ -40,12 +40,20 @@ def get_payme_url(amount: int = 10000, current_student: Student = Depends(get_cu
 @router.get("/subsidy")
 async def get_rent_subsidy(
     year: int = None,
-    token: str = Depends(get_current_token)
+    student = Depends(get_current_student)
 ):
     """
     Get rent subsidy report (Ijara).
     """
+    token = student.hemis_token
+    # If student has no token (masquerade/staff case without hemis link?), handle gracefully?
+    # Usually hemis_token should be present.
+    
     data = await HemisService.get_rent_subsidy_report(token, edu_year=year)
+    
+    if data is None:
+        raise HTTPException(status_code=401, detail="HEMIS Authentication Failed")
+        
     return {
         "success": True,
         "data": data

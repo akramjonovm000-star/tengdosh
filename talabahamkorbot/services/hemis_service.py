@@ -1219,6 +1219,7 @@ class HemisService:
         payload = {"eduYear": edu_year}
         
         try:
+            logger.info(f"Subsidy Report: Fetching for year {edu_year} with token prefix {token[:10]}...")
             response = await HemisService.fetch_with_retry(
                 client, "POST", url,
                 headers=HemisService.get_headers(token),
@@ -1227,6 +1228,7 @@ class HemisService:
             
             if response.status_code == 200:
                 data = response.json()
+                logger.info("Subsidy Report: Success")
                 # Structure: data -> data -> data -> [list]
                 outer_data = data.get("data", {})
                 inner_data = outer_data.get("data", {})
@@ -1236,10 +1238,13 @@ class HemisService:
                      if isinstance(items, list):
                          return items
                 return []
-            return []
+            else:
+                logger.error(f"Subsidy Report: Failed with status {response.status_code}")
+                # logger.error(f"Subsidy Report: Response body: {response.text}")
+                return None
         except Exception as e:
             logger.error(f"Rent Subsidy Error: {e}")
-            return []
+            return None
 
     # --- Surveys (So'rovnomalar) ---
     
