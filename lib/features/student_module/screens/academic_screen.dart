@@ -276,6 +276,7 @@ class _AcademicScreenState extends State<AcademicScreen> {
       final TextEditingController phoneCtrl = TextEditingController(text: profile['phone'] ?? '');
       final TextEditingController emailCtrl = TextEditingController(text: profile['email'] ?? '');
       final TextEditingController passCtrl = TextEditingController();
+      final TextEditingController confirmPassCtrl = TextEditingController();
       bool isSaving = false;
 
       // 3. Show Form
@@ -334,6 +335,16 @@ class _AcademicScreenState extends State<AcademicScreen> {
                           prefixIcon: Icon(Icons.lock),
                         ),
                       ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: confirmPassCtrl,
+                        decoration: const InputDecoration(
+                          labelText: "Parolni tasdiqlash",
+                          hintText: "Parolni qayta kiriting",
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.lock_outline),
+                        ),
+                      ),
                       if (isSaving)
                         const Padding(
                           padding: EdgeInsets.only(top: 16),
@@ -349,6 +360,22 @@ class _AcademicScreenState extends State<AcademicScreen> {
                   ),
                   ElevatedButton(
                     onPressed: isSaving ? null : () async {
+                      // Validation
+                      if (passCtrl.text.isNotEmpty) {
+                        if (passCtrl.text != confirmPassCtrl.text) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Parollar mos kelmadi"), backgroundColor: Colors.red),
+                          );
+                          return;
+                        }
+                        if (passCtrl.text.length < 6) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Parol kamida 6 belgidan iborat bo'lishi kerak"), backgroundColor: Colors.red),
+                          );
+                          return;
+                        }
+                      }
+
                       setDialogState(() => isSaving = true);
                       
                       try {
