@@ -5,6 +5,9 @@ from typing import List
 from pydantic import BaseModel
 from datetime import datetime
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+import logging
+
+logger = logging.getLogger(__name__)
 
 from api.dependencies import get_current_student
 from database.db_connect import get_session
@@ -184,9 +187,19 @@ async def send_cert_to_bot(
     # 3. Send via Bot
     try:
         caption = f"🎓 <b>{cert.title}</b>"
-        await bot.send_document(tg_account.telegram_id, cert.file_id, caption=caption, parse_mode="HTML")
+        try:
+            await bot.send_document(tg_account.telegram_id, cert.file_id, caption=caption, parse_mode="HTML")
+        except Exception as e:
+            # Self-healing: If sent as document but it's actually a photo
+            if "can't use file of type Photo as Document" in str(e) or "Bad Request: document_invalid" in str(e):
+                logger.info(f"Self-healing: Certificate {cert.id} is actually a photo. Autocorrecting...")
+                await bot.send_photo(tg_account.telegram_id, cert.file_id, caption=caption, parse_mode="HTML")
+            else:
+                raise e
+                
         return {"success": True, "message": "Sertifikat Telegramingizga yuborildi!"}
     except Exception as e:
+        logger.error(f"Error sending cert to bot: {e}")
         return {"success": False, "message": f"Botda xatolik: {str(e)}"}
 
 @router.delete("/{cert_id}")

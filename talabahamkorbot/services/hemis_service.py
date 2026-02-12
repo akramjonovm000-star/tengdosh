@@ -1300,6 +1300,23 @@ class HemisService:
             return None
 
     @staticmethod
+    async def get_student_documents(token: str, base_url: Optional[str] = None):
+        """GET /v1/student/document-all"""
+        client = await HemisService.get_client()
+        final_base = base_url or HemisService.BASE_URL
+        try:
+            url = f"{final_base}/student/document-all"
+            response = await client.get(url, headers=HemisService.get_headers(token))
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('success'):
+                    return data.get('data', [])
+            return []
+        except Exception as e:
+            logger.error(f"Error fetching documents: {e}")
+            return []
+
+    @staticmethod
     async def finish_student_survey(token: str, quiz_rule_id: int, base_url: Optional[str] = None):
         """POST /v1/student/survey-finish"""
         client = await HemisService.get_client()

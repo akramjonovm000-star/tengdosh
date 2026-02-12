@@ -284,7 +284,7 @@ async def on_mobile_document_upload(message: Message, state: FSMContext, session
     else:
         file_id = message.document.file_id
         
-    # Notify User
+    # Notify User IMMEDIATELY
     await message.answer(
         "✅ <b>Hujjat qabul qilindi!</b>\n\n"
         "Iltimos, ilovaga qayting va <b>'Saqlash'</b> tugmasini bosing.",

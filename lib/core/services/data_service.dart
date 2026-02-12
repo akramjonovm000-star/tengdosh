@@ -733,8 +733,27 @@ class DataService {
       Uri.parse(ApiConstants.documents),
       headers: await _getHeaders(),
     ).timeout(const Duration(seconds: 10));
-    if (response.statusCode == 200) return json.decode(response.body);
+    if (response.statusCode == 200) return json.decode(response.body)['data'];
     throw Exception('Failed to load documents');
+  }
+
+  Future<List<dynamic>> getHemisDocuments() async {
+    try {
+      final response = await http.get(
+        Uri.parse(ApiConstants.hemisDocuments),
+        headers: await _getHeaders(),
+      ).timeout(const Duration(seconds: 15));
+      
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) {
+           return body['data'];
+        }
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching HEMIS documents: $e");
+    }
+    return [];
   }
 
   // 9. Get Detailed Attendance List

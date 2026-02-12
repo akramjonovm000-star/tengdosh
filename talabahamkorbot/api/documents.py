@@ -289,6 +289,18 @@ async def send_hemis_document(
         return {"success": True, "message": "Shartnoma havolasi Telegramga yuborildi"}
 
     return {"success": False, "message": "Noma'lum hujjat turi"}
-from typing import List
-from pydantic import BaseModel
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+@router.get("/hemis")
+async def get_hemis_documents(
+    token: str = Depends(get_current_token)
+):
+    """
+    Get all student documents (academic sheet, decrees, references, etc.) from HEMIS.
+    """
+    from services.hemis_service import HemisService
+    data = await HemisService.get_student_documents(token)
+    return {
+        "success": True, 
+        "data": data
+    }

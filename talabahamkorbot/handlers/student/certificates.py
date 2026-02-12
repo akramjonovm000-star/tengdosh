@@ -8,6 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database.models import TgAccount, Student, UserCertificate
 from models.states import CertificateAddStates
 from keyboards.inline_kb import get_student_certificates_kb, get_student_certificates_simple_kb
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = Router()
 
@@ -233,11 +236,18 @@ async def cancel_certificate(call: CallbackQuery, state: FSMContext):
 # ============================================================
 from database.models import PendingUpload
 
-@router.message(CertificateAddStates.WAIT_FOR_APP_FILE, F.photo | F.document)
+@router.message(CertificateAddStates.WAIT_FOR_APP_FILE)
 async def on_mobile_certificate_upload(message: Message, state: FSMContext, session: AsyncSession):
     student = await get_student(message, session)
+    logger.info(f"DEBUG: Certificate upload triggered. User: {message.from_user.id}, Content: {message.content_type}")
+    
     if not student:
         return await message.answer("Siz talaba emassiz.")
+
+    # Validate content type manually for better debugging response
+    if not (message.document or message.photo):
+        logger.info(f"DEBUG: Invalid content type: {message.content_type}")
+        return await message.answer("❌ Iltimos, <b>PDF fayl</b> yoki <b>Rasm</b> yuboring.", parse_mode="HTML")
 
     # Find active pending upload for this student
     pending = await session.scalar(
@@ -248,16 +258,19 @@ async def on_mobile_certificate_upload(message: Message, state: FSMContext, sess
     )
 
     if not pending:
+        logger.info(f"DEBUG: No pending upload found for student {student.id}")
         await state.clear()
         return await message.answer("Hozirda faol sertifikat yuklash so'rovi mavjud emas.")
 
     # Save File ID
     if message.photo:
         file_id = message.photo[-1].file_id
+        logger.info(f"DEBUG: Photo received: {file_id}")
     else:
         file_id = message.document.file_id
+        logger.info(f"DEBUG: Document received: {file_id}")
         
-    # Notify User
+    # Notify User IMMEDIATELY
     await message.answer(
         "✅ <b>Sertifikat qabul qilindi!</b>\n\n"
         "Iltimos, ilovaga qayting va <b>'Saqlash'</b> tugmasini bosing.",
