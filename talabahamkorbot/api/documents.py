@@ -21,8 +21,8 @@ async def get_my_documents(
     db: AsyncSession = Depends(get_session)
 ):
     """Returns real documents uploaded by the student or for the student"""
-    from database.models import StudentDocument
-    stmt = select(StudentDocument).where(StudentDocument.student_id == student.id).order_by(StudentDocument.created_at.desc())
+    from database.models import UserDocument
+    stmt = select(UserDocument).where(UserDocument.student_id == student.id).order_by(UserDocument.created_at.desc())
     result = await db.execute(stmt)
     docs = result.scalars().all()
     
@@ -31,8 +31,8 @@ async def get_my_documents(
         "data": [
             {
                 "id": d.id,
-                "title": d.file_name, # Changed from title
-                "category": d.description, # Using description as category/comment
+                "title": d.title,
+                "category": d.category,
                 "type": d.file_type,
                 "status": d.status,
                 "created_at": d.created_at.strftime("%d.%m.%Y")
@@ -124,6 +124,10 @@ async def check_upload_status(
     if pending.file_ids:
         # We assume only one file for document upload for now
         file_id = pending.file_ids.split(",")[0]
+        # We also need to know if it was a photo or document
+        # Let's check the type if we saved it... 
+        # Actually PendingUpload doesn't have file_type, we might need it.
+        # For now, let's just return file_ids
         return {
             "status": "uploaded", 
             "file_id": file_id
@@ -137,8 +141,8 @@ async def finalize_upload(
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_session)
 ):
-    """Saves the uploaded file from PendingUpload to StudentDocument"""
-    from database.models import PendingUpload, StudentDocument, ActivityLog, ActivityType
+    """Saves the uploaded file from PendingUpload to UserDocument"""
+    from database.models import PendingUpload, UserDocument
     pending = await db.get(PendingUpload, session_id)
     
     if not pending or not pending.file_ids:
@@ -147,25 +151,16 @@ async def finalize_upload(
     file_id = pending.file_ids.split(",")[0]
     
     # Create Real Document
-    doc = StudentDocument(
+    doc = UserDocument(
         student_id=student.id,
-        file_name=pending.title or "Hujjat",
-        description=pending.category or "Shaxsiy",
+        category=pending.category or "Shaxsiy",
+        title=pending.title or "Hujjat",
+        description="Ilovadan yuklangan",
         file_id=file_id,
-        file_type="document", # Default
+        file_type="document", # Default, can be refined if we store type in PendingUpload
         status="active"
     )
     db.add(doc)
-    
-    # Create Activity Log
-    log = ActivityLog(
-        student_id=student.id,
-        faculty_id=student.faculty_id,
-        activity_type=ActivityType.DOCUMENT,
-        reference_id=None, # Will be set after flush if needed, but ID is not committed yet
-        meta_data={"file_name": doc.file_name}
-    )
-    db.add(log)
     
     # Cleanup pending
     await db.delete(pending)
@@ -180,10 +175,10 @@ async def send_existing_doc_to_bot(
     db: AsyncSession = Depends(get_session)
 ):
     """Sends a previously uploaded document to the student's Telegram"""
-    from database.models import StudentDocument, TgAccount
+    from database.models import UserDocument, TgAccount
     
     # 1. Get Document
-    stmt = select(StudentDocument).where(StudentDocument.id == doc_id, StudentDocument.student_id == student.id)
+    stmt = select(UserDocument).where(UserDocument.id == doc_id, UserDocument.student_id == student.id)
     result = await db.execute(stmt)
     doc = result.scalars().first()
     
@@ -200,7 +195,7 @@ async def send_existing_doc_to_bot(
         
     # 3. Send via Bot
     try:
-        caption = f"📄 <b>{doc.file_name}</b>\nIzoh: {doc.description}"
+        caption = f"📄 <b>{doc.title}</b>\nKategoriya: {doc.category}"
         if doc.file_type == "photo":
             await bot.send_photo(tg_account.telegram_id, doc.file_id, caption=caption, parse_mode="HTML")
         else:
@@ -217,8 +212,8 @@ async def delete_document(
     db: AsyncSession = Depends(get_session)
 ):
     """Deletes a student's document"""
-    from database.models import StudentDocument
-    stmt = select(StudentDocument).where(StudentDocument.id == doc_id, StudentDocument.student_id == student.id)
+    from database.models import UserDocument
+    stmt = select(UserDocument).where(UserDocument.id == doc_id, UserDocument.student_id == student.id)
     result = await db.execute(stmt)
     doc = result.scalars().first()
     

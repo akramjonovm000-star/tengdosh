@@ -1083,7 +1083,7 @@ async def get_mgmt_student_details(
     db: AsyncSession = Depends(get_db)
 ):
     try:
-        from database.models import UserActivity, StudentDocument, UserCertificate, StudentFeedback
+        from database.models import UserActivity, UserDocument, UserCertificate, StudentFeedback
         
         student = await db.get(Student, student_id)
         if not student: raise HTTPException(status_code=404, detail="Talaba topilmadi")
@@ -1112,9 +1112,9 @@ async def get_mgmt_student_details(
 
         # 3. Documents
         docs_result = await db.execute(
-            select(StudentDocument)
-            .where(StudentDocument.student_id == student_id)
-            .order_by(StudentDocument.created_at.desc())
+            select(UserDocument)
+            .where(UserDocument.student_id == student_id)
+            .order_by(UserDocument.created_at.desc())
         )
         docs = docs_result.scalars().all()
 
@@ -1177,7 +1177,7 @@ async def get_mgmt_student_details(
                 "documents": [
                     {
                         "id": d.id, 
-                        "title": d.file_name, # Changed from title
+                        "title": d.title, 
                         "status": getattr(d, 'status', 'pending'), 
                         "date": safe_isoformat(getattr(d, 'created_at', None)),
                         "file_id": getattr(d, 'file_id', None),
@@ -1322,7 +1322,7 @@ async def send_student_doc_to_management(
     """
     Sends the document file to the management user's Telegram bot.
     """
-    from database.models import StudentDocument, UserCertificate
+    from database.models import UserDocument, UserCertificate
     from bot import bot
     
     # Security
@@ -1341,9 +1341,9 @@ async def send_student_doc_to_management(
         )
     else:
         stmt = (
-            select(StudentDocument, Student)
-            .join(Student, StudentDocument.student_id == Student.id)
-            .where(StudentDocument.id == doc_id)
+            select(UserDocument, Student)
+            .join(Student, UserDocument.student_id == Student.id)
+            .where(UserDocument.id == doc_id)
         )
         
     result = await db.execute(stmt)
@@ -1377,8 +1377,8 @@ async def send_student_doc_to_management(
             f"📄 <b>Talaba Hujjati (Rahbariyat)</b>\n\n"
             f"Talaba: <b>{student.full_name}</b>\n"
             f"Guruh: <b>{student.group_number}</b>\n"
-            f"Hujjat: <b>{doc.file_name}</b>\n"
-            f"Izoh: <b>{getattr(doc, 'description', '')}</b>"
+            f"Hujjat: <b>{doc.title}</b>\n"
+            f"Kategoriya: <b>{category}</b>"
         )
         
         if file_type == 'photo':
@@ -1424,7 +1424,7 @@ async def get_mgmt_documents_archive(
     """
     Get a list of all student documents for management with filtering.
     """
-    from database.models import StudentDocument, UserCertificate
+    from database.models import UserDocument, UserCertificate
     
     # 1. Security & Role Resolution
     dean_level_roles = [StaffRole.DEKAN, StaffRole.DEKAN_ORINBOSARI, StaffRole.DEKAN_YOSHLAR, StaffRole.DEKANAT]
@@ -1514,22 +1514,21 @@ async def get_mgmt_documents_archive(
 
     # 5. Fetch Standard Documents (If title mismatch "Sertifikatlar")
     if title != "Sertifikatlar":
-        stmt_doc = select(StudentDocument).join(Student).where(and_(*category_filters)).options(selectinload(StudentDocument.student))
+        stmt_doc = select(UserDocument).join(Student).where(and_(*category_filters)).options(selectinload(UserDocument.student))
         if title:
-            # We map 'title' query to 'file_name'
-            stmt_doc = stmt_doc.where(StudentDocument.file_name.ilike(f"%{title}%"))
+            stmt_doc = stmt_doc.where(UserDocument.title == title)
         if query:
-            stmt_doc = stmt_doc.where((StudentDocument.file_name.ilike(f"%{query}%")) | (Student.full_name.ilike(f"%{query}%")))
+            stmt_doc = stmt_doc.where((UserDocument.title.ilike(f"%{query}%")) | (Student.full_name.ilike(f"%{query}%")))
             
         # Count for Documents
-        cnt_doc = await db.execute(select(func.count(StudentDocument.id)).join(Student).where(and_(*category_filters)))
+        cnt_doc = await db.execute(select(func.count(UserDocument.id)).join(Student).where(and_(*category_filters)))
         total_count += cnt_doc.scalar() or 0
         
-        res_doc = await db.execute(stmt_doc.order_by(StudentDocument.created_at.desc()))
+        res_doc = await db.execute(stmt_doc.order_by(UserDocument.created_at.desc()))
         for d in res_doc.scalars().all():
             all_results.append({
                 "id": str(d.id),
-                "title": d.file_name, # Mapped from file_name
+                "title": d.title,
                 "created_at": d.created_at.isoformat() if d.created_at else None,
                 "file_id": d.file_id,
                 "file_type": d.file_type or "document",

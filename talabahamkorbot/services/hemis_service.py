@@ -144,11 +144,11 @@ class HemisService:
     async def update_account(token: str, data: dict, base_url: Optional[str] = None):
         """
         Update user profile data (phone, email, password) on HEMIS.
-        Endpoint: POST /account/update
+        Endpoint: POST /account/me (This endpoint handles updates too)
         """
         client = await HemisService.get_client()
         final_base = base_url or HemisService.BASE_URL
-        url = f"{final_base}/account/update"
+        url = f"{final_base}/account/me"
         
         try:
             response = await HemisService.fetch_with_retry(

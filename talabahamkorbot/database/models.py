@@ -361,24 +361,6 @@ class ResourceFile(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
-class StudentDocument(Base):
-    __tablename__ = "student_documents"
-    
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    student_id: Mapped[int] = mapped_column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
-    
-    file_id: Mapped[str] = mapped_column(String(255), nullable=False)
-    file_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    file_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    
-    status: Mapped[str] = mapped_column(String(32), default="pending") # pending, reviewed, rejected
-    created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow, index=True)
-
-    student: Mapped["Student"] = relationship("Student")
-
-    def __repr__(self):
-        return f"<StudentDocument {self.id} for {self.student_id}>"
 
 
 # ============================================================
