@@ -216,6 +216,10 @@ def build_student_filter(
     if group_number:
         filters.append(Student.group_number == group_number)
         
+    if not filters:
+        from sqlalchemy import true
+        return [true()]
+        
     return filters
 
 @router.get("/faculties")
@@ -228,7 +232,13 @@ async def get_mgmt_faculties(
     Dynamically scoped by user role.
     """
     uni_id = getattr(staff, 'university_id', None)
-    if not uni_id:
+    staff_role = getattr(staff, 'role', None)
+    
+    # 1. Access Check for Metadata
+    global_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
+    is_global = getattr(staff, 'hemis_role', None) == 'rahbariyat' or staff_role in global_roles
+
+    if not uni_id and not is_global:
         raise HTTPException(status_code=400, detail="Universitet aniqlanmadi")
 
     s_role = getattr(staff, 'role', None)
@@ -1196,7 +1206,7 @@ async def send_student_doc_to_management(
         logger.error(f"Error sending doc to management: {e}")
         return {"success": False, "message": f"Botda xatolik yuz berdi: {str(e)}"}
 
-@router.get("/documents/archive")
+@router.get("/archive")
 async def get_mgmt_documents_archive(
     query: str = None,
     faculty_id: int = None,
@@ -1230,6 +1240,10 @@ async def get_mgmt_documents_archive(
     category_filters = build_student_filter(
         staff, faculty_id, education_type, education_form, level_name, specialty_name, group_number
     )
+    
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"ARCHIVE_REQ: Staff: {staff.id}, Role: {staff_role}, Filters: {category_filters}, Title: {title}")
 
     all_results = []
     total_count = 0
