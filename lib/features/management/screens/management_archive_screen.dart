@@ -125,6 +125,24 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
     });
   }
 
+  void _resetFilters() {
+    setState(() {
+      _searchController.clear();
+      _selectedEducationType = null;
+      _selectedEducationForm = null;
+      _selectedCourse = null;
+      _selectedFacultyId = null;
+      _selectedSpecialty = null;
+      _selectedGroup = null;
+      // Keep category as is or reset to "Hujjatlar"? Let's keep existing category logic slightly separate, 
+      // but usually "Reset" means everything. Let's keep category as is for now as it's a tab.
+    });
+    // Reload lists without filters
+    _loadSpecialties();
+    _loadGroups();
+    _loadDocuments(refresh: true);
+  }
+
   // Filter Data
   final List<String> _educationTypes = ["Bakalavr", "Magistr"];
   final List<String> _educationForms = ["Kunduzgi", "Sirtqi", "Kechki"];
@@ -270,6 +288,24 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.green),
               ),
             ]),
+            // Reset Button
+            InkWell(
+              onTap: _resetFilters,
+              borderRadius: BorderRadius.circular(4),
+              child: Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Row(
+                  children: [
+                    Icon(Icons.cleaning_services_rounded, size: 14, color: AppTheme.primaryBlue),
+                    const SizedBox(width: 4),
+                    Text(
+                      "Tozalash",
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.primaryBlue),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),
