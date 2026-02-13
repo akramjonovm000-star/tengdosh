@@ -1452,6 +1452,8 @@ async def export_mgmt_documents_zip(
     if title and title != "Hammasi":
         if title == "Sertifikatlar":
             stmt = stmt.where(StudentDocument.file_type == "certificate")
+        elif title == "Hujjatlar":
+            stmt = stmt.where(StudentDocument.file_type == "document")
         else:
             stmt = stmt.where(StudentDocument.file_name.ilike(f"%{title}%"))
             

@@ -26,14 +26,14 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
   int? _selectedFacultyId;
   String? _selectedSpecialty;
   String? _selectedGroup;
-  String? _selectedTitle;
+  String? _selectedTitle = "Hujjatlar";
   
   bool _isLoading = true;
   int _currentPage = 1;
   bool _hasMore = true;
 
   final List<Map<String, dynamic>> _categories = [
-    {"id": null, "name": "Hammasi", "icon": Icons.all_inclusive_rounded},
+    {"id": "Hujjatlar", "name": "Hujjatlar", "icon": Icons.assignment_rounded},
     {"id": "Passport", "name": "Passport", "icon": Icons.credit_card_rounded},
     {"id": "Diplom", "name": "Diplom", "icon": Icons.school_rounded},
     {"id": "Rezyume", "name": "Rezyume", "icon": Icons.work_outline_rounded},
@@ -145,7 +145,7 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
                   _selectedFacultyId = null;
                   _selectedSpecialty = null;
                   _selectedGroup = null;
-                  _selectedTitle = null;
+                  _selectedTitle = "Hujjatlar";
                   _searchController.clear();
                 });
                 _loadDocuments(refresh: true);
@@ -195,7 +195,7 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text("ZIP Export"),
-        content: Text("Tanlangan filtrlar bo'yicha barcha hujjatlarni ZIP arxiv ko'rinishida Telegramingizga yuborilsinmi?\n\nFiltr: ${_selectedTitle ?? 'Barchasi'}"),
+        content: Text("Tanlangan filtrlar bo'yicha barcha hujjatlarni ZIP arxiv ko'rinishida Telegramingizga yuborilsinmi?\n\nFiltr: ${_selectedTitle ?? 'Hujjatlar'}"),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Bekor qilish")),
           ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text("Yuborish")),
@@ -383,7 +383,7 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
                     label: Text(cat['name']),
                     selected: isSelected,
                     onSelected: (val) {
-                      setState(() => _selectedTitle = val ? cat['id'] : null);
+                      setState(() => _selectedTitle = val ? cat['id'] : "Hujjatlar");
                       _loadDocuments(refresh: true);
                     },
                     selectedColor: AppTheme.primaryBlue.withOpacity(0.2),
