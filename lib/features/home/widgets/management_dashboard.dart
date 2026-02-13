@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:talabahamkor_mobile/core/providers/auth_provider.dart';
 import '../screens/management/hemis/hemis_dashboard_screen.dart';
 import '../screens/management/student_search_screen.dart';
 import '../screens/management/staff_search_screen.dart';
