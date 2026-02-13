@@ -28,27 +28,39 @@ class AppealStats {
 }
 
 class FacultyPerformance {
+  final int? id;
   final String faculty;
   final int total;
   final int resolved;
   final int pending;
+  final int overdue;
+  final double avgResponseTime;
   final double rate;
+  final Map<String, int> topics;
 
   FacultyPerformance({
+    this.id,
     required this.faculty,
     required this.total,
     required this.resolved,
     required this.pending,
+    required this.overdue,
+    required this.avgResponseTime,
     required this.rate,
+    required this.topics,
   });
 
   factory FacultyPerformance.fromJson(Map<String, dynamic> json) {
     return FacultyPerformance(
+      id: json['id'],
       faculty: json['faculty'] ?? "Noma'lum",
       total: json['total'] ?? 0,
       resolved: json['resolved'] ?? 0,
       pending: json['pending'] ?? 0,
+      overdue: json['overdue'] ?? 0,
+      avgResponseTime: (json['avg_response_time'] ?? 0).toDouble(),
       rate: (json['rate'] ?? 0).toDouble(),
+      topics: Map<String, int>.from(json['topics'] ?? {}),
     );
   }
 }

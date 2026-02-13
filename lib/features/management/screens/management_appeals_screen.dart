@@ -3,6 +3,7 @@ import 'package:talabahamkor_mobile/core/theme/app_theme.dart';
 import '../models/appeal_model.dart';
 import '../services/appeal_service.dart';
 import 'management_appeal_detail_screen.dart';
+import 'faculty_appeals_screen.dart';
 import 'package:intl/intl.dart';
 
 class ManagementAppealsScreen extends StatefulWidget {
@@ -213,34 +214,42 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
   }
   
   Widget _buildFacultyRow(FacultyPerformance item) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(child: Text(item.faculty, style: const TextStyle(fontWeight: FontWeight.bold))),
-              Text("${item.rate}% Yechim", style: TextStyle(color: item.rate > 80 ? Colors.green : (item.rate > 50 ? Colors.orange : Colors.red), fontWeight: FontWeight.bold)),
-            ],
-          ),
-          const SizedBox(height: 8),
-          LinearProgressIndicator(
-            value: item.rate / 100,
-            backgroundColor: Colors.grey[200],
-            color: item.rate > 80 ? Colors.green : (item.rate > 50 ? Colors.orange : Colors.red),
-            minHeight: 6,
-            borderRadius: BorderRadius.circular(3),
-          ),
-          const SizedBox(height: 8),
-          Text("Jami: ${item.total} | Kutilmoqda: ${item.pending} | Yopilgan: ${item.resolved}", style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-        ],
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context, 
+          MaterialPageRoute(builder: (_) => FacultyAppealsScreen(facultyStats: item))
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(child: Text(item.faculty, style: const TextStyle(fontWeight: FontWeight.bold))),
+                Text("${item.rate}% Yechim", style: TextStyle(color: item.rate > 80 ? Colors.green : (item.rate > 50 ? Colors.orange : Colors.red), fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            LinearProgressIndicator(
+              value: item.rate / 100,
+              backgroundColor: Colors.grey[200],
+              color: item.rate > 80 ? Colors.green : (item.rate > 50 ? Colors.orange : Colors.red),
+              minHeight: 6,
+              borderRadius: BorderRadius.circular(3),
+            ),
+            const SizedBox(height: 8),
+            Text("Jami: ${item.total} | Kutilmoqda: ${item.pending} | Yopilgan: ${item.resolved}", style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+          ],
+        ),
       ),
     );
   }
