@@ -6,11 +6,11 @@ import os
 sys.path.append(os.getcwd())
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import select
+from sqlalchemy.orm import sessionmaker, selectinload
+from sqlalchemy import select, and_, func, distinct
 from config import DATABASE_URL
 from database.models import Staff, Student, StudentDocument
-from api.management import get_mgmt_documents_archive
+from api.management import build_student_filter
 
 class MockStaff:
     def __init__(self, id, role, university_id=None):
@@ -26,40 +26,31 @@ async def verify_stats():
         # Simulate Staff 27 (Developer)
         staff = MockStaff(id=27, role='developer')
         
-        print(f"--- Hard Testing Archive API Logic ---")
-        
-        # We call the function logic (simplified since we don't want to mock Depends)
-        # But we previously added logging to it, so running it here won't show logs in journal
-        # Let's just run the actual function logic here
-        from database.models import StaffRole
-        from api.management import build_student_filter
-        from sqlalchemy import and_, func, distinct
-        
+        print(f"--- Detailed Document Check ---")
         category_filters = build_student_filter(staff)
-        print(f"Filters: {category_filters}")
         
-        # Main Query matching what we fixed
-        stmt = select(StudentDocument).join(Student).where(and_(*category_filters))
-        total_count = await session.scalar(select(func.count()).select_from(stmt.subquery()))
-        print(f"Total Documents in Overall Scope: {total_count}")
+        # Check Total Documents JOINED with Student
+        stmt = (
+            select(StudentDocument)
+            .join(Student)
+            .where(and_(*category_filters))
+            .options(selectinload(StudentDocument.student))
+        )
         
-        # Stats matching what we fixed
-        student_count_stmt = select(func.count(distinct(Student.id))).where(and_(*category_filters))
-        total_students_in_scope = await session.scalar(student_count_stmt)
-        print(f"Students in Scope: {total_students_in_scope}")
-
-        uploaded_students_stmt = select(func.count(distinct(StudentDocument.student_id))).join(Student).where(and_(*category_filters))
-        students_with_uploads = await session.scalar(uploaded_students_stmt)
-        print(f"Students with Uploads: {students_with_uploads}")
-
-        total_docs_stmt = select(func.count(StudentDocument.id)).join(Student).where(and_(*category_filters, StudentDocument.file_type == "document"))
-        total_docs = await session.scalar(total_docs_stmt)
-        print(f"Total Documents (type=document): {total_docs}")
-
-        # Check for Obyektivka specifically
-        oby_stmt = stmt.where(StudentDocument.file_name.ilike("%Obyektivka%"))
-        oby_count = await session.scalar(select(func.count()).select_from(oby_stmt.subquery()))
-        print(f"Total Obyektivka files: {oby_count}")
+        res = await session.execute(stmt)
+        all_docs = res.scalars().all()
+        
+        print(f"Total Documents Found: {len(all_docs)}")
+        
+        print("\n--- Document Details (First 20) ---")
+        for i, doc in enumerate(all_docs[:20]):
+            print(f"{i+1}. ID: {doc.id} | Title: '{doc.file_name}' | Type: '{doc.file_type}' | UploadedBy: '{doc.uploaded_by}' | Student: {doc.student.full_name} ({doc.student_id})")
+            
+        print("\n--- 'Obyektivka' Specific Check ---")
+        oby_docs = [d for d in all_docs if 'obyektivka' in d.file_name.lower()]
+        print(f"Found {len(oby_docs)} Obyektivka documents:")
+        for doc in oby_docs:
+             print(f"- ID: {doc.id} | Title: '{doc.file_name}' | FileID: {doc.telegram_file_id[:10]}... | Student: {doc.student.full_name}")
 
     await engine.dispose()
 
