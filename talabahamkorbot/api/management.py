@@ -42,6 +42,7 @@ async def get_management_dashboard(
     dean_level_roles = [StaffRole.DEKAN, StaffRole.DEKAN_ORINBOSARI, StaffRole.DEKAN_YOSHLAR, StaffRole.DEKANAT, StaffRole.YOSHLAR_YETAKCHISI, StaffRole.YOSHLAR_ITTIFOQI]
     global_mgmt_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
     
+    current_role = getattr(staff, 'role', None)
     # Identify if the user is authorized for management section
     is_mgmt_authorized = current_role in global_mgmt_roles or current_role in dean_level_roles or current_role == StaffRole.TYUTOR
     
