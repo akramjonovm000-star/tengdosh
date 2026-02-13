@@ -628,16 +628,213 @@ async def cb_leader_manage_club(call: CallbackQuery, session: AsyncSession):
     cid = int(call.data.split(":")[1])
     club = await session.get(Club, cid)
     
+    if not club:
+        await call.answer("❌ Klub topilmadi.", show_alert=True)
+        return
+
+    # [SECURITY] Check Leadership
+    from database.models import TgAccount
+    account = await session.scalar(select(TgAccount).where(TgAccount.telegram_id == call.from_user.id))
+    
+    is_leader = False
+    if account:
+        # Check Student Leader
+        if club.leader_student_id and account.student_id == club.leader_student_id:
+            is_leader = True
+        # Check Staff Leader
+        elif club.leader_id and account.staff_id == club.leader_id:
+            is_leader = True
+        # Check if staff is owner/admin (optional, but let's stick to leader for now)
+    
+    if not is_leader:
+        await call.answer("🚫 Siz bu klub rahbari emassiz!", show_alert=True)
+        return
+    
     await call.message.edit_text(
         f"💼 <b>{club.name} Boshqaruvi</b>\n\n"
         "Nima qilmoqchisiz?",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="📊 Statistika", callback_data=f"club_stats:{cid}")],
+            [InlineKeyboardButton(text="👥 A'zolar", callback_data=f"club_members:{cid}:0")],
+            [InlineKeyboardButton(text="ℹ️ Klub ma'lumotlari", callback_data=f"club_info:{cid}")],
             [InlineKeyboardButton(text="📢 Maqsadli E'lon (Broadcast)", callback_data=f"club_bc_start:{cid}")],
             [InlineKeyboardButton(text="📅 Tadbir yaratish (Calendar)", callback_data=f"club_evt_start:{cid}")],
-            [InlineKeyboardButton(text="⬅️ Ortga", callback_data="go_student_home")] # Should be student home
+            [InlineKeyboardButton(text="⬅️ Ortga", callback_data="go_student_home")] 
         ]),
         parse_mode="HTML"
     )
+
+@router.callback_query(F.data.startswith("club_stats:"))
+async def cb_club_stats(call: CallbackQuery, session: AsyncSession):
+    cid = int(call.data.split(":")[1])
+    
+    # Count members
+    from database.models import ClubMembership
+    from sqlalchemy import func
+    
+    member_count = await session.scalar(
+        select(func.count()).select_from(ClubMembership).where(ClubMembership.club_id == cid)
+    )
+    
+    await call.message.edit_text(
+        f"📊 <b>Klub Statistikasi</b>\n\n"
+        f"👥 <b>Jami a'zolar:</b> {member_count} nafar\n"
+        f"📅 <b>Bugungi faollik:</b> -- (Tez orada)\n\n"
+        "<i>Ma'lumotlar real vaqt rejimida yangilanadi.</i>",
+        reply_markup=get_back_inline_kb(f"leader_manage:{cid}"),
+        parse_mode="HTML"
+    )
+
+@router.callback_query(F.data.startswith("club_members:"))
+async def cb_club_members(call: CallbackQuery, session: AsyncSession):
+    # Data format: club_members:{cid}:{page}
+    _, cid_str, page_str = call.data.split(":")
+    cid = int(cid_str)
+    page = int(page_str)
+    limit = 10
+    offset = page * limit
+    
+    # Query Members with Student info
+    from database.models import ClubMembership, Student
+    stmt = (
+        select(Student)
+        .join(ClubMembership, Student.id == ClubMembership.student_id)
+        .where(ClubMembership.club_id == cid)
+        .order_by(Student.full_name)
+        .offset(offset)
+        .limit(limit + 1) # +1 to check if next page exists
+    )
+    students = (await session.execute(stmt)).scalars().all()
+    
+    has_next = len(students) > limit
+    display_students = students[:limit]
+    
+    msg = f"👥 <b>Klub A'zolari (Sahifa {page + 1})</b>\n\n"
+    if not display_students:
+        msg += "<i>Hozircha a'zolar yo'q.</i>"
+    else:
+        for i, s in enumerate(display_students, 1):
+            phone = s.phone or "Noma'lum"
+            msg += f"{offset + i}. <b>{s.full_name}</b>\n   📞 {phone}\n\n"
+            
+    # Pagination KB
+    kb = []
+    nav_row = []
+    if page > 0:
+        nav_row.append(InlineKeyboardButton(text="⬅️ Oldingi", callback_data=f"club_members:{cid}:{page-1}"))
+    if has_next:
+        nav_row.append(InlineKeyboardButton(text="Keyingi ➡️", callback_data=f"club_members:{cid}:{page+1}"))
+    if nav_row:
+        kb.append(nav_row)
+    
+    # Excel Download Button
+    kb.append([InlineKeyboardButton(text="📥 Excel yuklab olish", callback_data=f"club_download:{cid}")])
+    kb.append([InlineKeyboardButton(text="⬅️ Ortga", callback_data=f"leader_manage:{cid}")])
+    
+    await call.message.edit_text(msg, reply_markup=InlineKeyboardMarkup(inline_keyboard=kb), parse_mode="HTML")
+
+@router.callback_query(F.data.startswith("club_download:"))
+async def cb_club_download(call: CallbackQuery, session: AsyncSession):
+    cid = int(call.data.split(":")[1])
+    
+    # Notify user
+    await call.answer("⏳ Fayl tayyorlanmoqda...", show_alert=False)
+    
+    # Fetch ALL members
+    from database.models import ClubMembership, Student, Club
+    stmt = (
+        select(Student, ClubMembership.joined_at)
+        .join(ClubMembership, Student.id == ClubMembership.student_id)
+        .where(ClubMembership.club_id == cid)
+        .order_by(Student.full_name)
+    )
+    results = (await session.execute(stmt)).all()
+    
+    if not results:
+        await call.answer("❌ A'zolar yo'q!", show_alert=True)
+        return
+
+    # Generate Excel
+    import openpyxl
+    from openpyxl.styles import Font
+    import tempfile
+    import os
+    from aiogram.types import FSInputFile
+    
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Klub A'zolari"
+    
+    # Headers
+    headers = ["T/r", "F.I.SH", "HEMIS ID", "Fakultet", "Yo'nalish", "Telefon", "Kirgan sana"]
+    ws.append(headers)
+    
+    # Style headers
+    for cell in ws[1]:
+        cell.font = Font(bold=True)
+        
+    for i, (student, joined_at) in enumerate(results, 1):
+        joined_str = joined_at.strftime("%d.%m.%Y") if joined_at else ""
+        ws.append([
+            i,
+            student.full_name,
+            student.hemis_login or student.hemis_id or "",
+            student.faculty_name or "",
+            student.specialty_name or "",
+            student.phone or "",
+            joined_str
+        ])
+        
+    # Start columns width adjustment
+    for col in ws.columns:
+        max_length = 0
+        column = col[0].column_letter # Get the column name
+        for cell in col:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(cell.value)
+            except:
+                pass
+        adjusted_width = (max_length + 2)
+        ws.column_dimensions[column].width = adjusted_width
+        
+    # Save to temp file
+    fd, path = tempfile.mkstemp(suffix=".xlsx")
+    try:
+        wb.save(path)
+        os.close(fd)
+        
+        # Send file
+        club = await session.get(Club, cid)
+        filename = f"{club.name}_azolar.xlsx".replace(" ", "_")
+        
+        file = FSInputFile(path, filename=filename)
+        await call.message.answer_document(file, caption=f"📊 <b>{club.name}</b> a'zolari ro'yxati.")
+        
+    finally:
+        # Cleanup
+        if os.path.exists(path):
+            os.remove(path)
+
+@router.callback_query(F.data.startswith("club_info:"))
+async def cb_club_info(call: CallbackQuery, session: AsyncSession):
+    cid = int(call.data.split(":")[1])
+    club = await session.get(Club, cid)
+    
+    if not club:
+        await call.answer("Klub topilmadi", show_alert=True)
+        return
+        
+    info = (
+        f"ℹ️ <b>Klub Ma'lumotlari</b>\n\n"
+        f"🏷 <b>Nomi:</b> {club.name}\n"
+        f"📝 <b>Tavsifi:</b> {club.description}\n"
+        f"🔗 <b>Link:</b> {club.channel_link or 'Mavjud emas'}\n"
+        f"👤 <b>Sardor (Siz):</b> O'zingiz\n\n"
+        "<i>Ma'lumotlarni o'zgartirish uchun Admin bilan bog'laning.</i>"
+    )
+    
+    await call.message.edit_text(info, reply_markup=get_back_inline_kb(f"leader_manage:{cid}"), parse_mode="HTML")
 
 # --- BROADCAST ---
 @router.callback_query(F.data.startswith("club_bc_start:"))

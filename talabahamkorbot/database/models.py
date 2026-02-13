@@ -464,6 +464,9 @@ class Student(Base):
     certificates: Mapped[list["UserCertificate"]] = relationship(
         "UserCertificate", back_populates="student", cascade="all, delete-orphan"
     )
+    all_documents: Mapped[list["StudentDocument"]] = relationship(
+        "StudentDocument", back_populates="student", cascade="all, delete-orphan"
+    )
     feedbacks: Mapped[list["StudentFeedback"]] = relationship(
         "StudentFeedback", back_populates="student", cascade="all, delete-orphan"
     )
@@ -613,6 +616,33 @@ class UserCertificate(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
 
     student: Mapped["Student"] = relationship("Student", back_populates="certificates")
+
+
+# ============================================================
+# UNIFIED STUDENT DOCUMENTS
+# ============================================================
+
+class StudentDocument(Base):
+    __tablename__ = "student_documents"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    student_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    
+    telegram_file_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    telegram_file_unique_id: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
+    
+    file_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    file_type: Mapped[str] = mapped_column(String(32), index=True) # "document" or "certificate"
+    mime_type: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    file_size: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    
+    uploaded_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
+    uploaded_by: Mapped[str] = mapped_column(String(32), default="student") # "student" or "admin"
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    student: Mapped["Student"] = relationship("Student", back_populates="all_documents")
 
 
 # ============================================================
@@ -937,6 +967,10 @@ class PendingUpload(Base):
     category: Mapped[str | None] = mapped_column(String(64), nullable=True) # e.g. 'passport', 'boshqa'
     title: Mapped[str | None] = mapped_column(String(128), nullable=True) # Custom title for 'Other'
     file_ids: Mapped[str] = mapped_column(Text, default="") # Comma-separated list of file_ids
+    
+    file_unique_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    file_size: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    mime_type: Mapped[str | None] = mapped_column(String(128), nullable=True)
     
     created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
 

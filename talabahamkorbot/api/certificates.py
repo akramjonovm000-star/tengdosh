@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 from api.dependencies import get_current_student
 from database.db_connect import get_session
-from database.models import Student, UserCertificate, TgAccount, PendingUpload
+from database.models import Student, StudentDocument, TgAccount, PendingUpload
 from bot import bot
 
 router = APIRouter(tags=["Certificates"])
@@ -22,7 +22,10 @@ async def get_my_certificates(
     db: AsyncSession = Depends(get_session)
 ):
     """Returns real certificates uploaded by/for the student"""
-    stmt = select(UserCertificate).where(UserCertificate.student_id == student.id).order_by(UserCertificate.created_at.desc())
+    stmt = select(StudentDocument).where(
+        StudentDocument.student_id == student.id,
+        StudentDocument.file_type == "certificate"
+    ).order_by(StudentDocument.uploaded_at.desc())
     result = await db.execute(stmt)
     certs = result.scalars().all()
     
@@ -31,9 +34,9 @@ async def get_my_certificates(
         "data": [
             {
                 "id": c.id,
-                "title": c.title,
-                "file_id": c.file_id,
-                "created_at": c.created_at.strftime("%d.%m.%Y")
+                "title": c.file_name,
+                "file_id": c.telegram_file_id,
+                "created_at": c.uploaded_at.strftime("%d.%m.%Y")
             } for c in certs
         ]
     }
@@ -59,6 +62,7 @@ async def set_bot_state(user_id: int, state):
 
 class InitCertRequest(BaseModel):
     session_id: str
+    category: str | None = None
     title: str | None = None
 
 @router.post("/init-upload")
@@ -79,6 +83,8 @@ async def initiate_certificate_upload(
         
     # 2. Create Session
     session_id = req.session_id
+    # Default values for certificate
+    category = "sertifikat" 
     title = req.title if req.title else "Sertifikat"
     
     # Cleanup old pending for same session if exists
@@ -87,7 +93,7 @@ async def initiate_certificate_upload(
     new_pending = PendingUpload(
         session_id=session_id,
         student_id=student.id,
-        category="sertifikat",
+        category=category,
         title=title,
         file_ids=""
     )
@@ -138,8 +144,7 @@ async def finalize_certificate_upload(
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_session)
 ):
-    """Saves the uploaded file from PendingUpload to UserCertificate"""
-    from database.models import PendingUpload, UserCertificate
+    """Saves the uploaded file from PendingUpload to StudentDocument"""
     pending = await db.get(PendingUpload, session_id)
     
     if not pending or not pending.file_ids:
@@ -148,10 +153,16 @@ async def finalize_certificate_upload(
     file_id = pending.file_ids.split(",")[0]
     
     # Create Real Certificate
-    cert = UserCertificate(
+    cert = StudentDocument(
         student_id=student.id,
-        title=pending.title or "Sertifikat",
-        file_id=file_id
+        file_name=pending.title or "Sertifikat",
+        telegram_file_id=file_id,
+        telegram_file_unique_id=pending.file_unique_id,
+        file_size=pending.file_size,
+        mime_type=pending.mime_type,
+        file_type="certificate",
+        uploaded_by="student",
+        is_active=True
     )
     db.add(cert)
     
@@ -169,7 +180,7 @@ async def send_cert_to_bot(
 ):
     """Sends a stored certificate to the student's Telegram"""
     # 1. Get Cert
-    stmt = select(UserCertificate).where(UserCertificate.id == cert_id, UserCertificate.student_id == student.id)
+    stmt = select(StudentDocument).where(StudentDocument.id == cert_id, StudentDocument.student_id == student.id)
     result = await db.execute(stmt)
     cert = result.scalars().first()
     
@@ -186,16 +197,14 @@ async def send_cert_to_bot(
         
     # 3. Send via Bot
     try:
-        caption = f"🎓 <b>{cert.title}</b>"
-        try:
-            await bot.send_document(tg_account.telegram_id, cert.file_id, caption=caption, parse_mode="HTML")
-        except Exception as e:
-            # Self-healing: If sent as document but it's actually a photo
-            if "can't use file of type Photo as Document" in str(e) or "Bad Request: document_invalid" in str(e):
-                logger.info(f"Self-healing: Certificate {cert.id} is actually a photo. Autocorrecting...")
-                await bot.send_photo(tg_account.telegram_id, cert.file_id, caption=caption, parse_mode="HTML")
-            else:
-                raise e
+        caption = f"🎓 <b>{cert.file_name}</b>"
+        # Determine send method
+        is_photo = cert.mime_type and "image" in cert.mime_type
+        
+        if is_photo:
+            await bot.send_photo(tg_account.telegram_id, cert.telegram_file_id, caption=caption, parse_mode="HTML")
+        else:
+            await bot.send_document(tg_account.telegram_id, cert.telegram_file_id, caption=caption, parse_mode="HTML")
                 
         return {"success": True, "message": "Sertifikat Telegramingizga yuborildi!"}
     except Exception as e:
@@ -209,8 +218,7 @@ async def delete_certificate(
     db: AsyncSession = Depends(get_session)
 ):
     """Deletes a student's certificate"""
-    from database.models import UserCertificate
-    stmt = select(UserCertificate).where(UserCertificate.id == cert_id, UserCertificate.student_id == student.id)
+    stmt = select(StudentDocument).where(StudentDocument.id == cert_id, StudentDocument.student_id == student.id)
     result = await db.execute(stmt)
     cert = result.scalars().first()
     

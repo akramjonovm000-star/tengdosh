@@ -104,4 +104,55 @@ async def join_club(
     db.add(membership)
     await db.commit()
     
+    # --- [NEW] NOTIFY LEADERS ---
+    try:
+        from bot import bot
+        from database.models import TgAccount
+        
+        # 1. Fetch Leaders (Staff & Student)
+        # Eager load leaders to get their IDs
+        club = await db.scalar(
+            select(Club)
+            .where(Club.id == req.club_id)
+            .options(selectinload(Club.leaders))
+        )
+        
+        leader_staff_ids = [l.id for l in club.leaders]
+        leader_student_id = club.leader_student_id
+        
+        # 2. Get Telegram IDs
+        recipients = []
+        
+        # Staff leaders
+        if leader_staff_ids:
+            staff_accs = await db.scalars(select(TgAccount).where(TgAccount.staff_id.in_(leader_staff_ids)))
+            recipients.extend([acc.telegram_id for acc in staff_accs if acc.telegram_id])
+            
+        # Student leader
+        if leader_student_id:
+            stud_acc = await db.scalar(select(TgAccount).where(TgAccount.student_id == leader_student_id))
+            if stud_acc and stud_acc.telegram_id:
+                recipients.append(stud_acc.telegram_id)
+        
+        # 3. Send Notifications
+        unique_recipients = list(set(recipients))
+        
+        msg_text = (
+            f"🔔 <b>Yangi a'zo!</b>\n\n"
+            f"To'garak: <b>{club.name}</b>\n"
+            f"Talaba: {student.full_name}\n"
+            f"Guruh: {student.group_number or 'Aniqlanmagan'}"
+        )
+        
+        for tid in unique_recipients:
+            try:
+                await bot.send_message(tid, msg_text, parse_mode="HTML")
+            except Exception as e:
+                print(f"Failed to notify leader {tid}: {e}")
+                
+    except Exception as e:
+        # Don't fail the join process if notification fails
+        print(f"Global notification error: {e}")
+    # ----------------------------
+    
     return {"status": "success", "message": "Muvaffaqiyatli a'zo bo'ldingiz"}

@@ -12,6 +12,7 @@ from .ai_chat import router as ai_chat_router
 from .owner import router as owner_router
 from .owner_gifts import router as owner_gifts_router
 from .admin import admin_router
+from .admin.clubs import router as admin_clubs_router # [NEW]
 
 # ===================== STUDENT =====================
 # ===================== STUDENT =====================
@@ -54,6 +55,7 @@ root_router.include_router(deep_link_auth_router)
 root_router.include_router(owner_router)
 root_router.include_router(owner_gifts_router)
 root_router.include_router(admin_router)
+root_router.include_router(admin_clubs_router) # [NEW]
 
 # 3. TYUTOR (PRIORITY OVER STAFF)
 # Bu juda muhim, chunki Staff routerlari "tyutor" callbacklarini ushlab qolishi mumkin.

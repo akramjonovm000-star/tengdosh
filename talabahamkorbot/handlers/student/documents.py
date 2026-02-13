@@ -4,7 +4,7 @@ from aiogram.fsm.context import FSMContext
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.models import TgAccount, Student, UserDocument
+from database.models import TgAccount, Student, StudentDocument
 from keyboards.inline_kb import (
     get_student_documents_kb,
     get_student_documents_simple_kb,
@@ -70,7 +70,10 @@ async def student_my_documents(call: CallbackQuery, session: AsyncSession):
 
     # Fetch User Docs
     user_docs = (await session.scalars(
-        select(UserDocument).where(UserDocument.student_id == student.id).order_by(UserDocument.created_at.desc())
+        select(StudentDocument).where(
+            StudentDocument.student_id == student.id, 
+            StudentDocument.file_type == "document"
+        ).order_by(StudentDocument.uploaded_at.desc())
     )).all()
 
     kb_rows = []
@@ -100,7 +103,7 @@ async def open_user_document(call: CallbackQuery, session: AsyncSession):
     except:
         return await call.answer("Xatolik", show_alert=True)
 
-    doc = await session.get(UserDocument, doc_id)
+    doc = await session.get(StudentDocument, doc_id)
     if not doc:
         return await call.answer("Hujjat topilmadi", show_alert=True)
 
@@ -175,13 +178,22 @@ async def process_file_upload(message: Message, state: FSMContext, session: Asyn
     Captures ANY message in this state and checks content type manually.
     """
     file_id = None
+    file_unique_id = None
+    file_size = None
+    mime_type = None
     file_type = "document"
 
     if message.document:
         file_id = message.document.file_id
+        file_unique_id = message.document.file_unique_id
+        file_size = message.document.file_size
+        mime_type = message.document.mime_type
         file_type = "document"
     elif message.photo:
         file_id = message.photo[-1].file_id
+        file_unique_id = message.photo[-1].file_unique_id
+        file_size = message.photo[-1].file_size
+        mime_type = "image/jpeg"
         file_type = "photo"
     else:
         # Invalid content
@@ -189,7 +201,13 @@ async def process_file_upload(message: Message, state: FSMContext, session: Asyn
         return
 
     # Valid content
-    await state.update_data(file_id=file_id, file_type=file_type)
+    await state.update_data(
+        file_id=file_id, 
+        file_unique_id=file_unique_id,
+        file_size=file_size,
+        mime_type=mime_type,
+        file_type=file_type
+    )
     
     data = await state.get_data()
     title = data.get("title", "Hujjat")
@@ -221,17 +239,23 @@ async def save_document(call: CallbackQuery, state: FSMContext, session: AsyncSe
 
     title = data.get("title", "Hujjat")
     file_id = data.get("file_id")
-    file_type = data.get("file_type")
+    file_unique_id = data.get("file_unique_id")
+    file_size = data.get("file_size")
+    mime_type = data.get("mime_type")
+    # Mapping 'photo' to 'document' category if it's a student doc
+    file_type = "document"
     
     # Save to DB
-    doc = UserDocument(
+    doc = StudentDocument(
         student_id=student.id,
-        category="Shaxsiy", # Hardcoded category
-        title=title,
-        description="Foydalanuvchi yuklagan",
-        file_id=file_id,
+        file_name=title,
+        telegram_file_id=file_id,
+        telegram_file_unique_id=file_unique_id,
+        file_size=file_size,
+        mime_type=mime_type,
         file_type=file_type,
-        status="active"
+        uploaded_by="student",
+        is_active=True
     )
     session.add(doc)
     await session.commit()
@@ -260,8 +284,7 @@ from database.models import PendingUpload
 
 @router.message(DocumentAddStates.WAIT_FOR_APP_FILE, F.photo | F.document)
 async def on_mobile_document_upload(message: Message, state: FSMContext, session: AsyncSession):
-    print(f"DEBUG: on_mobile_document_upload triggered for {message.from_user.id}")
-    print(f"DEBUG: on_mobile_document_upload triggered for {message.from_user.id}")
+    logger.info(f"DEBUG: Document upload triggered for {message.from_user.id}")
     student = await get_student(message, session)
     if not student:
         return await message.answer("Siz talaba emassiz.")
@@ -278,11 +301,17 @@ async def on_mobile_document_upload(message: Message, state: FSMContext, session
         await state.clear()
         return await message.answer("Hozirda faol hujjat yuklash so'rovi mavjud emas.")
 
-    # Save File ID
+    # Save File ID and Metadata
     if message.photo:
         file_id = message.photo[-1].file_id
+        file_unique_id = message.photo[-1].file_unique_id
+        file_size = message.photo[-1].file_size
+        mime_type = "image/jpeg"
     else:
         file_id = message.document.file_id
+        file_unique_id = message.document.file_unique_id
+        file_size = message.document.file_size
+        mime_type = message.document.mime_type
         
     # Notify User IMMEDIATELY
     await message.answer(
@@ -293,6 +322,10 @@ async def on_mobile_document_upload(message: Message, state: FSMContext, session
 
     # Update DB (Overwrite for single document upload flow)
     pending.file_ids = file_id
+    pending.file_unique_id = file_unique_id
+    pending.file_size = file_size
+    pending.mime_type = mime_type
+    
     await session.commit()
     
     # State remains or clears? Usually we keep it until they leave or we can clear

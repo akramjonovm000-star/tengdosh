@@ -1,6 +1,6 @@
 from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
-from database.models import User, Student, University, Faculty, UserAppeal, StudentFeedback, UserActivity, UserDocument, UserCertificate, ChoyxonaPost, ChoyxonaComment, AiMessage
+from database.models import User, Student, University, Faculty, UserAppeal, StudentFeedback, UserActivity, StudentDocument, ChoyxonaPost, ChoyxonaComment, AiMessage
 from datetime import datetime, timedelta
 
 async def get_ai_analytics_summary(session: AsyncSession) -> str:
@@ -54,8 +54,8 @@ async def get_ai_analytics_summary(session: AsyncSession) -> str:
     act_pending = await session.scalar(select(func.count(UserActivity.id)).where(UserActivity.status == 'pending'))
     act_approved = await session.scalar(select(func.count(UserActivity.id)).where(UserActivity.status == 'approved'))
     
-    doc_total = await session.scalar(select(func.count(UserDocument.id)))
-    cert_total = await session.scalar(select(func.count(UserCertificate.id)))
+    doc_total = await session.scalar(select(func.count(StudentDocument.id)).where(StudentDocument.file_type == 'document'))
+    cert_total = await session.scalar(select(func.count(StudentDocument.id)).where(StudentDocument.file_type == 'certificate'))
 
     # Get active students count (active within last 30 days or similar - keeping simple for now)
     # Let's count premium students

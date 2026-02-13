@@ -7,7 +7,7 @@ from datetime import datetime
 
 from fastapi_cache.decorator import cache
 from database.db_connect import get_session
-from database.models import Staff, TutorGroup, Student, StaffRole, TyutorKPI, StudentFeedback, FeedbackReply, UserActivity, UserDocument
+from database.models import Staff, TutorGroup, Student, StaffRole, TyutorKPI, StudentFeedback, FeedbackReply, UserActivity, StudentDocument
 from api.dependencies import get_current_staff
 from bot import bot
 
@@ -40,9 +40,9 @@ async def get_tutor_document_stats(
     stmt = (
         select(
             Student.group_number,
-            func.count(distinct(UserDocument.student_id)).label("uploaded_count")
+            func.count(distinct(StudentDocument.student_id)).label("uploaded_count")
         )
-        .join(UserDocument, Student.id == UserDocument.student_id)
+        .join(StudentDocument, Student.id == StudentDocument.student_id)
         .where(Student.group_number.in_(group_numbers))
         .group_by(Student.group_number)
     )
@@ -88,7 +88,7 @@ async def get_group_document_details(
     # Fetch students and their documents
     stmt = (
         select(Student)
-        .options(joinedload(Student.documents))
+        .options(joinedload(Student.all_documents))
         .where(Student.group_number == group_number)
         .order_by(Student.full_name)
     )
@@ -103,15 +103,14 @@ async def get_group_document_details(
             "full_name": s.full_name,
             "image": s.image_url,
             "hemis_id": s.hemis_id,
-            "has_document": len(s.documents) > 0,
+            "has_document": any(d.file_type == "document" for d in s.all_documents),
             "documents": [
                 {
                     "id": d.id,
-                    "title": d.title,
-                    "category": d.category,
-                    "status": d.status,
-                    "created_at": d.created_at.isoformat()
-                } for d in s.documents
+                    "title": d.file_name,
+                    "type": d.file_type,
+                    "created_at": d.uploaded_at.isoformat()
+                } for d in s.all_documents if d.file_type == "document"
             ]
         })
         
@@ -167,9 +166,10 @@ async def request_documents(
         stmt = select(TgAccount).join(Student, TgAccount.student_id == Student.id).where(Student.group_number == group_number)
         
         # Subquery for checking existence of documents
-        doc_exists = exists().where(UserDocument.student_id == Student.id)
-        if category and category != "all":
-            doc_exists = doc_exists.where(UserDocument.category == category)
+        doc_exists = exists().where(
+            StudentDocument.student_id == Student.id,
+            StudentDocument.file_type == "document"
+        )
             
         stmt = stmt.where(~doc_exists)
         
@@ -619,9 +619,8 @@ async def get_tutor_certificate_stats(
     if not group_numbers:
         return {"success": True, "data": []}
 
-    # 2. Optimized Aggregate Query
+    # Optimized Aggregate Query
     from sqlalchemy import distinct
-    from database.models import UserCertificate
     from config import HEMIS_ADMIN_TOKEN
     from services.hemis_service import HemisService
     
@@ -631,10 +630,13 @@ async def get_tutor_certificate_stats(
     stmt = (
         select(
             Student.group_number,
-            func.count(distinct(UserCertificate.student_id)).label("students_with_certs")
+            func.count(distinct(StudentDocument.student_id)).label("students_with_certs")
         )
-        .join(UserCertificate, Student.id == UserCertificate.student_id)
-        .where(Student.group_number.in_(group_numbers))
+        .join(StudentDocument, Student.id == StudentDocument.student_id)
+        .where(
+            Student.group_number.in_(group_numbers),
+            StudentDocument.file_type == "certificate"
+        )
         .group_by(Student.group_number)
     )
     
@@ -674,16 +676,16 @@ async def get_group_certificate_details(
         raise HTTPException(status_code=403, detail="Siz bu guruhga biriktirilmagansiz")
 
     # Fetch students and their certificates
-    from database.models import UserCertificate
+    from database.models import StudentDocument
     stmt = (
         select(
             Student.id,
             Student.full_name,
             Student.image_url,
             Student.hemis_id,
-            func.count(UserCertificate.id).label("cert_count")
+            func.count(StudentDocument.id).label("cert_count")
         )
-        .outerjoin(UserCertificate, Student.id == UserCertificate.student_id)
+        .outerjoin(StudentDocument, and_(Student.id == StudentDocument.student_id, StudentDocument.file_type == "certificate"))
         .where(Student.group_number == group_number)
         .group_by(Student.id)
         .order_by(Student.full_name)
@@ -732,16 +734,18 @@ async def get_student_certificates_for_tutor(
         raise HTTPException(status_code=403, detail="Siz bu talabaga biriktirilmagansiz")
 
     # 3. Fetch Certificates
-    from database.models import UserCertificate
-    stmt = select(UserCertificate).where(UserCertificate.student_id == student_id).order_by(UserCertificate.created_at.desc())
+    stmt = select(StudentDocument).where(
+        StudentDocument.student_id == student_id,
+        StudentDocument.file_type == "certificate"
+    ).order_by(StudentDocument.uploaded_at.desc())
     result = await db.execute(stmt)
     certs = result.scalars().all()
     
     data = [
         {
             "id": c.id,
-            "title": c.title,
-            "created_at": c.created_at.isoformat()
+            "title": c.file_name,
+            "created_at": c.uploaded_at.isoformat()
         } for c in certs
     ]
 
@@ -768,11 +772,10 @@ async def send_student_cert_to_tutor(
     Sends the certificate file to the tutor's Telegram bot.
     """
     # 1. Get Certificate and Student Info
-    from database.models import UserCertificate
     stmt = (
-        select(UserCertificate, Student)
-        .join(Student, UserCertificate.student_id == Student.id)
-        .where(UserCertificate.id == cert_id)
+        select(StudentDocument, Student)
+        .join(Student, StudentDocument.student_id == Student.id)
+        .where(StudentDocument.id == cert_id)
     )
     result = await db.execute(stmt)
     row = result.first()
@@ -810,9 +813,15 @@ async def send_student_cert_to_tutor(
             f"🎓 <b>Yangi Sertifikat</b>\n\n"
             f"Talaba: <b>{student.full_name}</b>\n"
             f"Guruh: <b>{student.group_number}</b>\n"
-            f"Sertifikat: <b>{cert.title}</b>"
+            f"Sertifikat: <b>{cert.file_name}</b>"
         )
-        await bot.send_document(tg_acc.telegram_id, cert.file_id, caption=caption, parse_mode="HTML")
+        # Better detection
+        is_photo = cert.mime_type and "image" in cert.mime_type
+        
+        if is_photo:
+            await bot.send_photo(tg_acc.telegram_id, cert.telegram_file_id, caption=caption, parse_mode="HTML")
+        else:
+            await bot.send_document(tg_acc.telegram_id, cert.telegram_file_id, caption=caption, parse_mode="HTML")
         return {"success": True, "message": "Sertifikat Telegramingizga yuborildi!"}
     except Exception as e:
         logger.error(f"Error sending cert to tutor: {e}")

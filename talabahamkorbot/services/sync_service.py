@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import re
 from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -97,12 +98,19 @@ async def sync_student_data(session: AsyncSession, student_id: int):
     last_name = me_data.get("second_name") or me_data.get("lastname") or me_data.get("surname") or me_data.get("lastName") or ""
     patronymic = me_data.get("third_name") or me_data.get("fathername") or me_data.get("patronymic") or me_data.get("secondName") or ""
     
-    full_name = me_data.get("full_name") or me_data.get("fullName")
-    if not full_name:
-        full_name = f"{first_name} {last_name} {patronymic}".strip()
-    
-    if full_name and student.full_name != full_name:
-        student.full_name = full_name
+    full_name_constructed = f"{last_name} {first_name} {patronymic}".strip()
+    full_name_hemis = (me_data.get("full_name") or me_data.get("fullName") or "").strip().title()
+
+    def count_initials(name):
+        return len(re.findall(r'\b[A-Z]\.', name))
+
+    if full_name_hemis and count_initials(full_name_hemis) <= count_initials(full_name_constructed):
+        best_full_name = full_name_hemis
+    else:
+        best_full_name = full_name_constructed
+
+    if best_full_name and student.full_name != best_full_name:
+        student.full_name = best_full_name
 
     # 3. Update Attendance (Missed Hours)
     # Get current semester code for accurate data

@@ -14,8 +14,7 @@ from database.models import (
     Student,
     TgAccount,
     UserActivity,
-    UserDocument,
-    UserCertificate,
+    StudentDocument,
     StudentFeedback,
     Election,
     Staff,
@@ -38,8 +37,8 @@ async def get_student_profile_caption(student: Student, session: AsyncSession) -
     total_activities = await session.scalar(select(func.count(UserActivity.id)).where(UserActivity.student_id == student.id)) or 0
     approved_activities = await session.scalar(select(func.count(UserActivity.id)).where(UserActivity.student_id == student.id, UserActivity.status == "approved")) or 0
     
-    documents_count = await session.scalar(select(func.count(UserDocument.id)).where(UserDocument.student_id == student.id)) or 0
-    certificates_count = await session.scalar(select(func.count(UserCertificate.id)).where(UserCertificate.student_id == student.id)) or 0
+    documents_count = await session.scalar(select(func.count(StudentDocument.id)).where(StudentDocument.student_id == student.id, StudentDocument.file_type == 'document')) or 0
+    certificates_count = await session.scalar(select(func.count(StudentDocument.id)).where(StudentDocument.student_id == student.id, StudentDocument.file_type == 'certificate')) or 0
     
     total_feedbacks = await session.scalar(select(func.count(StudentFeedback.id)).where(StudentFeedback.student_id == student.id)) or 0
     answered_feedbacks = await session.scalar(select(func.count(StudentFeedback.id)).where(StudentFeedback.student_id == student.id, StudentFeedback.status == "answered")) or 0

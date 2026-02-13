@@ -33,6 +33,14 @@ async def show_student_main_menu(target, session: AsyncSession, state: FSMContex
             if student:
                 from utils.student_utils import get_election_info
                 is_election_admin, has_active_election = await get_election_info(student, session)
+                
+                # [NEW] Fetch clubs where student is leader
+                student_led_clubs = (await session.execute(select(Club).where(Club.leader_student_id == student.id))).scalars().all()
+                if student_led_clubs:
+                    if not isinstance(led_clubs, list):
+                        led_clubs = list(led_clubs)
+                    led_clubs.extend(student_led_clubs)
+
         
     # Developer check
     is_developer = False

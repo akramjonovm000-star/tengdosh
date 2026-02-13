@@ -761,7 +761,7 @@ async def cb_owner_dev(
         return
 
     # Faqat OWNER va DEVELOPER developer qo'sha/o'chira oladi
-    is_privileged = (user_id == OWNER_TELEGRAM_ID or staff.role in [StaffRole.OWNER, StaffRole.DEVELOPER])
+    is_privileged = (call.from_user.id == OWNER_TELEGRAM_ID or staff.role in [StaffRole.OWNER, StaffRole.DEVELOPER])
 
     # Developerlarni bazadan olamiz
     result = await session.execute(

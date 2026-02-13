@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from database.models import Student, TgAccount
+from database.models import Student, TgAccount, StudentDocument, PendingUpload
 from database.db_connect import get_session
 from api.dependencies import get_current_student
 from services.hemis_service import HemisService
@@ -21,8 +21,10 @@ async def get_my_documents(
     db: AsyncSession = Depends(get_session)
 ):
     """Returns real documents uploaded by the student or for the student"""
-    from database.models import UserDocument
-    stmt = select(UserDocument).where(UserDocument.student_id == student.id).order_by(UserDocument.created_at.desc())
+    stmt = select(StudentDocument).where(
+        StudentDocument.student_id == student.id,
+        StudentDocument.file_type == "document"
+    ).order_by(StudentDocument.uploaded_at.desc())
     result = await db.execute(stmt)
     docs = result.scalars().all()
     
@@ -31,11 +33,9 @@ async def get_my_documents(
         "data": [
             {
                 "id": d.id,
-                "title": d.title,
-                "category": d.category,
+                "title": d.file_name,
                 "type": d.file_type,
-                "status": d.status,
-                "created_at": d.created_at.strftime("%d.%m.%Y")
+                "created_at": d.uploaded_at.strftime("%d.%m.%Y")
             } for d in docs
         ]
     }
@@ -152,8 +152,7 @@ async def finalize_upload(
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_session)
 ):
-    """Saves the uploaded file from PendingUpload to UserDocument"""
-    from database.models import PendingUpload, UserDocument
+    """Saves the uploaded file from PendingUpload to StudentDocument"""
     pending = await db.get(PendingUpload, session_id)
     
     if not pending or not pending.file_ids:
@@ -162,14 +161,16 @@ async def finalize_upload(
     file_id = pending.file_ids.split(",")[0]
     
     # Create Real Document
-    doc = UserDocument(
+    doc = StudentDocument(
         student_id=student.id,
-        category=pending.category or "Shaxsiy",
-        title=pending.title or "Hujjat",
-        description="Ilovadan yuklangan",
-        file_id=file_id,
-        file_type="document", # Default, can be refined if we store type in PendingUpload
-        status="active"
+        file_name=pending.title or "Hujjat",
+        telegram_file_id=file_id,
+        telegram_file_unique_id=pending.file_unique_id,
+        file_size=pending.file_size,
+        mime_type=pending.mime_type,
+        file_type="document",
+        uploaded_by="student",
+        is_active=True
     )
     db.add(doc)
     
@@ -186,10 +187,8 @@ async def send_existing_doc_to_bot(
     db: AsyncSession = Depends(get_session)
 ):
     """Sends a previously uploaded document to the student's Telegram"""
-    from database.models import UserDocument, TgAccount
-    
     # 1. Get Document
-    stmt = select(UserDocument).where(UserDocument.id == doc_id, UserDocument.student_id == student.id)
+    stmt = select(StudentDocument).where(StudentDocument.id == doc_id, StudentDocument.student_id == student.id)
     result = await db.execute(stmt)
     doc = result.scalars().first()
     
@@ -206,21 +205,14 @@ async def send_existing_doc_to_bot(
         
     # 3. Send via Bot
     try:
-        caption = f"📄 <b>{doc.title}</b>\nKategoriya: {doc.category}"
-        try:
-            if doc.file_type == "photo":
-                await bot.send_photo(tg_account.telegram_id, doc.file_id, caption=caption, parse_mode="HTML")
-            else:
-                await bot.send_document(tg_account.telegram_id, doc.file_id, caption=caption, parse_mode="HTML")
-        except Exception as e:
-            # Self-healing: If sent as document but it's actually a photo
-            if "can't use file of type Photo as Document" in str(e) or "Bad Request: document_invalid" in str(e):
-                logger.info(f"Self-healing: Document {doc.id} is actually a photo. Updating...")
-                doc.file_type = "photo"
-                await db.commit()
-                await bot.send_photo(tg_account.telegram_id, doc.file_id, caption=caption, parse_mode="HTML")
-            else:
-                raise e
+        caption = f"📄 <b>{doc.file_name}</b>"
+        # Determine send method
+        is_photo = doc.mime_type and "image" in doc.mime_type
+        
+        if is_photo:
+            await bot.send_photo(tg_account.telegram_id, doc.telegram_file_id, caption=caption, parse_mode="HTML")
+        else:
+            await bot.send_document(tg_account.telegram_id, doc.telegram_file_id, caption=caption, parse_mode="HTML")
             
         return {"success": True, "message": "Hujjat Telegramingizga yuborildi!"}
     except Exception as e:
@@ -234,8 +226,7 @@ async def delete_document(
     db: AsyncSession = Depends(get_session)
 ):
     """Deletes a student's document"""
-    from database.models import UserDocument
-    stmt = select(UserDocument).where(UserDocument.id == doc_id, UserDocument.student_id == student.id)
+    stmt = select(StudentDocument).where(StudentDocument.id == doc_id, StudentDocument.student_id == student.id)
     result = await db.execute(stmt)
     doc = result.scalars().first()
     

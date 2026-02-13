@@ -9,6 +9,7 @@ from services.hemis_service import HemisService
 from services.university_service import UniversityService
 from api.schemas import HemisLoginRequest, StudentProfileSchema
 import logging
+import re
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -295,19 +296,20 @@ async def login_via_hemis(
     if last_name: last_name = str(last_name).strip().title()
     if father_name: father_name = str(father_name).strip().title()
 
-    full_name_db = f"{last_name} {first_name} {father_name}".strip()
+    full_name_constructed = f"{last_name} {first_name} {father_name}".strip()
+    full_name_hemis = (me.get('full_name') or me.get('name') or "").strip().title()
+    
+    # Logic to choose the most "full" name (the one with fewer initials)
+    def count_initials(name):
+        return len(re.findall(r'\b[A-Z]\.', name))
 
-    # Fallback to 'name' or existing full_name if individual fields missing
-    if not first_name or not last_name:
-        raw_name = me.get('name') or me.get('full_name') or ""
-        if raw_name:
-            full_name_db = " ".join(raw_name.split()).title()
-        
+    if full_name_hemis and count_initials(full_name_hemis) <= count_initials(full_name_constructed):
+        full_name_db = full_name_hemis
+    else:
+        full_name_db = full_name_constructed
+
     if not full_name_db or full_name_db.lower() == "talaba":
-        if short_name_hemis:
-            full_name_db = short_name_hemis.title()
-        else:
-            full_name_db = "Talaba"
+        full_name_db = short_name_hemis.title() if short_name_hemis else "Talaba"
 
     logger.info(f"FINAL PARSED NAME: Full='{full_name_db}', Short='{short_name_hemis}'")
 
@@ -379,7 +381,7 @@ async def login_via_hemis(
             payment_form=pay_form,
             student_status=st_status,
             image_url=image_url,
-            short_name=short_name_hemis or first_name,
+            short_name=first_name, # FORCE FIRST NAME
             # Context IDs
             university_id=uni_id,
             faculty_id=fac_id
@@ -407,7 +409,7 @@ async def login_via_hemis(
         student.student_status = st_status
         if not (student.image_url and "static/uploads" in student.image_url):
             student.image_url = image_url
-        student.short_name = short_name_hemis or first_name
+        student.short_name = first_name # FORCE FIRST NAME
         
         # Update IDs
         student.university_id = uni_id

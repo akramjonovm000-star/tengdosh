@@ -232,7 +232,14 @@ async def update_activity(
     db: AsyncSession = Depends(get_db)
 ):
     """Update activity details (Partial)."""
-    act = await db.get(UserActivity, activity_id)
+    # Eager load images to prevent them from disappearing in response
+    result = await db.execute(
+        select(UserActivity)
+        .where(UserActivity.id == activity_id)
+        .options(selectinload(UserActivity.images))
+    )
+    act = result.scalars().first()
+    
     if not act:
         raise HTTPException(status_code=404, detail="Activity not found")
         

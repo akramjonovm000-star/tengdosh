@@ -5,7 +5,7 @@ from aiogram.fsm.context import FSMContext
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from database.models import TgAccount, Student, UserCertificate
+from database.models import TgAccount, Student, StudentDocument
 from models.states import CertificateAddStates
 from keyboards.inline_kb import get_student_certificates_kb, get_student_certificates_simple_kb
 import logging
@@ -52,7 +52,10 @@ async def student_cert_list(call: CallbackQuery, session: AsyncSession):
         return
 
     certs = await session.scalars(
-        select(UserCertificate).where(UserCertificate.student_id == student.id).order_by(UserCertificate.id.desc())
+        select(StudentDocument).where(
+            StudentDocument.student_id == student.id,
+            StudentDocument.file_type == "certificate"
+        ).order_by(StudentDocument.id.desc())
     )
     certs = certs.all()
 
@@ -93,7 +96,7 @@ async def open_user_certificate(call: CallbackQuery, session: AsyncSession):
     except:
         return await call.answer("Xatolik", show_alert=True)
 
-    cert = await session.get(UserCertificate, cert_id)
+    cert = await session.get(StudentDocument, cert_id)
     if not cert:
         return await call.answer("Sertifikat topilmadi", show_alert=True)
 
@@ -102,8 +105,11 @@ async def open_user_certificate(call: CallbackQuery, session: AsyncSession):
     caption = f"📜 <b>{cert.title}</b>"
     
     try:
-        # UserCertificate doesn't have file_type, so we try send_document (works for photos too usually)
-        await call.message.answer_document(cert.file_id, caption=caption, parse_mode="HTML")
+        # Capture metadata for better sending later
+        if cert.mime_type and "image" in cert.mime_type:
+            await call.message.answer_photo(cert.telegram_file_id, caption=caption, parse_mode="HTML")
+        else:
+            await call.message.answer_document(cert.telegram_file_id, caption=caption, parse_mode="HTML")
             
         await call.message.answer(
             "Quyidagi tugma orqali menyuga qaytishingiz mumkin:",
@@ -154,6 +160,9 @@ async def cert_title_entered(message: Message, state: FSMContext):
 @router.message(CertificateAddStates.FILE)
 async def process_cert_upload(message: Message, state: FSMContext, session: AsyncSession):
     file_id = None
+    file_unique_id = None
+    file_size = None
+    mime_type = None
     
     # Check for document
     if message.document:
@@ -163,6 +172,9 @@ async def process_cert_upload(message: Message, state: FSMContext, session: Asyn
         
         if "pdf" in mime.lower() or fname.lower().endswith(".pdf"):
              file_id = message.document.file_id
+             file_unique_id = message.document.file_unique_id
+             file_size = message.document.file_size
+             mime_type = message.document.mime_type
         else:
              await message.answer("❌ Iltimos, faqat <b>PDF</b> formatdagi fayl yuboring.", parse_mode="HTML")
              return
@@ -174,7 +186,12 @@ async def process_cert_upload(message: Message, state: FSMContext, session: Asyn
         await message.answer("❌ Iltimos, <b>PDF</b> fayl yuboring.", parse_mode="HTML")
         return
 
-    await state.update_data(file_id=file_id)
+    await state.update_data(
+        file_id=file_id, 
+        file_unique_id=file_unique_id,
+        file_size=file_size,
+        mime_type=mime_type
+    )
     
     data = await state.get_data()
     title = data.get("title", "Sertifikat")
@@ -205,11 +222,20 @@ async def save_certificate(call: CallbackQuery, state: FSMContext, session: Asyn
 
     title = data.get("title", "Sertifikat")
     file_id = data.get("file_id")
+    file_unique_id = data.get("file_unique_id")
+    file_size = data.get("file_size")
+    mime_type = data.get("mime_type")
     
-    cert = UserCertificate(
+    cert = StudentDocument(
         student_id=student.id,
-        title=title,
-        file_id=file_id,
+        file_name=title,
+        telegram_file_id=file_id,
+        telegram_file_unique_id=file_unique_id,
+        file_size=file_size,
+        mime_type=mime_type,
+        file_type="certificate",
+        uploaded_by="student",
+        is_active=True
     )
     session.add(cert)
     await session.commit()
@@ -239,15 +265,10 @@ from database.models import PendingUpload
 @router.message(CertificateAddStates.WAIT_FOR_APP_FILE)
 async def on_mobile_certificate_upload(message: Message, state: FSMContext, session: AsyncSession):
     student = await get_student(message, session)
-    logger.info(f"DEBUG: Certificate upload triggered. User: {message.from_user.id}, Content: {message.content_type}")
+    logger.info(f"DEBUG: Certificate upload triggered for {message.from_user.id}")
     
     if not student:
         return await message.answer("Siz talaba emassiz.")
-
-    # Validate content type manually for better debugging response
-    if not (message.document or message.photo):
-        logger.info(f"DEBUG: Invalid content type: {message.content_type}")
-        return await message.answer("❌ Iltimos, <b>PDF fayl</b> yoki <b>Rasm</b> yuboring.", parse_mode="HTML")
 
     # Find active pending upload for this student
     pending = await session.scalar(
@@ -258,17 +279,23 @@ async def on_mobile_certificate_upload(message: Message, state: FSMContext, sess
     )
 
     if not pending:
-        logger.info(f"DEBUG: No pending upload found for student {student.id}")
         await state.clear()
         return await message.answer("Hozirda faol sertifikat yuklash so'rovi mavjud emas.")
 
-    # Save File ID
+    # Save File ID and Metadata
     if message.photo:
         file_id = message.photo[-1].file_id
-        logger.info(f"DEBUG: Photo received: {file_id}")
-    else:
+        file_unique_id = message.photo[-1].file_unique_id
+        file_size = message.photo[-1].file_size
+        mime_type = "image/jpeg"
+    elif message.document:
         file_id = message.document.file_id
-        logger.info(f"DEBUG: Document received: {file_id}")
+        file_unique_id = message.document.file_unique_id
+        file_size = message.document.file_size
+        mime_type = message.document.mime_type
+    else:
+         logger.info(f"DEBUG: Invalid content type: {message.content_type}")
+         return await message.answer("❌ Iltimos, <b>PDF fayl</b> yoki <b>Rasm</b> yuboring.", parse_mode="HTML")
         
     # Notify User IMMEDIATELY
     await message.answer(
@@ -279,6 +306,10 @@ async def on_mobile_certificate_upload(message: Message, state: FSMContext, sess
 
     # Update DB (Overwrite for single certificate upload flow)
     pending.file_ids = file_id
+    pending.file_unique_id = file_unique_id
+    pending.file_size = file_size
+    pending.mime_type = mime_type
+    
     await session.commit()
     
     await state.clear()

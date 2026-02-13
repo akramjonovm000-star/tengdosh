@@ -147,10 +147,16 @@ async def cmd_start(message: Message, state: FSMContext, session: AsyncSession):
         # ===================== OWNER =====================
 
         # ===================== OWNER / DEVELOPER =====================
-        if account.current_role in [StaffRole.OWNER.value, StaffRole.DEVELOPER.value]:
+        if tg_id == OWNER_TELEGRAM_ID or account.current_role in [StaffRole.OWNER.value, StaffRole.DEVELOPER.value]:
+            admin_name = "Admin"
+            if account.staff_id:
+                staff = await session.get(Staff, account.staff_id)
+                if staff:
+                    admin_name = staff.full_name
+            
             text = await get_owner_dashboard_text(session)
             return await message.answer(
-                text,
+                f"👋 <b>Assalomu alaykum, {admin_name}!</b>\n\n{text}",
                 reply_markup=get_owner_main_menu_inline_kb(),
                 parse_mode="HTML"
             )
@@ -1167,3 +1173,20 @@ async def process_phone(message: Message, state: FSMContext, session: AsyncSessi
         import asyncio
         asyncio.create_task(send_welcome_report(student_id))
         logger.info(f"cmd_start (registration flow): Backgrounded welcome report for {student_id}")
+
+# ============================================================
+# UTILITY
+# ============================================================
+async def get_current_user(telegram_id: int, session: AsyncSession):
+    # Retrieve user (Staff or Student) linked to Telegram ID
+    account = await session.scalar(select(TgAccount).where(TgAccount.telegram_id == telegram_id))
+    if not account:
+        return None
+    
+    if account.staff_id:
+        return await session.get(Staff, account.staff_id)
+    
+    if account.student_id:
+        return await session.get(Student, account.student_id)
+    
+    return None

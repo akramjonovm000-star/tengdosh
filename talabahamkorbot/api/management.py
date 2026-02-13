@@ -7,6 +7,8 @@ import zipfile
 import io
 import aiohttp
 from pydantic import BaseModel
+from fastapi.responses import StreamingResponse
+import httpx
 
 from api.dependencies import get_current_student, get_current_staff
 from database.db_connect import get_db
@@ -883,7 +885,7 @@ async def get_mgmt_student_details(
     db: AsyncSession = Depends(get_db)
 ):
     try:
-        from database.models import UserActivity, UserDocument, UserCertificate, StudentFeedback
+        from database.models import UserActivity, StudentDocument, StudentFeedback
         
         student = await db.get(Student, student_id)
         if not student: raise HTTPException(status_code=404, detail="Talaba topilmadi")
@@ -910,21 +912,16 @@ async def get_mgmt_student_details(
         )
         activities = activities_result.scalars().all()
 
-        # 3. Documents
-        docs_result = await db.execute(
-            select(UserDocument)
-            .where(UserDocument.student_id == student_id)
-            .order_by(UserDocument.created_at.desc())
+        # 3. Documents (Unified Table)
+        all_docs_result = await db.execute(
+            select(StudentDocument)
+            .where(StudentDocument.student_id == student_id)
+            .order_by(StudentDocument.uploaded_at.desc())
         )
-        docs = docs_result.scalars().all()
-
-        # 4. Certificates
-        certs_result = await db.execute(
-            select(UserCertificate)
-            .where(UserCertificate.student_id == student_id)
-            .order_by(UserCertificate.created_at.desc())
-        )
-        certs = certs_result.scalars().all()
+        all_docs = all_docs_result.scalars().all()
+        
+        docs = [d for d in all_docs if d.file_type == "document"]
+        certs = [d for d in all_docs if d.file_type == "certificate"]
 
         def safe_isoformat(dt):
             if not dt: return None
@@ -977,20 +974,15 @@ async def get_mgmt_student_details(
                 "documents": [
                     {
                         "id": d.id, 
-                        "title": d.title, 
-                        "status": getattr(d, 'status', 'pending'), 
-                        "date": safe_isoformat(getattr(d, 'created_at', None)),
-                        "file_id": getattr(d, 'file_id', None),
-                        "file_type": getattr(d, 'file_type', 'document')
+                        "title": d.file_name, 
+                        "created_at": safe_isoformat(d.uploaded_at)
                     } for d in docs
                 ],
                 "certificates": [
                     {
                         "id": c.id, 
-                        "title": c.title, 
-                        "status": "active", 
-                        "date": safe_isoformat(getattr(c, 'created_at', None)),
-                        "file_id": getattr(c, 'file_id', None)
+                        "title": c.file_name, 
+                        "created_at": safe_isoformat(c.uploaded_at)
                     } for c in certs
                 ]
             }
@@ -1066,11 +1058,11 @@ async def send_student_cert_to_management(
     if not is_mgmt:
         raise HTTPException(status_code=403, detail="Faqat rahbariyat uchun")
     
-    # 1. Get Certificate and Student Info
+    # 1. Get Document and Student Info
     stmt = (
-        select(UserCertificate, Student)
-        .join(Student, UserCertificate.student_id == Student.id)
-        .where(UserCertificate.id == cert_id)
+        select(StudentDocument, Student)
+        .join(Student, StudentDocument.student_id == Student.id)
+        .where(StudentDocument.id == cert_id)
     )
     result = await db.execute(stmt)
     row = result.first()
@@ -1086,13 +1078,11 @@ async def send_student_cert_to_management(
         raise HTTPException(status_code=403, detail="Boshqa universitet talabasi ma'lumotlarini yuklash imkonsiz")
 
     # 3. Get Management User's TG Account
-    # 'staff' variable can be Student or Staff model instance
     tg_acc = await db.scalar(select(TgAccount).where(
         (TgAccount.student_id == staff.id) | (TgAccount.staff_id == staff.id)
     ))
     
     if not tg_acc:
-        # Try to find by telegram_id in token if available? No, token data is strict.
         return {"success": False, "message": "Sizning Telegram hisobingiz ulanmagan. Iltimos, botga kiring."}
 
     # 4. Send via Bot
@@ -1101,11 +1091,16 @@ async def send_student_cert_to_management(
             f"🎓 <b>Talaba Sertifikati (Rahbariyat)</b>\n\n"
             f"Talaba: <b>{student.full_name}</b>\n"
             f"Guruh: <b>{student.group_number}</b>\n"
-            f"Sertifikat: <b>{cert.title}</b>"
+            f"Sertifikat: <b>{cert.file_name}</b>"
         )
-        # TEST: Hardcoded ID 7476703866
-        await bot.send_document(7476703866, cert.file_id, caption=caption, parse_mode="HTML")
-        return {"success": True, "message": "Sertifikat Telegramingizga yuborildi (TEST ID: 7476703866)!"}
+        # Better detection
+        is_photo = cert.mime_type and "image" in cert.mime_type
+        if is_photo:
+            await bot.send_photo(tg_acc.telegram_id, cert.telegram_file_id, caption=caption, parse_mode="HTML")
+        else:
+            await bot.send_document(tg_acc.telegram_id, cert.telegram_file_id, caption=caption, parse_mode="HTML")
+            
+        return {"success": True, "message": "Sertifikat Telegramingizga yuborildi!"}
     except Exception as e:
         import logging
         logger = logging.getLogger(__name__)
@@ -1115,36 +1110,18 @@ async def send_student_cert_to_management(
 @router.post("/documents/{doc_id}/download")
 async def send_student_doc_to_management(
     doc_id: int,
-    type: str = "document",
     staff: Any = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
     """
     Sends the document file to the management user's Telegram bot.
     """
-    from database.models import UserDocument, UserCertificate
-    from bot import bot
-    
-    # Security
-    global_mgmt_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR]
-    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) in global_mgmt_roles or getattr(staff, 'role', None) == StaffRole.TYUTOR
-    
-    if not is_mgmt:
-        raise HTTPException(status_code=403, detail="Faqat rahbariyat yoki tyutorlar uchun")
-    
-    # 1. Get Document/Certificate and Student Info
-    if type == "certificate":
-        stmt = (
-            select(UserCertificate, Student)
-            .join(Student, UserCertificate.student_id == Student.id)
-            .where(UserCertificate.id == doc_id)
-        )
-    else:
-        stmt = (
-            select(UserDocument, Student)
-            .join(Student, UserDocument.student_id == Student.id)
-            .where(UserDocument.id == doc_id)
-        )
+    # 1. Get Document and Student Info
+    stmt = (
+        select(StudentDocument, Student)
+        .join(Student, StudentDocument.student_id == Student.id)
+        .where(StudentDocument.id == doc_id)
+    )
         
     result = await db.execute(stmt)
     row = result.first()
@@ -1169,32 +1146,20 @@ async def send_student_doc_to_management(
 
     # 4. Send via Bot
     try:
-        # Determine caption and file type safely
-        category = getattr(doc, 'category', 'Sertifikat')
-        file_type = getattr(doc, 'file_type', 'document')
-        
         caption = (
             f"📄 <b>Talaba Hujjati (Rahbariyat)</b>\n\n"
             f"Talaba: <b>{student.full_name}</b>\n"
             f"Guruh: <b>{student.group_number}</b>\n"
-            f"Hujjat: <b>{doc.title}</b>\n"
-            f"Kategoriya: <b>{category}</b>"
+            f"Hujjat: <b>{doc.file_name}</b>"
         )
         
-        if file_type == 'photo':
-            await bot.send_photo(
-                chat_id=tg_acc.chat_id,
-                photo=doc.file_id,
-                caption=caption,
-                parse_mode='HTML'
-            )
+        # Better detection
+        is_photo = doc.mime_type and "image" in doc.mime_type
+        
+        if is_photo:
+            await bot.send_photo(tg_acc.telegram_id, doc.telegram_file_id, caption=caption, parse_mode="HTML")
         else:
-             await bot.send_document(
-                chat_id=tg_acc.chat_id,
-                document=doc.file_id,
-                caption=caption,
-                parse_mode='HTML'
-            )
+            await bot.send_document(tg_acc.telegram_id, doc.telegram_file_id, caption=caption, parse_mode="HTML")
             
         return {"success": True, "message": "Hujjat botga yuborildi"}
     except Exception as e:
@@ -1205,6 +1170,70 @@ async def send_student_doc_to_management(
         logger = logging.getLogger(__name__)
         logger.error(f"Error sending doc to management: {e}")
         return {"success": False, "message": f"Botda xatolik yuz berdi: {str(e)}"}
+@router.get("/documents/{doc_id}/download")
+async def download_student_document(
+    doc_id: int,
+    staff: Any = Depends(get_current_staff),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Download a student document by streaming it from Telegram Cloud.
+    """
+    from database.models import StudentDocument
+    from config import BOT_TOKEN
+    from bot import bot
+
+    # 1. Security Check
+    dean_level_roles = [StaffRole.DEKAN, StaffRole.DEKAN_ORINBOSARI, StaffRole.DEKAN_YOSHLAR, StaffRole.DEKANAT]
+    global_mgmt_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
+    
+    staff_role = getattr(staff, 'role', None) or getattr(staff, 'hemis_role', None)
+    is_mgmt = staff_role == 'rahbariyat' or staff_role in global_mgmt_roles or staff_role == StaffRole.TYUTOR or staff_role in dean_level_roles
+    
+    if not is_mgmt:
+        raise HTTPException(status_code=403, detail="Faqat rahbariyat uchun")
+
+    # 2. Get Document
+    doc = await db.get(StudentDocument, doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Hujjat topilmadi")
+
+    # [OPTIONAL] Scoping check: Ensure Dean only downloads from their faculty
+    if staff_role in dean_level_roles:
+        # Check student faculty
+        from database.models import Student
+        student = await db.get(Student, doc.student_id)
+        if not student or student.faculty_id != staff.faculty_id:
+             raise HTTPException(status_code=403, detail="Sizga ushbu hujjatni ko'rishga ruxsat yo'q")
+
+    # 3. Fetch from Telegram
+    try:
+        file = await bot.get_file(doc.telegram_file_id)
+        file_path = file.file_path
+        url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}"
+        
+        async def iterate_file():
+            async with httpx.AsyncClient() as client:
+                async with client.stream("GET", url) as response:
+                    async for chunk in response.aiter_bytes():
+                        yield chunk
+
+        # Sanitize filename
+        safe_filename = doc.file_name.replace(" ", "_").replace("/", "_")
+        if "." not in safe_filename:
+            # Try to guess extension from mime_type or path
+            ext = file_path.split(".")[-1] if "." in file_path else "bin"
+            safe_filename += f".{ext}"
+
+        return StreamingResponse(
+            iterate_file(),
+            media_type=doc.mime_type or "application/octet-stream",
+            headers={"Content-Disposition": f"attachment; filename={safe_filename}"}
+        )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Telegramdan faylni yuklab olishda xatolik: {str(e)}")
 
 @router.get("/archive")
 async def get_mgmt_documents_archive(
@@ -1224,7 +1253,7 @@ async def get_mgmt_documents_archive(
     """
     Get a list of all student documents for management with filtering.
     """
-    from database.models import UserDocument, UserCertificate
+    from database.models import StudentDocument
     
     # 1. Security & Role Resolution
     dean_level_roles = [StaffRole.DEKAN, StaffRole.DEKAN_ORINBOSARI, StaffRole.DEKAN_YOSHLAR, StaffRole.DEKANAT]
@@ -1245,77 +1274,69 @@ async def get_mgmt_documents_archive(
     logger = logging.getLogger(__name__)
     logger.info(f"ARCHIVE_REQ: Staff: {staff.id}, Role: {staff_role}, Filters: {category_filters}, Title: {title}")
 
-    all_results = []
-    total_count = 0
-
-    # 4. Fetch Certificates (If title="Sertifikatlar" or "Hammasi" or None)
-    if not title or title == "Sertifikatlar" or title == "Hammasi":
-        stmt_cert = select(UserCertificate).join(Student).where(and_(*category_filters)).options(selectinload(UserCertificate.student))
-        if query:
-            stmt_cert = stmt_cert.where((UserCertificate.title.ilike(f"%{query}%")) | (Student.full_name.ilike(f"%{query}%")))
-        
-        # [NEW] Robust Title Matching (Case-insensitive)
-        if title and title != "Hammasi":
-            stmt_cert = stmt_cert.where(UserCertificate.title.ilike(f"%{title}%"))
-        
-        # Count for Certificates
-        cnt_cert = await db.execute(select(func.count(UserCertificate.id)).join(Student).where(and_(*category_filters)))
-        total_count += cnt_cert.scalar() or 0
-        
-        res_cert = await db.execute(stmt_cert.order_by(UserCertificate.created_at.desc()))
-        for c in res_cert.scalars().all():
-            all_results.append({
-                "id": f"cert_{c.id}",
-                "title": c.title,
-                "created_at": c.created_at.isoformat() if c.created_at else None,
-                "file_id": c.file_id,
-                "file_type": "document",
-                "is_certificate": True,
-                "student": {
-                    "full_name": c.student.full_name if c.student else "Noma'lum",
-                    "group_number": c.student.group_number if c.student else "",
-                    "faculty_name": c.student.faculty_name if c.student else "",
-                }
-            })
-
-    # 5. Fetch Standard Documents (If title mismatch "Sertifikatlar")
-    if title != "Sertifikatlar":
-        stmt_doc = select(UserDocument).join(Student).where(and_(*category_filters)).options(selectinload(UserDocument.student))
-        if title and title != "Hammasi":
-            # [NEW] Case-insensitive match for title
-            stmt_doc = stmt_doc.where(UserDocument.title.ilike(f"%{title}%"))
-        if query:
-            stmt_doc = stmt_doc.where((UserDocument.title.ilike(f"%{query}%")) | (Student.full_name.ilike(f"%{query}%")))
-            
-        # Count for Documents
-        cnt_doc = await db.execute(select(func.count(UserDocument.id)).join(Student).where(and_(*category_filters)))
-        total_count += cnt_doc.scalar() or 0
-        
-        res_doc = await db.execute(stmt_doc.order_by(UserDocument.created_at.desc()))
-        for d in res_doc.scalars().all():
-            all_results.append({
-                "id": str(d.id),
-                "title": d.title,
-                "created_at": d.created_at.isoformat() if d.created_at else None,
-                "file_id": d.file_id,
-                "file_type": d.file_type or "document",
-                "student": {
-                    "full_name": d.student.full_name if d.student else "Noma'lum",
-                    "group_number": d.student.group_number if d.student else "",
-                    "faculty_name": d.student.faculty_name if d.student else "",
-                }
-            })
-
-    # 6. Sort Combined Results & Paginate
-    all_results.sort(key=lambda x: x["created_at"] or "", reverse=True)
+    # 3. Construction of Query
+    stmt = select(StudentDocument).join(Student).where(and_(*category_filters)).options(selectinload(StudentDocument.student))
     
-    start = (page - 1) * limit
-    paginated_results = all_results[start : start + limit]
+    if query:
+        stmt = stmt.where(
+            (StudentDocument.file_name.ilike(f"%{query}%")) | 
+            (Student.full_name.ilike(f"%{query}%"))
+        )
+        
+    if title and title != "Hammasi":
+        if title == "Sertifikatlar":
+            stmt = stmt.where(StudentDocument.file_type == "certificate")
+        else:
+            stmt = stmt.where(StudentDocument.file_name.ilike(f"%{title}%"))
+
+    # 4. Pagination & Fetch
+    # Get total count first
+    total_count = await db.scalar(
+        select(func.count(StudentDocument.id))
+        .join(Student)
+        .where(
+            and_(
+                *category_filters,
+                (StudentDocument.file_name.ilike(f"%{query}%") if query else True),
+                ((StudentDocument.file_type == "certificate" if title == "Sertifikatlar" else StudentDocument.file_name.ilike(f"%{title}%")) if title and title != "Hammasi" else True)
+            )
+        )
+    )
+
+    res = await db.execute(
+        stmt.order_by(StudentDocument.uploaded_at.desc())
+        .offset((page - 1) * limit)
+        .limit(limit)
+    )
+    docs = res.scalars().all()
+
+    data = []
+    for d in docs:
+        data.append({
+            "id": str(d.id),
+            "title": d.file_name,
+            "created_at": d.uploaded_at.isoformat() if d.uploaded_at else None,
+            "file_id": d.telegram_file_id,
+            "file_type": d.file_type or "document",
+            "is_certificate": d.file_type == "certificate",
+            "student": {
+                "full_name": d.student.full_name if d.student else "Noma'lum",
+                "group_number": d.student.group_number if d.student else "",
+                "faculty_name": d.student.faculty_name if d.student else "",
+            }
+        })
+
+    # [NEW] Simple Stats
+    stats = {
+        "total_documents": await db.scalar(select(func.count(StudentDocument.id)).where(and_(*category_filters, StudentDocument.file_type == "document"))),
+        "total_certificates": await db.scalar(select(func.count(StudentDocument.id)).where(and_(*category_filters, StudentDocument.file_type == "certificate")))
+    }
     
     return {
         "success": True, 
-        "data": paginated_results, 
-        "total_count": total_count
+        "data": data, 
+        "total_count": total_count or 0,
+        "stats": stats
     }
 
     # 4. Get Stats (Matching Student Search logic)
@@ -1390,7 +1411,7 @@ async def export_mgmt_documents_zip(
     """
     Download filtered documents, zip them and send to management user via Telegram.
     """
-    from database.models import UserDocument
+    from database.models import StudentDocument
     from bot import bot
     from config import BOT_TOKEN
     from aiogram.types import BufferedInputFile
@@ -1413,48 +1434,27 @@ async def export_mgmt_documents_zip(
     # [NEW] Collect all results to ZIP
     all_docs_to_export = []
 
-    # 3. Fetch Certificates (If title="Sertifikatlar" or "Hammasi")
-    if title == "Sertifikatlar" or not title or title == "Hammasi":
-        from database.models import UserCertificate
-        
-        stmt_cert = (
-            select(UserCertificate)
-            .join(Student, UserCertificate.student_id == Student.id)
-            .where(and_(*category_filters))
+    # 3. Fetch Documents from Unified Table
+    stmt = (
+        select(StudentDocument)
+        .join(Student, StudentDocument.student_id == Student.id)
+        .where(and_(*category_filters))
+    )
+    
+    if query:
+        stmt = stmt.where(
+            (StudentDocument.file_name.ilike(f"%{query}%")) |
+            (Student.full_name.ilike(f"%{query}%"))
         )
-        
-        if query:
-            stmt_cert = stmt_cert.where(
-                (UserCertificate.title.ilike(f"%{query}%")) |
-                (Student.full_name.ilike(f"%{query}%"))
-            )
-        
-        # Robust Title Matching (Case-insensitive)
-        if title and title not in ["Hammasi", "Sertifikatlar"]:
-            stmt_cert = stmt_cert.where(UserCertificate.title.ilike(f"%{title}%"))
-
-        res_cert = await db.execute(stmt_cert.options(selectinload(UserCertificate.student)))
-        all_docs_to_export.extend(res_cert.scalars().all())
-
-    # 4. Fetch Standard Documents (If title mismatch "Sertifikatlar")
-    if title != "Sertifikatlar":
-        stmt_doc = (
-            select(UserDocument)
-            .join(Student, UserDocument.student_id == Student.id)
-            .where(and_(*category_filters))
-        )
-        
-        if title and title != "Hammasi":
-            stmt_doc = stmt_doc.where(UserDocument.title.ilike(f"%{title}%"))
+    
+    if title and title != "Hammasi":
+        if title == "Sertifikatlar":
+            stmt = stmt.where(StudentDocument.file_type == "certificate")
+        else:
+            stmt = stmt.where(StudentDocument.file_name.ilike(f"%{title}%"))
             
-        if query:
-            stmt_doc = stmt_doc.where(
-                (UserDocument.title.ilike(f"%{query}%")) |
-                (Student.full_name.ilike(f"%{query}%"))
-            )
-            
-        res_doc = await db.execute(stmt_doc.options(selectinload(UserDocument.student)))
-        all_docs_to_export.extend(res_doc.scalars().all())
+    res = await db.execute(stmt.options(selectinload(StudentDocument.student)))
+    all_docs_to_export = res.scalars().all()
 
     # 5. Process and ZIP
     if not all_docs_to_export:
@@ -1472,7 +1472,7 @@ async def export_mgmt_documents_zip(
                 
                 try:
                     # Get File Info from Telegram
-                    tg_file = await bot.get_file(doc.file_id)
+                    tg_file = await bot.get_file(doc.telegram_file_id)
                     file_path = tg_file.file_path
                     download_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}"
                     
@@ -1482,18 +1482,11 @@ async def export_mgmt_documents_zip(
                             file_bytes = await resp.read()
                             
                             # Determine Extension
-                            ext = "jpg"
-                            f_type = getattr(doc, 'file_type', 'document') # Default to document behavior if missing (likely has path ext)
-                            
-                            if f_type == "document" or "." in file_path:
-                                if "." in file_path:
-                                    ext = file_path.split(".")[-1]
-                                else:
-                                    ext = "bin"
+                            ext = file_path.split(".")[-1] if "." in file_path else "bin"
                             
                             # Filename: StudentName_DocTitle_ID.ext
                             clean_name = student.full_name.replace(" ", "_").replace("'", "").replace("\"", "")
-                            clean_title = doc.title.replace(" ", "_").replace("'", "").replace("\"", "")
+                            clean_title = doc.file_name.replace(" ", "_").replace("'", "").replace("\"", "")
                             filename = f"{clean_name}_{clean_title}_{doc.id}.{ext}"
                             
                             zip_file.writestr(filename, file_bytes)
