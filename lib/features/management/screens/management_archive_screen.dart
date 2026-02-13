@@ -283,7 +283,7 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
         decoration: BoxDecoration(
           color: Colors.grey[100],
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[300]),
+          border: Border.all(color: Colors.grey[300]!),
         ),
         child: TextField(
           controller: _searchController,
@@ -366,7 +366,7 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]),
+        border: Border.all(color: Colors.grey[300]!),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<dynamic>(
@@ -412,7 +412,7 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
               padding: EdgeInsets.zero,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
-                side: BorderSide(color: isSelected ? Colors.transparent : Colors.grey[300], width: 1),
+                side: BorderSide(color: isSelected ? Colors.transparent : Colors.grey[300]!, width: 1),
               ),
             ),
           );
