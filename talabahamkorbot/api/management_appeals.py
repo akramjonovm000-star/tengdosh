@@ -44,7 +44,6 @@ async def get_appeals_stats(
         f_id = getattr(staff, 'faculty_id', None)
         if current_role in dean_level_roles and f_id:
             base_query = base_query.where(Student.faculty_id == f_id)
-            base_query = base_query.where(Student.education_type.ilike("Bakalavr"))
             
         all_appeals = (await db.execute(base_query)).scalars().all()
         
@@ -175,9 +174,10 @@ async def get_appeals_list(
 ):
     try:
         # Auth Check
-        is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) in ['rahbariyat', 'admin', 'owner']
+        dean_level_roles = [StaffRole.DEKAN, StaffRole.DEKAN_ORINBOSARI, StaffRole.DEKAN_YOSHLAR, StaffRole.DEKANAT]
+        is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) in ['rahbariyat', 'admin', 'owner'] or getattr(staff, 'role', None) in dean_level_roles
         if not is_mgmt:
-            raise HTTPException(status_code=403, detail="Faqat rahbariyat uchun")
+            raise HTTPException(status_code=403, detail="Faqat rahbariyat yoki dekanat uchun")
         
         uni_id = getattr(staff, 'university_id', None)
         
@@ -190,8 +190,6 @@ async def get_appeals_list(
         
         if current_role in dean_level_roles and f_id:
             query = query.where(Student.faculty_id == f_id)
-            # [NEW] Enforce Bakalavr Only
-            query = query.where(Student.education_type.ilike("Bakalavr"))
         elif faculty:
             # If manually filtering, apply status rules
             pass

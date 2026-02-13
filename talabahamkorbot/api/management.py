@@ -1537,10 +1537,6 @@ async def get_management_activities(
     elif f_id and role not in ['rahbariyat', 'owner', 'developer', 'rektor', 'prorektor', 'yoshlar_yetakchisi']:
         # Dekanat/Tyutor restriction
         stmt = stmt.where(Student.faculty_id == f_id)
-        # [NEW] Enforce Bakalavr Only for Deans
-        dean_and_tutor_roles = ['dekan', 'dekan_orinbosari', 'dekan_yoshlar', 'dekanat', 'tyutor']
-        if role in dean_and_tutor_roles:
-             stmt = stmt.where(Student.education_type.ilike("Bakalavr"))
 
     if status:
         stmt = stmt.where(UserActivity.status == status)
@@ -1608,8 +1604,17 @@ async def approve_mgmt_activity(
     if not is_mgmt:
         raise HTTPException(status_code=403, detail="Ruxsat etilmagan")
 
-    stmt = select(UserActivity).where(UserActivity.id == activity_id)
-    activity = (await db.execute(stmt)).scalar_one_or_none()
+    stmt = select(UserActivity).join(Student, UserActivity.student_id == Student.id).where(UserActivity.id == activity_id)
+    
+    # Faculty Check for Deans/Tutors
+    f_id = getattr(staff, 'faculty_id', None)
+    current_role = str(getattr(staff, 'role', None)).lower()
+    global_roles = ['rahbariyat', 'owner', 'developer', 'rektor', 'prorektor']
+    
+    if f_id and current_role not in global_roles:
+        stmt = stmt.where(Student.faculty_id == f_id)
+
+    activity = (await db.execute(stmt)).scalars().first()
     
     if not activity:
         raise HTTPException(status_code=404, detail="Faollik topilmadi")
@@ -1632,8 +1637,17 @@ async def reject_mgmt_activity(
     if not is_mgmt:
         raise HTTPException(status_code=403, detail="Ruxsat etilmagan")
 
-    stmt = select(UserActivity).where(UserActivity.id == activity_id)
-    activity = (await db.execute(stmt)).scalar_one_or_none()
+    stmt = select(UserActivity).join(Student, UserActivity.student_id == Student.id).where(UserActivity.id == activity_id)
+    
+    # Faculty Check for Deans/Tutors
+    f_id = getattr(staff, 'faculty_id', None)
+    current_role = str(getattr(staff, 'role', None)).lower()
+    global_roles = ['rahbariyat', 'owner', 'developer', 'rektor', 'prorektor']
+    
+    if f_id and current_role not in global_roles:
+        stmt = stmt.where(Student.faculty_id == f_id)
+
+    activity = (await db.execute(stmt)).scalars().first()
     
     if not activity:
         raise HTTPException(status_code=404, detail="Faollik topilmadi")

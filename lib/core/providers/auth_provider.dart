@@ -17,7 +17,14 @@ class AuthProvider with ChangeNotifier {
   bool get isAuthUpdateRequired => _isAuthUpdateRequired;
   
   bool get isTutor => _currentUser?.role == 'tyutor' || _currentUser?.staffRole == 'tyutor';
-  bool get isManagement => _currentUser?.role == 'rahbariyat' || _currentUser?.staffRole == 'rahbariyat';
+  bool get isManagement {
+    final role = _currentUser?.role?.toLowerCase();
+    final staffRole = _currentUser?.staffRole?.toLowerCase();
+    
+    final mgmtRoles = ['rahbariyat', 'dekan', 'dekan_orinbosari', 'dekan_yoshlar', 'dekanat'];
+    
+    return mgmtRoles.contains(role) || mgmtRoles.contains(staffRole);
+  }
 
   AuthProvider() {
     loadUser();

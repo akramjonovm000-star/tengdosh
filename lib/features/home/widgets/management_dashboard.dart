@@ -106,14 +106,20 @@ class ManagementDashboard extends StatelessWidget {
                 );
               },
             ),
-            DashboardCard(
-              title: "Murojaatlar (Umumiy)",
-              icon: Icons.all_inbox_rounded,
-              color: Colors.teal,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ManagementAppealsScreen()),
+            Consumer<AuthProvider>(
+              builder: (context, auth, _) {
+                final isDean = !auth.currentUser!.role!.toLowerCase().contains('rahbariyat') && 
+                               auth.isManagement;
+                return DashboardCard(
+                  title: isDean ? "Murojaatlar (Fakultet)" : "Murojaatlar (Umumiy)",
+                  icon: Icons.all_inbox_rounded,
+                  color: Colors.teal,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ManagementAppealsScreen()),
+                    );
+                  },
                 );
               },
             ),
