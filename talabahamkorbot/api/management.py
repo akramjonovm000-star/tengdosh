@@ -168,19 +168,26 @@ def build_student_filter(
     Enforces role-based scoping (Dean, Tutor) and dynamic dependencies.
     """
     uni_id = getattr(staff, 'university_id', None)
-    filters = [Student.university_id == uni_id]
-    
-    # 1. Role-based Scoping
-    s_role = getattr(staff, 'role', None)
-    staff_fac_id = getattr(staff, 'faculty_id', None)
+    staff_role = getattr(staff, 'role', None)
     
     global_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
-    is_global = getattr(staff, 'hemis_role', None) == 'rahbariyat' or s_role in global_roles
+    is_global = getattr(staff, 'hemis_role', None) == 'rahbariyat' or staff_role in global_roles
 
+    filters = []
+    if uni_id:
+        filters.append(Student.university_id == uni_id)
+    elif not is_global:
+        # If not global and no uni_id, they shouldn't see anything or it's an error
+        # But we'll follow the existing requirement of throwing 400 in endpoints if needed
+        filters.append(Student.university_id == -1) 
+    
+    # 1. Role-based Scoping
+    staff_fac_id = getattr(staff, 'faculty_id', None)
+    
     # Dean / Faculty Admin Scoping
-    if not is_global and staff_fac_id and s_role != 'tyutor':
+    if not is_global and staff_fac_id and staff_role != 'tyutor':
         filters.append(Student.faculty_id == staff_fac_id)
-        # Override strict faculty_id if passed (though frontend should match)
+        # Force faculty filter to match staff's faculty
         faculty_id = staff_fac_id
 
     # Tutor Scoping (Will be handled by group list usually, but here for safety)
@@ -1219,61 +1226,23 @@ async def get_mgmt_documents_archive(
     if not is_mgmt:
         raise HTTPException(status_code=403, detail="Faqat rahbariyat uchun")
 
-    # [NEW] Enforce Bakalavr for Deans
-    if staff_role in dean_level_roles:
-        education_type = "Bakalavr"
-        
-    uni_id = getattr(staff, 'university_id', None)
-    if not uni_id:
-        raise HTTPException(status_code=400, detail="Universitet aniqlanmadi")
-
-    # 2. Auto-restrict Faculty/Group for Dean/Tutor
-    # If Dean, override faculty_id to their own
-    if staff_role == 'dekan':
-        faculty_id = getattr(staff, 'faculty_id', None)
-    # If Tutor, restrict via group lookup (TutorGroup)
-    if staff_role == 'tyutor':
-        from database.models import TutorGroup
-        tutor_groups = await db.execute(select(TutorGroup.group_name).where(TutorGroup.staff_id == staff.id))
-        tutor_group_names = tutor_groups.scalars().all()
-        # If specific group not requested, filter by all tutor's groups
-        if not group_number and tutor_group_names:
-            group_number = tutor_group_names[0] # Simplification for now
-
-    # [FIX] Normalize empty strings from frontend
-    if education_type in ["", "All", "-1", "none"]: education_type = None
-    if education_form in ["", "All", "-1", "none"]: education_form = None
-    if level_name in ["", "All", "-1", "none"]: level_name = None
-    if specialty_name in ["", "All", "-1", "none"]: specialty_name = None
-    if group_number in ["", "All", "-1", "none"]: group_number = None
-
-    # [FIX] Translate HEMIS ID to DB ID
-    if faculty_id == 4: faculty_id = 36 # Jurnalistika
-    elif faculty_id == 2: faculty_id = 34 # PR
-    elif faculty_id == 35: faculty_id = 42 # SIRTQI
-    elif faculty_id == 16: faculty_id = 37 # MAGISTRATURA
-
-    # 3. Base category filters
-    category_filters = [Student.university_id == uni_id]
-    if faculty_id: category_filters.append(Student.faculty_id == faculty_id)
-    if education_type: category_filters.append(Student.education_type == education_type)
-    if education_form: category_filters.append(Student.education_form == education_form)
-    if level_name:
-        # Standardize for DB
-        lvl_q = level_name
-        if "-kurs" not in level_name: lvl_q = f"{level_name}-kurs"
-        category_filters.append(Student.level_name == lvl_q)
-    if specialty_name: category_filters.append(Student.specialty_name == specialty_name)
-    if group_number: category_filters.append(Student.group_number == group_number)
+    # 2. Build Base Filters
+    category_filters = build_student_filter(
+        staff, faculty_id, education_type, education_form, level_name, specialty_name, group_number
+    )
 
     all_results = []
     total_count = 0
 
-    # 4. Fetch Certificates (If title="Sertifikatlar" or "Hammasi")
-    if not title or title == "Sertifikatlar":
+    # 4. Fetch Certificates (If title="Sertifikatlar" or "Hammasi" or None)
+    if not title or title == "Sertifikatlar" or title == "Hammasi":
         stmt_cert = select(UserCertificate).join(Student).where(and_(*category_filters)).options(selectinload(UserCertificate.student))
         if query:
             stmt_cert = stmt_cert.where((UserCertificate.title.ilike(f"%{query}%")) | (Student.full_name.ilike(f"%{query}%")))
+        
+        # [NEW] Robust Title Matching (Case-insensitive)
+        if title and title != "Hammasi":
+            stmt_cert = stmt_cert.where(UserCertificate.title.ilike(f"%{title}%"))
         
         # Count for Certificates
         cnt_cert = await db.execute(select(func.count(UserCertificate.id)).join(Student).where(and_(*category_filters)))
@@ -1298,8 +1267,9 @@ async def get_mgmt_documents_archive(
     # 5. Fetch Standard Documents (If title mismatch "Sertifikatlar")
     if title != "Sertifikatlar":
         stmt_doc = select(UserDocument).join(Student).where(and_(*category_filters)).options(selectinload(UserDocument.student))
-        if title:
-            stmt_doc = stmt_doc.where(UserDocument.title == title)
+        if title and title != "Hammasi":
+            # [NEW] Case-insensitive match for title
+            stmt_doc = stmt_doc.where(UserDocument.title.ilike(f"%{title}%"))
         if query:
             stmt_doc = stmt_doc.where((UserDocument.title.ilike(f"%{query}%")) | (Student.full_name.ilike(f"%{query}%")))
             
@@ -1421,82 +1391,71 @@ async def export_mgmt_documents_zip(
     if not is_mgmt:
         raise HTTPException(status_code=403, detail="Faqat rahbariyat uchun")
 
-    # [NEW] Enforce Bakalavr for Deans
-    if staff_role in dean_level_roles:
-        education_type = "Bakalavr"
-        
-    uni_id = getattr(staff, 'university_id', None)
-    f_id = getattr(staff, 'faculty_id', None)
-    if not uni_id:
-        raise HTTPException(status_code=400, detail="Universitet aniqlanmadi")
+    # 2. Build Query Filters
+    category_filters = build_student_filter(
+        staff, faculty_id, education_type, education_form, level_name, specialty_name, group_number
+    )
+    
+    # [NEW] Collect all results to ZIP
+    all_docs_to_export = []
 
-    # 2. Build Query
-    # If title is "Sertifikatlar", fetch from UserCertificate table
-    if title == "Sertifikatlar":
+    # 3. Fetch Certificates (If title="Sertifikatlar" or "Hammasi")
+    if title == "Sertifikatlar" or not title or title == "Hammasi":
         from database.models import UserCertificate
         
-        category_filters = [Student.university_id == uni_id]
-        if f_id: category_filters.append(Student.faculty_id == f_id)
-        elif faculty_id: category_filters.append(Student.faculty_id == faculty_id)
-        # Note: Certificates might not have strict education/group filters but we apply what we can if joined logic allows
-        # For simplicity, we filter by student relation
-        
-        stmt = (
-            select(UserCertificate, Student)
+        stmt_cert = (
+            select(UserCertificate)
             .join(Student, UserCertificate.student_id == Student.id)
             .where(and_(*category_filters))
         )
         
         if query:
-             stmt = stmt.where(
+            stmt_cert = stmt_cert.where(
                 (UserCertificate.title.ilike(f"%{query}%")) |
                 (Student.full_name.ilike(f"%{query}%"))
             )
         
-        stmt = stmt.order_by(UserCertificate.created_at.desc())
-        
-    else:
-        # Standard Documents Query
-        category_filters = [Student.university_id == uni_id]
-        
-        if f_id: category_filters.append(Student.faculty_id == f_id)
-        elif faculty_id: category_filters.append(Student.faculty_id == faculty_id)
-        if education_type: category_filters.append(Student.education_type == education_type)
-        if education_form: category_filters.append(Student.education_form == education_form)
-        if level_name: category_filters.append(Student.level_name == level_name)
-        if specialty_name: category_filters.append(Student.specialty_name == specialty_name)
-        if group_number: category_filters.append(Student.group_number == group_number)
-    
-        stmt = (
-            select(UserDocument, Student)
+        # Robust Title Matching (Case-insensitive)
+        if title and title not in ["Hammasi", "Sertifikatlar"]:
+            stmt_cert = stmt_cert.where(UserCertificate.title.ilike(f"%{title}%"))
+
+        res_cert = await db.execute(stmt_cert.options(selectinload(UserCertificate.student)))
+        all_docs_to_export.extend(res_cert.scalars().all())
+
+    # 4. Fetch Standard Documents (If title mismatch "Sertifikatlar")
+    if title != "Sertifikatlar":
+        stmt_doc = (
+            select(UserDocument)
             .join(Student, UserDocument.student_id == Student.id)
             .where(and_(*category_filters))
         )
-    
-        if title:
-            stmt = stmt.where(UserDocument.title == title)
+        
+        if title and title != "Hammasi":
+            stmt_doc = stmt_doc.where(UserDocument.title.ilike(f"%{title}%"))
             
         if query:
-            stmt = stmt.where(
-                (Student.full_name.ilike(f"%{query}%")) |
-                (UserDocument.title.ilike(f"%{query}%"))
+            stmt_doc = stmt_doc.where(
+                (UserDocument.title.ilike(f"%{query}%")) |
+                (Student.full_name.ilike(f"%{query}%"))
             )
             
-        stmt = stmt.order_by(UserDocument.created_at.desc())
-    
-    result = await db.execute(stmt)
-    rows = result.all()
+        res_doc = await db.execute(stmt_doc.options(selectinload(UserDocument.student)))
+        all_docs_to_export.extend(res_doc.scalars().all())
 
-    if not rows:
-        return {"success": False, "message": "Hujjatlar topilmadi"}
+    # 5. Process and ZIP
+    if not all_docs_to_export:
+        return {"success": False, "message": "Hech qanday hujjat topilmadi"}
 
-    # 3. Create ZIP in memory
+    # Create ZIP in memory
     zip_buffer = io.BytesIO()
     count = 0
     
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
         async with aiohttp.ClientSession() as session:
-            for doc, student in rows:
+            for doc in all_docs_to_export:
+                student = doc.student
+                if not student: continue
+                
                 try:
                     # Get File Info from Telegram
                     tg_file = await bot.get_file(doc.file_id)
@@ -1519,8 +1478,8 @@ async def export_mgmt_documents_zip(
                                     ext = "bin"
                             
                             # Filename: StudentName_DocTitle_ID.ext
-                            clean_name = student.full_name.replace(" ", "_").replace("'", "").replace('"', "")
-                            clean_title = doc.title.replace(" ", "_").replace("'", "").replace('"', "")
+                            clean_name = student.full_name.replace(" ", "_").replace("'", "").replace("\"", "")
+                            clean_title = doc.title.replace(" ", "_").replace("'", "").replace("\"", "")
                             filename = f"{clean_name}_{clean_title}_{doc.id}.{ext}"
                             
                             zip_file.writestr(filename, file_bytes)
@@ -1535,7 +1494,7 @@ async def export_mgmt_documents_zip(
 
     zip_buffer.seek(0)
     
-    # 4. Send ZIP via Bot
+    # Send ZIP via Bot
     # Use TEST ID: 7476703866
     try:
         input_file = BufferedInputFile(zip_buffer.read(), filename="hujjatlar_arxivi.zip")
