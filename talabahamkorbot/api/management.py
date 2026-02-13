@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_, or_, desc
+from sqlalchemy import select, func, and_, or_, desc, distinct
 from sqlalchemy.orm import selectinload
 from typing import Dict, Any, List, Optional
 import zipfile
@@ -1293,7 +1293,7 @@ async def get_mgmt_documents_archive(
 
     # 4. Pagination & Fetch
     # Get total count first
-    total_count = await db.scalar(
+    total_count_stmt = (
         select(func.count(StudentDocument.id))
         .join(Student)
         .where(
@@ -1304,6 +1304,7 @@ async def get_mgmt_documents_archive(
             )
         )
     )
+    total_count = await db.scalar(total_count_stmt)
 
     res = await db.execute(
         stmt.order_by(StudentDocument.uploaded_at.desc())
@@ -1318,20 +1319,34 @@ async def get_mgmt_documents_archive(
             "id": str(d.id),
             "title": d.file_name,
             "created_at": d.uploaded_at.isoformat() if d.uploaded_at else None,
+            "short_date": d.uploaded_at.strftime("%d.%m.%Y") if d.uploaded_at else "",
             "file_id": d.telegram_file_id,
             "file_type": d.file_type or "document",
             "is_certificate": d.file_type == "certificate",
             "student": {
+                "id": str(d.student.id) if d.student else None,
                 "full_name": d.student.full_name if d.student else "Noma'lum",
                 "group_number": d.student.group_number if d.student else "",
                 "faculty_name": d.student.faculty_name if d.student else "",
+                "hemis_id": d.student.hemis_id if d.student else "",
             }
         })
 
-    # [NEW] Simple Stats
+    # [NEW] Enhanced Stats
+    # Count unique students in the filtered scope
+    student_count_stmt = select(func.count(distinct(Student.id))).where(and_(*category_filters))
+    total_students_in_scope = await db.scalar(student_count_stmt)
+    
+    # Count students who uploaded something in this scope
+    uploaded_students_stmt = select(func.count(distinct(StudentDocument.student_id))).join(Student).where(and_(*category_filters))
+    students_with_uploads = await db.scalar(uploaded_students_stmt)
+
     stats = {
         "total_documents": await db.scalar(select(func.count(StudentDocument.id)).where(and_(*category_filters, StudentDocument.file_type == "document"))),
-        "total_certificates": await db.scalar(select(func.count(StudentDocument.id)).where(and_(*category_filters, StudentDocument.file_type == "certificate")))
+        "total_certificates": await db.scalar(select(func.count(StudentDocument.id)).where(and_(*category_filters, StudentDocument.file_type == "certificate"))),
+        "students_in_scope": total_students_in_scope or 0,
+        "students_with_uploads": students_with_uploads or 0,
+        "completion_rate": round((students_with_uploads / total_students_in_scope * 100) if total_students_in_scope else 0, 1)
     }
     
     return {
