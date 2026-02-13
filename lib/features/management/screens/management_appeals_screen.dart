@@ -257,32 +257,36 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
   Widget _buildListTab() {
     return Column(
       children: [
-        // Filters
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
+        // Modern Filters Scroll
+        Container(
+          height: 60,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            physics: const BouncingScrollPhysics(),
             children: [
-              _buildFilterChip("Holat", _selectedStatus, ["pending", "processing", "resolved", "replied"], (v) => setState(() { _selectedStatus = v; _loadData(); })),
+              _buildModernFilterChip("Hammasi", _selectedStatus == null, () => setState(() { _selectedStatus = null; _loadData(); })),
               const SizedBox(width: 8),
-              // We could load faculties dynamically but for now lets rely on text input or just "Barchasi" reset
-              if (_selectedFaculty != null) 
-                 InputChip(
-                   label: Text(_selectedFaculty!), 
-                   onDeleted: () => setState(() { _selectedFaculty = null; _loadData(); }),
-                   selected: true,
-                   showCheckmark: false,
-                 ),
-              if (_selectedRole != null)
-                const SizedBox(width: 8),
-              if (_selectedRole != null)
-                 InputChip(
-                   label: Text("Kimga: $_selectedRole"), 
-                   onDeleted: () => setState(() { _selectedRole = null; _loadData(); }),
-                   selected: true,
-                   showCheckmark: false,
-                 ),
-              // AI Topics filter could be added similarly if we fetch unique topics
+              _buildModernFilterChip("Kutilmoqda", _selectedStatus == 'pending', () => setState(() { _selectedStatus = 'pending'; _loadData(); }), color: Colors.orange),
+              const SizedBox(width: 8),
+              _buildModernFilterChip("Jarayonda", _selectedStatus == 'processing', () => setState(() { _selectedStatus = 'processing'; _loadData(); }), color: Colors.blue),
+              const SizedBox(width: 8),
+              _buildModernFilterChip("Yopilgan", _selectedStatus == 'resolved', () => setState(() { _selectedStatus = 'resolved'; _loadData(); }), color: Colors.green),
+              const SizedBox(width: 8),
+              _buildModernFilterChip("Javob berilgan", _selectedStatus == 'replied', () => setState(() { _selectedStatus = 'replied'; _loadData(); }), color: Colors.purple),
+              
+              // Dynamic Chips for Role/Faculty if selected
+              if (_selectedFaculty != null) ...[
+                 const SizedBox(width: 12),
+                 Container(width: 1, height: 24, color: Colors.grey[300]),
+                 const SizedBox(width: 12),
+                 _buildRemovableChip(_selectedFaculty!, () => setState(() { _selectedFaculty = null; _loadData(); })),
+              ],
+               if (_selectedRole != null) ...[
+                 const SizedBox(width: 8),
+                 _buildRemovableChip("Rol: $_selectedRole", () => setState(() { _selectedRole = null; _loadData(); })),
+              ],
             ],
           ),
         ),
@@ -290,6 +294,7 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            physics: const BouncingScrollPhysics(),
             itemCount: _appeals.length,
             itemBuilder: (context, index) {
               return _buildAppealCard(_appeals[index]);
@@ -300,32 +305,52 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
     );
   }
   
-  Widget _buildFilterChip(String label, String? selectedValue, List<String> options, Function(String?) onSelected) {
-    final Map<String, String> translations = {
-      'pending': 'KUTILMOQDA',
-      'processing': 'JARAYONDA',
-      'resolved': 'HAL QILINDI',
-      'replied': 'JAVOB BERILDI',
-    };
-
-    return DropdownButtonHideUnderline(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+  Widget _buildModernFilterChip(String label, bool isSelected, VoidCallback onTap, {Color? color}) {
+    final themeColor = color ?? Colors.black;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isSelected ? themeColor : Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey[300]!)
+          border: Border.all(color: isSelected ? Colors.transparent : Colors.grey[300]!),
+          boxShadow: isSelected ? [BoxShadow(color: themeColor.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))] : [],
         ),
-        child: DropdownButton<String>(
-          value: selectedValue,
-          hint: Text(label),
-          icon: const Icon(Icons.arrow_drop_down),
-          onChanged: onSelected,
-          items: [
-            const DropdownMenuItem(value: null, child: Text("Barchasi")),
-            ...options.map((o) => DropdownMenuItem(value: o, child: Text(translations[o] ?? o.toUpperCase()))),
-          ],
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.grey[700],
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              fontSize: 13
+            ),
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildRemovableChip(String label, VoidCallback onRemove) {
+    return Container(
+      padding: const EdgeInsets.only(left: 12, right: 4, top: 4, bottom: 4),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryBlue.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppTheme.primaryBlue.withOpacity(0.2)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label, style: TextStyle(fontSize: 12, color: AppTheme.primaryBlue, fontWeight: FontWeight.w600)),
+          IconButton(
+            icon: Icon(Icons.close, size: 16, color: AppTheme.primaryBlue),
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            padding: EdgeInsets.zero,
+            onPressed: onRemove,
+          )
+        ],
       ),
     );
   }
