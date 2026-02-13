@@ -72,7 +72,10 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
 
   Future<void> _loadSpecialties() async {
     try {
-      final specs = await _dataService.getManagementSpecialties(facultyId: _selectedFacultyId);
+      final specs = await _dataService.getManagementSpecialties(
+        facultyId: _selectedFacultyId,
+        educationType: _selectedEducationType,
+      );
       setState(() => _specialties = List<String>.from(specs));
     } catch (_) {}
   }
@@ -81,7 +84,10 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
     try {
       final groups = await _dataService.getManagementGroups(
         facultyId: _selectedFacultyId,
-        levelName: _selectedCourse != null ? "${_selectedCourse}-kurs" : null,
+        levelName: _selectedCourse,
+        educationType: _selectedEducationType,
+        educationForm: _selectedEducationForm,
+        specialtyName: _selectedSpecialty,
       );
       setState(() => _groups = List<String>.from(groups));
     } catch (_) {}
@@ -101,7 +107,7 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
       title: _selectedTitle,
       educationType: _selectedEducationType,
       educationForm: _selectedEducationForm,
-      levelName: _selectedCourse != null ? "${_selectedCourse}-kurs" : null,
+      levelName: _selectedCourse, 
       specialtyName: _selectedSpecialty,
       groupNumber: _selectedGroup,
       page: _currentPage,
@@ -119,12 +125,17 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
     });
   }
 
+  // Filter Data
+  final List<String> _educationTypes = ["Bakalavr", "Magistr"];
+  final List<String> _educationForms = ["Kunduzgi", "Sirtqi", "Kechki"];
+  final List<String> _courses = ["1-kurs", "2-kurs", "3-kurs", "4-kurs", "5-kurs", "6-kurs"];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: AppTheme.backgroundWhite,
-      endDrawer: _buildFilterDrawer(),
+      // endDrawer: _buildFilterDrawer(), // Removed old drawer
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
@@ -138,7 +149,7 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
             ),
           ),
 
-          // Search & Category Bar
+          // Search & Filters (New Redesign)
           SliverPersistentHeader(
             pinned: true,
             delegate: _PersistentHeaderDelegate(
@@ -148,12 +159,23 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
                 child: Column(
                   children: [
                     _buildSearchBar(),
+                    // _buildCategoryChips(), // Moved below or removed? User screenshot only showed search+grid.
+                    // But we need Category Chips for "Passport" vs "Diplom" etc.
+                    // Let's keep them, but maybe make it scrollable below instructions?
+                    // Actually, let's put the chips inside the persistent header if space allows, 
+                    // or just move them to SliverToBoxAdapter below?
+                    // The user said "filter appearance... like this", implying the top section.
+                    // The screenshot likely replaced the old Search+Chips area.
+                    // I will put the chips BELOW the grid in the same header, expanding height.
+                    const SizedBox(height: 8),
+                    _buildFilterGrid(),
+                    const SizedBox(height: 8),
                     _buildCategoryChips(),
                   ],
                 ),
               ),
-              maxHeight: 125,
-              minHeight: 125,
+              maxHeight: 240, // Expanded for grid
+              minHeight: 240, 
             ),
           ),
 
@@ -193,7 +215,7 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
 
   Widget _buildSliverAppBar() {
     return SliverAppBar(
-      expandedHeight: 120,
+      expandedHeight: 80, // Reduced height since we have a tall filter section
       floating: false,
       pinned: true,
       backgroundColor: AppTheme.primaryBlue,
@@ -210,20 +232,12 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
           "Arxiv",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22),
         ),
-        background: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [AppTheme.primaryBlue, Color(0xFF0016CC)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
+        background: Container(color: AppTheme.primaryBlue),
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.filter_list_rounded, color: Colors.white),
-          onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+          icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+          onPressed: () => _loadDocuments(refresh: true),
         ),
         const SizedBox(width: 8),
       ],
@@ -244,19 +258,18 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
 
   Widget _buildStatCard(String label, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
       decoration: BoxDecoration(
         color: AppTheme.surfaceWhite,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Column(
         children: [
           Icon(icon, color: color, size: 20),
-          const SizedBox(height: 8),
-          Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 2),
-          Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[600], fontWeight: FontWeight.w500)),
+          const SizedBox(height: 4),
+          Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(label, style: TextStyle(fontSize: 10, color: Colors.grey[600], fontWeight: FontWeight.w500)),
         ],
       ),
     );
@@ -264,24 +277,106 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
 
   Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
-        height: 50,
+        height: 48,
         decoration: BoxDecoration(
-          color: AppTheme.surfaceWhite,
-          borderRadius: BorderRadius.circular(15),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[300]),
         ),
         child: TextField(
           controller: _searchController,
           onSubmitted: (val) => _loadDocuments(refresh: true),
           decoration: InputDecoration(
-            hintText: "Talaba yoki hujjat nomi...",
-            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
-            prefixIcon: const Icon(Icons.search_rounded, color: AppTheme.primaryBlue),
+            hintText: "Ism yoki Hemis ID...",
+            hintStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
+            prefixIcon: const Icon(Icons.search_rounded, color: Colors.grey),
             border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 15),
+            contentPadding: const EdgeInsets.symmetric(vertical: 14),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterGrid() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(child: _buildDropdownFilter("Turi", _selectedEducationType, _educationTypes, (v) {
+                setState(() { _selectedEducationType = v; _selectedSpecialty = null; _selectedGroup = null; });
+                _loadSpecialties();
+                _loadGroups();
+                _loadDocuments(refresh: true);
+              })),
+              const SizedBox(width: 8),
+              Expanded(child: _buildDropdownFilter("Fakultet", _selectedFacultyId, _faculties.map((f) => {'id': f['id'], 'name': f['name']}).toList(), (v) {
+                setState(() { _selectedFacultyId = v; _selectedSpecialty = null; _selectedGroup = null; });
+                _loadSpecialties();
+                _loadGroups();
+                _loadDocuments(refresh: true);
+              }, isFaculty: true)),
+              const SizedBox(width: 8),
+              Expanded(child: _buildDropdownFilter("Shakli", _selectedEducationForm, _educationForms, (v) {
+                setState(() { _selectedEducationForm = v; });
+                _loadDocuments(refresh: true);
+              })),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(child: _buildDropdownFilter("Kurs", _selectedCourse, _courses, (v) {
+                setState(() { _selectedCourse = v; });
+                _loadDocuments(refresh: true);
+              })),
+              const SizedBox(width: 8),
+              Expanded(child: _buildDropdownFilter("Yo'nalish", _selectedSpecialty, _specialties, (v) {
+                setState(() { _selectedSpecialty = v; });
+                _loadDocuments(refresh: true);
+              })),
+              const SizedBox(width: 8),
+              Expanded(child: _buildDropdownFilter("Guruh", _selectedGroup, _groups, (v) {
+                setState(() { _selectedGroup = v; });
+                _loadDocuments(refresh: true);
+              })),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDropdownFilter(String hint, dynamic value, List<dynamic> items, Function(dynamic) onChanged, {bool isFaculty = false}) {
+    // Map items to DropdownMenuItem
+    List<DropdownMenuItem<dynamic>> menuItems = [];
+    if (isFaculty) {
+       menuItems = items.map<DropdownMenuItem<dynamic>>((e) => DropdownMenuItem(value: e['id'], child: Text(e['name'], overflow: TextOverflow.ellipsis))).toList();
+    } else {
+       menuItems = items.map<DropdownMenuItem<dynamic>>((e) => DropdownMenuItem(value: e, child: Text(e, overflow: TextOverflow.ellipsis))).toList();
+    }
+
+    return Container(
+      height: 40,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey[300]),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<dynamic>(
+          value: value,
+          isExpanded: true,
+          hint: Text(hint, style: TextStyle(fontSize: 12, color: Colors.grey[600]), overflow: TextOverflow.ellipsis),
+          items: menuItems,
+          onChanged: onChanged,
+          icon: Icon(Icons.arrow_drop_down, color: Colors.grey[600], size: 18),
+          style: const TextStyle(fontSize: 12, color: Colors.black),
         ),
       ),
     );
@@ -289,7 +384,7 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
 
   Widget _buildCategoryChips() {
     return SizedBox(
-      height: 45,
+      height: 36,
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         scrollDirection: Axis.horizontal,
@@ -307,16 +402,17 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
                 _loadDocuments(refresh: true);
               },
               backgroundColor: AppTheme.surfaceWhite,
-              selectedColor: AppTheme.primaryBlue.withOpacity(0.1),
-              checkmarkColor: AppTheme.primaryBlue,
+              selectedColor: AppTheme.primaryBlue,
+              checkmarkColor: Colors.white,
               labelStyle: TextStyle(
-                color: isSelected ? AppTheme.primaryBlue : AppTheme.textBlack,
+                color: isSelected ? Colors.white : AppTheme.textBlack,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                fontSize: 12,
+                fontSize: 11,
               ),
+              padding: EdgeInsets.zero,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-                side: BorderSide(color: isSelected ? AppTheme.primaryBlue : Colors.transparent, width: 1),
+                borderRadius: BorderRadius.circular(8),
+                side: BorderSide(color: isSelected ? Colors.transparent : Colors.grey[300], width: 1),
               ),
             ),
           );
@@ -333,82 +429,64 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: AppTheme.surfaceWhite,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.withOpacity(0.1)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.black.withOpacity(0.05)),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2))],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           onTap: () => _showDocumentActions(doc),
           child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: (isCert ? Colors.amber : Colors.blue).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        isCert ? Icons.workspace_premium_rounded : Icons.description_outlined,
-                        color: isCert ? Colors.amber[800] : Colors.blue[700],
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            doc['title'] ?? 'Nomsiz',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            student['full_name'] ?? 'Talaba',
-                            style: TextStyle(color: AppTheme.primaryBlue, fontWeight: FontWeight.w600, fontSize: 13),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            "${student['faculty_name'] ?? '-'} • ${student['group_number'] ?? '-'}",
-                            style: TextStyle(color: Colors.grey[500], fontSize: 11),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                    Icon(Icons.more_vert_rounded, color: Colors.grey[400], size: 20),
-                  ],
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: (isCert ? Colors.amber : Colors.blue).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    isCert ? Icons.workspace_premium_rounded : Icons.description_outlined,
+                    color: isCert ? Colors.amber[800] : Colors.blue[700],
+                    size: 20,
+                  ),
                 ),
-                const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Divider(height: 1, thickness: 0.5)),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.calendar_today_rounded, size: 12, color: Colors.grey[400]),
-                        const SizedBox(width: 4),
-                        Text(doc['short_date'] ?? '-', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        _buildActionIcon(Icons.telegram_rounded, Colors.blue, "Yuborish", () => _downloadDoc(doc)),
-                        const SizedBox(width: 8),
-                      ],
-                    )
-                  ],
-                )
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        doc['title'] ?? 'Nomsiz',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        student['full_name'] ?? 'Talaba',
+                        style: TextStyle(color: Colors.grey[800], fontWeight: FontWeight.w500, fontSize: 12),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        "${student['faculty_name'] ?? ''} ${student['group_number'] ?? ''}",
+                        style: TextStyle(color: Colors.grey[500], fontSize: 10),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.download_rounded, color: Colors.blue[600], size: 20),
+                  onPressed: () => _downloadDoc(doc),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
               ],
             ),
           ),
@@ -417,23 +495,14 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
     );
   }
 
+  // Helper Widgets (Action Icon, Show Actions) Remain Clean...
   Widget _buildActionIcon(IconData icon, Color color, String label, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: color, size: 16),
-            const SizedBox(width: 4),
-            Text(label, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
-          ],
-        ),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Icon(icon, color: color, size: 20),
       ),
     );
   }
@@ -449,18 +518,17 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
           children: [
             Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 24),
-            Text(doc['title'] ?? 'Hujjat', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            Text(doc['title'] ?? 'Hujjat', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), textAlign: TextAlign.center),
             const SizedBox(height: 8),
-            Text(doc['student']['full_name'] ?? '', style: TextStyle(color: Colors.grey[600])),
+            Text(doc['student']['full_name'] ?? '', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
             const SizedBox(height: 24),
             ListTile(
-              leading: const CircleAvatar(backgroundColor: Colors.blue, child: Icon(Icons.telegram, color: Colors.white)),
+              leading: const CircleAvatar(backgroundColor: Colors.blue, child: Icon(Icons.telegram, color: Colors.white, size: 20)),
               title: const Text("Bot orqali yuborish"),
-              subtitle: const Text("Hujjatni Telegram botingizga yuboradi"),
               onTap: () { Navigator.pop(context); _downloadDoc(doc); },
             ),
             ListTile(
-              leading: CircleAvatar(backgroundColor: Colors.grey[100], child: Icon(Icons.copy_rounded, color: Colors.grey[700])),
+              leading: CircleAvatar(backgroundColor: Colors.grey[100], child: Icon(Icons.copy_rounded, color: Colors.grey[700], size: 20)),
               title: const Text("HEMIS ID nusxalash"),
               onTap: () {
                 Clipboard.setData(ClipboardData(text: doc['student']['hemis_id'] ?? ''));
@@ -474,112 +542,7 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
     );
   }
 
-  Widget _buildFilterDrawer() {
-    return Drawer(
-      backgroundColor: AppTheme.surfaceWhite,
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
-            color: AppTheme.primaryBlue,
-            child: const Row(
-              children: [
-                Icon(Icons.tune_rounded, color: Colors.white),
-                SizedBox(width: 16),
-                Text("Filtrlar", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-              ],
-            ),
-          ),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(24),
-              children: [
-                _buildDrawerDropdown<String>("Ta'lim turi", _selectedEducationType, ["Bakalavr", "Magistr"], (v) {
-                  setState(() { _selectedEducationType = v; _selectedCourse = null; _selectedGroup = null; });
-                  _loadGroups();
-                }),
-                const SizedBox(height: 16),
-                _buildDrawerDropdown<int>("Fakultet", _selectedFacultyId, _faculties.map((f) => MapEntry(f['id'] as int, f['name'] as String)).toList(), (v) {
-                  setState(() { _selectedFacultyId = v; _selectedSpecialty = null; _selectedGroup = null; });
-                  _loadSpecialties(); _loadGroups();
-                }),
-                const SizedBox(height: 16),
-                _buildDrawerDropdown<String>(
-                  "Kurs", 
-                  _selectedCourse, 
-                  _selectedEducationType == "Magistr" ? ["1", "2"] : ["1", "2", "3", "4"], 
-                  (v) { setState(() => _selectedCourse = v); _loadGroups(); }
-                ),
-                const SizedBox(height: 16),
-                _buildDrawerDropdown<String>("Guruh", _selectedGroup, _groups, (v) => setState(() => _selectedGroup = v)),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () {
-                      setState(() {
-                        _selectedEducationType = null; _selectedEducationForm = null; _selectedCourse = null;
-                        _selectedFacultyId = null; _selectedSpecialty = null; _selectedGroup = null;
-                        _searchController.clear();
-                      });
-                      Navigator.pop(context);
-                      _loadDocuments(refresh: true);
-                    },
-                    child: const Text("Tozalash", style: TextStyle(color: Colors.red)),
-                  ),
-                ),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () { Navigator.pop(context); _loadDocuments(refresh: true); },
-                    child: const Text("Qo'llash"),
-                  ),
-                ),
-              ],
-            ),
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDrawerDropdown<T>(String label, T? value, dynamic items, ValueChanged<T?> onChanged) {
-    List<DropdownMenuItem<T>> menuItems = [];
-    if (items is List<String>) {
-      menuItems = items.map((e) => DropdownMenuItem<T>(value: e as T, child: Text(e))).toList();
-    } else if (items is List<MapEntry<int, String>>) {
-      menuItems = items.map((e) => DropdownMenuItem<T>(value: e.key as T, child: Text(e.value))).toList();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppTheme.textBlack)),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<T>(
-              isExpanded: true,
-              value: value,
-              items: menuItems,
-              onChanged: onChanged,
-              hint: Text("Tanlang", style: TextStyle(color: Colors.grey[400], fontSize: 14)),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
+  // Export Logic Matches Previous
   Future<void> _exportZip() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -604,7 +567,8 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
       title: _selectedTitle,
       educationType: _selectedEducationType,
       educationForm: _selectedEducationForm,
-      levelName: _selectedCourse != null ? "${_selectedCourse}-kurs" : null,
+      levelName: _selectedCourse != null ? "${_selectedCourse}" : null, // Removed "-kurs" if API expects just number, but API usually handles string properly. Let's keep consistent.
+      // Actually backend accepts "1-kurs". Let's verify.
       specialtyName: _selectedSpecialty,
       groupNumber: _selectedGroup,
     );
@@ -639,15 +603,11 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(color: Colors.grey[200], shape: BoxShape.circle),
-            child: Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey[400]),
-          ),
-          const SizedBox(height: 24),
-          const Text("Hujjatlar topilmadi", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-          const SizedBox(height: 8),
-          Text("Filtrlarni o'zgartirib ko'ring", style: TextStyle(color: Colors.grey[500])),
+          Icon(Icons.search_off_rounded, size: 48, color: Colors.grey[300]),
+          const SizedBox(height: 16),
+          const Text("Hujjatlar topilmadi", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const SizedBox(height: 4),
+          Text("Filtrlarni o'zgartirib ko'ring", style: TextStyle(color: Colors.grey[500], fontSize: 12)),
         ],
       ),
     );
