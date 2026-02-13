@@ -59,35 +59,92 @@ class _FacultyAppealsScreenState extends State<FacultyAppealsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundWhite,
+      backgroundColor: const Color(0xFFF5F5F7), // iOS-like light grey
       appBar: AppBar(
-        title: Text(widget.facultyStats.faculty, style: const TextStyle(color: Colors.black, fontSize: 16)),
+        title: Text(widget.facultyStats.faculty, style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 17)),
         backgroundColor: Colors.white,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, size: 20, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: Column(
         children: [
-          // 1. Header Stats
+          // 1. Premium Header Stats
           Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.white,
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  "${widget.facultyStats.total} Murojaat (${widget.facultyStats.pending} Kutilmoqda)",
-                  style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryBlue.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(Icons.analytics_outlined, color: AppTheme.primaryBlue, size: 24),
+                    ),
+                    const SizedBox(width: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Umumiy Holat",
+                          style: TextStyle(fontSize: 13, color: Colors.grey[500], fontWeight: FontWeight.w500),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Text(
+                              "${widget.facultyStats.total}",
+                              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
+                            ),
+                            const SizedBox(width: 6),
+                             Text(
+                              "murojaat",
+                              style: TextStyle(fontSize: 14, color: Colors.grey[600], height: 1.5),
+                            ),
+                            const SizedBox(width: 12),
+                            Container(
+                               height: 4, width: 4, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.grey[300])),
+                            const SizedBox(width: 12),
+                            Text(
+                              "${widget.facultyStats.pending} kutilmoqda",
+                              style: const TextStyle(fontSize: 14, color: Colors.orange, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ],
+                    )
+                  ],
                 ),
-                const SizedBox(height: 12),
-                // Smart Chips
+                const SizedBox(height: 24),
+                
+                // Smart Chips Scroll
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
                   child: Row(
                     children: [
-                      _buildTopicChip("Hammasi", null, widget.facultyStats.total),
+                      _buildModernChip("Hammasi", null, widget.facultyStats.total),
                       ...widget.facultyStats.topics.entries.map((e) => 
-                        _buildTopicChip(e.key, e.key, e.value)
+                        _buildModernChip(e.key, e.key, e.value)
                       ),
                     ],
                   ),
@@ -103,7 +160,8 @@ class _FacultyAppealsScreenState extends State<FacultyAppealsScreen> {
               : _error != null 
                   ? Center(child: Text("Xatolik: $_error"))
                   : ListView.builder(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.only(top: 20, left: 16, right: 16, bottom: 40),
+                      physics: const BouncingScrollPhysics(),
                       itemCount: _appeals.length,
                       itemBuilder: (context, index) => _buildAppealCard(_appeals[index]),
                     ),
@@ -113,29 +171,63 @@ class _FacultyAppealsScreenState extends State<FacultyAppealsScreen> {
     );
   }
 
-  Widget _buildTopicChip(String label, String? topicKey, int count) {
+  Widget _buildModernChip(String label, String? topicKey, int count) {
     final bool isSelected = _selectedTopic == topicKey;
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: FilterChip(
-        label: Text("$label ($count)"),
-        selected: isSelected,
-        onSelected: (bool selected) {
-          setState(() {
-            _selectedTopic = topicKey; // If re-selecting same, keep it active (or toggle off? let's keep active logic simpler)
-          });
-          _loadAppeals();
-        },
-        backgroundColor: Colors.grey[100],
-        selectedColor: AppTheme.primaryBlue.withOpacity(0.2),
-        labelStyle: TextStyle(
-          color: isSelected ? AppTheme.primaryBlue : Colors.black87,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+    
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedTopic = topicKey;
+        });
+        _loadAppeals();
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.only(right: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.black : Colors.grey[100],
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? Colors.transparent : Colors.grey[200]!,
+            width: 1
+          ),
+          boxShadow: isSelected ? [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 8,
+              offset: const Offset(0, 4)
+            )
+          ] : [],
         ),
-        showCheckmark: false,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: isSelected ? AppTheme.primaryBlue : Colors.grey[300]!),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.black87,
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: isSelected ? Colors.white.withOpacity(0.2) : Colors.white,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                "$count",
+                style: TextStyle(
+                  color: isSelected ? Colors.white : Colors.black54,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
