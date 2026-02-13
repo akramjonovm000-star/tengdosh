@@ -19,12 +19,14 @@ async def get_appeals_stats(
     db: AsyncSession = Depends(get_db)
 ):
     try:
-        # 1. Auth Check
+        # 1. Auth Check & Scoping
         dean_level_roles = [StaffRole.DEKAN, StaffRole.DEKAN_ORINBOSARI, StaffRole.DEKAN_YOSHLAR, StaffRole.DEKANAT]
         global_mgmt_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
         
         current_role = getattr(staff, 'role', None) or ""
-        is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or current_role in global_mgmt_roles or current_role in dean_level_roles
+        f_id = getattr(staff, 'faculty_id', None)
+        is_global = current_role in global_mgmt_roles and f_id is None
+        is_mgmt = current_role in global_mgmt_roles or current_role in dean_level_roles
         
         if not is_mgmt:
             raise HTTPException(status_code=403, detail="Faqat rahbariyat yoki dekanat uchun")
@@ -41,8 +43,7 @@ async def get_appeals_stats(
         # Base Query
         base_query = select(StudentFeedback).join(Student).where(Student.university_id == uni_id)
         
-        f_id = getattr(staff, 'faculty_id', None)
-        if current_role in dean_level_roles and f_id:
+        if not is_global and f_id:
             base_query = base_query.where(Student.faculty_id == f_id)
             
         all_appeals = (await db.execute(base_query)).scalars().all()
@@ -53,72 +54,67 @@ async def get_appeals_stats(
         # In-memory aggregation for flexibility (or complex SQL for performance if dataset > 10k)
         # Given dataset size likely < 10k active, in-memory is fine and cleaner for logic
         
-        fac_stats = {} # { "FacultyName": { "id": 1, "total": 0, "resolved": 0, "pending": 0, "overdue": 0, "response_times": [], "topics": {} } }
+        # Pivot Stats: Faculty list for Global, Group list for Deans
+        pivot_stats = {} 
         
         for a in all_appeals:
             status = a.status or "pending"
             counts[status] = counts.get(status, 0) + 1
             
-            # Faculty specific stats
-            fac_name = a.student_faculty or "Boshqa"
-            # Attempt to find faculty ID from student relation if loaded, else we rely on what we have
-            # Ideally we join Faculty table, but student.faculty_id is verified
-            # For this summary, let's group by name as provided in snapshot or student
-            # We need ID for frontend link. 
+            # Pivot logic: Group by Faculty if global, by Group if scoped
+            if is_global:
+                pivot_name = a.student_faculty or "Boshqa"
+            else:
+                pivot_name = a.student_group or "Noma'lum"
             
-            # Since we iterate, we can't easily get ID unless eager loaded. 
-            # Let's assume a mapping or just use name match if needed.
-            # Using a separate query for faculty list might be better but let's try to grab it from a.student if joined.
-            # The base_query joined Student, so a.student should be accessible? No, not explicit selectinload.
-            # But the join allows filtering. 
-            # Let's optimistically rely on `student_faculty` name which is stored on creation.
-            
-            if fac_name not in fac_stats:
-                fac_stats[fac_name] = {
+            if pivot_name not in pivot_stats:
+                pivot_stats[pivot_name] = {
                     "total": 0, "resolved": 0, "pending": 0, "overdue": 0, 
                     "response_times": [], "topics": {}
                 }
             
-            fs = fac_stats[fac_name]
-            fs["total"] += 1
+            ps = pivot_stats[pivot_name]
+            ps["total"] += 1
             
             # Topic Breakdown
             topic = a.ai_topic or "Boshqa"
-            fs["topics"][topic] = fs["topics"].get(topic, 0) + 1
+            ps["topics"][topic] = ps["topics"].get(topic, 0) + 1
             
             # Status Stats
             if status in ['resolved', 'replied']:
-                fs["resolved"] += 1
+                ps["resolved"] += 1
                 # Response Time Calc
                 if a.created_at and a.updated_at and a.updated_at > a.created_at:
                     diff = (a.updated_at - a.created_at).total_seconds() / 3600 # Hours
                     if diff > 0 and diff < 10000: # Sanity check
-                        fs["response_times"].append(diff)
+                        ps["response_times"].append(diff)
             else:
-                fs["pending"] += 1
+                ps["pending"] += 1
                 # Overdue Calc
                 if a.created_at and a.created_at < three_days_ago:
-                    fs["overdue"] += 1
+                    ps["overdue"] += 1
                     total_overdue += 1
 
-        # 3. Build Faculty Performance List
-        faculty_performance = []
+        # 3. Build Performance List (Faculties or Groups)
+        performance_list = []
         
-        # Helper to get Faculty IDs (One query to map Name -> ID)
-        fac_map_stmt = select(Faculty.id, Faculty.name).where(Faculty.university_id == uni_id)
-        fac_map_rows = (await db.execute(fac_map_stmt)).all()
-        name_to_id = {r[1]: r[0] for r in fac_map_rows}
+        # Helper to get Faculty IDs (only if global)
+        name_to_id = {}
+        if is_global:
+            fac_map_stmt = select(Faculty.id, Faculty.name).where(Faculty.university_id == uni_id)
+            fac_map_rows = (await db.execute(fac_map_stmt)).all()
+            name_to_id = {r[1]: r[0] for r in fac_map_rows}
         
-        for fac_name, data in fac_stats.items():
+        for p_name, data in pivot_stats.items():
             avg_time = 0.0
             if data["response_times"]:
                 avg_time = sum(data["response_times"]) / len(data["response_times"])
                 
             rate = (data["resolved"] / data["total"]) * 100 if data["total"] > 0 else 0
             
-            faculty_performance.append({
-                "faculty": fac_name,
-                "id": name_to_id.get(fac_name),
+            performance_list.append({
+                "faculty": p_name, # Generic field name used by frontend
+                "id": name_to_id.get(p_name),
                 "total": data["total"],
                 "resolved": data["resolved"],
                 "pending": data["pending"],
@@ -129,7 +125,7 @@ async def get_appeals_stats(
             })
             
         # Sort by Overdue (Priority) then Total
-        faculty_performance.sort(key=lambda x: (x["overdue"], x["total"]), reverse=True)
+        performance_list.sort(key=lambda x: (x["overdue"], x["total"]), reverse=True)
         
         # 4. Top Targets
         # Reuse loop data or simple count
@@ -142,12 +138,13 @@ async def get_appeals_stats(
         top_targets.sort(key=lambda x: x["count"], reverse=True)
         
         return {
-            "total": counts["pending"] + counts["processing"] + counts["resolved"] + counts["replied"], # [RESTORED]
-            "counts": counts, # [RESTORED]
+            "total": counts["pending"] + counts["processing"] + counts["resolved"] + counts["replied"],
+            "counts": counts,
             "total_active": counts["pending"] + counts["processing"],
             "total_resolved": counts["resolved"] + counts["replied"],
             "total_overdue": total_overdue, 
-            "faculty_performance": faculty_performance,
+            "breakdown_title": "Guruhlar Kesimida" if not is_global else "Fakultetlar Kesimida",
+            "faculty_performance": performance_list, # Reuse key for both breakdown types
             "top_targets": top_targets
         }
     except Exception as e:
@@ -173,9 +170,15 @@ async def get_appeals_list(
     db: AsyncSession = Depends(get_db)
 ):
     try:
-        # Auth Check
+        # Auth Check & Scoping
         dean_level_roles = [StaffRole.DEKAN, StaffRole.DEKAN_ORINBOSARI, StaffRole.DEKAN_YOSHLAR, StaffRole.DEKANAT]
-        is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) in ['rahbariyat', 'admin', 'owner'] or getattr(staff, 'role', None) in dean_level_roles
+        global_mgmt_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
+        
+        current_role = getattr(staff, 'role', None) or ""
+        f_id = getattr(staff, 'faculty_id', None)
+        is_global = current_role in global_mgmt_roles and f_id is None
+        is_mgmt = current_role in global_mgmt_roles or current_role in dean_level_roles
+        
         if not is_mgmt:
             raise HTTPException(status_code=403, detail="Faqat rahbariyat yoki dekanat uchun")
         
@@ -183,13 +186,12 @@ async def get_appeals_list(
         
         query = select(StudentFeedback).join(Student).where(Student.university_id == uni_id)
         
-        # [NEW] Faculty Scoping for Deans
-        f_id = getattr(staff, 'faculty_id', None)
-        current_role = getattr(staff, 'role', None) 
-        dean_level_roles = [StaffRole.DEKAN, StaffRole.DEKAN_ORINBOSARI, StaffRole.DEKAN_YOSHLAR, StaffRole.DEKANAT]
-        
-        if current_role in dean_level_roles and f_id:
+        # [NEW] Mandatory Faculty Scoping for Deans/Scoped Mgmt
+        if not is_global and f_id:
             query = query.where(Student.faculty_id == f_id)
+            # Override any manual faculty filter from frontend if scoped
+            faculty = None
+            faculty_id = None
         elif faculty:
             # If manually filtering, apply status rules
             pass
@@ -261,15 +263,22 @@ async def get_appeal_detail(
     """
     Get detailed appeal thread for management.
     """
-    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) in ['rahbariyat', 'admin', 'owner']
+    dean_level_roles = [StaffRole.DEKAN, StaffRole.DEKAN_ORINBOSARI, StaffRole.DEKAN_YOSHLAR, StaffRole.DEKANAT]
+    global_mgmt_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
+    
+    current_role = getattr(staff, 'role', None) or ""
+    f_id = getattr(staff, 'faculty_id', None)
+    uni_id = getattr(staff, 'university_id', None)
+    is_global = current_role in global_mgmt_roles and f_id is None
+    is_mgmt = current_role in global_mgmt_roles or current_role in dean_level_roles
+    
     if not is_mgmt:
-        raise HTTPException(status_code=403, detail="Faqat rahbariyat uchun")
+        raise HTTPException(status_code=403, detail="Faqat rahbariyat yoki dekanat uchun")
 
     stmt = (
         select(StudentFeedback)
         .join(Student)
         .where(StudentFeedback.id == id)
-        .where(Student.university_id == uni_id)
         .options(
             selectinload(StudentFeedback.replies), 
             selectinload(StudentFeedback.children),
@@ -277,15 +286,11 @@ async def get_appeal_detail(
         )
     )
     
-    # [NEW] Faculty Scoping for Deans
-    f_id = getattr(staff, 'faculty_id', None)
-    current_role = getattr(staff, 'role', None)
-    dean_level_roles = [StaffRole.DEKAN, StaffRole.DEKAN_ORINBOSARI, StaffRole.DEKAN_YOSHLAR, StaffRole.DEKANAT]
-    
-    if current_role in dean_level_roles and f_id:
+    if uni_id:
+        stmt = stmt.where(Student.university_id == uni_id)
+        
+    if not is_global and f_id:
         stmt = stmt.where(Student.faculty_id == f_id)
-        # [NEW] Enforce Bakalavr Only
-        stmt = stmt.where(Student.education_type.ilike("Bakalavr"))
         
     appeal = await db.scalar(stmt)
     
@@ -349,11 +354,24 @@ async def resolve_appeal(
     staff: Staff = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
-    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) in ['rahbariyat', 'admin', 'owner']
+    dean_level_roles = [StaffRole.DEKAN, StaffRole.DEKAN_ORINBOSARI, StaffRole.DEKAN_YOSHLAR, StaffRole.DEKANAT]
+    global_mgmt_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
+    
+    current_role = getattr(staff, 'role', None) or ""
+    f_id = getattr(staff, 'faculty_id', None)
+    uni_id = getattr(staff, 'university_id', None)
+    is_global = current_role in global_mgmt_roles and f_id is None
+    is_mgmt = current_role in global_mgmt_roles or current_role in dean_level_roles
+    
     if not is_mgmt:
-        raise HTTPException(status_code=403, detail="Faqat rahbariyat uchun")
+        raise HTTPException(status_code=403, detail="Faqat rahbariyat yoki dekanat uchun")
 
-    stmt = select(StudentFeedback).where(StudentFeedback.id == id)
+    stmt = select(StudentFeedback).join(Student).where(StudentFeedback.id == id)
+    if uni_id:
+        stmt = stmt.where(Student.university_id == uni_id)
+    if not is_global and f_id:
+        stmt = stmt.where(Student.faculty_id == f_id)
+        
     appeal = (await db.execute(stmt)).scalar_one_or_none()
     
     if not appeal:
@@ -387,13 +405,26 @@ async def reply_to_appeal(
     Management reply to an appeal.
     Sets status to 'answered'.
     """
-    # 1. Auth Check
-    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) in ['rahbariyat', 'admin', 'owner']
+    # 1. Auth Check & Scoping
+    dean_level_roles = [StaffRole.DEKAN, StaffRole.DEKAN_ORINBOSARI, StaffRole.DEKAN_YOSHLAR, StaffRole.DEKANAT]
+    global_mgmt_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
+    
+    current_role = getattr(staff, 'role', None) or ""
+    f_id = getattr(staff, 'faculty_id', None)
+    uni_id = getattr(staff, 'university_id', None)
+    is_global = current_role in global_mgmt_roles and f_id is None
+    is_mgmt = current_role in global_mgmt_roles or current_role in dean_level_roles
+    
     if not is_mgmt:
-        raise HTTPException(status_code=403, detail="Faqat rahbariyat uchun")
+        raise HTTPException(status_code=403, detail="Faqat rahbariyat yoki dekanat uchun")
 
-    # 2. Fetch Appeal
-    stmt = select(StudentFeedback).where(StudentFeedback.id == id)
+    # 2. Fetch Appeal (with scoping)
+    stmt = select(StudentFeedback).join(Student).where(StudentFeedback.id == id)
+    if uni_id:
+        stmt = stmt.where(Student.university_id == uni_id)
+    if not is_global and f_id:
+        stmt = stmt.where(Student.faculty_id == f_id)
+        
     appeal = (await db.execute(stmt)).scalar_one_or_none()
     
     if not appeal:

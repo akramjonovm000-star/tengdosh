@@ -36,5 +36,6 @@ class AppealStats(BaseModel):
     total_active: int
     total_resolved: int
     total_overdue: int = 0
+    breakdown_title: Optional[str] = "Fakultetlar Kesimida"
     faculty_performance: List[FacultyPerformance]
     top_targets: List[TopTarget]

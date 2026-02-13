@@ -1,12 +1,14 @@
 class AppealStats {
   final int total;
   final Map<String, int> counts;
+  final String breakdownTitle;
   final List<FacultyPerformance> facultyPerformance;
   final List<TopTarget> topTargets;
 
   AppealStats({
     required this.total,
     required this.counts,
+    required this.breakdownTitle,
     required this.facultyPerformance,
     required this.topTargets,
   });
@@ -15,6 +17,7 @@ class AppealStats {
     return AppealStats(
       total: json['total'] ?? 0,
       counts: Map<String, int>.from(json['counts'] ?? {}),
+      breakdownTitle: json['breakdown_title'] ?? "Fakultetlar Kesimida",
       facultyPerformance: (json['faculty_performance'] as List?)
               ?.map((e) => FacultyPerformance.fromJson(e))
               .toList() ??

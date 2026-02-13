@@ -156,7 +156,7 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
           const SizedBox(height: 24),
           
           // 2. Faculty Performance
-          const Text("Fakultetlar Kesimida", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(_stats!.breakdownTitle, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           ListView.builder(
             shrinkWrap: true,

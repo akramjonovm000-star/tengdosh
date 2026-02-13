@@ -40,12 +40,20 @@ async def get_management_dashboard(
     global_mgmt_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR]
     
     current_role = getattr(staff, 'role', None) or ""
-    # Global roles strictly for central university management
-    global_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
+    # Anyone with 'rahbariyat' or specific management roles
+    global_mgmt_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
     
-    is_global = getattr(staff, 'hemis_role', None) == 'rahbariyat' and current_role in global_roles
+    # Identify if the user is authorized for management section
+    is_mgmt_authorized = current_role in global_mgmt_roles or current_role in dean_level_roles or current_role == StaffRole.TYUTOR
+    
+    # Scoping logic: Deans are ALWAYS scoped to their faculty
     is_dean = current_role in dean_level_roles
-    is_mgmt = is_global or is_dean or current_role == StaffRole.TYUTOR
+    # Global roles that don't have a faculty_id assigned are global. 
+    # If they DO have a faculty_id, they might be a Dean who was assigned a higher role string.
+    f_id = getattr(staff, 'faculty_id', None)
+    is_global = current_role in global_mgmt_roles and f_id is None
+    
+    is_mgmt = is_mgmt_authorized
     
     if not is_mgmt:
         raise HTTPException(status_code=403, detail="Faqat rahbariyat, dekanat yoki tyutorlar uchun")
@@ -61,21 +69,22 @@ async def get_management_dashboard(
     f_id = getattr(staff, 'faculty_id', None)
     s_role = getattr(staff, 'role', None)
     
+    total_students = 0
+    platform_users = 0
+    total_staff = 0
+
     # Priority: API -> DB (Fallback)
-    # If Dean or Tutor, avoid API for now as it might return global counts
     if s_role == 'tyutor':
-        # 1. Get Tutor groups
+        # ... existing tutor logic ...
         tg_stmt = select(TutorGroup.group_number).where(TutorGroup.tutor_id == staff.id)
         group_numbers = (await db.execute(tg_stmt)).scalars().all()
         
-        # [FIX] Use HEMIS API for Total Count (Admin Token for visibility)
         from config import HEMIS_ADMIN_TOKEN
         hemis_count = await HemisService.get_total_students_for_groups(group_numbers, HEMIS_ADMIN_TOKEN)
         
         if hemis_count > 0:
             total_students = hemis_count
         else:
-            # Fallback to DB
             total_students = await db.scalar(
                 select(func.count(Student.id)).where(Student.university_id == uni_id, Student.group_number.in_(group_numbers))
             ) or 0
@@ -84,37 +93,37 @@ async def get_management_dashboard(
             select(func.count(Student.id))
             .where(Student.university_id == uni_id, Student.group_number.in_(group_numbers), Student.hemis_token != None)
         ) or 0
-        total_staff = 1 # Just the tutor themselves or 0 if counting others
+        total_staff = 1
         
-    elif is_dean and f_id:
-        # Dean level - Strictly use faculty_id
+    elif (is_dean or f_id):
+        # Scoped Management (Dean level or any management with faculty_id)
+        effective_f_id = f_id
         from config import HEMIS_ADMIN_TOKEN
         if HEMIS_ADMIN_TOKEN:
-             # Map Local DB ID to correct HEMIS ID for Admin API filtering
-             h_fac_id = f_id
-             # Mapping for known departments if needed, otherwise use f_id
-             if f_id == 36: h_fac_id = 4 # Jurnalistika
-             elif f_id == 34: h_fac_id = 2 # PR
-             elif f_id == 42: h_fac_id = 35 # SIRTQI
-             elif f_id == 37: h_fac_id = 16 # MAGISTRATURA
+             h_fac_id = effective_f_id
+             if effective_f_id == 36: h_fac_id = 4 # Jurnalistika
+             elif effective_f_id == 34: h_fac_id = 2 # PR
+             elif effective_f_id == 42: h_fac_id = 35 # SIRTQI
+             elif effective_f_id == 37: h_fac_id = 16 # MAGISTRATURA
              
-             # Use Admin API for accurate HEMIS count, but scope it to THIS faculty
              admin_filters = {"_department": h_fac_id}
              _, total_students = await HemisService.get_admin_student_list(admin_filters, limit=1)
-        else:
+        
+        # Fallback to DB if API returned 0 or no token
+        if total_students == 0:
              total_students = await db.scalar(
-                 select(func.count(Student.id)).where(Student.university_id == uni_id, Student.faculty_id == f_id)
+                 select(func.count(Student.id)).where(Student.university_id == uni_id, Student.faculty_id == effective_f_id)
              ) or 0
              
         platform_users = await db.scalar(
             select(func.count(Student.id))
-            .where(Student.university_id == uni_id, Student.faculty_id == f_id, Student.hemis_token != None)
+            .where(Student.university_id == uni_id, Student.faculty_id == effective_f_id, Student.hemis_token != None)
         ) or 0
         total_staff = await db.scalar(
-            select(func.count(Staff.id)).where(Staff.university_id == uni_id, Staff.faculty_id == f_id)
+            select(func.count(Staff.id)).where(Staff.university_id == uni_id, Staff.faculty_id == effective_f_id)
         ) or 0
     else:
-        # Global Management
+        # Global Management (No faculty restriction)
         total_students_api = await HemisService.get_total_student_count(token)
         if total_students_api > 0:
             total_students = total_students_api
@@ -136,9 +145,7 @@ async def get_management_dashboard(
                 select(func.count(Staff.id)).where(Staff.university_id == uni_id)
             ) or 0
 
-    # 5. Additional Metrics (Placeholders for now as per previous logic)
-    # debtor_count and avg_gpa can be calculated or mocked if not yet synced university-wide
-    # For now, let's provide realistic counts
+    logger.info(f"MGMT_STATS: Staff={staff.id}, Role={current_role}, Fac={f_id}, Global={is_global}, Total={total_students}, Users={platform_users}")
     
     # 6. Calc Usage Percentage
     usage_percentage = 0
@@ -172,20 +179,18 @@ def build_student_filter(
     """
     uni_id = getattr(staff, 'university_id', None)
     staff_role = getattr(staff, 'role', None)
+    staff_fac_id = getattr(staff, 'faculty_id', None)
+    # Scoping Logic
+    dean_level_roles = [StaffRole.DEKAN, StaffRole.DEKAN_ORINBOSARI, StaffRole.DEKAN_YOSHLAR, StaffRole.DEKANAT]
+    global_mgmt_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
     
-    global_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
-    is_global = getattr(staff, 'hemis_role', None) == 'rahbariyat' or staff_role in global_roles
+    is_dean = staff_role in dean_level_roles
+    # Global if in global roles AND no faculty restriction, otherwise treated as scoped
+    is_global = staff_role in global_mgmt_roles and staff_fac_id is None
 
     filters = []
     if uni_id:
         filters.append(Student.university_id == uni_id)
-    
-    # 1. Role-based Scoping
-    staff_fac_id = getattr(staff, 'faculty_id', None)
-    
-    # Strictly define global roles (central management)
-    global_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
-    is_global = getattr(staff, 'hemis_role', None) == 'rahbariyat' and staff_role in global_roles
 
     # Dean / Faculty Admin Scoping
     if not is_global and staff_fac_id and staff_role != 'tyutor':
@@ -242,7 +247,8 @@ async def get_mgmt_faculties(
     
     # 1. Access Check for Metadata
     global_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
-    is_global = getattr(staff, 'hemis_role', None) == 'rahbariyat' or staff_role in global_roles
+    staff_fac_id = getattr(staff, 'faculty_id', None)
+    is_global = staff_role in global_roles and staff_fac_id is None
 
     if not uni_id and not is_global:
         raise HTTPException(status_code=400, detail="Universitet aniqlanmadi")
@@ -705,10 +711,13 @@ async def search_mgmt_staff(
     Search and filter university staff members with activity status.
     """
     # Security Check
-    global_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR]
-    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or getattr(staff, 'role', None) in global_roles or getattr(staff, 'role', None) == StaffRole.TYUTOR
+    dean_level_roles = [StaffRole.DEKAN, StaffRole.DEKAN_ORINBOSARI, StaffRole.DEKAN_YOSHLAR, StaffRole.DEKANAT]
+    global_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
+    
+    current_role = getattr(staff, 'role', None) or ""
+    is_mgmt = current_role in global_roles or current_role in dean_level_roles or current_role == StaffRole.TYUTOR
     if not is_mgmt:
-        raise HTTPException(status_code=403, detail="Faqat rahbariyat, tyutor yoki rektorat uchun")
+        raise HTTPException(status_code=403, detail="Faqat rahbariyat, dekanat yoki tyutorlar uchun")
         
     uni_id = getattr(staff, 'university_id', None)
     f_id = getattr(staff, 'faculty_id', None)
@@ -791,11 +800,7 @@ async def get_mgmt_groups_simple(
     s_role = getattr(staff, 'role', None) or ""
     f_id_restricted = getattr(staff, 'faculty_id', None)
     global_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
-    is_global = (
-        getattr(staff, 'hemis_role', None) == 'rahbariyat' or 
-        s_role in global_roles
-    )
-    
+    is_global = s_role in global_roles and f_id_restricted is None
     # [NEW] Enforce Bakalavr for Deans
     if not is_global and f_id_restricted:
         education_type = "Bakalavr"
@@ -1329,16 +1334,37 @@ async def get_mgmt_documents_archive(
             }
         })
 
-    # [NEW] Enhanced Stats (Scoped by category_filters, NOT by title/query)
-    # Use explicit joins to avoid Cartesian products
+    # [NEW] Enhanced Stats (Synchronized with UI filters: title/query)
+    # 1. Total Students in Scope (Category Only: Faculty/Group)
     student_count_stmt = select(func.count(distinct(Student.id))).where(and_(*category_filters))
     total_students_in_scope = await db.scalar(student_count_stmt) or 0
     
+    # 2. Uploaded Count & Doc Totals (Title & Query Dependent)
+    def apply_extra_filters(base_stmt):
+        s = base_stmt
+        if query:
+            s = s.where(
+                (StudentDocument.file_name.ilike(f"%{query}%")) | 
+                (Student.full_name.ilike(f"%{query}%"))
+            )
+        if title and title != "Hammasi":
+            if title == "Sertifikatlar":
+                s = s.where(StudentDocument.file_type == "certificate")
+            elif title == "Hujjatlar":
+                s = s.where(StudentDocument.file_type == "document")
+            else:
+                s = s.where(StudentDocument.file_name.ilike(f"%{title}%"))
+        return s
+
     uploaded_students_stmt = select(func.count(distinct(StudentDocument.student_id))).join(Student).where(and_(*category_filters))
+    uploaded_students_stmt = apply_extra_filters(uploaded_students_stmt)
     students_with_uploads = await db.scalar(uploaded_students_stmt) or 0
 
     total_docs_stmt = select(func.count(StudentDocument.id)).join(Student).where(and_(*category_filters, StudentDocument.file_type == "document"))
+    total_docs_stmt = apply_extra_filters(total_docs_stmt)
+    
     total_certs_stmt = select(func.count(StudentDocument.id)).join(Student).where(and_(*category_filters, StudentDocument.file_type == "certificate"))
+    total_certs_stmt = apply_extra_filters(total_certs_stmt)
     
     stats = {
         "total_documents": await db.scalar(total_docs_stmt) or 0,
@@ -1348,7 +1374,7 @@ async def get_mgmt_documents_archive(
         "completion_rate": round((students_with_uploads / total_students_in_scope * 100) if total_students_in_scope else 0, 1)
     }
     
-    logger.info(f"Stats generated: {stats}")
+    logger.info(f"Stats generated for request: {stats}")
     
     return {
         "success": True, 
@@ -1513,7 +1539,7 @@ async def get_management_activities(
     # Security Check
     role = str(getattr(staff, 'role', None)).lower()
     allowed_roles = ['rahbariyat', 'dekanat', 'tyutor', 'rektor', 'prorektor', 'owner', 'developer', 'yoshlar_yetakchisi', 'yoshlar_ittifoqi']
-    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or role in allowed_roles
+    is_mgmt = (getattr(staff, 'role', None) or "") in allowed_roles
     if not is_mgmt:
         raise HTTPException(status_code=403, detail="Ruxsat etilmagan")
 
@@ -1604,7 +1630,8 @@ async def approve_mgmt_activity(
     """
     Approve a student activity.
     """
-    is_mgmt = getattr(staff, 'hemis_role', None) == 'rahbariyat' or str(getattr(staff, 'role', None)).lower() in ['rahbariyat', 'dekanat', 'tyutor', 'rektor', 'prorektor', 'owner', 'developer']
+    current_role = getattr(staff, 'role', None) or ""
+    is_mgmt = current_role in ['rahbariyat', 'dekan', 'dekanat', 'tyutor', 'rektor', 'prorektor', 'owner', 'developer']
     if not is_mgmt:
         raise HTTPException(status_code=403, detail="Ruxsat etilmagan")
 
