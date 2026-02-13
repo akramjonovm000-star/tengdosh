@@ -1255,6 +1255,9 @@ async def get_mgmt_documents_archive(
     """
     from database.models import StudentDocument
     
+    import logging
+    logger = logging.getLogger(__name__)
+
     # 1. Security & Role Resolution
     dean_level_roles = [StaffRole.DEKAN, StaffRole.DEKAN_ORINBOSARI, StaffRole.DEKAN_YOSHLAR, StaffRole.DEKANAT]
     global_mgmt_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
@@ -1292,19 +1295,9 @@ async def get_mgmt_documents_archive(
             stmt = stmt.where(StudentDocument.file_name.ilike(f"%{title}%"))
 
     # 4. Pagination & Fetch
-    # Get total count first
-    total_count_stmt = (
-        select(func.count(StudentDocument.id))
-        .join(Student)
-        .where(
-            and_(
-                *category_filters,
-                (StudentDocument.file_name.ilike(f"%{query}%") if query else True),
-                ((StudentDocument.file_type == "certificate" if title == "Sertifikatlar" else (StudentDocument.file_type == "document" if title == "Hujjatlar" else StudentDocument.file_name.ilike(f"%{title}%"))) if title and title != "Hammasi" else True)
-            )
-        )
-    )
-    total_count = await db.scalar(total_count_stmt)
+    # Use subquery/count for accurate total matching the search
+    total_count = await db.scalar(select(func.count()).select_from(stmt.subquery()))
+    logger.info(f"Total Count for Archive: {total_count}")
 
     res = await db.execute(
         stmt.order_by(StudentDocument.uploaded_at.desc())
@@ -1332,22 +1325,26 @@ async def get_mgmt_documents_archive(
             }
         })
 
-    # [NEW] Enhanced Stats
-    # Count unique students in the filtered scope
+    # [NEW] Enhanced Stats (Scoped by category_filters, NOT by title/query)
+    # Use explicit joins to avoid Cartesian products
     student_count_stmt = select(func.count(distinct(Student.id))).where(and_(*category_filters))
-    total_students_in_scope = await db.scalar(student_count_stmt)
+    total_students_in_scope = await db.scalar(student_count_stmt) or 0
     
-    # Count students who uploaded something in this scope
     uploaded_students_stmt = select(func.count(distinct(StudentDocument.student_id))).join(Student).where(and_(*category_filters))
-    students_with_uploads = await db.scalar(uploaded_students_stmt)
+    students_with_uploads = await db.scalar(uploaded_students_stmt) or 0
 
+    total_docs_stmt = select(func.count(StudentDocument.id)).join(Student).where(and_(*category_filters, StudentDocument.file_type == "document"))
+    total_certs_stmt = select(func.count(StudentDocument.id)).join(Student).where(and_(*category_filters, StudentDocument.file_type == "certificate"))
+    
     stats = {
-        "total_documents": await db.scalar(select(func.count(StudentDocument.id)).where(and_(*category_filters, StudentDocument.file_type == "document"))),
-        "total_certificates": await db.scalar(select(func.count(StudentDocument.id)).where(and_(*category_filters, StudentDocument.file_type == "certificate"))),
-        "students_in_scope": total_students_in_scope or 0,
-        "students_with_uploads": students_with_uploads or 0,
+        "total_documents": await db.scalar(total_docs_stmt) or 0,
+        "total_certificates": await db.scalar(total_certs_stmt) or 0,
+        "students_in_scope": total_students_in_scope,
+        "students_with_uploads": students_with_uploads,
         "completion_rate": round((students_with_uploads / total_students_in_scope * 100) if total_students_in_scope else 0, 1)
     }
+    
+    logger.info(f"Stats generated: {stats}")
     
     return {
         "success": True, 
@@ -1356,61 +1353,6 @@ async def get_mgmt_documents_archive(
         "stats": stats
     }
 
-    # 4. Get Stats (Matching Student Search logic)
-    has_backend_filters = any([faculty_id, specialty_name, group_number])
-    
-    if not has_backend_filters:
-        from services.hemis_service import HemisService
-        public_stats = await HemisService.get_public_stats()
-        
-        total_count = calculate_public_filtered_count(
-            public_stats,
-            education_type=education_type,
-            education_form=education_form,
-            level=level_name
-        )
-    else:
-        # Use DB Count for specific filters
-        count_stmt = select(func.count(Student.id)).where(and_(*category_filters))
-        total_count = (await db.execute(count_stmt)).scalar() or 0
-
-    # App Users Count (Students who logged into app - always DB)
-    app_users_stmt = select(func.count(Student.id)).where(
-        and_(*category_filters),
-        Student.hemis_token != None
-    )
-    app_users_count = (await db.execute(app_users_stmt)).scalar() or 0
-    
-    # Fallback for total_count
-    if total_count == 0:
-        count_stmt = select(func.count(Student.id)).where(and_(*category_filters))
-        total_count = (await db.execute(count_stmt)).scalar() or 0
-
-    def safe_isoformat(dt):
-        if not dt: return None
-        try: return dt.isoformat()
-        except: return str(dt)
-
-    return {
-        "success": True,
-        "total_count": total_count,
-        "app_users_count": app_users_count,
-        "data": [
-            {
-                "id": doc.id,
-                "title": doc.title,
-                "created_at": safe_isoformat(doc.created_at),
-                "file_type": doc.file_type,
-                "status": doc.status,
-                "student": {
-                    "id": student.id,
-                    "full_name": student.full_name,
-                    "group_number": student.group_number,
-                    "faculty_name": student.faculty_name
-                }
-            } for doc, student in rows
-        ]
-    }
 
 @router.post("/documents/export-zip")
 async def export_mgmt_documents_zip(

@@ -6,8 +6,8 @@ import httpx
 # Add parent directory to path
 sys.path.append(os.getcwd())
 
-from talabahamkorbot.database.db_connect import AsyncSessionLocal
-from talabahamkorbot.database.models import Student
+from database.db_connect import AsyncSessionLocal
+from database.models import Student
 from sqlalchemy import select
 
 def get_headers(token):

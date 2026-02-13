@@ -101,6 +101,12 @@ def get_owner_main_menu_inline_kb() -> InlineKeyboardMarkup:
                     callback_data="admin_election_menu:global",
                 )
             ],
+            [
+                InlineKeyboardButton(
+                    text="🎭 Klublar Boshqaruvi",
+                    callback_data="owner_clubs_menu",
+                )
+            ],
         ]
     )
 
@@ -1394,6 +1400,81 @@ def get_student_feedback_reply_kb(feedback_id: int):
             ]
         ]
     )
+
+
+
+# ============================================================
+# LEADERSHIP APPEALS MONITORING DASHBOARD (NEW)
+# ============================================================
+
+def get_appeals_dashboard_kb(faculty_stats: list) -> InlineKeyboardMarkup:
+    """
+    Rahbariyat uchun Murojaatlar Statistikasi.
+    faculty_stats: List of dicts or tuples: (Faculty Name, Pending Count, Solved Count, Faculty ID)
+    """
+    rows = []
+    
+    # 1. Header (Info only, maybe simpler to put in text)
+    # But we want clickable rows for drill-down
+    
+    for stat in faculty_stats:
+        # stat object structure: {name, pending, solved, id}
+        name = stat['name']
+        pending = stat['pending']
+        solved = stat['solved']
+        fid = stat['id']
+        
+        # Indicator: ⚠️ if pending > 0
+        indicator = "⚠️" if pending > 0 else "✅"
+        
+        # Format: "Axborot tex.. | ⏳ 5 | ✅ 20 ⚠️"
+        btn_text = f"{name[:15]}.. | ⏳ {pending} | ✅ {solved} {indicator}"
+        
+        rows.append([
+            InlineKeyboardButton(
+                text=btn_text,
+                callback_data=f"rh_monitor_fac:{fid}"
+            )
+        ])
+        
+    rows.append([InlineKeyboardButton(text="⬅️ Bosh menyu", callback_data="rahb_menu")])
+    
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def get_faculty_monitor_kb(appeals: list, faculty_id: int) -> InlineKeyboardMarkup:
+    """
+    Fakultet ichidagi yechilmagan murojaatlar ro'yxati (Monitoring).
+    """
+    rows = []
+    
+    for app in appeals:
+        # Format: "⏳ 12.02 | User Name | Text..."
+        date_str = app.created_at.strftime("%d.%m")
+        # Student feedback joins with Student, need to ensure we have access or pass it
+        # Assuming we fetch joined data
+        # Let's use ID if name not avail in simple obj
+        
+        # Short text
+        short_text = (app.text[:15] + "...") if app.text else "[Media]"
+        
+        btn_text = f"⏳ {date_str} | #{app.id} | {short_text}"
+        
+        rows.append([
+            InlineKeyboardButton(
+                text=btn_text,
+                callback_data=f"rh_monitor_view:{app.id}" # View specific appeal thread
+            )
+        ])
+        
+    rows.append([
+        InlineKeyboardButton(
+            text="⬅️ Ortga (Dashboard)",
+            callback_data="rh_feedback" # Goes back to main dashboard
+        )
+    ])
+    
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def get_dekanat_appeal_actions_kb(appeal_id: int):

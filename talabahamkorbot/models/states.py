@@ -217,3 +217,20 @@ class StudentAcademicStates(StatesGroup):
 
 class StudentSurveyStates(StatesGroup):
     taking = State()
+
+# ============================================================
+#                     CLUB MANAGEMENT
+# ============================================================
+
+class ClubCreationStates(StatesGroup):
+    waiting_name = State()
+    waiting_description = State()
+    waiting_channel_link = State()
+    waiting_leader_hemis = State()
+    confirm_creation = State()
+
+class ClubEditStates(StatesGroup):
+    waiting_new_name = State()
+    waiting_new_desc = State()
+    waiting_new_link = State()
+    waiting_new_leader = State()

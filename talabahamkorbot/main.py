@@ -7,7 +7,7 @@ from fastapi import FastAPI, Request
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application # We use this adapter for aiogram
 from aiogram.types import Update
 
-from bot import bot, dp
+from bot import bot, dp, BOT_ID
 from config import WEBHOOK_URL, BOT_TOKEN
 from database.db_connect import engine, create_tables, AsyncSessionLocal
 from handlers import setup_routers
@@ -64,9 +64,15 @@ async def lifespan(app: FastAPI):
         asyncio.create_task(dp.start_polling(bot))
     else:
         try:
-            await bot.set_webhook(WEBHOOK_URL, drop_pending_updates=True)
+            # Check current webhook info to avoid flood control and redundant resets
+            info = await bot.get_webhook_info()
+            if info.url != WEBHOOK_URL:
+                logger.info(f"🌐 Setting Webhook to: {WEBHOOK_URL}")
+                await bot.set_webhook(WEBHOOK_URL, drop_pending_updates=True)
+            else:
+                logger.info("✅ Webhook already correctly set.")
         except Exception as e:
-            logger.warning(f"⚠️ Webhook setup skip/fail (likely concurrency): {e}")
+            logger.warning(f"⚠️ Webhook check/setup failed: {e}")
     
     yield
     
@@ -146,8 +152,8 @@ async def start_scheduler():
 
 # Middlewares Order: DB -> Activity -> Subscription
 dp.update.outer_middleware(DbSessionMiddleware())
-dp.update.middleware(ActivityMiddleware())
-dp.update.middleware(SubscriptionMiddleware())
+# dp.update.middleware(ActivityMiddleware())
+# dp.update.middleware(SubscriptionMiddleware())
 
 # Root is now handled in api/oauth.py to support Hemis Callback
 # @app.get("/")
@@ -174,9 +180,9 @@ async def bot_webhook(request: Request):
                 msg_text = body['message'].get('text')
                 if msg_text:
                     logger.info(f"🔍 Message: {msg_text[:50]}")
-                
+            
             update = Update.model_validate(body, context={"bot": bot})
-            await dp.feed_update(bot, update)
+            await dp.feed_update(bot, update, bot_id=BOT_ID)
         except Exception as e:
             import traceback
             with open("/tmp/aiogram_error.log", "a") as f:

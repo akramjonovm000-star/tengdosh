@@ -5,6 +5,11 @@ from redis.asyncio import Redis
 
 from config import BOT_TOKEN, REDIS_URL
 
+# Pre-calculate BOT_ID for FSM StorageKey convenience (Global)
+try:
+    BOT_ID = int(BOT_TOKEN.split(":")[0])
+except:
+    BOT_ID = None
 
 bot = Bot(
     token=BOT_TOKEN,
