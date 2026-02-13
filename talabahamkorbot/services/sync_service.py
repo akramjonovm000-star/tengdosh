@@ -94,12 +94,14 @@ async def sync_student_data(session: AsyncSession, student_id: int):
         student.group_number = group.get("name")
 
     # Update Full Name (Robust extraction)
-    first_name = me_data.get("first_name") or me_data.get("firstname") or me_data.get("firstName") or ""
-    last_name = me_data.get("second_name") or me_data.get("lastname") or me_data.get("surname") or me_data.get("lastName") or ""
-    patronymic = me_data.get("third_name") or me_data.get("fathername") or me_data.get("patronymic") or me_data.get("secondName") or ""
+    from utils.text_utils import format_uzbek_name
+    
+    first_name = format_uzbek_name(me_data.get("first_name") or me_data.get("firstname") or me_data.get("firstName") or "")
+    last_name = format_uzbek_name(me_data.get("second_name") or me_data.get("lastname") or me_data.get("surname") or me_data.get("lastName") or "")
+    patronymic = format_uzbek_name(me_data.get("third_name") or me_data.get("fathername") or me_data.get("patronymic") or me_data.get("secondName") or "")
     
     full_name_constructed = f"{last_name} {first_name} {patronymic}".strip()
-    full_name_hemis = (me_data.get("full_name") or me_data.get("fullName") or "").strip().title()
+    full_name_hemis = format_uzbek_name(me_data.get("full_name") or me_data.get("fullName") or "")
 
     def count_initials(name):
         return len(re.findall(r'\b[A-Z]\.', name))

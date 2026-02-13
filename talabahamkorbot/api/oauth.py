@@ -111,11 +111,13 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
         
         # [FIX] Use 'name' as primary source if available (standard OneID pattern)
         # Fallback to manual concatenation if 'name' is missing
+        from utils.text_utils import format_uzbek_name
+        
         full_name = me.get("name")
         if not full_name:
-            full_name = f"{me.get('surname', '')} {me.get('firstname', '')} {me.get('fathername', '')}".title().strip()
+            full_name = format_uzbek_name(f"{me.get('surname', '')} {me.get('firstname', '')} {me.get('fathername', '')}".strip())
         else:
-            full_name = full_name.title().strip()
+            full_name = format_uzbek_name(full_name.strip())
             
         image_url = me.get("picture") or me.get("picture_full") or me.get("image") or me.get("image_url")
         university_id = me.get("university_id")
@@ -216,12 +218,14 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
         # for r in hemis_roles: ...
         
         logger.info(f"DEBUG: OneID Roles: {hemis_roles} -> Forced Role: {user_role}")
+        
+        from utils.text_utils import format_uzbek_name
         full_name = me.get("name")
         if full_name:
              # Handle UPPERCASE names from OneID
-             full_name = full_name.title().strip()
+             full_name = format_uzbek_name(full_name.strip())
         else:
-             full_name = f"{me.get('surname', '')} {me.get('firstname', '')} {me.get('patronymic', '')}".title().strip()
+             full_name = format_uzbek_name(f"{me.get('surname', '')} {me.get('firstname', '')} {me.get('patronymic', '')}".strip())
             
         image_url = me.get("picture") or me.get("picture_full") or me.get("image") or me.get("image_url")
         logger.info(f"Selected Best Role: {user_role} (Priority: {best_priority}) from {hemis_roles}")

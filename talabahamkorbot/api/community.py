@@ -348,12 +348,15 @@ def format_name(student: Student):
         parts = f_name.split()
         # parts[0] is Last, parts[1] is First
         # Return "First Last"
-        return f"{parts[1]} {parts[0]}".title()
+        from utils.text_utils import format_uzbek_name
+        return format_uzbek_name(f"{parts[1]} {parts[0]}")
     
     # Fallback to short_name
     s_name = (student.short_name or "").strip()
-    if f_name: return f_name.title()
-    if s_name: return s_name.title()
+    
+    from utils.text_utils import format_uzbek_name
+    if f_name: return format_uzbek_name(f_name)
+    if s_name: return format_uzbek_name(s_name)
     
     return "Talaba"
 

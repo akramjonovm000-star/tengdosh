@@ -186,6 +186,27 @@ async def login_via_hemis(
     import time
     t_start = time.time()
     
+    # [NEW] Rate Limiting Check
+    from services.rate_limit_service import RateLimitService
+    
+    # Use login as key
+    rate_key = creds.login
+    is_blocked, ttl = await RateLimitService.check_rate_limit(rate_key, limit=10, block_time=3600)
+    
+    if is_blocked:
+        # Convert seconds to hours/minutes for friendly message
+        minutes = int(ttl / 60)
+        hours = int(minutes / 60)
+        
+        msg = f"Siz juda ko'p marta xato kiritdingiz. Iltimos {minutes} daqiqadan so'ng urinib ko'ring."
+        if hours >= 1:
+             msg = f"Siz juda ko'p marta xato kiritdingiz. Iltimos {hours} soatdan so'ng urinib ko'ring."
+             
+        raise HTTPException(
+            status_code=429, 
+            detail=msg
+        )
+
     # [NEW] Dynamic University Detection
     base_url = UniversityService.get_api_url(creds.login)
     logger.info(f"AuthLog: Resolved URL for {creds.login}: {base_url}")
@@ -195,8 +216,14 @@ async def login_via_hemis(
     logger.info(f"AuthLog: Authenticate took {t_auth - t_start:.2f}s")
     
     if not token:
+        # [NEW] Increment Failed Attempt
+        await RateLimitService.increment_attempt(rate_key, block_time=3600)
+        
         logger.warning(f"AuthLog: Auth failed via Hemis: {error}")
-        raise HTTPException(status_code=401, detail=error or "Login yoki parol noto'g'ri")
+        raise HTTPException(status_code=401, detail="Login yoki parol noto'g'ri")
+    
+    # [NEW] Clear Attempts on Success
+    await RateLimitService.clear_attempts(rate_key)
         
 
     # 2. GET PROFILE
@@ -286,18 +313,20 @@ async def login_via_hemis(
     h_login = me.get("login") or creds.login
     
     # Parse Names - Robust Extraction
+    from utils.text_utils import format_uzbek_name
+    
     first_name = me.get('firstname') or me.get('first_name') or ""
     last_name = me.get('lastname') or me.get('surname') or me.get('last_name') or ""
     father_name = me.get('fathername') or me.get('patronymic') or me.get('father_name') or ""
     short_name_hemis = me.get('short_name') or ""
 
     # title() for normalization
-    if first_name: first_name = str(first_name).strip().title()
-    if last_name: last_name = str(last_name).strip().title()
-    if father_name: father_name = str(father_name).strip().title()
+    if first_name: first_name = format_uzbek_name(str(first_name).strip())
+    if last_name: last_name = format_uzbek_name(str(last_name).strip())
+    if father_name: father_name = format_uzbek_name(str(father_name).strip())
 
     full_name_constructed = f"{last_name} {first_name} {father_name}".strip()
-    full_name_hemis = (me.get('full_name') or me.get('name') or "").strip().title()
+    full_name_hemis = format_uzbek_name((me.get('full_name') or me.get('name') or "").strip())
     
     # Logic to choose the most "full" name (the one with fewer initials)
     def count_initials(name):
@@ -309,7 +338,7 @@ async def login_via_hemis(
         full_name_db = full_name_constructed
 
     if not full_name_db or full_name_db.lower() == "talaba":
-        full_name_db = short_name_hemis.title() if short_name_hemis else "Talaba"
+        full_name_db = format_uzbek_name(short_name_hemis) if short_name_hemis else "Talaba"
 
     logger.info(f"FINAL PARSED NAME: Full='{full_name_db}', Short='{short_name_hemis}'")
 
@@ -568,9 +597,9 @@ async def hemis_callback(
     student = result.scalar_one_or_none()
 
     # Name Parsing - Robust Extraction
-    first_name = (me.get('firstname') or me.get('first_name') or "").strip().title()
-    last_name = (me.get('lastname') or me.get('surname') or me.get('last_name') or "").strip().title()
-    father_name = (me.get('fathername') or me.get('patronymic') or me.get('father_name') or "").strip().title()
+    first_name = format_uzbek_name((me.get('firstname') or me.get('first_name') or "").strip())
+    last_name = format_uzbek_name((me.get('lastname') or me.get('surname') or me.get('last_name') or "").strip())
+    father_name = format_uzbek_name((me.get('fathername') or me.get('patronymic') or me.get('father_name') or "").strip())
     
     full_name_db = f"{last_name} {first_name} {father_name}".strip()
     if not full_name_db:

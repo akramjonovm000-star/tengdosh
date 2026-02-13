@@ -66,8 +66,9 @@ async def get_my_profile(
         if len(parts) >= 2:
             # Assuming DB format: Surname Firstname Patronymic
             # Wanted: Firstname Surname
-            p_name = parts[1].title()
-            p_surname = parts[0].title()
+            from utils.text_utils import format_uzbek_name
+            p_name = format_uzbek_name(parts[1])
+            p_surname = format_uzbek_name(parts[0])
             display_name = f"{p_name} {p_surname}"
             s_first_name = p_name
             s_last_name = p_surname
@@ -105,9 +106,11 @@ async def get_my_profile(
     fn = (student.full_name or "").strip()
     if fn and len(fn.split()) >= 2:
         parts = fn.split()
-        data['last_name'] = parts[0].title()
-        data['first_name'] = parts[1].title()
-        data['short_name'] = parts[1].title()
+        from utils.text_utils import format_uzbek_name
+        data['last_name'] = format_uzbek_name(parts[0])
+        data['first_name'] = format_uzbek_name(parts[1])
+        data['short_name'] = format_uzbek_name(parts[1])
+        data['full_name'] = format_uzbek_name(data['full_name'])
     else:
         # Fallback
         data['first_name'] = student.short_name or student.full_name
