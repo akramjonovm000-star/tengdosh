@@ -60,7 +60,7 @@ class AppTheme {
         backgroundColor: accentGreen,
         foregroundColor: textBlack,
         elevation: 4,
-        shape: CircleBorder(), // Or RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
+        // Remove CircleBorder to allow extended FAB labels
       ),
 
       // Input Decoration

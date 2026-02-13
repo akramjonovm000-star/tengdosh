@@ -221,8 +221,10 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _isLoading ? null : _exportZip,
-        label: const Text("ZIP Export"),
+        label: const Text("ZIP Export", style: TextStyle(fontWeight: FontWeight.bold)),
         icon: const Icon(Icons.archive_outlined),
+        shape: const StadiumBorder(),
+        extendedPadding: const EdgeInsets.symmetric(horizontal: 24),
       ),
     );
   }
