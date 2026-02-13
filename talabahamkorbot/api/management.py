@@ -1286,6 +1286,8 @@ async def get_mgmt_documents_archive(
     if title and title != "Hammasi":
         if title == "Sertifikatlar":
             stmt = stmt.where(StudentDocument.file_type == "certificate")
+        elif title == "Hujjatlar":
+            stmt = stmt.where(StudentDocument.file_type == "document")
         else:
             stmt = stmt.where(StudentDocument.file_name.ilike(f"%{title}%"))
 
@@ -1298,7 +1300,7 @@ async def get_mgmt_documents_archive(
             and_(
                 *category_filters,
                 (StudentDocument.file_name.ilike(f"%{query}%") if query else True),
-                ((StudentDocument.file_type == "certificate" if title == "Sertifikatlar" else StudentDocument.file_name.ilike(f"%{title}%")) if title and title != "Hammasi" else True)
+                ((StudentDocument.file_type == "certificate" if title == "Sertifikatlar" else (StudentDocument.file_type == "document" if title == "Hujjatlar" else StudentDocument.file_name.ilike(f"%{title}%"))) if title and title != "Hammasi" else True)
             )
         )
     )
