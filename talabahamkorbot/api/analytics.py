@@ -43,6 +43,10 @@ class RecentSubmissionItem(BaseModel):
 # ENDPOINTS
 # ============================================================
 
+# Role Definitions
+DEAN_LEVEL_ROLES = ['dekan', 'dekan_orinbosari', 'dekan_yoshlar', 'dekanat']
+GLOBAL_MGMT_ROLES = ['rahbariyat', 'owner', 'developer', 'rektor', 'prorektor', 'yoshlar_prorektor', 'yoshlar_yetakchisi', 'yoshlar_ittifoqi']
+
 @router.get("/dashboard", response_model=DashboardStatsResponse)
 async def get_dashboard_stats(
     staff: Staff = Depends(get_current_staff),
@@ -51,23 +55,22 @@ async def get_dashboard_stats(
     """
     Get KPI stats for Social Activities (UserActivity).
     """
-    if staff.role not in ['rahbariyat', 'owner', 'developer', 'rektor', 'prorektor', 'yoshlar_prorektor', 'dekan', 'dekan_orinbosari', 'dekan_yoshlar', 'dekanat', 'tyutor']:
+    staff_role = str(getattr(staff, "role", None)).lower()
+    if staff_role not in GLOBAL_MGMT_ROLES and staff_role not in DEAN_LEVEL_ROLES and staff_role != 'tyutor':
         raise HTTPException(status_code=403, detail="Ruxsat etilmagan")
 
     # Base query for filtering
     uni_id = getattr(staff, "university_id", None)
     f_id = getattr(staff, "faculty_id", None)
-    role = str(getattr(staff, "role", None)).lower()
     
     # Base stmt for scoping
     def apply_scoping(stmt_obj):
-        global_roles = ['owner', 'developer', 'rahbariyat', 'rektor', 'prorektor', 'yoshlar_prorektor', 'yoshlar_yetakchisi', 'yoshlar_ittifoqi']
         if uni_id:
             stmt_obj = stmt_obj.where(Student.university_id == uni_id)
-        elif role not in global_roles:
+        elif staff_role not in GLOBAL_MGMT_ROLES:
             return None # Force failure
             
-        if f_id and role not in global_roles:
+        if f_id and staff_role not in GLOBAL_MGMT_ROLES:
             stmt_obj = stmt_obj.where(Student.faculty_id == f_id)
         return stmt_obj
 
@@ -119,11 +122,16 @@ async def get_recent_submissions(
     staff: Staff = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Get latest submitted activities with images and descriptions.
-    """
+    staff_role = str(getattr(staff, "role", None)).lower()
+    if staff_role not in GLOBAL_MGMT_ROLES and staff_role not in DEAN_LEVEL_ROLES and staff_role != 'tyutor':
+        raise HTTPException(status_code=403, detail="Ruxsat etilmagan")
+
+    uni_id = getattr(staff, "university_id", None)
+    f_id = getattr(staff, "faculty_id", None)
+
     stmt = (
         select(UserActivity)
+        .join(Student, UserActivity.student_id == Student.id)
         .options(
             selectinload(UserActivity.student),
             selectinload(UserActivity.images)
@@ -131,6 +139,11 @@ async def get_recent_submissions(
         .order_by(desc(UserActivity.created_at))
         .limit(limit)
     )
+
+    if uni_id:
+        stmt = stmt.where(Student.university_id == uni_id)
+    if f_id and staff_role not in GLOBAL_MGMT_ROLES:
+        stmt = stmt.where(Student.faculty_id == f_id)
     
     results = await db.scalars(stmt)
     items = []
@@ -178,8 +191,15 @@ async def get_faculty_activity_stats(
     """
     Get activity stats per faculty (based on UserActivity).
     """
+    staff_role = str(getattr(staff, "role", None)).lower()
+    f_id = getattr(staff, "faculty_id", None)
+
     # 1. Get Faculties
-    faculties = (await db.execute(select(Faculty))).scalars().all()
+    stmt = select(Faculty)
+    if f_id and staff_role not in GLOBAL_MGMT_ROLES:
+        stmt = stmt.where(Faculty.id == f_id)
+    
+    faculties = (await db.execute(stmt)).scalars().all()
     stats = []
     
     for f in faculties:
