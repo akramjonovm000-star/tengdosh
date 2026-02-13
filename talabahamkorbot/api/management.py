@@ -40,12 +40,12 @@ async def get_management_dashboard(
     global_mgmt_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR]
     
     current_role = getattr(staff, 'role', None) or ""
-    is_mgmt = (
-        getattr(staff, 'hemis_role', None) == 'rahbariyat' or 
-        current_role in global_mgmt_roles or 
-        current_role in dean_level_roles or
-        current_role == StaffRole.TYUTOR
-    )
+    # Global roles strictly for central university management
+    global_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
+    
+    is_global = getattr(staff, 'hemis_role', None) == 'rahbariyat' and current_role in global_roles
+    is_dean = current_role in dean_level_roles
+    is_mgmt = is_global or is_dean or current_role == StaffRole.TYUTOR
     
     if not is_mgmt:
         raise HTTPException(status_code=403, detail="Faqat rahbariyat, dekanat yoki tyutorlar uchun")
@@ -86,12 +86,13 @@ async def get_management_dashboard(
         ) or 0
         total_staff = 1 # Just the tutor themselves or 0 if counting others
         
-    elif f_id:
-        # Dean level
+    elif is_dean and f_id:
+        # Dean level - Strictly use faculty_id
         from config import HEMIS_ADMIN_TOKEN
         if HEMIS_ADMIN_TOKEN:
-             # [FIX] Map Local DB ID to correct HEMIS ID for Admin API filtering
+             # Map Local DB ID to correct HEMIS ID for Admin API filtering
              h_fac_id = f_id
+             # Mapping for known departments if needed, otherwise use f_id
              if f_id == 36: h_fac_id = 4 # Jurnalistika
              elif f_id == 34: h_fac_id = 2 # PR
              elif f_id == 42: h_fac_id = 35 # SIRTQI
@@ -178,19 +179,22 @@ def build_student_filter(
     filters = []
     if uni_id:
         filters.append(Student.university_id == uni_id)
-    elif not is_global:
-        # If not global and no uni_id, they shouldn't see anything or it's an error
-        # But we'll follow the existing requirement of throwing 400 in endpoints if needed
-        filters.append(Student.university_id == -1) 
     
     # 1. Role-based Scoping
     staff_fac_id = getattr(staff, 'faculty_id', None)
     
+    # Strictly define global roles (central management)
+    global_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
+    is_global = getattr(staff, 'hemis_role', None) == 'rahbariyat' and staff_role in global_roles
+
     # Dean / Faculty Admin Scoping
     if not is_global and staff_fac_id and staff_role != 'tyutor':
         filters.append(Student.faculty_id == staff_fac_id)
-        # Force faculty filter to match staff's faculty
+        # Force faculty filter to match staff's faculty, overriding user selection if any
         faculty_id = staff_fac_id
+    elif not is_global and not staff_fac_id and staff_role != 'tyutor':
+        # Safety: Restricted role but no faculty assigned -> see nothing
+        filters.append(Student.faculty_id == -1)
 
     # Tutor Scoping (Will be handled by group list usually, but here for safety)
     # We will handle Tutor group filtering dynamically in endpoints where needed
