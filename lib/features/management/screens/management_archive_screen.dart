@@ -253,6 +253,11 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
           icon: const Icon(Icons.refresh_rounded, color: Colors.white),
           onPressed: () => _loadDocuments(refresh: true),
         ),
+        IconButton(
+          icon: const Icon(Icons.cleaning_services_rounded, color: Colors.white, size: 20),
+          onPressed: _resetFilters,
+          tooltip: "Filtrlarni tozalash",
+        ),
         const SizedBox(width: 8),
       ],
     );
@@ -288,24 +293,9 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.green),
               ),
             ]),
-            // Reset Button
-            InkWell(
-              onTap: _resetFilters,
-              borderRadius: BorderRadius.circular(4),
-              child: Padding(
-                padding: const EdgeInsets.all(4.0),
-                child: Row(
-                  children: [
-                    Icon(Icons.cleaning_services_rounded, size: 14, color: AppTheme.primaryBlue),
-                    const SizedBox(width: 4),
-                    Text(
-                      "Tozalash",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.primaryBlue),
-                    ),
-                  ],
-                ),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.green),
               ),
-            ),
+            ]),
           ],
         ),
       ),
