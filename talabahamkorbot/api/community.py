@@ -199,11 +199,18 @@ async def get_posts(
         is_management = getattr(student, 'hemis_role', None) == 'rahbariyat' or getattr(student, 'role', None) == 'rahbariyat'
         f_id = getattr(student, 'faculty_id', None)
         
+        # MODERATOR HARDCODED ACCESS
+        is_moderator = getattr(student, 'hemis_login', '') == '395251101412'
+        
         if category == 'university': 
              query = query.where(ChoyxonaPost.target_university_id == student.university_id)
         elif category == 'faculty':
              query = query.where(ChoyxonaPost.target_university_id == student.university_id)
-             if is_management:
+             if is_moderator:
+                 # Moderator can see all, or filter if requested
+                 if faculty_id:
+                     query = query.where(ChoyxonaPost.target_faculty_id == faculty_id)
+             elif is_management:
                  if f_id:
                      query = query.where(ChoyxonaPost.target_faculty_id == f_id)
                  elif faculty_id:
@@ -212,7 +219,12 @@ async def get_posts(
                  query = query.where(ChoyxonaPost.target_faculty_id == student.faculty_id)
         elif category == 'specialty':
              query = query.where(ChoyxonaPost.target_university_id == student.university_id)
-             if is_management:
+             if is_moderator:
+                 if faculty_id:
+                     query = query.where(ChoyxonaPost.target_faculty_id == faculty_id)
+                 if specialty_name:
+                     query = query.where(ChoyxonaPost.target_specialty_name == specialty_name)
+             elif is_management:
                  if f_id:
                      query = query.where(ChoyxonaPost.target_faculty_id == f_id)
                      if specialty_name:
@@ -533,7 +545,11 @@ async def delete_post(
     # 1. Author can delete their own post
     # 2. Management can delete any post in their university (unless restricted by faculty)
     can_delete = False
-    if post.student_id == student.id or post.staff_id == student.id:
+    
+    # MODERATOR HARDCODED ACCESS
+    if getattr(student, 'hemis_login', '') == '395251101412':
+        can_delete = True
+    elif post.student_id == student.id or post.staff_id == student.id:
         can_delete = True
     elif is_management and post.target_university_id == student.university_id:
         if f_id:

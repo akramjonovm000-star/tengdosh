@@ -153,53 +153,112 @@ async def get_management_dashboard(
         }
     }
 
+# --- SHARED FILTER BUILDER ---
+def build_student_filter(
+    staff,
+    faculty_id: int = None,
+    education_type: str = None,
+    education_form: str = None,
+    level_name: str = None,
+    specialty_name: str = None,
+    group_number: str = None
+):
+    """
+    Constructs a list of SQLAlchemy filters for Student queries.
+    Enforces role-based scoping (Dean, Tutor) and dynamic dependencies.
+    """
+    uni_id = getattr(staff, 'university_id', None)
+    filters = [Student.university_id == uni_id]
+    
+    # 1. Role-based Scoping
+    s_role = getattr(staff, 'role', None)
+    staff_fac_id = getattr(staff, 'faculty_id', None)
+    
+    global_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
+    is_global = getattr(staff, 'hemis_role', None) == 'rahbariyat' or s_role in global_roles
+
+    # Dean / Faculty Admin Scoping
+    if not is_global and staff_fac_id and s_role != 'tyutor':
+        filters.append(Student.faculty_id == staff_fac_id)
+        # Override strict faculty_id if passed (though frontend should match)
+        faculty_id = staff_fac_id
+
+    # Tutor Scoping (Will be handled by group list usually, but here for safety)
+    # We will handle Tutor group filtering dynamically in endpoints where needed
+    # via the group_number filter, but we can't easily restrict the base query 
+    # without joining TutorGroup, so we'll leave it to specific endpoints or 
+    # rely on the fact that Tutors only see their groups in dropdowns.
+
+    # 2. Dynamic Filters (Dependent)
+    if faculty_id:
+        filters.append(Student.faculty_id == faculty_id)
+        
+    if education_type:
+        filters.append(Student.education_type.ilike(f"%{education_type}%"))
+        
+    if education_form:
+        filters.append(Student.education_form.ilike(f"%{education_form}%"))
+        
+    if level_name:
+        # Flexible matching
+        filters.append(Student.level_name.ilike(f"%{level_name}%"))
+        
+    if specialty_name:
+        filters.append(Student.specialty_name.ilike(f"%{specialty_name}%"))
+        
+    if group_number:
+        filters.append(Student.group_number == group_number)
+        
+    return filters
+
 @router.get("/faculties")
 async def get_mgmt_faculties(
     staff: Any = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
-    # Security & Context
+    """
+    Get distinct faculties present in the Student database.
+    Dynamically scoped by user role.
+    """
     uni_id = getattr(staff, 'university_id', None)
     if not uni_id:
         raise HTTPException(status_code=400, detail="Universitet aniqlanmadi")
 
-    f_id = getattr(staff, 'faculty_id', None)
     s_role = getattr(staff, 'role', None)
-
-    # [NEW] Tutor Restriction: Only show faculties of assigned groups
+    
+    # 1. Tutor Logic: Only show faculties where they have students
     if s_role == 'tyutor':
-        from database.models import TutorGroup
         tg_stmt = select(TutorGroup.group_number).where(TutorGroup.tutor_id == staff.id)
         group_numbers = (await db.execute(tg_stmt)).scalars().all()
         
-        if group_numbers:
-            # Get faculties from students in these groups
-            stmt = (
-                select(Student.faculty_id, Student.faculty_name)
-                .where(Student.university_id == uni_id, Student.group_number.in_(group_numbers))
-                .distinct()
+        if not group_numbers:
+            return {"success": True, "data": []}
+            
+        stmt = (
+            select(Student.faculty_id, Student.faculty_name)
+            .where(
+                Student.university_id == uni_id, 
+                Student.group_number.in_(group_numbers),
+                Student.faculty_id != None
             )
-            result = await db.execute(stmt)
-            faculties_data = result.all()
-            return {
-                "success": True, 
-                "data": [{"id": f[0], "name": f[1]} for f in faculties_data if f[0] and f[1]]
-            }
-        return {"success": True, "data": []}
-
-    # 2. Local DB Lookup (Respect restricted f_id)
-    stmt = (
-        select(Student.faculty_id, Student.faculty_name)
-        .where(
-            Student.university_id == uni_id, 
-            Student.faculty_id != None,
-            Student.faculty_name != None
+            .distinct()
         )
-    )
-    if f_id:
-        stmt = stmt.where(Student.faculty_id == f_id)
-        
-    result = await db.execute(stmt.distinct().order_by(Student.faculty_name))
+    else:
+        # 2. General Logic (with recursive scoping via helper principle)
+        # We manually build it here because we select specific columns
+        filters = build_student_filter(staff) # Base filters (Uni + Staff Faculty)
+        stmt = (
+            select(Student.faculty_id, Student.faculty_name)
+            .where(
+                *filters,
+                Student.faculty_id != None,
+                Student.faculty_name != None
+            )
+            .distinct()
+            .order_by(Student.faculty_name)
+        )
+
+    result = await db.execute(stmt)
     faculties_data = result.all()
     
     return {
@@ -209,124 +268,153 @@ async def get_mgmt_faculties(
 
 @router.get("/education-types")
 async def get_mgmt_education_types(
-    staff: Any = Depends(get_current_staff)
-):
-    """
-    Get available education types based on role.
-    Deans are restricted to Bakalavr.
-    """
-    global_mgmt_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
-    
-    current_role = getattr(staff, 'role', None) or ""
-    is_global = (
-        getattr(staff, 'hemis_role', None) == 'rahbariyat' or 
-        current_role in global_mgmt_roles
-    )
-
-    if is_global:
-        return {"success": True, "data": ["Bakalavr", "Magistr"]}
-    
-    return {"success": True, "data": ["Bakalavr"]}
-
-@router.get("/faculties/{faculty_id}/levels")
-async def get_mgmt_levels(
-    faculty_id: int,
-    education_type: str = None,
+    faculty_id: int = None,
     staff: Any = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
-    # Security: Ensure faculty belongs to staff's university
-    uni_id = getattr(staff, 'university_id', None)
-    f_id = getattr(staff, 'faculty_id', None)
+    """
+    Get available education types.
+    Dependent on Faculty.
+    """
+    filters = build_student_filter(staff, faculty_id=faculty_id)
+    
+    # Tutor check for base filters
     s_role = getattr(staff, 'role', None)
-    
-    # Normalize faculty_id for comparison
-    request_fac_id = faculty_id
-    if faculty_id == 4: request_fac_id = 36 # Jurnalistika
-    elif faculty_id == 2: request_fac_id = 34 # PR
-    elif faculty_id == 35: request_fac_id = 42 # SIRTQI
-    elif faculty_id == 16: request_fac_id = 37 # MAGISTRATURA
-    
-    if f_id and f_id != request_fac_id:
-        raise HTTPException(status_code=403, detail="Sizga boshqa fakultet ma'lumotlari ruxsat berilmagan")
-    
-    # [NEW] Scoping Logic for Deans (Restricted to Bakalavr)
-    global_mgmt_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
-    is_global = (
-        getattr(staff, 'hemis_role', None) == 'rahbariyat' or 
-        s_role in global_mgmt_roles
-    )
-    
-    if not is_global and f_id:
-        # Dean level restriction
-        education_type = "Bakalavr"
-
-    # Base filter (Use DB ID)
-    filters = [Student.faculty_id == request_fac_id, Student.university_id == uni_id]
-    
-    # [NEW] Cascaded Filter: Type
-    if education_type:
-        filters.append(Student.education_type.ilike(f"%{education_type}%"))
-    
-    # Tutor specific filter
     if s_role == 'tyutor':
         tg_stmt = select(TutorGroup.group_number).where(TutorGroup.tutor_id == staff.id)
         group_numbers = (await db.execute(tg_stmt)).scalars().all()
         filters.append(Student.group_number.in_(group_numbers))
 
-    # Unique levels for this faculty
-    result = await db.execute(
-        select(Student.level_name)
-        .where(*filters)
-        .where(Student.education_type.ilike(f"%{education_type}%") if education_type else True)
+    stmt = (
+        select(Student.education_type)
+        .where(
+            *filters,
+            Student.education_type != None
+        )
         .distinct()
-        .order_by(Student.level_name)
+        .order_by(Student.education_type)
     )
-    levels = [r for r in result.scalars().all() if r]
-    return {"success": True, "data": levels}
+    
+    result = await db.execute(stmt)
+    types = [r for r in result.scalars().all() if r]
+    return {"success": True, "data": sorted(types)}
 
-@router.get("/faculties/{faculty_id}/levels/{level_name}/groups")
-async def get_mgmt_groups(
-    faculty_id: int,
-    level_name: str,
+@router.get("/levels")
+async def get_mgmt_levels(
+    faculty_id: int = None,
+    education_type: str = None,
+    education_form: str = None,
     staff: Any = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
-    # Security
-    uni_id = getattr(staff, 'university_id', None)
-    f_id = getattr(staff, 'faculty_id', None)
-    s_role = getattr(staff, 'role', None)
-    
-    # Normalize
-    request_fac_id = faculty_id
-    if faculty_id == 4: request_fac_id = 36 # Jurnalistika
-    elif faculty_id == 2: request_fac_id = 34 # PR
-    elif faculty_id == 35: request_fac_id = 42 # SIRTQI
-    elif faculty_id == 16: request_fac_id = 37 # MAGISTRATURA
-    
-    if f_id and f_id != request_fac_id:
-        raise HTTPException(status_code=403, detail="Sizga boshqa fakultet ma'lumotlari ruxsat berilmagan")
+    """
+    Get available levels (Courses).
+    Dependent on Faculty, Type, Form.
+    """
+    filters = build_student_filter(
+        staff, 
+        faculty_id=faculty_id,
+        education_type=education_type,
+        education_form=education_form
+    )
 
-    # Base filter
-    filters = [
-        Student.faculty_id == request_fac_id, 
-        Student.level_name == level_name,
-        Student.university_id == uni_id
-    ]
-    
-    # Tutor specific filter
-    if str(s_role) == 'tyutor' or s_role == StaffRole.TYUTOR:
+    # Tutor check
+    s_role = getattr(staff, 'role', None)
+    if s_role == 'tyutor':
         tg_stmt = select(TutorGroup.group_number).where(TutorGroup.tutor_id == staff.id)
         group_numbers = (await db.execute(tg_stmt)).scalars().all()
         filters.append(Student.group_number.in_(group_numbers))
 
-    # Unique groups for this faculty and level
-    result = await db.execute(
+    stmt = (
+        select(Student.level_name)
+        .where(*filters)
+        .distinct()
+        .order_by(Student.level_name)
+    )
+    
+    result = await db.execute(stmt)
+    levels = [r for r in result.scalars().all() if r]
+    
+    # Sort natural (1, 2, 3...)
+    def natural_sort_key(s):
+        import re
+        return [int(text) if text.isdigit() else text.lower()
+                for text in re.split('([0-9]+)', s)]
+    
+    return {"success": True, "data": sorted(levels, key=natural_sort_key)}
+
+@router.get("/education-forms")
+async def get_mgmt_education_forms(
+    faculty_id: int = None,
+    education_type: str = None,
+    staff: Any = Depends(get_current_staff),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get available education forms.
+    Dependent on Faculty, Type.
+    """
+    filters = build_student_filter(
+        staff, 
+        faculty_id=faculty_id,
+        education_type=education_type
+    )
+    
+    # Tutor check
+    s_role = getattr(staff, 'role', None)
+    if s_role == 'tyutor':
+        tg_stmt = select(TutorGroup.group_number).where(TutorGroup.tutor_id == staff.id)
+        group_numbers = (await db.execute(tg_stmt)).scalars().all()
+        filters.append(Student.group_number.in_(group_numbers))
+
+    stmt = (
+        select(Student.education_form)
+        .where(*filters, Student.education_form != None)
+        .distinct()
+        .order_by(Student.education_form)
+    )
+    result = await db.execute(stmt)
+    forms = [r for r in result.scalars().all() if r]
+    return {"success": True, "data": sorted(forms)}
+
+
+@router.get("/groups")
+async def get_mgmt_groups_list(
+    faculty_id: int = None,
+    education_type: str = None,
+    education_form: str = None,
+    level_name: str = None,
+    specialty_name: str = None,
+    staff: Any = Depends(get_current_staff),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get available groups.
+    Fully dependent on all other filters.
+    """
+    filters = build_student_filter(
+        staff,
+        faculty_id=faculty_id,
+        education_type=education_type,
+        education_form=education_form,
+        level_name=level_name,
+        specialty_name=specialty_name
+    )
+    
+    # Tutor check
+    s_role = getattr(staff, 'role', None)
+    if s_role == 'tyutor':
+        tg_stmt = select(TutorGroup.group_number).where(TutorGroup.tutor_id == staff.id)
+        group_numbers = (await db.execute(tg_stmt)).scalars().all()
+        filters.append(Student.group_number.in_(group_numbers))
+
+    stmt = (
         select(Student.group_number)
         .where(*filters)
         .distinct()
         .order_by(Student.group_number)
     )
+    result = await db.execute(stmt)
     groups = [r for r in result.scalars().all() if r]
     return {"success": True, "data": groups}
 
@@ -340,94 +428,35 @@ async def get_mgmt_specialties(
     staff: Any = Depends(get_current_staff),
     db: AsyncSession = Depends(get_db)
 ):
-    from services.hemis_service import HemisService
-    from config import HEMIS_ADMIN_TOKEN
-    
-    # [NEW] Scoping Logic for Deans
-    s_role = getattr(staff, 'role', None) or ""
-    f_id_restricted = getattr(staff, 'faculty_id', None)
-    global_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
-    is_global = (
-        getattr(staff, 'hemis_role', None) == 'rahbariyat' or 
-        s_role in global_roles
-    )
-
-    # [NEW] Enforce Bakalavr for Deans
-    if not is_global and f_id_restricted:
-        education_type = "Bakalavr"
-    
-    effective_faculty_id = faculty_id
-    if not is_global and f_id_restricted:
-        effective_faculty_id = f_id_restricted
-        
-    # [FIX] Translate to HEMIS ID for Admin API
-    h_fac_id = effective_faculty_id
-    if effective_faculty_id == 36: h_fac_id = 4 # Jurnalistika
-    elif effective_faculty_id == 34: h_fac_id = 2 # PR
-    elif effective_faculty_id == 42: h_fac_id = 35 # SIRTQI
-    elif effective_faculty_id == 37: h_fac_id = 16 # MAGISTRATURA
-    
-    # [FIX] Translate to DB ID for DB Query
-    db_fac_id = effective_faculty_id
-    if effective_faculty_id == 4: db_fac_id = 36
-    elif effective_faculty_id == 2: db_fac_id = 34
-    elif effective_faculty_id == 35: db_fac_id = 42
-    elif effective_faculty_id == 16: db_fac_id = 37
-
-    # 1. Try Admin API (University-wide)
-    if HEMIS_ADMIN_TOKEN:
-        if s_role == 'tyutor':
-             # Fallback to Local DB logic for Tutors
-             pass
-        else:
-            # Cascaded Filtering
-            if education_form or level_name:
-                 groups = await HemisService.get_group_list(
-                     faculty_id=h_fac_id,
-                     education_type=education_type,
-                     education_form=education_form,
-                     level_name=level_name
-                 )
-                 if groups:
-                     seen_ids = set()
-                     specs = []
-                     for g in groups:
-                         s = g.get("specialty", {})
-                         if s and s.get("name") and s.get("id") not in seen_ids:
-                             seen_ids.add(s.get("id"))
-                             specs.append(s.get("name"))
-                     return {"success": True, "data": sorted(specs)}
-
-            # Default fallback
-            all_specs = await HemisService.get_specialty_list(faculty_id=h_fac_id, education_type=education_type)
-            if all_specs:
-                return {"success": True, "data": sorted(list(set([s.get("name") for s in all_specs if s.get("name")])))}
-
-    # 2. Fallback to Local DB
-    uni_id = getattr(staff, 'university_id', None)
-    stmt = select(Student.specialty_name).where(
-        Student.university_id == uni_id, 
-        Student.specialty_name != None
+    """
+    Get available specialties.
+    Dependent on Faculty, Type, Form, Level.
+    """
+    filters = build_student_filter(
+        staff,
+        faculty_id=faculty_id,
+        education_type=education_type,
+        education_form=education_form,
+        level_name=level_name
     )
     
+    # Tutor check
+    s_role = getattr(staff, 'role', None)
     if s_role == 'tyutor':
         tg_stmt = select(TutorGroup.group_number).where(TutorGroup.tutor_id == staff.id)
         group_numbers = (await db.execute(tg_stmt)).scalars().all()
-        stmt = stmt.where(Student.group_number.in_(group_numbers))
-        
-    if db_fac_id:
-        stmt = stmt.where(Student.faculty_id == db_fac_id)
-    if education_type:
-        stmt = stmt.where(Student.education_type == education_type)
-    if education_form:
-        stmt = stmt.where(Student.education_form == education_form)
-    if level_name:
-        stmt = stmt.where(Student.level_name == level_name)
-        
-    result = await db.execute(stmt.distinct().order_by(Student.specialty_name))
-    specialties = result.scalars().all()
+        filters.append(Student.group_number.in_(group_numbers))
+
+    stmt = (
+        select(Student.specialty_name)
+        .where(*filters, Student.specialty_name != None)
+        .distinct()
+        .order_by(Student.specialty_name)
+    )
+    result = await db.execute(stmt)
+    specialties = [r for r in result.scalars().all() if r]
     
-    return {"success": True, "data": specialties}
+    return {"success": True, "data": sorted(specialties)}
 
 # Duplicate removed
 
@@ -555,300 +584,54 @@ async def search_mgmt_students(
         education_form = education_type
         education_type = None
     
-    # 1. Scoping Logic
-    s_role = getattr(staff, 'role', None) or ""
-    f_id_restricted = getattr(staff, 'faculty_id', None)
-    global_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
+    # 1. Build DB Filters First (Unified Logic)
+    db_filters = build_student_filter(
+        staff,
+        faculty_id=faculty_id,
+        education_type=education_type,
+        education_form=education_form,
+        level_name=level_name,
+        specialty_name=specialty_name,
+        group_number=group_number
+    )
     
-    is_global = s_role in global_roles or getattr(staff, 'hemis_role', None) == 'rahbariyat'
-    
-    # 2. Determine effective faculty filter
-    effective_faculty_id = faculty_id
-    if not is_global and f_id_restricted:
-        effective_faculty_id = f_id_restricted
-        # [NEW] Enforce Bakalavr for Deans
-        education_type = "Bakalavr"
-
-    # 3. Base category filters (University + Dropdowns)
-    category_filters = [Student.university_id == uni_id]
-    
-    # [FIX] Bi-directional Faculty ID Mapping
-    # db_faculty_id is for local DB queries
-    # hemis_faculty_id is for HEMIS Admin API filters
-    db_faculty_id = effective_faculty_id
-    hemis_faculty_id = effective_faculty_id
-    
-    # Map Known DB IDs to HEMIS IDs
-    if effective_faculty_id == 36: hemis_faculty_id = 4
-    elif effective_faculty_id == 34: hemis_faculty_id = 2
-    elif effective_faculty_id == 42: hemis_faculty_id = 35 # [FIX] SIRTQI
-    elif effective_faculty_id == 37: hemis_faculty_id = 16 # [FIX] MAGISTRATURA
-    
-    # Map Known HEMIS IDs to DB IDs
-    if effective_faculty_id == 4: db_faculty_id = 36
-    elif effective_faculty_id == 2: db_faculty_id = 34
-    elif effective_faculty_id == 35: db_faculty_id = 42 # [FIX] SIRTQI
-    elif effective_faculty_id == 16: db_faculty_id = 37 # [FIX] MAGISTRATURA
-    
-    if db_faculty_id: category_filters.append(Student.faculty_id == db_faculty_id)
-    if education_type: category_filters.append(Student.education_type.ilike(f"%{education_type}%"))
-    if education_form: category_filters.append(Student.education_form.ilike(f"%{education_form}%"))
-    if level_name:
-        # Standardize Level for DB (Ensure case-insensitive and exact match)
-        lvl_db = level_name
-        if "-kurs" not in level_name.lower(): lvl_db = f"{level_name}-kurs"
-        category_filters.append(Student.level_name.ilike(lvl_db))
-    if specialty_name: category_filters.append(Student.specialty_name.ilike(f"%{specialty_name}%"))
-    if group_number: category_filters.append(Student.group_number.ilike(f"%{group_number}%"))
-
-    # 4. Tutor specific restrictions
-    if s_role == StaffRole.TYUTOR:
-        tg_stmt = select(TutorGroup.group_number).where(TutorGroup.tutor_id == staff.id)
-        tg_res = await db.execute(tg_stmt)
-        allowed_groups = tg_res.scalars().all()
-        category_filters.append(Student.group_number.in_(allowed_groups))
-
-    # 5. Search filters (Dropdowns + Query)
-    search_filters = list(category_filters)
+    search_filters = list(db_filters)
     if query:
         search_filters.append(
             (Student.full_name.ilike(f"%{query}%")) | 
             (Student.hemis_id.ilike(f"%{query}%")) |
             (Student.hemis_login.ilike(f"%{query}%"))
         )
-
-
-    
-    # 4. Get Stats
+        
+    # 2. Get Stats & Data
     from services.hemis_service import HemisService
-    
-    # Check if we have Admin Token configured
     from config import HEMIS_ADMIN_TOKEN
     
-    if HEMIS_ADMIN_TOKEN:
-        # Use Admin API for ALL filters if token is available (most accurate method)
-        admin_filters = {}
-        
-        # --- CUSTOM LOGIC FOR THIS UNIVERSITY ---
-        # 1. Handle Magistr -> Department 16 (Magistratura bo'limi)
-        start_dept_override = False
-        if education_type and "Magistr" in education_type:
-             admin_filters["_department"] = 16 # [FIX] 
-             start_dept_override = True
-             
-        # 2. Handle Sirtqi -> Department 35 (Sirtqi bo'limi)
-        if not start_dept_override and education_form and "Sirtqi" in education_form:
-             admin_filters["_department"] = 35 # [FIX]
-             start_dept_override = True
-
-        # 3. Standard Faculty Filter (only if not overridden)
-        if not start_dept_override and hemis_faculty_id:
-            admin_filters["_department"] = hemis_faculty_id
-            
-        if education_type and not start_dept_override:
-            # Standard Education Type mapping
-            # Standard Education Type mapping
-            if "Bakalavr" in education_type:
-                admin_filters["_education_type"] = 11
-            elif "Magistr" in education_type:
-                admin_filters["_education_type"] = 12
-            
-        # [FIX] Admin API Filter Mappings for Forms (Verified IDs)
-        if education_form and not start_dept_override:
-            if "Kunduzgi" in education_form:
-                 admin_filters["_education_form"] = 11
-            elif "Kechki" in education_form:
-                 admin_filters["_education_form"] = 12
-            elif "Sirtqi" in education_form:
-                 admin_filters["_education_form"] = 13
-            elif "Masofaviy" in education_form:
-                 admin_filters["_education_form"] = 16
-            
-        if level_name:
-            # Verified Level IDs: 1-kurs=11, 2-kurs=12, 3-kurs=13, 4-kurs=14
-            if "1" in level_name: admin_filters["_level"] = 11
-            elif "2" in level_name: admin_filters["_level"] = 12
-            elif "3" in level_name: admin_filters["_level"] = 13
-            elif "4" in level_name: admin_filters["_level"] = 14
-
-
-        if specialty_name:
-            # [FIX] Smart Resolution: Use Faculty and Form to find the correct specialty ID
-            spec_id = await HemisService.resolve_specialty_id(
-                specialty_name, 
-                education_type, 
-                faculty_id=hemis_faculty_id, # [FIX] Use HEMIS ID
-                education_form=education_form
-            )
-            if spec_id:
-                admin_filters["_specialty"] = spec_id
-            else:
-                # If filter provided but not resolved, return empty to avoid false positives
-                return {"success": True, "total_count": 0, "app_users_count": 0, "data": []}
-                
-        if group_number:
-            grp_id = await HemisService.resolve_group_id(group_number, faculty_id=hemis_faculty_id)
-            if grp_id:
-                admin_filters["_group"] = grp_id
-            else:
-                # If filter provided but not resolved, return empty
-                return {"success": True, "total_count": 0, "app_users_count": 0, "data": []}
-        
-        # [NEW] Handle Search Query (Name or ID)
-        if query:
-            # The 'search' param is reliable for names. 
-            # Substring search for IDs often defaults to name search or is not supported.
-            admin_filters["search"] = query
-        
-        # Fetch from Admin API (List + Count)
-        
-        admin_items, total_count = await HemisService.get_admin_student_list(
-            admin_filters, page=1, limit=500
-        )
-        
-        # [NEW] Tutor Filter Logic in Admin API Path
-        # If user is Tutor, we must filter the results (items and count) to only their allowed groups
-        s_role = getattr(staff, 'role', None)
-        tutor_groups = []
-        if s_role == 'tyutor':
-             tg_stmt = select(TutorGroup.group_number).where(TutorGroup.tutor_id == staff.id)
-             tutor_groups = (await db.execute(tg_stmt)).scalars().all()
-             
-        students = []
-        filtered_admin_items = []
-
-        # [NEW] Enhanced Tutor Fetching Strategy
-        if s_role == 'tyutor' and tutor_groups:
-             # Fetch ONLY the tutor's groups from API (Parallel Requests)
-             # This guarantees accurate counts (e.g. 196) vs Local DB (91)
-             try:
-                 # DEBUG LOGGING
-                 with open("tutor_debug.log", "a") as f:
-                     f.write(f"fetching groups: {tutor_groups}\n")
-                 
-                 admin_items, total_count = await HemisService.get_students_for_groups(tutor_groups, HEMIS_ADMIN_TOKEN)
-                 
-                 with open("tutor_debug.log", "a") as f:
-                     f.write(f"fetched items: {len(admin_items)}, total_count: {total_count}\n")
-
-                 # Apply Search Query in Memory (since we fetched full group lists)
-                 if query:
-                     q = query.lower()
-                     admin_items = [
-                         i for i in admin_items 
-                         if q in (i.get("full_name") or "").lower() 
-                         or q in (i.get("student_id_number") or "").lower()
-                         or q in str(i.get("id"))
-                     ]
-                     # Only update total_count if we are actively searching
-                     total_count = len(admin_items)
-             except Exception as e:
-                 with open("tutor_debug.log", "a") as f:
-                     f.write(f"ERROR: {e}\n")
-                 total_count = 0
-                 admin_items = []
-                 
-        else:
-            # Standard Admin API Fetch (Dean / Rector)
-            admin_items, total_count = await HemisService.get_admin_student_list(
-                admin_filters, page=1, limit=500
-            )
-        
-        if total_count > 0:
-            # [NEW] Map Admin API Results to Local Database IDs (Optimization for Full Details)
-            # Use student_id_number as the matching key for Students
-            logins = [item.get("student_id_number") for item in admin_items if item.get("student_id_number")]
-            login_to_id = {}
-            if logins:
-                l_stmt = select(Student.id, Student.hemis_login).where(Student.hemis_login.in_(logins))
-                l_res = await db.execute(l_stmt)
-                login_to_id = {row[1]: row[0] for row in l_res.all()}
-
-            for item in admin_items:
-                s = Student()
-                login = item.get("student_id_number")
-                # Use local ID (PK) if student has logged into app, else keep HEMIS ID for read-only display
-                s.id = login_to_id.get(login, item.get("id")) 
-                s.hemis_id = item.get("id")
-                s.hemis_login = login
-                s.full_name = item.get("full_name") or f"{item.get('second_name', '')} {item.get('first_name', '')} {item.get('third_name', '')}".strip()
-                s.image_url = item.get("image")
-                dept = item.get("department", {})
-                s.faculty_name = dept.get("name") if isinstance(dept, dict) else ""
-                grp = item.get("group", {})
-                s.group_number = grp.get("name") if isinstance(grp, dict) else ""
-                lvl = item.get("level", {})
-                s.level_name = lvl.get("name") if isinstance(lvl, dict) else ""
-                ef = item.get("educationForm", {})
-                s.education_form = ef.get("name") if isinstance(ef, dict) else ""
-                et = item.get("educationType", {})
-                s.education_type = et.get("name") if isinstance(et, dict) else ""
-                students.append(s)
-        
-        # If Admin API fails (cnt=0) and we have no filters, it might be an error or just empty.
-        # If it returns 0 but DB has users, we might want to fallback to DB count?
-        # But valid answer could be 0 (e.g. empty group).
-        # Let's trust Admin API if it returns success (handled in service), but if 0, maybe check DB?
-        # The service returns 0 on error.
-        
-        if total_count == 0 and s_role != 'tyutor': # Only fallback for non-tutors (tutors use strict filter above)
-             # Fallback to DB if API failed or returned 0 (e.g. invalid filter ID or Short ID)
-             # [FIX] Use search_filters for count, not just category_filters. 
-             # search_filters includes the name/ID query logic.
-             count_stmt = select(func.count(Student.id)).where(and_(*search_filters))
-             db_count = (await db.execute(count_stmt)).scalar() or 0
-             total_count = db_count
-             
-             # Fallback List (When Admin API returns 0)
-             stmt = select(Student).where(and_(*search_filters)).order_by(Student.full_name).limit(500)
-             result = await db.execute(stmt)
-             students = result.scalars().all()
-        
-        # Fallback for Tutors if API returned 0 (and filtered list is empty)
-        if total_count == 0 and s_role == 'tyutor':
-             count_stmt = select(func.count(Student.id)).where(and_(*search_filters))
-             total_count = (await db.execute(count_stmt)).scalar() or 0
-             
-             stmt = select(Student).where(and_(*search_filters)).order_by(Student.full_name).limit(500)
-             result = await db.execute(stmt)
-             students = result.scalars().all()
-
-    else:
-        # Fallback to Old Logic (Public API + DB)
-        has_backend_filters = any([faculty_id, specialty_name, group_number])
-        
-        if not has_backend_filters:
-            public_stats = await HemisService.get_public_stats()
-            total_count = calculate_public_filtered_count(
-                public_stats,
-                education_type=education_type,
-                education_form=education_form,
-                level=level_name
-            )
-        else:
-            # Use DB Count for specific filters
-            count_stmt = select(func.count(Student.id)).where(and_(*category_filters))
-            total_count = (await db.execute(count_stmt)).scalar() or 0
-        
-        # Execute Local Query for list (FALLBACK PATH ONLY)
-        stmt = select(Student).where(and_(*search_filters)).order_by(Student.full_name).limit(500)
-        result = await db.execute(stmt)
-        students = result.scalars().all()
-
-    # App Users Count (Students who logged into app - always DB)
-
-    # App Users Count (Students who logged into app - always DB)
+    # Logic: Prioritize DB for consistent filtering, but use HEMIS API if possible for fuller list
+    total_count = 0
+    students = []
+    
+    # Check if we should use Admin API (Only if simple filters, avoiding complex map logic)
+    # The user requested "Take from DB", so we prioritize DB for filtering accuracy.
+    # Admin API is hard to map perfectly dynamically without hardcoding IDs.
+    # So we use DB for list, but maybe Admin API for total count if filters are empty?
+    # Let's stick to DB as primary source per user request "Database ma'lumotiga asoslanib".
+    
+    # Count Query
+    count_stmt = select(func.count(Student.id)).where(and_(*search_filters))
+    total_count = (await db.execute(count_stmt)).scalar() or 0
+    
+    # Data Query
+    stmt = select(Student).where(and_(*search_filters)).order_by(Student.full_name).limit(500)
+    result = await db.execute(stmt)
+    students = result.scalars().all()
+    
+    # App Users Count
     app_users_stmt = select(func.count(Student.id)).where(
-        and_(*search_filters), # Use exact search filters for app users
+        and_(*search_filters),
         Student.hemis_token != None
     )
     app_users_count = (await db.execute(app_users_stmt)).scalar() or 0
-    
-    # Final check: if total_count is 0 but we have students in DB, use DB count
-    # (Happens for extremely granular queries that public stats don't cover)
-    if total_count == 0:
-        count_stmt = select(func.count(Student.id)).where(and_(*search_filters))
-        total_count = (await db.execute(count_stmt)).scalar() or 0
 
     # [NEW] Enrich with Activity Counts
     student_ids = [s.id for s in students if s.id]

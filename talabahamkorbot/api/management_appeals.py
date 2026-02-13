@@ -34,74 +34,120 @@ async def get_appeals_stats(
             # Fallback if university_id missing (superuser?)
             return {"total": 0, "counts": {}, "faculty_performance": [], "top_targets": []}
         
-        # 2. Overall Counts
-        stmt = select(StudentFeedback.status, func.count(StudentFeedback.id)).join(Student)\
-            .where(Student.university_id == uni_id)
-            
+        # 2. Overall Counts & Overdue
+        now = datetime.utcnow()
+        three_days_ago = now - timedelta(days=3)
+        
+        # Base Query
+        base_query = select(StudentFeedback).join(Student).where(Student.university_id == uni_id)
+        
         f_id = getattr(staff, 'faculty_id', None)
         if current_role in dean_level_roles and f_id:
-            stmt = stmt.where(Student.faculty_id == f_id)
-            # [NEW] Enforce Bakalavr Only
-            stmt = stmt.where(Student.education_type.ilike("Bakalavr"))
+            base_query = base_query.where(Student.faculty_id == f_id)
+            base_query = base_query.where(Student.education_type.ilike("Bakalavr"))
             
-        stmt = stmt.group_by(StudentFeedback.status)
-        rows = (await db.execute(stmt)).all()
+        all_appeals = (await db.execute(base_query)).scalars().all()
         
         counts = {"pending": 0, "processing": 0, "resolved": 0, "replied": 0}
-        total = 0
-        for status, count in rows:
-            # Normalized status check if needed
-            s = status.lower() if status else "pending"
-            counts[s] = count
-            total += count
-            
-        # 3. Faculty Performance
-        # Using existing snapshot 'student_faculty' in StudentFeedback
-        fac_stmt = select(StudentFeedback.student_faculty, StudentFeedback.status, func.count(StudentFeedback.id))\
-            .join(Student).where(Student.university_id == uni_id)\
-            .group_by(StudentFeedback.student_faculty, StudentFeedback.status)
-            
-        fac_rows = (await db.execute(fac_stmt)).all()
+        total_overdue = 0
         
-        fac_stats = {}
-        for fac, status, count in fac_rows:
-            if not fac: fac = "Boshqa"
+        # In-memory aggregation for flexibility (or complex SQL for performance if dataset > 10k)
+        # Given dataset size likely < 10k active, in-memory is fine and cleaner for logic
+        
+        fac_stats = {} # { "FacultyName": { "id": 1, "total": 0, "resolved": 0, "pending": 0, "overdue": 0, "response_times": [], "topics": {} } }
+        
+        for a in all_appeals:
+            status = a.status or "pending"
+            counts[status] = counts.get(status, 0) + 1
             
-            if fac not in fac_stats: 
-                fac_stats[fac] = {"total": 0, "resolved": 0, "pending": 0}
-                
-            fac_stats[fac]["total"] += count
+            # Faculty specific stats
+            fac_name = a.student_faculty or "Boshqa"
+            # Attempt to find faculty ID from student relation if loaded, else we rely on what we have
+            # Ideally we join Faculty table, but student.faculty_id is verified
+            # For this summary, let's group by name as provided in snapshot or student
+            # We need ID for frontend link. 
             
+            # Since we iterate, we can't easily get ID unless eager loaded. 
+            # Let's assume a mapping or just use name match if needed.
+            # Using a separate query for faculty list might be better but let's try to grab it from a.student if joined.
+            # The base_query joined Student, so a.student should be accessible? No, not explicit selectinload.
+            # But the join allows filtering. 
+            # Let's optimistically rely on `student_faculty` name which is stored on creation.
+            
+            if fac_name not in fac_stats:
+                fac_stats[fac_name] = {
+                    "total": 0, "resolved": 0, "pending": 0, "overdue": 0, 
+                    "response_times": [], "topics": {}
+                }
+            
+            fs = fac_stats[fac_name]
+            fs["total"] += 1
+            
+            # Topic Breakdown
+            topic = a.ai_topic or "Boshqa"
+            fs["topics"][topic] = fs["topics"].get(topic, 0) + 1
+            
+            # Status Stats
             if status in ['resolved', 'replied']:
-                 fac_stats[fac]["resolved"] += count
+                fs["resolved"] += 1
+                # Response Time Calc
+                if a.created_at and a.updated_at and a.updated_at > a.created_at:
+                    diff = (a.updated_at - a.created_at).total_seconds() / 3600 # Hours
+                    if diff > 0 and diff < 10000: # Sanity check
+                        fs["response_times"].append(diff)
             else:
-                 fac_stats[fac]["pending"] += count
-                 
+                fs["pending"] += 1
+                # Overdue Calc
+                if a.created_at and a.created_at < three_days_ago:
+                    fs["overdue"] += 1
+                    total_overdue += 1
+
+        # 3. Build Faculty Performance List
         faculty_performance = []
-        for fac, data in fac_stats.items():
+        
+        # Helper to get Faculty IDs (One query to map Name -> ID)
+        fac_map_stmt = select(Faculty.id, Faculty.name).where(Faculty.university_id == uni_id)
+        fac_map_rows = (await db.execute(fac_map_stmt)).all()
+        name_to_id = {r[1]: r[0] for r in fac_map_rows}
+        
+        for fac_name, data in fac_stats.items():
+            avg_time = 0.0
+            if data["response_times"]:
+                avg_time = sum(data["response_times"]) / len(data["response_times"])
+                
             rate = (data["resolved"] / data["total"]) * 100 if data["total"] > 0 else 0
+            
             faculty_performance.append({
-                "faculty": fac,
+                "faculty": fac_name,
+                "id": name_to_id.get(fac_name),
                 "total": data["total"],
                 "resolved": data["resolved"],
-                "rate": round(rate, 1)
+                "pending": data["pending"],
+                "overdue": data["overdue"],
+                "avg_response_time": round(avg_time, 1),
+                "rate": round(rate, 1),
+                "topics": data["topics"]
             })
+            
+        # Sort by Overdue (Priority) then Total
+        faculty_performance.sort(key=lambda x: (x["overdue"], x["total"]), reverse=True)
         
-        # Sort by total appeals descending
-        faculty_performance.sort(key=lambda x: x["total"], reverse=True)
-        
-        # 4. Top Targets (Who is receiving appeals?)
-        role_stmt = select(StudentFeedback.assigned_role, func.count(StudentFeedback.id))\
-            .join(Student).where(Student.university_id == uni_id)\
-            .group_by(StudentFeedback.assigned_role)
-        role_rows = (await db.execute(role_stmt)).all()
-        
-        top_targets = [{"role": r or "Noma'lum", "count": c} for r, c in role_rows]
+        # 4. Top Targets
+        # Reuse loop data or simple count
+        top_targets_map = {}
+        for a in all_appeals:
+            role = a.assigned_role or "Noma'lum"
+            top_targets_map[role] = top_targets_map.get(role, 0) + 1
+            
+        top_targets = [{"role": r, "count": c} for r, c in top_targets_map.items()]
         top_targets.sort(key=lambda x: x["count"], reverse=True)
         
         return {
+            "total": counts["pending"] + counts["processing"] + counts["resolved"] + counts["replied"], # [RESTORED]
+            "counts": counts, # [RESTORED]
             "total_active": counts["pending"] + counts["processing"],
             "total_resolved": counts["resolved"] + counts["replied"],
+            "total_overdue": total_overdue, 
             "faculty_performance": faculty_performance,
             "top_targets": top_targets
         }
@@ -121,6 +167,7 @@ async def get_appeals_list(
     limit: int = 20,
     status: Optional[str] = None,
     faculty: Optional[str] = None,
+    faculty_id: Optional[int] = None, # [NEW] Filter by ID
     ai_topic: Optional[str] = None,
     assigned_role: Optional[str] = None,
     staff: Staff = Depends(get_current_staff),
@@ -159,7 +206,10 @@ async def get_appeals_list(
                  query = query.where(StudentFeedback.status == status)
 
         # Apply Faculty Filter
-        if faculty:
+        if faculty_id:
+            # [NEW] Filter by ID (More robust)
+            query = query.where(Student.faculty_id == faculty_id)
+        elif faculty:
             if faculty == "Boshqa":
                  query = query.where(or_(StudentFeedback.student_faculty == None, StudentFeedback.student_faculty == ""))
             else:

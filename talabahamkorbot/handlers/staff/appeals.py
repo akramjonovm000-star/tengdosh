@@ -7,11 +7,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
 from sqlalchemy.orm import selectinload
 
-from database.models import TgAccount, Staff, Student, StudentFeedback, FeedbackReply, StaffRole
+from database.models import TgAccount, Staff, Student, StudentFeedback, FeedbackReply, StaffRole, Faculty
 from models.states import StaffAppealStates
-from keyboards.inline_kb import get_staff_appeal_actions_kb, get_student_feedback_reply_kb
+from keyboards.inline_kb import (
+    get_staff_appeal_actions_kb, 
+    get_student_feedback_reply_kb,
+    get_appeals_dashboard_kb,
+    get_faculty_monitor_kb
+)
 from utils.feedback_utils import get_feedback_thread_text
 from services.ai_service import generate_reply_suggestion # AI Import
+from sqlalchemy import func
 
 router = Router()
 
@@ -45,14 +51,12 @@ async def start_view_appeals(call: CallbackQuery, session: AsyncSession, state: 
     # 1. Yopilgan (closed) murojaatlar default holatda ko'rinmaydi
     stmt = select(StudentFeedback).where(StudentFeedback.status != "closed")
 
+
+
     if staff.role == StaffRole.RAHBARIYAT:
-        # Rahbariyat: 'rahbariyat'ga biriktirilgan yoki 'pending' (yangi, hali hech kim olmagan)
-        stmt = stmt.where(
-            or_(
-                StudentFeedback.assigned_role == StaffRole.RAHBARIYAT.value,
-                StudentFeedback.status == "pending"
-            )
-        )
+        # [MODIFIED] Rahbariyat uchun Dashboard funksiyasini chaqiramiz
+        return await show_appeals_dashboard(call, session, state)
+
     elif staff.role == StaffRole.DEKANAT:
         # Dekanat: O'z fakultetidagi barcha (yopilmagan) murojaatlarni ko'rishi kerak
         stmt = stmt.join(Student).where(
@@ -385,3 +389,155 @@ async def cb_staff_ai_reply(call: CallbackQuery, session: AsyncSession):
     )
     logger.info("AI reply sent successfully")
 
+
+# ============================================================
+# 5) LEADERSHIP MONITORING DASHBOARD (NEW)
+# ============================================================
+
+async def show_appeals_dashboard(call: CallbackQuery, session: AsyncSession, state: FSMContext):
+    """
+    Rahbariyat uchun murojaatlar statistikasi dashboardi.
+    Fakultetlar kesimida: Pending vs Solved
+    """
+    # 1. Get stats grouped by Faculty
+    # We need: Faculty Name, Count(Pending), Count(Solved)
+    
+    # Keling, oddiyroq yo'l bilan qilamiz: Barcha fakultetlarni olamiz, keyin har biri uchun count
+    # Yoki bitta og'ir query. Keling, query optimization qilamiz.
+    
+    # Fetch all faculties
+    faculties = (await session.scalars(select(Faculty))).all()
+    
+    stats_list = []
+    total_appeals = 0
+    total_solved = 0
+    
+    for fac in faculties:
+        # Pending count for this faculty
+        # Join Student to filter by Faculty
+        pending_count = await session.scalar(
+            select(func.count(StudentFeedback.id))
+            .join(Student)
+            .where(
+                Student.faculty_id == fac.id,
+                StudentFeedback.status == "pending"
+            )
+        )
+        
+        # Solved count (answered or closed)
+        solved_count = await session.scalar(
+            select(func.count(StudentFeedback.id))
+            .join(Student)
+            .where(
+                Student.faculty_id == fac.id,
+                StudentFeedback.status.in_(["answered", "closed"])
+            )
+        )
+        
+        stats_list.append({
+            "name": fac.name,
+            "id": fac.id,
+            "pending": pending_count,
+            "solved": solved_count
+        })
+        
+        total_appeals += (pending_count + solved_count)
+        total_solved += solved_count
+        
+    resolution_rate = int((total_solved / total_appeals) * 100) if total_appeals > 0 else 0
+    
+    text = (
+        f"📊 <b>Murojaatlar Monitoringi</b>\n\n"
+        f"Jami murojaatlar: <b>{total_appeals}</b> ta\n"
+        f"Hal etilgan: <b>{total_solved}</b> ta ({resolution_rate}%)\n\n"
+        f"👇 <i>Batafsil ko'rish uchun fakultetni tanlang:</i>"
+    )
+    
+    kb = get_appeals_dashboard_kb(stats_list)
+    
+    # Check if message is editable
+    if call.message.text:
+       await call.message.edit_text(text, reply_markup=kb, parse_mode="HTML")
+    else:
+       await call.message.answer(text, reply_markup=kb, parse_mode="HTML")
+       
+    await call.answer()
+
+
+@router.callback_query(F.data.startswith("rh_monitor_fac:"))
+async def show_faculty_monitor_view(call: CallbackQuery, session: AsyncSession, state: FSMContext):
+    """
+    Rahbariyat: Tanlangan fakultetdagi PENDING murojaatlar ro'yxati
+    """
+    try:
+        faculty_id = int(call.data.split(":")[1])
+    except:
+        return await call.answer("Xatolik: ID noto'g'ri")
+        
+    # Get Faculty Name
+    faculty = await session.get(Faculty, faculty_id)
+    if not faculty:
+        return await call.answer("Fakultet topilmadi")
+        
+    # Get Pending Appeals for this Faculty
+    stmt = (
+        select(StudentFeedback)
+        .join(Student)
+        .where(
+            Student.faculty_id == faculty_id,
+            StudentFeedback.status == "pending"
+        )
+        .order_by(StudentFeedback.created_at.asc()) # Oldest first
+        .limit(20) # Max 20 to avoid overload
+    )
+    
+    appeals = (await session.scalars(stmt)).all()
+    
+    if not appeals:
+        await call.answer(f"{faculty.name}da yechilmagan murojaatlar yo'q! ✅", show_alert=True)
+        return
+        
+    kb = get_faculty_monitor_kb(appeals, faculty_id)
+    
+    text = (
+        f"📂 <b>{faculty.name}</b>\n"
+        f"⚠️ <b>Kutilayotgan murojaatlar: {len(appeals)} ta</b>\n\n"
+        f"👇 <i>Ko'rish uchun murojaatni tanlang:</i>"
+    )
+    
+    await call.message.edit_text(text, reply_markup=kb, parse_mode="HTML")
+
+
+@router.callback_query(F.data.startswith("rh_monitor_view:"))
+async def monitor_single_appeal(call: CallbackQuery, session: AsyncSession, state: FSMContext):
+    """
+    Rahbariyat: Aniq murojaatni kuzatish (faqat o'qish uchun, lekin reply qilsa ham bo'ladi)
+    """
+    try:
+        appeal_id = int(call.data.split(":")[1])
+    except:
+        return
+        
+    appeal = await session.get(StudentFeedback, appeal_id)
+    if not appeal:
+        await call.answer("Murojaat topilmadi", show_alert=True)
+        return
+        
+    # Reuse existing send_appeal logic but with specific Role handling if needed
+    # We want Rahbariyat to be able to jump in if needed, so keep role='rahbariyat'
+    
+    # But wait, navigation 'Next' button in send_appeal relies on state list.
+    # Here we are viewing a single item from the monitoring list.
+    # So we might want a custom KB or manage state.
+    
+    # Quick fix: View it as a standalone message, but user has to go back via "Ortga"
+    # send_appeal generates 'get_staff_appeal_actions_kb' which has 'Next' button.
+    # Use 'rahbariyat' role, so they get 'Assign', 'Reply' buttons.
+    
+    # We should set state so 'Next' button doesn't crash or behaves predictably.
+    # Set a single-item list in state
+    await state.set_state(StaffAppealStates.viewing)
+    await state.update_data(appeal_ids=[appeal.id], index=0, role="rahbariyat") 
+    
+    await call.message.delete()
+    await send_appeal(call.message, appeal, session, role="rahbariyat") 

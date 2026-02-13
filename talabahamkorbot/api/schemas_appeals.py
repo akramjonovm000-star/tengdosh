@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict
 from datetime import datetime
 
 class AppealItem(BaseModel):
@@ -16,10 +16,15 @@ class AppealItem(BaseModel):
     is_anonymous: bool
 
 class FacultyPerformance(BaseModel):
+    id: Optional[int] = None
     faculty: str
     total: int
     resolved: int
+    pending: int
+    overdue: int = 0
+    avg_response_time: float = 0.0 # In hours
     rate: float
+    topics: Dict[str, int] = {} # { "Davomat": 5, ... }
 
 class TopTarget(BaseModel):
     role: str
@@ -27,6 +32,9 @@ class TopTarget(BaseModel):
 
 class AppealStats(BaseModel):
     total: int
-    counts: dict
+    counts: Dict[str, int]
+    total_active: int
+    total_resolved: int
+    total_overdue: int = 0
     faculty_performance: List[FacultyPerformance]
     top_targets: List[TopTarget]

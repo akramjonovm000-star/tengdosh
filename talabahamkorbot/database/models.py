@@ -485,6 +485,9 @@ class Student(Base):
         cascade="all, delete-orphan"
     )
     # ---------------------
+    
+    # [NEW] Club Leadership
+    managed_club: Mapped[list["Club"]] = relationship("Club", back_populates="leader_student", lazy="selectin")
 
     def __repr__(self):
         return f"<Student {self.full_name}>"
@@ -874,12 +877,14 @@ class Club(Base):
         back_populates="managed_clubs", # Need to add this to Staff model too
         lazy="selectin"
     )
+
+    # [NEW] Student Leader (Sardor)
+    leader_student_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("students.id", ondelete="SET NULL"), nullable=True)
+    leader_student: Mapped["Student"] = relationship("Student", foreign_keys=[leader_student_id], lazy="selectin")
+
     # Shared Auth Implementation
-    # - [x] Design strategy for Bot-App sync
-    # - [x] Update Bot to store HEMIS passwords
-    # - [x] Implement production `/api/auth/check` endpoint
     # - [x] Test Telegram login flow on emulator
-    memberships: Mapped[list["ClubMembership"]] = relationship("ClubMembership", back_populates="club")
+    memberships: Mapped[list["ClubMembership"]] = relationship("ClubMembership", back_populates="club", passive_deletes=True)
 
     @property
     def leader(self):
