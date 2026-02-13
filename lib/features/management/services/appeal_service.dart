@@ -23,12 +23,14 @@ class AppealService {
     int page = 1, 
     String? status, 
     String? faculty, 
+    int? facultyId, // [NEW]
     String? aiTopic,
     String? assignedRole
   }) async {
     String url = '${ApiConstants.managementAppealsList}?page=$page&limit=20';
     if (status != null) url += '&status=$status';
     if (faculty != null) url += '&faculty=$faculty';
+    if (facultyId != null) url += '&faculty_id=$facultyId'; // [NEW]
     if (aiTopic != null) url += '&ai_topic=$aiTopic';
     if (assignedRole != null) url += '&assigned_role=$assignedRole';
     
