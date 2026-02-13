@@ -58,6 +58,7 @@ class StaffRole(str, enum.Enum):
     INSPEKTOR = "inspektor"
     PSIXOLOG = "psixolog"
     YOSHLAR_YETAKCHISI = "yoshlar_yetakchisi"
+    YOSHLAR_ITTIFOQI = "yoshlar_ittifoqi"
     KLUB_RAHBARI = "klub_rahbari"
 
 # ============================================================

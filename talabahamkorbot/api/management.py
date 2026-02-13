@@ -9,6 +9,9 @@ import aiohttp
 from pydantic import BaseModel
 from fastapi.responses import StreamingResponse
 import httpx
+import logging
+
+logger = logging.getLogger(__name__)
 
 from api.dependencies import get_current_student, get_current_staff
 from database.db_connect import get_db
@@ -36,11 +39,7 @@ async def get_management_dashboard(
     Get university-wide statistics for management dashboard.
     """
     # 1. Role Check (Explicit for Rahbariyat, Tyutor, Rector, Deans, and Prorektor)
-    dean_level_roles = [StaffRole.DEKAN, StaffRole.DEKAN_ORINBOSARI, StaffRole.DEKAN_YOSHLAR, StaffRole.DEKANAT]
-    global_mgmt_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR]
-    
-    current_role = getattr(staff, 'role', None) or ""
-    # Anyone with 'rahbariyat' or specific management roles
+    dean_level_roles = [StaffRole.DEKAN, StaffRole.DEKAN_ORINBOSARI, StaffRole.DEKAN_YOSHLAR, StaffRole.DEKANAT, StaffRole.YOSHLAR_YETAKCHISI, StaffRole.YOSHLAR_ITTIFOQI]
     global_mgmt_roles = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
     
     # Identify if the user is authorized for management section
@@ -107,13 +106,20 @@ async def get_management_dashboard(
              elif effective_f_id == 37: h_fac_id = 16 # MAGISTRATURA
              
              admin_filters = {"_department": h_fac_id}
-             _, total_students = await HemisService.get_admin_student_list(admin_filters, limit=1)
+             try:
+                 _, total_students = await HemisService.get_admin_student_list(admin_filters, limit=1)
+                 logger.info(f"HEMIS API Result: FacId={h_fac_id}, Count={total_students}")
+             except Exception as e:
+                 logger.error(f"HEMIS API Failed: {e}")
+                 total_students = 0
         
         # Fallback to DB if API returned 0 or no token
         if total_students == 0:
+             logger.info(f"Using DB Fallback for Faculty {effective_f_id}")
              total_students = await db.scalar(
                  select(func.count(Student.id)).where(Student.university_id == uni_id, Student.faculty_id == effective_f_id)
              ) or 0
+             logger.info(f"DB Fallback Count: {total_students}")
              
         platform_users = await db.scalar(
             select(func.count(Student.id))
@@ -124,10 +130,17 @@ async def get_management_dashboard(
         ) or 0
     else:
         # Global Management (No faculty restriction)
-        total_students_api = await HemisService.get_total_student_count(token)
+        total_students_api = 0
+        try:
+            total_students_api = await HemisService.get_total_student_count(token)
+            logger.info(f"HEMIS Global Count: {total_students_api}")
+        except Exception as e:
+            logger.warning(f"HEMIS Global Count Failed: {e}")
+            
         if total_students_api > 0:
             total_students = total_students_api
         else:
+            logger.info("Using DB Fallback for Global")
             total_students = await db.scalar(
                 select(func.count(Student.id)).where(Student.university_id == uni_id)
             ) or 0

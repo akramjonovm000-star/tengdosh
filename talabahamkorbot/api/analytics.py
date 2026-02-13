@@ -3,9 +3,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc, and_, or_
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
+import logging
+
+logger = logging.getLogger(__name__)
 
 from database.db_connect import get_db
-from database.models import Student, Staff, UserActivity, Faculty
+from database.models import Student, Staff, UserActivity, Faculty, StaffRole
 from api.dependencies import get_current_staff
 
 router = APIRouter()
@@ -44,8 +47,8 @@ class RecentSubmissionItem(BaseModel):
 # ============================================================
 
 # Role Definitions
-DEAN_LEVEL_ROLES = ['dekan', 'dekan_orinbosari', 'dekan_yoshlar', 'dekanat']
-GLOBAL_MGMT_ROLES = ['rahbariyat', 'owner', 'developer', 'rektor', 'prorektor', 'yoshlar_prorektor', 'yoshlar_yetakchisi', 'yoshlar_ittifoqi']
+DEAN_LEVEL_ROLES = [StaffRole.DEKAN, StaffRole.DEKAN_ORINBOSARI, StaffRole.DEKAN_YOSHLAR, StaffRole.DEKANAT, StaffRole.YOSHLAR_YETAKCHISI, StaffRole.YOSHLAR_ITTIFOQI]
+GLOBAL_MGMT_ROLES = [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.OWNER, StaffRole.DEVELOPER]
 
 @router.get("/dashboard", response_model=DashboardStatsResponse)
 async def get_dashboard_stats(
@@ -55,8 +58,11 @@ async def get_dashboard_stats(
     """
     Get KPI stats for Social Activities (UserActivity).
     """
-    staff_role = str(getattr(staff, "role", None)).lower()
-    if staff_role not in GLOBAL_MGMT_ROLES and staff_role not in DEAN_LEVEL_ROLES and staff_role != 'tyutor':
+    staff_role = getattr(staff, "role", None)
+    logger.info(f"Social Stats Request: staff_id={staff.id}, role={staff_role}")
+    
+    if staff_role not in GLOBAL_MGMT_ROLES and staff_role not in DEAN_LEVEL_ROLES and staff_role != StaffRole.TYUTOR:
+        logger.warning(f"Access Denied: staff_role={staff_role} not in allowed roles")
         raise HTTPException(status_code=403, detail="Ruxsat etilmagan")
 
     # Base query for filtering
@@ -65,13 +71,30 @@ async def get_dashboard_stats(
     
     # Base stmt for scoping
     def apply_scoping(stmt_obj):
+        logger.debug(f"Applying Scoping: role={staff_role}, uni_id={uni_id}, f_id={f_id}")
+        
+        # 1. University Check
         if uni_id:
             stmt_obj = stmt_obj.where(Student.university_id == uni_id)
         elif staff_role not in GLOBAL_MGMT_ROLES:
-            return None # Force failure
+            logger.error(f"Scoping Error: staff_id={staff.id} has no university_id")
+            return None 
+
+        # 2. Faculty Scoping
+        # Global roles see everything if no faculty_id is assigned
+        is_global = staff_role in GLOBAL_MGMT_ROLES and f_id is None
+        
+        if is_global:
+            logger.debug(f"Global Access Granted for role={staff_role}")
+            return stmt_obj
             
-        if f_id and staff_role not in GLOBAL_MGMT_ROLES:
+        if f_id:
+            logger.debug(f"Faculty Scoping: f_id={f_id}")
             stmt_obj = stmt_obj.where(Student.faculty_id == f_id)
+        elif staff_role in DEAN_LEVEL_ROLES or staff_role == StaffRole.TYUTOR:
+            logger.warning(f"Restricted Role with no Faculty: staff_id={staff.id}")
+            return None # Force zero results
+            
         return stmt_obj
 
     # 1. Total Activity Count
@@ -142,8 +165,14 @@ async def get_recent_submissions(
 
     if uni_id:
         stmt = stmt.where(Student.university_id == uni_id)
-    if f_id and staff_role not in GLOBAL_MGMT_ROLES:
-        stmt = stmt.where(Student.faculty_id == f_id)
+    
+    # Scoping logic mirror
+    is_global = staff_role in GLOBAL_MGMT_ROLES and f_id is None
+    if not is_global:
+        if f_id:
+            stmt = stmt.where(Student.faculty_id == f_id)
+        elif staff_role in DEAN_LEVEL_ROLES or staff_role == StaffRole.TYUTOR:
+            return [] # Restricted but no faculty assigned
     
     results = await db.scalars(stmt)
     items = []
@@ -191,13 +220,17 @@ async def get_faculty_activity_stats(
     """
     Get activity stats per faculty (based on UserActivity).
     """
-    staff_role = str(getattr(staff, "role", None)).lower()
+    staff_role = getattr(staff, "role", None)
     f_id = getattr(staff, "faculty_id", None)
-
+    is_global = staff_role in GLOBAL_MGMT_ROLES and f_id is None
+    
     # 1. Get Faculties
     stmt = select(Faculty)
-    if f_id and staff_role not in GLOBAL_MGMT_ROLES:
-        stmt = stmt.where(Faculty.id == f_id)
+    if not is_global:
+        if f_id:
+            stmt = stmt.where(Faculty.id == f_id)
+        else:
+            return [] # Restricted but no faculty assigned (Safety Block)
     
     faculties = (await db.execute(stmt)).scalars().all()
     stats = []
