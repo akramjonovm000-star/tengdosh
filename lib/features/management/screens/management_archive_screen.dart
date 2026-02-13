@@ -141,13 +141,7 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
         slivers: [
           _buildSliverAppBar(),
           
-          // Stats Row
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: _buildStatsGrid(),
-            ),
-          ),
+
 
           // Search & Filters (New Redesign)
           SliverPersistentHeader(
@@ -168,14 +162,16 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
                     // The screenshot likely replaced the old Search+Chips area.
                     // I will put the chips BELOW the grid in the same header, expanding height.
                     const SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     _buildFilterGrid(),
                     const SizedBox(height: 8),
                     _buildCategoryChips(),
+                    if (_stats.isNotEmpty) _buildFilterSummary(),
                   ],
                 ),
               ),
-              maxHeight: 240, // Expanded for grid
-              minHeight: 240, 
+              maxHeight: 280, 
+              minHeight: 280, 
             ),
           ),
 
@@ -244,36 +240,43 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
     );
   }
 
-  Widget _buildStatsGrid() {
-    return Row(
-      children: [
-        Expanded(child: _buildStatCard("Jami", "${_stats['students_in_scope'] ?? 0}", Icons.people_outline, Colors.blue)),
-        const SizedBox(width: 12),
-        Expanded(child: _buildStatCard("Yukladi", "${_stats['students_with_uploads'] ?? 0}", Icons.cloud_done_outlined, Colors.green)),
-        const SizedBox(width: 12),
-        Expanded(child: _buildStatCard("Ulush", "${_stats['completion_rate'] ?? 0}%", Icons.pie_chart_outline, Colors.orange)),
-      ],
+  Widget _buildFilterSummary() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        decoration: BoxDecoration(
+          color: AppTheme.primaryBlue.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppTheme.primaryBlue.withOpacity(0.1)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(children: [
+              const Icon(Icons.people_alt_rounded, size: 16, color: Colors.blueGrey),
+              const SizedBox(width: 4),
+              Text(
+                "Jami: ${_stats['students_in_scope'] ?? 0}",
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.blueGrey),
+              ),
+            ]),
+            Container(width: 1, height: 16, color: Colors.grey[300]),
+            Row(children: [
+              const Icon(Icons.cloud_done_rounded, size: 16, color: Colors.green),
+              const SizedBox(width: 4),
+              Text(
+                "Yuklaganlar: ${_stats['students_with_uploads'] ?? 0}",
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.green),
+              ),
+            ]),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceWhite,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 4),
-          Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          Text(label, style: TextStyle(fontSize: 10, color: Colors.grey[600], fontWeight: FontWeight.w500)),
-        ],
-      ),
-    );
-  }
+
 
   Widget _buildSearchBar() {
     return Padding(
