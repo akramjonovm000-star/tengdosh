@@ -13,13 +13,15 @@ def format_name(full_name: str) -> str:
     # Remove text inside parentheses (e.g., patronymic)
     clean_name = re.sub(r'\s*\(.*?\)', '', full_name).strip()
     
+    from utils.text_utils import format_uzbek_name
+    
     parts = clean_name.split()
     if len(parts) >= 2:
         # Assume DB stores "Last First" (Hemis default)
         # We want "First Last"
-        return f"{parts[1].capitalize()} {parts[0].capitalize()}"
+        return f"{format_uzbek_name(parts[1])} {format_uzbek_name(parts[0])}"
         
-    return clean_name.title()
+    return format_uzbek_name(clean_name)
 
 from sqlalchemy.orm import selectinload
 

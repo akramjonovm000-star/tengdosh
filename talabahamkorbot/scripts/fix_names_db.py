@@ -25,15 +25,24 @@ async def fix_names():
         s_count = 0
         
         for s in students:
-            if not s.full_name: continue
+            changed = False
+            # Fix Full Name
+            if s.full_name:
+                new_full = format_uzbek_name(s.full_name)
+                if new_full != s.full_name:
+                    print(f"Student Full: {s.full_name} -> {new_full}")
+                    s.full_name = new_full
+                    changed = True
             
-            original = s.full_name
-            corrected = format_uzbek_name(original)
+            # Fix Short Name
+            if s.short_name:
+                new_short = format_uzbek_name(s.short_name)
+                if new_short != s.short_name:
+                    print(f"Student Short: {s.short_name} -> {new_short}")
+                    s.short_name = new_short
+                    changed = True
             
-            if original != corrected:
-                s.full_name = corrected
-                s_count += 1
-                logger.info(f"Student: {original} -> {corrected}")
+            if changed: s_count += 1
                 
         # 2. Fix Staff
         logger.info("Scanning Staff...")
@@ -42,15 +51,14 @@ async def fix_names():
         st_count = 0
         
         for st in staff_list:
-            if not st.full_name: continue
-            
-            original = st.full_name
-            corrected = format_uzbek_name(original)
-            
-            if original != corrected:
-                st.full_name = corrected
-                st_count += 1
-                logger.info(f"Staff: {original} -> {corrected}")
+            changed = False
+            if st.full_name:
+                new_full = format_uzbek_name(st.full_name)
+                if new_full != st.full_name:
+                    print(f"Staff Full: {st.full_name} -> {new_full}")
+                    st.full_name = new_full
+                    changed = True
+            if changed: st_count += 1
 
         # 3. Fix Users (Unified Auth Table)
         logger.info("Scanning Users...")
@@ -59,21 +67,30 @@ async def fix_names():
         u_count = 0
         
         for u in users:
-            if not u.full_name: continue
+            changed = False
+            # Fix Full Name
+            if u.full_name:
+                new_full = format_uzbek_name(u.full_name)
+                if new_full != u.full_name:
+                    print(f"User Full: {u.full_name} -> {new_full}")
+                    u.full_name = new_full
+                    changed = True
             
-            original = u.full_name
-            corrected = format_uzbek_name(original)
+            # Fix Short Name
+            if u.short_name:
+                new_short = format_uzbek_name(u.short_name)
+                if new_short != u.short_name:
+                    print(f"User Short: {u.short_name} -> {new_short}")
+                    u.short_name = new_short
+                    changed = True
             
-            if original != corrected:
-                u.full_name = corrected
-                u_count += 1
-                logger.info(f"User: {original} -> {corrected}")
+            if changed: u_count += 1
         
         if s_count > 0 or st_count > 0 or u_count > 0:
             logger.info(f"Committing changes: Students={s_count}, Staff={st_count}, Users={u_count}")
             await db.commit()
         else:
-            logger.info("No changes needed.")
+            logger.info("No changes needed. Database is clean.")
 
 if __name__ == "__main__":
     asyncio.run(fix_names())

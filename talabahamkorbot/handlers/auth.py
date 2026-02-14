@@ -587,7 +587,15 @@ async def process_hemis_password(message: Message, state: FSMContext, session: A
         fac_name = me.get("department")
 
     # --- Extended Profile Extraction ---
-    short_name = me.get("short_name", "").title()
+    from utils.text_utils import format_uzbek_name
+    
+    # Clean names
+    first_name = format_uzbek_name(first_name)
+    last_name = format_uzbek_name(last_name)
+    patronymic = format_uzbek_name(patronymic)
+    full_name = format_uzbek_name(full_name)
+    short_name = format_uzbek_name(me.get("short_name", ""))
+    
     image_url = me.get("image")
     
     level_name = me.get("level", {}).get("name") if isinstance(me.get("level"), dict) else None

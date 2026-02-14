@@ -193,12 +193,15 @@ async def sync_students(session, group_name, expected_count=0):
         login = student_id_str if student_id_str else hemis_id
         
         # Prepare Data
-        first_name = (s_data.get('first_name') or "").strip().title()
-        last_name = (s_data.get('second_name') or "").strip().title()
-        patronymic = (s_data.get('third_name') or "").strip().title()
+        # Use format_uzbek_name instead of .title()
+        from utils.text_utils import format_uzbek_name
+        
+        first_name = format_uzbek_name((s_data.get('first_name') or "").strip())
+        last_name = format_uzbek_name((s_data.get('second_name') or "").strip())
+        patronymic = format_uzbek_name((s_data.get('third_name') or "").strip())
         
         full_name_constructed = f"{last_name} {first_name} {patronymic}".strip()
-        full_name_hemis = (s_data.get("short_name") or "").strip().title() # Hemis 'short_name' is often initials
+        full_name_hemis = format_uzbek_name((s_data.get("short_name") or "").strip()) # Hemis 'short_name' is often initials
 
         # Robust choice: Construct full name if it has fewer initials
         def count_initials(name):
