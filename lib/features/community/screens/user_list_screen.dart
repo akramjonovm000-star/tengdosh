@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:talabahamkor_mobile/core/utils/uzbek_name_formatter.dart';
 import '../../../../core/models/student.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../services/community_service.dart';
@@ -86,15 +88,18 @@ class _UserListScreenState extends State<UserListScreen> {
                             ? NetworkImage(student.imageUrl!)
                             : null,
                         child: (student.imageUrl == null || student.imageUrl!.isEmpty)
-                            ? Text(student.fullName.isNotEmpty ? student.fullName[0] : "?", style: const TextStyle(color: AppTheme.primaryBlue, fontWeight: FontWeight.bold, fontSize: 18))
+                            ? Text(student.fullName.isNotEmpty ? student.fullName[0].toUpperCase() : "?", style: const TextStyle(color: AppTheme.primaryBlue, fontWeight: FontWeight.bold, fontSize: 18))
                             : null,
                       ),
                       title: Row(
                         children: [
-                          Text(student.fullName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                          Text(UzbekNameFormatter.format(student.fullName), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                           if (student.isPremium) ...[
                             const SizedBox(width: 4),
-                            const Icon(Icons.verified, color: Colors.blue, size: 16),
+                            // Simple verify icon or custom badge logic
+                            student.customBadge != null 
+                             ? Text(student.customBadge!, style: const TextStyle(fontSize: 18))
+                             : const Icon(Icons.verified, color: Colors.blue, size: 16),
                           ]
                         ],
                       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:talabahamkor_mobile/core/utils/uzbek_name_formatter.dart';
 import 'package:talabahamkor_mobile/core/services/data_service.dart';
 import 'package:talabahamkor_mobile/core/theme/app_theme.dart';
 import 'package:talabahamkor_mobile/features/community/screens/user_profile_screen.dart';
@@ -115,7 +116,7 @@ class _TutorStudentsScreenState extends State<TutorStudentsScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      fullName,
+                                      UzbekNameFormatter.format(fullName),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),

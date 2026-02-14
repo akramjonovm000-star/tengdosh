@@ -130,10 +130,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ? CachedNetworkImage(
                                   imageUrl: student.imageUrl!,
                                   fit: BoxFit.cover,
-                                  placeholder: (context, url) => Container(color: Colors.grey[100]),
-                                  errorWidget: (context, url, err) => _buildInitials(student.fullName),
+                                  placeholder: (context, url) => _buildInitials(UzbekNameFormatter.format(student.fullName)),
+                                  errorWidget: (context, url, err) => _buildInitials(UzbekNameFormatter.format(student.fullName)),
+                                  height: 100,
+                                  width: 100,
                                 )
-                              : _buildInitials(student.fullName),
+                              : _buildInitials(UzbekNameFormatter.format(student.fullName)),
                         ),
                       ),
                       Positioned(
@@ -416,6 +418,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      // Full Name
                       children: [
                          Text(
                            student.isPremium ? "Premium foydalanuvchi" : "Premium Obuna", 
