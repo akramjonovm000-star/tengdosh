@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:talabahamkor_mobile/core/utils/uzbek_name_formatter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
