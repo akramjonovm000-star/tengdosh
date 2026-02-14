@@ -71,7 +71,7 @@ class Post {
     // print("DEBUG POST JSON: $json"); // Just for build tracking, can remove later
     return Post(
       id: json['id'].toString(),
-      authorId: json['author_id'].toString(), // NEW
+      authorId: json['author_id']?.toString() ?? "0", // NEW
       content: json['content'],
       scope: json['category_type'],
       authorName: json['author_name'],

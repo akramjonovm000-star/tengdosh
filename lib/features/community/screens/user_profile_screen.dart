@@ -126,6 +126,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       // Revert if failed
        _checkFollowStatus();
        _loadStats();
+       if (mounted) {
+         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Obuna bo'lishda xatolik yuz berdi. Internetni tekshiring.")));
+       }
     }
   }
   

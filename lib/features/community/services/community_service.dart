@@ -231,9 +231,10 @@ class CommunityService {
         Uri.parse('${ApiConstants.communityPosts}/reposted?target_student_id=$studentId&skip=$skip&limit=$limit'),
         headers: await _getHeaders(),
       );
+      print("Reposts Response CODE: ${response.statusCode} for $studentId");
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
+        final List<dynamic> data = json.decode(utf8.decode(response.bodyBytes));
         return data.map((json) => _mapJsonToPost(json)).toList();
       }
       return [];

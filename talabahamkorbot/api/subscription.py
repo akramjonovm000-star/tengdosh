@@ -24,7 +24,10 @@ async def toggle_subscription(
     Returns: {"subscribed": bool, "followers_count": int}
     """
     if target_id == student.id:
+        print(f"FAILED: Cannot follow self. {target_id} vs {student.id}")
         raise HTTPException(status_code=400, detail="You cannot follow yourself")
+        
+    print(f"Subs Toggle: {student.id} -> {target_id}")
         
     target_student = await db.get(Student, target_id)
     if not target_student:
