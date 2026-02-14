@@ -8,7 +8,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:talabahamkor_mobile/core/services/data_service.dart';
-import 'package:talabahamkor_mobile/core/services/api_service_new.dart';
 import 'package:talabahamkor_mobile/core/utils/uzbek_name_formatter.dart';
 import 'package:talabahamkor_mobile/core/theme/app_theme.dart';
 import 'package:talabahamkor_mobile/features/social/screens/social_activity_detail_screen.dart';
