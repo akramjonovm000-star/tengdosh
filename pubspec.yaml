@@ -1,7 +1,7 @@
 name: talabahamkor_mobile
 description: A new Flutter project.
 publish_to: 'none'
-version: 1.0.2+4
+version: 1.0.4+6
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -66,10 +66,11 @@ flutter_native_splash:
   android: true
 
 
-flutter_icons:
+flutter_launcher_icons:
   android: "ic_launcher"
   ios: true
   image_path: "assets/images/logo_final.png"
+  min_sdk_android: 21 # optional
 
 flutter:
   uses-material-design: true
