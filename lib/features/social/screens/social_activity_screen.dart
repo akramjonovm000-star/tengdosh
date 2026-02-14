@@ -8,6 +8,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:talabahamkor_mobile/core/services/data_service.dart';
+import 'package:talabahamkor_mobile/core/services/api_service_new.dart';
+import 'package:talabahamkor_mobile/core/utils/uzbek_name_formatter.dart';
 import 'package:talabahamkor_mobile/core/theme/app_theme.dart';
 import 'package:talabahamkor_mobile/features/social/screens/social_activity_detail_screen.dart';
 
@@ -1280,9 +1282,7 @@ class _ActivityCardState extends State<ActivityCard> {
                       boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4)]
                     ),
                     child: Text(
-                      widget.activity.category.isNotEmpty 
-                        ? "${widget.activity.category[0].toUpperCase()}${widget.activity.category.substring(1)}"
-                        : widget.activity.category, 
+                      UzbekNameFormatter.format(widget.activity.category),
                       style: const TextStyle(color: AppTheme.primaryBlue, fontWeight: FontWeight.bold, fontSize: 12)
                     ),
                   ),

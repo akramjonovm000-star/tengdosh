@@ -1,3 +1,5 @@
+import 'package:talabahamkor_mobile/core/utils/uzbek_name_formatter.dart';
+
 class Post {
   final String id;
   final String authorId; // NEW
@@ -337,24 +339,9 @@ class Chat {
 
   String get formattedName {
     if (partnerName.isEmpty) return "Noma'lum";
-    final parts = partnerName.trim().split(RegExp(r'\s+'));
-    
-    String capitalize(String s) {
-      if (s.isEmpty) return "";
-      if (s.length == 1) return s.toUpperCase();
-      return s[0].toUpperCase() + s.substring(1).toLowerCase();
-    }
-
-    if (parts.length >= 2) {
-      final surname = capitalize(parts[0]);
-      final name = capitalize(parts[1]);
-      return "$name $surname";
-    } else {
-      return capitalize(parts[0]);
-    }
+    return UzbekNameFormatter.format(partnerName);
   }
 }
-
 class Message {
   final String id;
   final String content;

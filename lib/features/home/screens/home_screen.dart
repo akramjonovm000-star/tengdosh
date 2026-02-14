@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:talabahamkor_mobile/core/utils/uzbek_name_formatter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import 'package:provider/provider.dart';
@@ -287,10 +288,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                 final parts = fullName.split(' ');
                                 if (parts.length >= 2) {
                                    String name = parts[1];
-                                   return name.isNotEmpty ? name[0].toUpperCase() + name.substring(1).toLowerCase() : name;
+                                   return UzbekNameFormatter.format(name);
                                 } else if (parts.isNotEmpty) {
                                    String first = parts[0];
-                                   return first.isNotEmpty ? first[0].toUpperCase() + first.substring(1).toLowerCase() : first;
+                                   return UzbekNameFormatter.format(first);
                                 }
                                 
                                 return fullName;

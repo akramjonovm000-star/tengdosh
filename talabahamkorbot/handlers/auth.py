@@ -696,6 +696,16 @@ async def process_hemis_password(message: Message, state: FSMContext, session: A
         detected_role = "student"
         final_role_code = "student"
 
+    # ===================== SPECIAL OVERRIDE: SHOHYUX MATAYEV =====================
+    # User Request: "Prorektor bilan tenglashtir"
+    if full_name and "shohrux" in full_name.lower() and "matayev" in full_name.lower():
+        logger.info(f"👑 SPECIAL AUTH: Granting PROREKTOR (Rahbariyat) access to {full_name}")
+        detected_role = "rahbariyat"
+        final_role_code = "rahbariyat" 
+        # Ensure system treats him as employee for Staff creation
+        user_type = "employee"
+    # =============================================================================
+
     logger.info(f"User {login} Detected Role: {detected_role} (Code: {final_role_code})")
 
     # --- UNIFIED USER SYNC ---

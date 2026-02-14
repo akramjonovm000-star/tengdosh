@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:talabahamkor_mobile/features/social/models/social_activity.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:talabahamkor_mobile/core/utils/uzbek_name_formatter.dart';
 
 class SocialActivityDetailScreen extends StatelessWidget {
   final SocialActivity activity;
@@ -76,9 +77,7 @@ class SocialActivityDetailScreen extends StatelessWidget {
                     children: [
                       Chip(
                         label: Text(
-                          activity.category.isNotEmpty 
-                            ? "${activity.category[0].toUpperCase()}${activity.category.substring(1)}"
-                            : activity.category
+                          UzbekNameFormatter.format(activity.category)
                         ),
                         backgroundColor: Colors.blue[50],
                         labelStyle: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),

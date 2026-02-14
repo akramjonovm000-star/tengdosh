@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:talabahamkor_mobile/core/utils/uzbek_name_formatter.dart';
 import 'package:talabahamkor_mobile/core/services/data_service.dart';
 import 'package:talabahamkor_mobile/core/theme/app_theme.dart';
 
@@ -60,7 +62,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 4),
-                      Text(act['category'].toUpperCase(), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey)),
+                      Text(UzbekNameFormatter.format(act['category']), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey)),
                       Text(act['description'] ?? '', maxLines: 2, overflow: TextOverflow.ellipsis),
                       const SizedBox(height: 8),
                       Row(
@@ -79,7 +81,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                       borderRadius: BorderRadius.circular(20)
                     ),
                     child: Text(
-                      act['status'].toUpperCase(),
+                      UzbekNameFormatter.format(act['status']),
                       style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
                     ),
                   ),
