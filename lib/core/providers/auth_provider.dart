@@ -75,12 +75,24 @@ class AuthProvider with ChangeNotifier {
       } else {
          _isLoading = false;
         notifyListeners();
-        return "Login yoki parol noto'g'ri";
+        return "Login yoki parol xato";
       }
     } catch (e) {
       _isLoading = false;
       notifyListeners();
-      return "Xatolik yuz berdi: $e";
+      
+      // Clean up error message
+      String errorMsg = e.toString();
+      if (errorMsg.contains("Exception:")) {
+        errorMsg = errorMsg.replaceAll("Exception:", "").trim();
+      }
+      
+      // Specific checks
+      if (errorMsg.toLowerCase().contains("login yoki parol")) {
+        return "Login yoki parol xato";
+      }
+      
+      return "Xatolik: $errorMsg";
     }
   }
 

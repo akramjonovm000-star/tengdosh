@@ -17,9 +17,12 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isObscure = true;
-  bool _isPolicyAccepted = false; // New state
+  bool _isPolicyAccepted = false; 
+  String? _errorMessage; // NEW
 
   Future<void> _submit() async {
+    setState(() => _errorMessage = null);
+    
     if (!_formKey.currentState!.validate()) return;
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
@@ -29,9 +32,9 @@ class _LoginScreenState extends State<LoginScreen> {
     );
 
     if (error != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error), backgroundColor: Colors.red),
-      );
+      setState(() {
+        _errorMessage = error;
+      });
     }
   }
 
@@ -99,9 +102,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 40),
                   
-                  // Login Field
-                  TextFormField(
+                    TextFormField(
                     controller: _loginController,
+                    onChanged: (_) {
+                      if (_errorMessage != null) setState(() => _errorMessage = null);
+                    },
                     style: const TextStyle(fontSize: 16),
                     decoration: InputDecoration(
                       labelText: "Login / Talaba ID",
@@ -119,6 +124,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   // Password Field
                   TextFormField(
                     controller: _passwordController,
+                    onChanged: (_) {
+                      if (_errorMessage != null) setState(() => _errorMessage = null);
+                    },
                     obscureText: _isObscure,
                     style: const TextStyle(fontSize: 16),
                     decoration: InputDecoration(
@@ -200,6 +208,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          if (_errorMessage != null)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12.0),
+                              child: Text(
+                                _errorMessage!,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                              ),
+                            ),
                           ElevatedButton(
                             onPressed: (_isPolicyAccepted && !auth.isLoading) ? _submit : null,
                             style: ElevatedButton.styleFrom(
