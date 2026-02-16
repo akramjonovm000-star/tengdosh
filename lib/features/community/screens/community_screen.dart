@@ -283,7 +283,7 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                       : [
                           // Specialty Tab
                           (auth.isModerator) 
-                              ? Tab(child: _buildFilterTab("Yo'nalish", _selectedSpecialtyName == null ? "Barcha yo'nalishlar" : "Mening yo'nalishim", 2))
+                              ? Tab(child: _buildFilterTab("Yo'nalish", _selectedSpecialtyName == null ? "Barcha yo'nalishlar" : "Mening yo'nalishim", 0))
                               : const Tab(child: Text("Yo'nalish", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
                           
                           // Faculty Tab
@@ -293,7 +293,7 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
 
                           // University Tab
                           (auth.isModerator)
-                              ? Tab(child: _buildFilterTab("Universitet", "Mening universitetim", 0))
+                              ? Tab(child: _buildFilterTab("Universitet", "Mening universitetim", 2))
                               : const Tab(child: Text("Universitet", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
                         ],
                   );
