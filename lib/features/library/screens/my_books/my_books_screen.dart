@@ -383,6 +383,22 @@ class _MyBooksScreenState extends State<MyBooksScreen> with SingleTickerProvider
                      const SizedBox(height: 6),
                      Text(item.author, style: TextStyle(color: Colors.grey[600], fontSize: 13)),
                      const SizedBox(height: 10),
+                     Container(
+                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                       decoration: BoxDecoration(
+                         color: isQueue ? Colors.purple.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+                         borderRadius: BorderRadius.circular(10),
+                       ),
+                       child: Row(
+                         mainAxisSize: MainAxisSize.min,
+                         children: [
+                           Icon(isQueue ? Icons.people_outline : Icons.access_time_rounded, size: 14, color: isQueue ? Colors.purple : Colors.orange),
+                           const SizedBox(width: 6),
+                           Text(
+                             isQueue ? "${item.queuePosition}-o'rinda" : "3 soat qoldi", // Mock
+                             style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: isQueue ? Colors.purple : Colors.orange),
+                           ),
+                         ],
                        ),
                      ),
                    ],
