@@ -280,10 +280,21 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                           Tab(child: _buildFilterTab("Fakultet", _selectedFacultyId == null ? "Barcha fakultetlar" : "Mening fakultetim", 1)),
                           Tab(child: _buildFilterTab("Yo'nalish", _selectedSpecialtyName == null ? "Barcha yo'nalishlar" : "Mening yo'nalishim", 2)),
                         ]
-                      : const [
-                          Tab(child: Text("Yo'nalish", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
-                          Tab(child: Text("Fakultet", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
-                          Tab(child: Text("Universitet", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+                      : [
+                          // Specialty Tab
+                          (auth.isModerator) 
+                              ? Tab(child: _buildFilterTab("Yo'nalish", _selectedSpecialtyName == null ? "Barcha yo'nalishlar" : "Mening yo'nalishim", 2))
+                              : const Tab(child: Text("Yo'nalish", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+                          
+                          // Faculty Tab
+                          (auth.isModerator)
+                              ? Tab(child: _buildFilterTab("Fakultet", _selectedFacultyId == null ? "Barcha fakultetlar" : "Mening fakultetim", 1))
+                              : const Tab(child: Text("Fakultet", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+
+                          // University Tab
+                          (auth.isModerator)
+                              ? Tab(child: _buildFilterTab("Universitet", "Mening universitetim", 0))
+                              : const Tab(child: Text("Universitet", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
                         ],
                   );
                 }

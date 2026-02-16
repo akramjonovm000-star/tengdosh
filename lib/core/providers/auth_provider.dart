@@ -26,6 +26,10 @@ class AuthProvider with ChangeNotifier {
     return mgmtRoles.contains(role) || mgmtRoles.contains(staffRole);
   }
 
+  bool get isModerator {
+    return _currentUser?.hemisLogin == '395251101397' || _currentUser?.hemisLogin == '395251101412';
+  }
+
   AuthProvider() {
     loadUser();
     _initDataServiceListener();
