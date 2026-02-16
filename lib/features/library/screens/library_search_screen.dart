@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../models/book_model.dart';
-import '../../services/library_service.dart';
+import '../models/book_model.dart';
+import '../services/library_service.dart';
 import '../widgets/book_card.dart';
 import 'book_details_screen.dart';
 import '../../../../core/theme/app_theme.dart';

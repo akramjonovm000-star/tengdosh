@@ -490,7 +490,8 @@ class DataService {
   }
 
   // NEW: Init Upload Session
-  Future<void> initUploadSession(String sessionId, String category) async {
+  // NEW: Init Upload Session
+  Future<Map<String, dynamic>> initUploadSession(String sessionId, String category) async {
     final token = await _authService.getToken();
     final response = await http.post(
       Uri.parse('${ApiConstants.activities}/upload/init'),
@@ -504,7 +505,9 @@ class DataService {
       },
     );
 
-    if (response.statusCode != 200) {
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
       throw Exception('Failed to init session: ${response.body}');
     }
   }

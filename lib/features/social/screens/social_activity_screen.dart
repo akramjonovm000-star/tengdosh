@@ -103,10 +103,27 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
     });
 
     try {
-      await Provider.of<DataService>(context, listen: false).initUploadSession(
+      final res = await Provider.of<DataService>(context, listen: false).initUploadSession(
         sessionId,
         _selectedCategory ?? "Faollik"
       );
+      
+      // [SMART UPLOAD LOGIC]
+      if (res['success'] == true || res['requires_auth'] == true) {
+         
+         String urlToLaunch = "";
+         if (res['requires_auth'] == true) {
+           urlToLaunch = res['auth_link'];
+         } else {
+           urlToLaunch = res['bot_link'] ?? "https://t.me/talabahamkorbot";
+         }
+         
+         if (await canLaunchUrl(Uri.parse(urlToLaunch))) {
+           await launchUrl(Uri.parse(urlToLaunch), mode: LaunchMode.externalApplication);
+         } else {
+            if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Telegramni ochib bo'lmadi")));
+         }
+      }
       
       // Start Polling
     _pollingTimer?.cancel();
