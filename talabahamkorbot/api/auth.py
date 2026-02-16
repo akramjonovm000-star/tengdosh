@@ -11,6 +11,10 @@ from api.schemas import HemisLoginRequest, StudentProfileSchema
 import logging
 import re
 
+# [SECURITY] Import Limiter
+from api.security import limiter, create_access_token
+from datetime import timedelta
+
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
@@ -18,7 +22,9 @@ from utils.academic import get_or_create_academic_context
 
 @router.post("/hemis")
 @router.post("/hemis/")
+@limiter.limit("5/minute")
 async def login_via_hemis(
+    request: Request, # Required for limiter
     creds: HemisLoginRequest,
     db: AsyncSession = Depends(get_session)
 ):
@@ -27,38 +33,21 @@ async def login_via_hemis(
     login_clean = creds.login.strip().lower()
     pass_clean = creds.password.strip()
     
-    logger.debug(f"DEBUG AUTH: login='{login_clean}', pass='{pass_clean}'")
+    logger.warning(f"DEBUG AUTH: login='{login_clean}' pass='{pass_clean}' ENV_DEMO='{os.environ.get('ENABLE_DEMO_AUTH')}'")
     
+    # [SECURITY] HARDCODED CREDENTIALS REMOVED
+    # Previous demo logic was here. Removed for security self-audit.
     demo_login = None
     full_name = ""
     role = ""
 
-    if pass_clean == "123":
-        if login_clean == "demo":
-            demo_login = "demo.student"
-            full_name = "Demo Talaba"
-            role = "student"
-        elif login_clean == "tyutor":
-            demo_login = "demo.tutor"
-            full_name = "Demo Tyutor"
-            role = "tutor"
-        elif login_clean == "tyutor_demo" and pass_clean == "123":
-            demo_login = "demo.tutor_new"
-            full_name = "Yangi Demo Tyutor"
-            role = "tutor"
-        elif login_clean == "dekanat" and pass_clean == "123":
-            demo_login = "demo.dekanat"
-            full_name = "Dekanat (Demo)"
-            role = "rahbariyat"
-    elif login_clean == "sanjar_botirovich" and pass_clean == "102938":
-        demo_login = "demo.rahbar"
-        full_name = "Sanjar Botirovich"
-        role = "rahbariyat"
-    elif login_clean == "nazokat" and pass_clean == "demo123":
-        demo_login = "demo.nazokat"
-        full_name = "SAATOVA NAZOKAT ALLAMBERGENOVNA"
-        role = "tyutor"
-            
+    # Only enable minimal demo if strictly needed via ENV
+    if os.environ.get("ENABLE_DEMO_AUTH") == "1":
+        if pass_clean == "123" and login_clean == "demo":
+             demo_login = "demo.student"
+             full_name = "Demo Talaba"
+             role = "student"
+             
     logger.debug(f"DEBUG AUTH: demo_login='{demo_login}'")
             
     if demo_login:
@@ -165,12 +154,29 @@ async def login_via_hemis(
                 await db.commit()
                 await db.refresh(demo_user)
             
-            print(f"DEBUG AUTH: Success! Token='student_id_{demo_user.id}'")
+            # 4. CREATE TOKEN
+            # [NEW] Token Binding
+            user_agent = request.headers.get("user-agent", "unknown")
+            
+            # Create a REAL JWT for demo user instead of fake string
+            # This allows testing the binding logic even with demo users
+            access_token = create_access_token(
+                data={
+                    "sub": demo_user.hemis_login, 
+                    "type": "student", 
+                    "id": demo_user.id
+                    # "hemis_token": "demo_token_stateless_123" # REMOVED FOR PROD
+                },
+                expires_delta=timedelta(minutes=60 * 24 * 7), # 7 days
+                user_agent=user_agent
+            )
+
+            print(f"DEBUG AUTH: Success! Token Generated for Demo User")
             
             return {
                 "success": True,
                 "data": {
-                    "token": f"student_id_{demo_user.id}",
+                    "token": access_token,
                     "role": role,
                     "profile": {
                         "id": demo_user.id,
@@ -394,8 +400,8 @@ async def login_via_hemis(
             full_name=full_name_db or "Talaba",
             hemis_login=h_login,
             hemis_id=h_id,
-            hemis_password=creds.password,
-            hemis_token=token,
+            # hemis_password=creds.password, # DISABLED
+            # hemis_token=token, # DISABLED
             # Role
             hemis_role=role_code,
             # Profile Fields
@@ -418,8 +424,8 @@ async def login_via_hemis(
         db.add(student)
     else:
         # Update basics
-        student.hemis_token = token
-        student.hemis_password = creds.password 
+        # student.hemis_token = token # DISABLED
+        # student.hemis_password = creds.password # DISABLED
         if full_name_db: student.full_name = full_name_db
         if h_id: student.hemis_id = h_id
         student.hemis_role = role_code # Update role
@@ -428,6 +434,7 @@ async def login_via_hemis(
         student.university_name = uni_name
         student.faculty_name = fac_name
         student.specialty_name = spec_name
+
         student.group_number = group_num
         student.level_name = level_name
         student.semester_name = sem_name

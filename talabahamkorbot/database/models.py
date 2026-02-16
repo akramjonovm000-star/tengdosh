@@ -12,6 +12,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
+from typing import ClassVar # [FIX]
 from sqlalchemy.types import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -309,7 +310,12 @@ class Staff(Base):
     role: Mapped[StaffRole] = mapped_column(String(32), nullable=False)
     telegram_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     hemis_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True, index=True) # HEMIS ID
-    hemis_token: Mapped[str | None] = mapped_column(String(1024), nullable=True) # [NEW] Authorization Token
+    
+    # [STATELESS] Runtime injection only
+    hemis_token: ClassVar[str | None] = None
+    hemis_password: ClassVar[str | None] = None
+    
+    # hemis_token: Mapped[str | None] = mapped_column(String(1024), nullable=True) # DISABLED FOR SECURITY
 
     university_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("universities.id", ondelete="SET NULL"), nullable=True
@@ -378,8 +384,13 @@ class Student(Base):
     hemis_id: Mapped[str | None] = mapped_column(String(64), nullable=True) # HEMIS specific ID
     full_name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     hemis_login: Mapped[str] = mapped_column(String(128), nullable=False)
-    hemis_token: Mapped[str | None] = mapped_column(String(1024), nullable=True) # SAVING TOKEN FOR REFRESH
-    hemis_password: Mapped[str | None] = mapped_column(String(255), nullable=True) # SAVING PASS FOR AUTO-SCRAPE
+    
+    # [STATELESS] Runtime injection only (Not mapped to DB)
+    hemis_token: ClassVar[str | None] = None 
+    hemis_password: ClassVar[str | None] = None
+    
+    # hemis_token: Mapped[str | None] = mapped_column(String(1024), nullable=True) # DISABLED FOR SECURITY
+    # hemis_password: Mapped[str | None] = mapped_column(String(255), nullable=True) # DISABLED FOR SECURITY
     phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
     birth_date: Mapped[str | None] = mapped_column(String(32), nullable=True) # New Field (Age Calculation)
 

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Body
+from fastapi import APIRouter, Depends, HTTPException, Body, Request
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -9,6 +9,9 @@ from api.dependencies import get_current_student
 from services.hemis_service import HemisService
 from bot import bot
 from aiogram.types import BufferedInputFile
+
+# [SECURITY] Import Limiter
+from api.security import limiter
 
 router = APIRouter(tags=["Documents"])
 
@@ -23,7 +26,8 @@ async def get_my_documents(
     """Returns real documents uploaded by the student or for the student"""
     stmt = select(StudentDocument).where(
         StudentDocument.student_id == student.id,
-        StudentDocument.file_type == "document"
+        StudentDocument.file_type == "document",
+        StudentDocument.is_active == True # [SECURITY] Soft Delete Filter
     ).order_by(StudentDocument.uploaded_at.desc())
     result = await db.execute(stmt)
     docs = result.scalars().all()
@@ -39,6 +43,30 @@ async def get_my_documents(
             } for d in docs
         ]
     }
+
+# ... (Previous code omitted for brevity) ...
+
+@router.delete("/{doc_id}")
+@limiter.limit("5/minute")
+async def delete_document(
+    request: Request, # Required for limiter
+    doc_id: int,
+    student: Student = Depends(get_current_student),
+    db: AsyncSession = Depends(get_session)
+):
+    """Deletes a student's document (Soft Delete)"""
+    stmt = select(StudentDocument).where(StudentDocument.id == doc_id, StudentDocument.student_id == student.id)
+    result = await db.execute(stmt)
+    doc = result.scalars().first()
+    
+    if not doc:
+        raise HTTPException(status_code=404, detail="Hujjat topilmadi")
+        
+    # [SECURITY] Soft Delete instead of Hard Delete
+    doc.is_active = False
+    await db.commit()
+    
+    return {"success": True, "message": "Hujjat muvaffaqiyatli o'chirildi"}
 
 from models.states import DocumentAddStates
 from aiogram.fsm.storage.base import StorageKey

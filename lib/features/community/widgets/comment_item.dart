@@ -3,6 +3,8 @@ import '../../../../core/theme/app_theme.dart';
 import '../models/community_models.dart';
 import '../screens/user_profile_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:provider/provider.dart';
+import '../../../../core/providers/auth_provider.dart';
 
 class CommentItem extends StatelessWidget {
   final Comment comment;
@@ -26,7 +28,8 @@ class CommentItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (comment.isMine) {
+    final isModerator = context.read<AuthProvider>().isModerator;
+    if (comment.isMine || isModerator) {
       return Dismissible(
         key: Key(comment.id),
         direction: DismissDirection.startToEnd,
@@ -104,7 +107,7 @@ class CommentItem extends StatelessWidget {
         children: [
           GestureDetector(
             onLongPress: () {
-              if (comment.isMine) {
+              if (comment.isMine || isModerator) {
                 showModalBottomSheet(
                   context: context,
                   builder: (ctx) => Wrap(

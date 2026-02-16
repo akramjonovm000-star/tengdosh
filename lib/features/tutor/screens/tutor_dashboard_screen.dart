@@ -8,6 +8,7 @@ import 'package:talabahamkor_mobile/features/tutor/screens/tutor_groups_screen.d
 import 'package:talabahamkor_mobile/features/tutor/screens/tutor_activity_groups_screen.dart';
 import 'package:talabahamkor_mobile/features/tutor/screens/tutor_documents_groups_screen.dart';
 import 'package:talabahamkor_mobile/features/tutor/screens/tutor_certificates_groups_screen.dart';
+import '../../library/screens/library_screen.dart';
 
 
 class TutorDashboardScreen extends StatelessWidget {
@@ -130,6 +131,17 @@ class TutorDashboardScreen extends StatelessWidget {
                       icon: Icons.verified_user_rounded,
                       color: Colors.redAccent,
                       onTap: () => _showNotImplemented(context, "Davomat"),
+                    ),
+                    DashboardCard(
+                      title: "Kutubxona",
+                      icon: Icons.local_library_rounded,
+                      color: Colors.blueAccent,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const LibraryScreen()),
+                        );
+                      },
                     ),
                   ],
                 ),

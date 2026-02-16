@@ -1,4 +1,4 @@
-from fastapi import Header, HTTPException, Depends
+from fastapi import Header, HTTPException, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from database.db_connect import AsyncSessionLocal
@@ -9,42 +9,68 @@ async def get_db():
         yield session
 
 
-async def get_current_user_token_data(authorization: str = Header(None)):
+async def get_current_user_token_data(
+    request: Request = None, 
+    authorization: str = Header(None)
+):
     """
-    Parses token. Returns dict: {"type": "telegram"|"student", "id": int}
+    Parses token. Returns dict: {"type": "telegram"|"student"|"staff", "id": int, "hemis_token": str|None}
     """
     import logging
+    from api.security import verify_token, hash_user_agent
+    
     logger = logging.getLogger(__name__)
     if not authorization:
-        logger.warning(f"Auth failed: Missing Authorization header")
+        # logger.warning(f"Auth failed: Missing Authorization header")
         raise HTTPException(status_code=401, detail="Missing Authorization Header")
     
-    logger.debug(f"Checking auth header: {authorization[:25]}...")
+    # logger.debug(f"Checking auth header: {authorization[:10]}...")
     token = authorization.replace("Bearer ", "")
     
+    # 1. Try JWT Verification (New Standard)
+    payload = verify_token(token)
+    if payload:
+        # User-Agent Binding Check
+        if request and "ua" in payload:
+            current_ua = request.headers.get("user-agent", "unknown")
+            expected_hash = payload["ua"]
+            actual_hash = hash_user_agent(current_ua)
+            
+            if expected_hash != actual_hash:
+                 logger.warning(f"Security Alert: Token User-Agent Mismatch! Expected: {expected_hash}, Actual: {actual_hash} (UA: {current_ua})")
+                 raise HTTPException(status_code=401, detail="Xavfsizlik: Token boshqa qurilmada foydalanilmoqda!")
+
+        if "type" in payload and "id" in payload:
+             return {
+                 "type": payload["type"], 
+                 "id": payload["id"],
+                 "hemis_token": payload.get("hemis_token") # [NEW] Extract embedded token
+             }
+             
+    # 2. Legacy Formats (Backward Compatibility - Limited)
+    # These users will fail any request requiring HEMIS token
     if token.startswith("jwt_token_for_"):
         try:
             tid = int(token.replace("jwt_token_for_", ""))
-            return {"type": "telegram", "id": tid}
+            return {"type": "telegram", "id": tid, "hemis_token": None}
         except:
              pass
-
 
     if token.startswith("student_id_"):
         try:
             sid = int(token.replace("student_id_", ""))
-            return {"type": "student", "id": sid}
+            return {"type": "student", "id": sid, "hemis_token": None}
         except:
             pass
 
     if token.startswith("staff_id_"):
         try:
             sid = int(token.replace("staff_id_", ""))
-            return {"type": "staff", "id": sid}
+            return {"type": "staff", "id": sid, "hemis_token": None}
         except:
             pass
             
-    logger.error(f"Auth failed: Invalid Token Format: {authorization[:25]}")
+    # logger.error(f"Auth failed: Invalid Token Format")
     raise HTTPException(status_code=401, detail="Invalid Token Format")
 
 async def get_current_token(authorization: str = Header(None)):
@@ -53,7 +79,6 @@ async def get_current_token(authorization: str = Header(None)):
     return authorization.replace("Bearer ", "")
 
 async def get_current_user_id(token_data: dict = Depends(get_current_user_token_data)):
-    # Legacy support if needed, but better to use token_data directly
     return token_data["id"]
 
 from database.models import Staff
@@ -68,6 +93,10 @@ async def get_current_staff(
     staff = await db.get(Staff, token_data["id"])
     if not staff:
         raise HTTPException(status_code=404, detail="Xodim topilmadi")
+    
+    # [NEW] Inject Token from JWT (Stateless)
+    if token_data.get("hemis_token"):
+        staff.hemis_token = token_data["hemis_token"]
         
     return staff
 
@@ -75,6 +104,24 @@ async def get_current_student(
     token_data: dict = Depends(get_current_user_token_data),
     db: AsyncSession = Depends(get_db)
 ):
+    if token_data["type"] != "student":
+        raise HTTPException(status_code=403, detail="Faqat talabalar uchun")
+        
+    student = await db.get(Student, token_data["id"])
+    if not student:
+        raise HTTPException(status_code=404, detail="Talaba topilmadi")
+
+    # [NEW] Inject Token from JWT (Stateless)
+    if token_data.get("hemis_token"):
+        student.hemis_token = token_data["hemis_token"]
+    
+    # Fallback: If DB has it (migration phase), use it? 
+    # No, we commented out the column in models, so accessing student.hemis_token 
+    # might actually return None or fail if SQLAlchemy didn't map it.
+    # But since we commented it out in models.py, 'student' object won't have the attribute populated from DB.
+    # So we MUST inject it here.
+    
+    return student
     try:
         if token_data["type"] == "telegram":
             # Lookup via TgAccount

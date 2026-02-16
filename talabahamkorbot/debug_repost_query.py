@@ -1,32 +1,43 @@
-
 import asyncio
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, func
 from sqlalchemy.orm import selectinload
 from database.db_connect import AsyncSessionLocal
 from database.models import ChoyxonaPost, ChoyxonaPostRepost, Student
 
 async def debug_reposts():
     async with AsyncSessionLocal() as db:
-        target_id = 730
+        print("--- DEBUGGING REPOSTS ---")
         
-        # 1. Exact API Query Logic
-        stmt = select(ChoyxonaPost).join(ChoyxonaPostRepost).options(
-            selectinload(ChoyxonaPost.likes),
-            selectinload(ChoyxonaPost.reposts),
-            selectinload(ChoyxonaPost.student) # Load author for mapping
-        ).where(ChoyxonaPostRepost.student_id == target_id).order_by(desc(ChoyxonaPostRepost.created_at)).limit(20)
+        # 1. Total Count
+        count = await db.scalar(select(func.count()).select_from(ChoyxonaPostRepost))
+        print(f"Total Reposts in DB: {count}")
         
-        print(f"Executing Query for student {target_id}...")
-        try:
-            result = await db.execute(stmt)
-            posts = result.scalars().all()
-            print(f"Query returned {len(posts)} posts.")
+        if count == 0:
+            print("No reposts found in database.")
+            return
+
+        # 2. List last 5 reposts (raw)
+        print("\nLast 5 Reposts (Raw):")
+        reposts = await db.execute(select(ChoyxonaPostRepost).order_by(desc(ChoyxonaPostRepost.created_at)).limit(5))
+        reposts = reposts.scalars().all()
+        
+        target_id = None
+        for r in reposts:
+            print(f"ID: {r.id}, User: {r.student_id}, Post: {r.post_id}, Time: {r.created_at}")
+            if not target_id: target_id = r.student_id
             
+        # 3. Test API Logic for the last reposter
+        if target_id:
+            print(f"\nTesting API Logic for User ID: {target_id}")
+            stmt = select(ChoyxonaPost).join(ChoyxonaPostRepost).options(
+                selectinload(ChoyxonaPost.student)
+            ).where(ChoyxonaPostRepost.student_id == target_id).order_by(desc(ChoyxonaPostRepost.created_at))
+            
+            res = await db.execute(stmt)
+            posts = res.scalars().all()
+            print(f"Query returned {len(posts)} posts.")
             for p in posts:
-                print(f" - Post ID: {p.id}, Content: {p.content[:20]}...")
-                
-        except Exception as e:
-            print(f"Query Failed: {e}")
+                print(f"- Post {p.id}: {p.content[:30]}... (Author: {p.student_id})")
 
 if __name__ == "__main__":
     asyncio.run(debug_reposts())

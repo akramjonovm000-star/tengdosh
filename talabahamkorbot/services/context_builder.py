@@ -64,40 +64,18 @@ async def build_student_context(session: AsyncSession, student_id: int) -> str:
     try:
         # Check if token is valid by fetching ME
         me_data = None
-        if student.hemis_token:
-            me_data = await HemisService.get_me(student.hemis_token)
+        current_token = getattr(student, 'hemis_token', None)
         
-        # If invalid/expired (None) AND we have password -> Refresh
-        if not me_data and student.hemis_login and student.hemis_password:
-            logger.info(f"Context Update: Token expired for {student.id}, refreshing...")
-            new_token, err = await HemisService.authenticate(student.hemis_login, student.hemis_password)
-            
-            if new_token:
-                student.hemis_token = new_token
-                me_data = await HemisService.get_me(new_token)
-            else:
-                # Login failed. Check precise reason.
-                logger.warning(f"Context Update: Auto-login failed for {student.id}. Reason: {err}")
-                
-                # ONLY Notify if it is strictly an Authentication Failure (Wrong Password)
-                # Ignore "SERVER_ERROR" or "NO_TOKEN" (Transient issues)
-                if err == "AUTH_FAILED" and student.tg_accounts:
-                    tg_id = student.tg_accounts[0].telegram_id
-                    try:
-                        await bot.send_message(
-                            tg_id,
-                            "⚠️ <b>Diqqat!</b>\n\n"
-                            "Universitet tizimidagi <b>parolingiz o'zgarganga o'xshaydi</b> (yoki noto'g'ri).\n"
-                            "Bot ma'lumotlaringizni yangilay olmadi. Iltimos, qayta kirish (Login) qiling.",
-                            parse_mode="HTML"
-                        )
-                    except Exception as e:
-                         # Blocked user etc.
-                        logger.error(f"Failed to notify user {tg_id}: {e}")
-                
-                elif err == "SERVER_ERROR":
-                     # Silent log, do not bother user. They can't fix server issues.
-                     logger.info(f"Skipping notification for {student.id} due to Server Error.")
+        if current_token:
+            # Try to get data with existing token
+            me_data = await HemisService.get_me(current_token)
+        
+        # [STATELESS] If token is invalid/expired, we CANNOT refresh it without password.
+        # We just skip the update and log it. The user must login again in the app.
+        if not me_data:
+            logger.warning(f"Context Update: Token invalid or missing for student {student.id}. Skipping auto-login (Stateless Mode).")
+            # Optional: Send notification to user to re-login?
+            # For now, just skip to avoid spamming.
 
         # Update Name from latest data
         if me_data:
@@ -111,7 +89,7 @@ async def build_student_context(session: AsyncSession, student_id: int) -> str:
                  student.full_name = f_name
 
     except Exception as e:
-        logger.error(f"Error in Context Auto-Login: {e}")
+        logger.error(f"Error in Context Update (Stateless): {e}")
     finally:
         await bot.session.close() # Important to close bot session
 
@@ -137,10 +115,7 @@ async def build_student_context(session: AsyncSession, student_id: int) -> str:
             # A. API Method
             grades_data = await HemisService.get_student_subject_list(student.hemis_token)
             
-            # B. Fallback to Scrape if API empty but we have credentials
-            if not grades_data and student.hemis_login and student.hemis_password:
-                 logger.info(f"Context: API grades empty for {student.id}, scraping...")
-                 grades_data, _ = await HemisService.scrape_grades_with_credentials(student.hemis_login, student.hemis_password)
+            # [STATELESS] No scraping fallback because we don't have password.
             
             if grades_data:
                 g_lines = []

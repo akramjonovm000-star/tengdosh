@@ -13,10 +13,10 @@ from celery_app import app as celery_app
 
 logger = logging.getLogger(__name__)
 
-@celery_app.task(name="check_new_grades")
-def run_check_new_grades():
-    """Celery task wrapper for grade checks"""
-    return asyncio.run(check_new_grades())
+# @celery_app.task(name="check_new_grades")
+# def run_check_new_grades():
+#     """Celery task wrapper for grade checks"""
+#     return asyncio.run(check_new_grades())
 
 @celery_app.task(name="send_student_welcome_report")
 def run_send_welcome_report(student_id: int):

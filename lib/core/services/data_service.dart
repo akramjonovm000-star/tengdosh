@@ -18,6 +18,14 @@ class DataService {
   final LocalDatabaseService _dbService = LocalDatabaseService();
   static const bool useMock = false; // Disable Mock Data
 
+  // [SECURITY] SSL Pinning
+  // To enable strict SSL pinning, download the certificate (.pem) and load it here.
+  // SecurityContext context = SecurityContext(withTrustedRoots: true);
+  // context.setTrustedCertificatesBytes(pemBytes);
+  // HttpClient client = HttpClient(context: context);
+  // client.badCertificateCallback = (X509Certificate cert, String host, int port) => false;
+  // IOClient ioClient = IOClient(client);
+
   // Callback for auth errors
   static Function(String)? onAuthError;
 

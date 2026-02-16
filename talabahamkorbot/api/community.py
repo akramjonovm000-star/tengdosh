@@ -411,8 +411,16 @@ def _map_post_optimized(post: ChoyxonaPost, current_user, is_liked: bool, is_rep
     current_user_id = getattr(current_user, 'id', 0)
     is_staff_user = isinstance(current_user, Staff)
     
+    # MODERATOR CHECK
+    from utils.moderators import is_global_moderator
+    login_raw = getattr(current_user, 'hemis_login', None) or getattr(current_user, 'hemis_id', None)
+    login = str(login_raw or '').strip()
+    is_moderator = is_global_moderator(login) or (current_user_id == 730)
+
     is_mine = False
-    if post.staff_id and is_staff_user and post.staff_id == current_user_id:
+    if is_moderator:
+        is_mine = True
+    elif post.staff_id and is_staff_user and post.staff_id == current_user_id:
         is_mine = True
     elif post.student_id and not is_staff_user and post.student_id == current_user_id:
         is_mine = True
@@ -550,7 +558,13 @@ async def update_post(
     if not post:
         raise HTTPException(status_code=404, detail="Post topilmadi")
         
-    if post.student_id != student.id:
+    # MODERATOR CHECK
+    from utils.moderators import is_global_moderator
+    login_raw = getattr(student, 'hemis_login', None) or getattr(student, 'hemis_id', None)
+    login = str(login_raw or '').strip()
+    is_moderator = is_global_moderator(login) or (getattr(student, 'id', 0) == 730)
+
+    if not is_moderator and post.student_id != student.id and post.staff_id != student.id:
         raise HTTPException(status_code=403, detail="Siz faqat o'zingizning postingizni o'zgartira olasiz")
         
     post.content = data.content
@@ -595,9 +609,13 @@ async def delete_post(
     # 2. Management can delete any post in their university (unless restricted by faculty)
     can_delete = False
     
-    # MODERATOR HARDCODED ACCESS
-    moderator_ids = ['395251101412', '395251101397']
-    if getattr(student, 'hemis_login', '') in moderator_ids:
+    # MODERATOR CHECK
+    from utils.moderators import is_global_moderator
+    login_raw = getattr(student, 'hemis_login', None) or getattr(student, 'hemis_id', None)
+    login = str(login_raw or '').strip()
+    is_moderator = is_global_moderator(login) or (getattr(student, 'id', 0) == 730)
+
+    if is_moderator:
         can_delete = True
     elif post.student_id == student.id or post.staff_id == student.id:
         can_delete = True
@@ -972,7 +990,13 @@ async def delete_comment(
     # But user requirement says: "User faqat o'z kommentini o'chira... olsin"
     # So we strictly check comment author.
     
-    if comment.student_id != student.id:
+    # MODERATOR CHECK
+    from utils.moderators import is_global_moderator
+    login_raw = getattr(student, 'hemis_login', None) or getattr(student, 'hemis_id', None)
+    login = str(login_raw or '').strip()
+    is_moderator = is_global_moderator(login) or (getattr(student, 'id', 0) == 730)
+
+    if not is_moderator and comment.student_id != student.id and comment.staff_id != student.id:
         raise HTTPException(status_code=403, detail="Siz faqat o'zingizning kommentingizni o'chira olasiz")
         
     
@@ -1024,7 +1048,13 @@ async def edit_comment(
     if not comment:
         raise HTTPException(status_code=404, detail="Komment topilmadi")
         
-    if comment.student_id != student.id:
+    # MODERATOR CHECK
+    from utils.moderators import is_global_moderator
+    login_raw = getattr(student, 'hemis_login', None) or getattr(student, 'hemis_id', None)
+    login = str(login_raw or '').strip()
+    is_moderator = is_global_moderator(login) or (getattr(student, 'id', 0) == 730)
+
+    if not is_moderator and comment.student_id != student.id and comment.staff_id != student.id:
         raise HTTPException(status_code=403, detail="Siz faqat o'zingizning kommentingizni o'zgartira olasiz")
         
     comment.content = data.content
@@ -1070,8 +1100,16 @@ def _map_comment_optimized(comment: "ChoyxonaComment", current_user, is_liked: b
          r_author = comment.reply_to_user or comment.reply_to_staff
          reply_user = f"@{getattr(r_author, 'username', None)}" if getattr(r_author, 'username', None) else format_name(r_author)
     
+    # MODERATOR CHECK
+    from utils.moderators import is_global_moderator
+    login_raw = getattr(current_user, 'hemis_login', None) or getattr(current_user, 'hemis_id', None)
+    login = str(login_raw or '').strip()
+    is_moderator = is_global_moderator(login) or (current_user_id == 730)
+
     is_mine = False
-    if comment.staff_id and is_staff_user and comment.staff_id == current_user_id:
+    if is_moderator:
+        is_mine = True
+    elif comment.staff_id and is_staff_user and comment.staff_id == current_user_id:
         is_mine = True
     elif comment.student_id and not is_staff_user and comment.student_id == current_user_id:
         is_mine = True

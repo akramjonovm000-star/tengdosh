@@ -25,6 +25,7 @@ import 'package:talabahamkor_mobile/features/tutor/screens/tutor_dashboard_scree
 import 'package:talabahamkor_mobile/features/profile/screens/subscription_screen.dart';
 import '../../clubs/screens/clubs_screen.dart';
 import '../../appeals/screens/appeals_screen.dart';
+import '../../library/screens/library_screen.dart';
 import 'package:talabahamkor_mobile/features/notifications/screens/notifications_screen.dart';
 import 'package:talabahamkor_mobile/core/providers/notification_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -504,6 +505,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: Icons.chat_bubble_outline_rounded,
                   color: Colors.redAccent,
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AppealsScreen())),
+                ),
+                DashboardCard(
+                  title: "Kutubxona",
+                  icon: Icons.local_library_rounded,
+                  color: Colors.indigo,
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LibraryScreen())),
                 ),
               ],
             ),

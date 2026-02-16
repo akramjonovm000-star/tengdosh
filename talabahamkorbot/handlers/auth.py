@@ -477,7 +477,7 @@ async def process_hemis_password(message: Message, state: FSMContext, session: A
     password = (message.text or "").strip()
     data = await state.get_data()
     login = data.get("hemis_login")
-    logger.info(f"process_hemis_password called for login: {login}")
+    # logger.info(f"process_hemis_password called for login: {login}")
 
     token = None
     error_msg = None

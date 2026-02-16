@@ -15,6 +15,25 @@ async def get_my_profile(
     db: AsyncSession = Depends(get_db)
 ):
     """Get the currently logged-in student's profile."""
+    # DEBUG STATELESS TOKEN
+    import logging
+    logger = logging.getLogger(__name__)
+    token = getattr(student, 'hemis_token', None)
+    logger.warning(f"DEBUG: /student/me call. ID={student.id}, Type={type(student)}. Token Present? {bool(token)}")
+    if token:
+         logger.warning(f"DEBUG: Token Length: {len(token)}")
+         # Check Validity
+         from services.hemis_service import HemisService
+         from services.university_service import UniversityService
+         base = UniversityService.get_api_url(student.hemis_login)
+         try:
+             check = await HemisService.check_auth_status(token, base_url=base)
+             logger.warning(f"DEBUG: Hemis Auth Check Result: {check}")
+         except Exception as e:
+             logger.error(f"DEBUG CheckAuth Error: {e}")
+    else:
+         logger.warning("DEBUG: NO TOKEN FOUND IN STUDENT OBJECT!")
+
     # Ensure consistency with auth.py
     
     # [FIX] Handle Staff Profile (Tyutor/Dean)
@@ -23,6 +42,23 @@ async def get_my_profile(
     if isinstance(student, Staff):
         # Allow hemis_login fallback
         h_login = getattr(student, 'hemis_login', '')
+        
+        # DEBUG
+        import logging
+        logger = logging.getLogger(__name__)
+        token = getattr(student, 'hemis_token', None)
+        logger.warning(f"DEBUG: /student/me (Generic). ID={student.id}. Token={bool(token)} ({len(token) if token else 0} chars)")
+        if token:
+             from services.hemis_service import HemisService
+             from services.university_service import UniversityService
+             base = UniversityService.get_api_url(student.hemis_login)
+             # Don't await here to avoid slowing down, just log
+             # actually we need to await to know result
+             try:
+                 check = await HemisService.check_auth_status(token, base_url=base)
+                 logger.warning(f"DEBUG: CheckAuth={check}")
+             except Exception as e:
+                 logger.error(f"DEBUG CheckAuth Error: {e}")
         
         # [FIX] Role Label Mapping
         role_label = "Xodim"

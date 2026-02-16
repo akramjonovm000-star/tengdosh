@@ -1,9 +1,10 @@
 import logging
 import uvicorn
+import time
 from contextlib import asynccontextmanager
 from datetime import datetime
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application # We use this adapter for aiogram
 from aiogram.types import Update
 
@@ -20,9 +21,46 @@ from middlewares.subscription import SubscriptionMiddleware
 from middlewares.activity import ActivityMiddleware
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware # NEW
 
+# --- SECURITY ---
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from secure import Secure
+
 # Logging setup
 setup_logging()
 logger = logging.getLogger(__name__)
+
+# --- SECURITY CONFIG ---
+# 1. Rate Limiting
+# limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
+from api.security import limiter
+
+# 2. Secure Headers
+secure_headers = Secure.with_default_headers()
+
+# 3. Audit Logging
+async def audit_logger(request: Request, response: Response, execution_time: float):
+    # Only log state-changing methods or specific paths
+    if request.method in ["POST", "PUT", "DELETE", "PATCH"] or "auth" in request.url.path:
+        # Avoid logging large bodies or passwords
+        # Just log metadata
+        client_ip = request.client.host
+        user_agent = request.headers.get("user-agent", "unknown")
+        
+        # Try to get user_id if authenticated (this runs after request processed)
+        # Note: Auth middleware usually sets user in state, but depends on impl.
+        # Ideally, we'd have a standard AuditMiddleware class, but simple logging here works for now.
+        
+        log_entry = (
+            f"AUDIT | {datetime.now()} | {client_ip} | {request.method} {request.url.path} "
+            f"| Status: {response.status_code} | Time: {execution_time:.4f}s | UA: {user_agent}"
+        )
+        
+        # Write to separate audit log file
+        with open("audit.log", "a") as f:
+            f.write(log_entry + "\n")
 
 # ============================================================
 #   LIFECYCLE
@@ -87,11 +125,32 @@ from sqlalchemy import select
 scheduler = AsyncIOScheduler()
 
 app = FastAPI(lifespan=lifespan)
-app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["127.0.0.1"]) # NEW: Support X-Forwarded-Proto
+app.state.limiter = limiter # Register limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# --- MIDDLEWARES ---
+app.add_middleware(SlowAPIMiddleware) # Rate Limiting
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["127.0.0.1"]) # Support X-Forwarded-Proto
+
+@app.middleware("http")
+async def security_middleware(request: Request, call_next):
+    start_time = time.time()
+    
+    # 1. Process Request
+    response = await call_next(request)
+    
+    # 2. Add Security Headers
+    secure_headers.set_headers(response)
+    
+    # 3. Audit Log
+    process_time = time.time() - start_time
+    await audit_logger(request, response, process_time)
+    
+    return response
 
 # Celery Task Wrappers
 from services.context_builder import run_daily_context_update
-from services.grade_checker import run_check_new_grades
+# from services.grade_checker import run_check_new_grades
 from services.sync_service import run_sync_all_students
 from services.election_service import ElectionService
 from services.premium_service import run_premium_checker
@@ -115,7 +174,7 @@ async def start_scheduler():
     # scheduler.add_job(lambda: run_check_new_grades.delay(), 'interval', minutes=30)
     
     # [NEW] Lesson Reminder System
-    from services.reminder_service import run_lesson_reminders, sync_all_students_weekly_schedule
+    # from services.reminder_service import run_lesson_reminders, sync_all_students_weekly_schedule
     
     # 1. Weekly Sync (Monday 06:00)
     # scheduler.add_job(sync_all_students_weekly_schedule, 'cron', day_of_week='mon', hour=6, minute=0)

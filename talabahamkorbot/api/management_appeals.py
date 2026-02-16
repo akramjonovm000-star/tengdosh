@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc, or_
 from typing import List, Optional, Dict, Any
+from sqlalchemy.orm import selectinload
 from datetime import datetime, timedelta
 
 from database.db_connect import get_db

@@ -29,10 +29,10 @@ class RateLimitService:
         Returns:
             (is_blocked, remaining_time_seconds)
         """
-        r = await cls.get_redis()
         key = f"login_attempts:{key_identifier}"
         
         try:
+            r = await cls.get_redis()
             attempts = await r.get(key)
             if attempts and int(attempts) >= limit:
                 ttl = await r.ttl(key)
@@ -50,10 +50,10 @@ class RateLimitService:
         Increment failed attempt counter.
         Set TTL if it's a new key.
         """
-        r = await cls.get_redis()
         key = f"login_attempts:{key_identifier}"
         
         try:
+            r = await cls.get_redis()
             # pipeline for atomicity-ish (not strict here but good enough)
             pipe = r.pipeline()
             pipe.incr(key)
@@ -97,9 +97,9 @@ class RateLimitService:
         """
         Clear attempts on successful login.
         """
-        r = await cls.get_redis()
         key = f"login_attempts:{key_identifier}"
         try:
+            r = await cls.get_redis()
             await r.delete(key)
         except Exception as e:
             logger.error(f"Rate limit clear failed: {e}")

@@ -363,7 +363,9 @@ class _PostCardState extends State<PostCard> {
                   ],
                 ),
               ),
-              if (widget.post.isMine || context.read<AuthProvider>().isManagement)
+              if (widget.post.isMine || 
+                  context.read<AuthProvider>().isManagement ||
+                  context.read<AuthProvider>().isModerator)
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.more_vert, color: Colors.grey), 
                   onSelected: (val) {

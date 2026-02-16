@@ -18,8 +18,12 @@ router = APIRouter(prefix="/oauth", tags=["OAuth"])
 authlog_router = APIRouter(tags=["AuthLog"])
 logger = logging.getLogger(__name__)
 
+from api.security import limiter
+
 @router.get("/login")
+@limiter.limit("10/minute")
 async def oauth_login(
+    request: Request,
     source: str = "mobile", 
     role: str = "student",
     code: Optional[str] = None, 
@@ -37,7 +41,7 @@ async def oauth_login(
     # LOOP PREVENTION: If code is present, treat as callback!
     if code or error:
         logger.warning(f"OAuth Login endpoint received 'code' - Handling as callback. State: {current_state}")
-        return await authlog_callback(code=code, error=error, state=current_state, db=db)
+        return await authlog_callback(request=request, code=code, error=error, state=current_state, db=db)
 
     # Use 'state' parameter to pass source_role
     redirect_url = HemisService.generate_auth_url(state=current_state, role=role)
@@ -46,7 +50,8 @@ async def oauth_login(
 @authlog_router.get("/")
 @authlog_router.get("/authlog")
 @authlog_router.get("/oauth/login")
-async def authlog_callback(code: Optional[str] = None, error: Optional[str] = None, state: str = "mobile", db: AsyncSession = Depends(get_session)):
+@limiter.limit("20/minute")
+async def authlog_callback(request: Request, code: Optional[str] = None, error: Optional[str] = None, state: str = "mobile", db: AsyncSession = Depends(get_session)):
     t0 = time.time()
     """
     Handles the callback from HEMIS (redirected via Nginx /authlog OR Root)
@@ -127,18 +132,18 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
                 full_name=full_name,
                 hemis_login=h_login,
                 hemis_id=h_id,
-                hemis_token=access_token,
-                hemis_refresh_token=refresh_token,
-                token_expires_at=token_expires_at,
+                # hemis_token=access_token, # DISABLED
+                # hemis_refresh_token=refresh_token, # DISABLED
+                # token_expires_at=token_expires_at, # DISABLED
                 image_url=image_url
             )
             db.add(student)
             await db.commit()
             await db.refresh(student)
         else:
-            student.hemis_token = access_token
-            student.hemis_refresh_token = refresh_token
-            student.token_expires_at = token_expires_at
+            # student.hemis_token = access_token # DISABLED
+            # student.hemis_refresh_token = refresh_token # DISABLED
+            # student.token_expires_at = token_expires_at # DISABLED
             # FORCE UPDATE info
             student.full_name = full_name
             if image_url:
@@ -164,6 +169,7 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
             await db.commit()
             
             # [NEW] Enhanced Sync with REST API (for Faculty/Group info)
+            # We must pass the token manually now since it's not in DB
             rest_me = await HemisService.get_me(access_token, base_url=base_url, use_oauth_endpoint=False)
             if rest_me:
                 logger.info(f"DEBUG: Syncing academic info from REST profile for student {student.id}")
@@ -182,8 +188,9 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
                 await db.commit()
 
             # [NEW] Trigger prefetch
-            import asyncio
-            asyncio.create_task(HemisService.prefetch_data(student.hemis_token, student.id))
+            # DISABLED FOR STATELESS
+            # import asyncio
+            # asyncio.create_task(HemisService.prefetch_data(student.hemis_token, student.id))
             
         internal_token = f"student_id_{student.id}"
         
@@ -275,7 +282,7 @@ async def authlog_callback(code: Optional[str] = None, error: Optional[str] = No
 
             await db.commit()
             # [NEW] Save Token
-            staff.hemis_token = access_token
+            # staff.hemis_token = access_token # DISABLED
             u_id = me.get("university_id")
             if u_id:
                 try:

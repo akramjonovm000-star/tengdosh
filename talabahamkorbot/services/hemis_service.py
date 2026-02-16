@@ -363,54 +363,47 @@ class HemisService:
         # Updated fields per user suggestion and GitHub Guide
         oauth_profile_url = f"{domain}/oauth/api/user?fields=id,uuid,type,roles,name,login,picture,email,university_id,phone,employee_id_number,firstname,surname,patronymic,birth_date"
 
-        # [FIX] Header Injection for VHost Routing
-        # If we remapped to student.jmcu.uz, we MUST send the original Host header
-        # so Nginx knows we want the HEMIS (Staff) vhost, not Student.
-        headers = HemisService.get_headers(token)
-        if "student.jmcu.uz" in domain and "hemis.jmcu.uz" in (base_url or ""):
-             headers["Host"] = "hemis.jmcu.uz"
-             logger.info("Injecting 'Host: hemis.jmcu.uz' header for staff request via student.jmcu.uz")
-
         client = await HemisService.get_client()
-        try:
-            # 1. If forced or preferred, use OAuth Endpoint directly
-            if use_oauth_endpoint:
-                logger.info(f"Fetching OAuth Profile directly from {oauth_profile_url}")
-                response = await HemisService.fetch_with_retry(client, "GET", oauth_profile_url, headers=headers)
-                if response and response.status_code == 200:
-                    return response.json()
-                logger.warning(f"OAuth Profile failed: {response.status_code if response else 'No Response'}")
-                return None
+        headers = HemisService.get_headers(token)
 
-            # 2. Try REST API Endpoint (Standard Flow)
-            logger.info(f"DEBUG: Fetching REST Profile from {rest_url}")
-            response = await HemisService.fetch_with_retry(client, "GET", rest_url, headers=headers)
+        try:
+            # STRATEGY: Try REST API first (Most reliable for data), then OAuth
             
-            if response:
-                logger.info(f"DEBUG: REST Response: {response.status_code}")
+            # 1. REST API
+            if not use_oauth_endpoint:
+                try:
+                    logger.info(f"DEBUG: Fetching REST Profile from {rest_url}")
+                    response = await HemisService.fetch_with_retry(client, "GET", rest_url, headers=headers)
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        if "data" in data: return data["data"]
+                        return data
+                    
+                    logger.warning(f"REST Profile failed ({response.status_code}). Trying OAuth fallback...")
+                except Exception as e:
+                    logger.warning(f"REST Profile Exception: {e}")
+
+            # 2. OAuth Endpoint (Fallback or Primary if requested)
+            try:
+                logger.info(f"Fetching OAuth Profile from {oauth_profile_url}")
+                response = await HemisService.fetch_with_retry(client, "GET", oauth_profile_url, headers=headers)
+                
                 if response.status_code == 200:
                     data = response.json()
-                    if "data" in data:
-                        return data["data"]
+                    # Map OAuth fields to Standard Profile (id, login, name, etc.)
+                    # OAuth returns flat dict usually
                     return data
                 
-                if response.status_code in [401, 403, 404, 500]:
-                     logger.warning(f"REST Profile failed ({response.status_code}). Proceeding to OAuth fallback...")
+                logger.error(f"OAuth Profile Failed: {response.status_code} - {response.text[:100]}")
+            except Exception as e:
+                logger.error(f"OAuth Profile Exception: {e}")
 
-            # 3. Fallback to OAuth Endpoint
-            logger.warning(f"Trying OAuth Profile on {oauth_profile_url}...")
-            response = await HemisService.fetch_with_retry(client, "GET", oauth_profile_url, headers=headers)
-            
-            if response:
-                 logger.info(f"DEBUG: OAuth Response: {response.status_code}")
-                 if response.status_code == 200:
-                     return response.json()
-            
-            logger.error(f"OAuth Profile Failed: {response.status_code if response else 'No Response'} - {response.text if response else ''}")
-            return None
         except Exception as e:
-            logger.error(f"Me Error: {e}")
-            return None
+            logger.error(f"Get Me Critical Error: {e}")
+            
+        return None
+
 
     @staticmethod
     async def get_student_absence(token: str, semester_code: str = None, student_id: int = None, force_refresh: bool = False, base_url: Optional[str] = None):
