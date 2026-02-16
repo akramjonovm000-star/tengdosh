@@ -199,56 +199,94 @@ async def get_posts(
         is_management = getattr(student, 'hemis_role', None) == 'rahbariyat' or getattr(student, 'role', None) == 'rahbariyat'
         f_id = getattr(student, 'faculty_id', None)
         
-        # MODERATOR HARDCODED ACCESS
-        moderator_ids = ['395251101412', '395251101397']
-        login = getattr(student, 'hemis_login', '')
-        is_moderator = login in moderator_ids
+        # MODERATOR CHECK (Refactored)
+        from utils.moderators import is_global_moderator
         
-        print(f"DEBUG: get_posts user={student.id} login='{login}' is_mod={is_moderator} cat={category} f_id={faculty_id}")
+        # Ensure robust string comparison
+        login_raw = getattr(student, 'hemis_login', None)
+        login = str(login_raw or '').strip()
+        is_moderator = is_global_moderator(login)
+        
+        # Explicit File Logging to /tmp (safer permissions)
+        try:
+             with open("/tmp/debug_community.log", "a") as f:
+                 import datetime
+                 f.write(f"\n--- REQUEST {datetime.datetime.now()} ---\n")
+                 f.write(f"User ID: {getattr(student, 'id', 'N/A')}\n")
+                 f.write(f"Type: {type(student)}\n")
+                 f.write(f"Raw Login: '{login_raw}' (Type: {type(login_raw)})\n")
+                 f.write(f"Processed Login: '{login}'\n")
+                 f.write(f"Is Moderator: {is_moderator}\n")
+                 f.write(f"Category: {category}\n")
+                 f.write(f"Faculty ID Filter: {faculty_id}\n")
+                 f.write(f"University ID: {getattr(student, 'university_id', 'N/A')}\n")
+                 f.write("----------------------------------------\n")
+        except Exception as e:
+             print(f"LOGGING ERROR: {e}")
+
+        print(f"DEBUG: get_posts user={getattr(student, 'id', '?')} login='{login}' is_mod={is_moderator} cat={category} f_id={faculty_id}", flush=True)
 
         
         if category == 'university': 
              if not is_moderator:
                  query = query.where(ChoyxonaPost.target_university_id == student.university_id)
+        
         elif category == 'faculty':
-             if not is_moderator:
-                 query = query.where(ChoyxonaPost.target_university_id == student.university_id)
-             
+             # MODERATOR LOGIC:
              if is_moderator:
-                 # Moderator can see all, or filter if requested
+                 # If faculty_id is provided, filter by it.
+                 # If NOT provided (All Faculties), do NOTHING (Global View).
                  if faculty_id:
                      query = query.where(ChoyxonaPost.target_faculty_id == faculty_id)
+             
+             # MANAGEMENT LOGIC:
              elif is_management:
+                 query = query.where(ChoyxonaPost.target_university_id == student.university_id) # Management is still Uni-bound?
                  if f_id:
                      query = query.where(ChoyxonaPost.target_faculty_id == f_id)
                  elif faculty_id:
                      query = query.where(ChoyxonaPost.target_faculty_id == faculty_id)
+             
+             # STUDENT LOGIC:
              else:
-                 query = query.where(ChoyxonaPost.target_faculty_id == student.faculty_id)
-        elif category == 'specialty':
-             if not is_moderator:
                  query = query.where(ChoyxonaPost.target_university_id == student.university_id)
-                 
+                 # Default to own faculty if specific filter not requested 
+                 # (But UI might behave differently, let's stick to requested logic)
+                 if faculty_id:
+                    query = query.where(ChoyxonaPost.target_faculty_id == faculty_id)
+                 else:
+                    # If "All" selected by student -> show all in THEIR university (or just their faculty?)
+                    # Current requirement implies "Mening" = specific ID, "Barcha" = null.
+                    # For student "Barcha" should probably mean "All in my University" or still restricted?
+                    # Let's restrict to own faculty for safety as per original logic unless explicitly changed.
+                    if getattr(student, 'faculty_id', None):
+                        query = query.where(ChoyxonaPost.target_faculty_id == student.faculty_id)
+
+        elif category == 'specialty':
+             # MODERATOR LOGIC:
              if is_moderator:
                  if faculty_id:
                      query = query.where(ChoyxonaPost.target_faculty_id == faculty_id)
                  if specialty_name:
                      query = query.where(ChoyxonaPost.target_specialty_name == specialty_name)
-             elif is_management:
-                 if f_id:
-                     query = query.where(ChoyxonaPost.target_faculty_id == f_id)
-                     if specialty_name:
-                         query = query.where(ChoyxonaPost.target_specialty_name == specialty_name)
-                 else:
-                     if specialty_name:
-                         query = query.where(ChoyxonaPost.target_specialty_name == specialty_name)
-                     if faculty_id:
-                         query = query.where(ChoyxonaPost.target_faculty_id == faculty_id)
+             
+             # OTHERS:
              else:
-                 query = query.where(
-                     ChoyxonaPost.target_faculty_id == student.faculty_id,
-                     ChoyxonaPost.target_specialty_name == student.specialty_name
-                 )
+                 query = query.where(ChoyxonaPost.target_university_id == student.university_id)
+                 
+                 if is_management:
+                     if f_id:
+                         query = query.where(ChoyxonaPost.target_faculty_id == f_id)
+                 else:
+                     if getattr(student, 'faculty_id', None):
+                        query = query.where(ChoyxonaPost.target_faculty_id == student.faculty_id)
+
+                 if specialty_name:
+                     query = query.where(ChoyxonaPost.target_specialty_name == specialty_name)
+                 else:
+                     # Default to student's own specialty if not specified
+                     if getattr(student, 'specialty_name', None):
+                         query = query.where(ChoyxonaPost.target_specialty_name == student.specialty_name)
              
         query = query.offset(skip).limit(limit)
             
