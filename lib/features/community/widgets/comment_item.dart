@@ -88,6 +88,7 @@ class CommentItem extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context) {
+    final isModerator = context.read<AuthProvider>().isModerator;
     // "Indented to the right" for replies
     // User Requirement: "Replies must be visually indented to the right (one tab / padding-left)"
     // Increased indentation to 48.0 for better visibility.
