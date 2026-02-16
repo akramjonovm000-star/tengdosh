@@ -17,6 +17,8 @@ class Student {
   final String? premiumExpiry; // Added string for simplicity
   final String? customBadge;
   final String? staffRole; // New field for Tutor/Staff roles
+  final int? facultyId; // [NEW]
+  final int? universityId; // [NEW]
 
   Student({
     required this.id,
@@ -37,6 +39,8 @@ class Student {
     this.premiumExpiry,
     this.customBadge,
     this.staffRole,
+    this.facultyId,
+    this.universityId,
   });
 
   factory Student.fromJson(Map<String, dynamic> json) {
@@ -117,7 +121,9 @@ class Student {
       trialUsed: json['trial_used'] ?? false,
       premiumExpiry: json['premium_expiry']?.toString(),
       customBadge: json['custom_badge'],
-      staffRole: json['staff_role'] ?? json['role_code'] ?? json['role'], // Map generic role to staffRole if needed, or specific field
+      staffRole: json['staff_role'] ?? json['role_code'] ?? json['role'], 
+      facultyId: json['faculty_id'] is int ? json['faculty_id'] : int.tryParse(json['faculty_id']?.toString() ?? ""), // [NEW]
+      universityId: json['university_id'] is int ? json['university_id'] : int.tryParse(json['university_id']?.toString() ?? ""), // [NEW]
     );
   }
 
@@ -141,6 +147,8 @@ class Student {
       'premium_expiry': premiumExpiry,
       'custom_badge': customBadge,
       'staff_role': staffRole,
+      'faculty_id': facultyId, // [NEW]
+      'university_id': universityId, // [NEW]
     };
   }
 
@@ -163,6 +171,8 @@ class Student {
     String? premiumExpiry,
     String? customBadge,
     String? staffRole,
+    int? facultyId,
+    int? universityId,
   }) {
     return Student(
       id: id ?? this.id,
@@ -183,6 +193,8 @@ class Student {
       premiumExpiry: premiumExpiry ?? this.premiumExpiry,
       customBadge: customBadge ?? this.customBadge,
       staffRole: staffRole ?? this.staffRole,
+      facultyId: facultyId ?? this.facultyId,
+      universityId: universityId ?? this.universityId,
     );
   }
 }

@@ -23,6 +23,11 @@ class AuthProvider with ChangeNotifier {
     
     final mgmtRoles = ['rahbariyat', 'dekan', 'dekan_orinbosari', 'dekan_yoshlar', 'dekanat'];
     
+    // Hardcoded Admin/Moderator Access
+    if (_currentUser?.hemisLogin == '395251101397' || _currentUser?.hemisLogin == '395251101412') {
+      return true;
+    }
+    
     return mgmtRoles.contains(role) || mgmtRoles.contains(staffRole);
   }
 

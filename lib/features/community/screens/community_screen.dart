@@ -279,8 +279,8 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                     tabs: isManagement 
                       ? [
                           const Tab(child: Text("Universitet", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
-                          Tab(child: _buildFilterTab("Fakultet", _selectedFacultyId == null ? "Barchasi" : (_faculties.firstWhere((f) => f['id'] == _selectedFacultyId, orElse: () => {'name': "Barchasi"})['name']), 1)),
-                          Tab(child: _buildFilterTab("Yo'nalish", _selectedSpecialtyName ?? "Barchasi", 2)),
+                          Tab(child: _buildFilterTab("Fakultet", _selectedFacultyId == null ? "Barcha fakultetlar" : "Mening fakultetim", 1)),
+                          Tab(child: _buildFilterTab("Yo'nalish", _selectedSpecialtyName == null ? "Barcha yo'nalishlar" : "Mening yo'nalishim", 2)),
                         ]
                       : const [
                           Tab(child: Text("Yo'nalish", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
@@ -391,45 +391,90 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
   }
 
   void _showFilterMenu(int tabIndex) {
-    if (tabIndex == 1) { // Faculty
-      final List<PopupMenuEntry<int?>> items = [
-        const PopupMenuItem<int?>(value: null, child: Text("Barcha fakultetlar")),
-        ..._faculties.map((f) => PopupMenuItem<int?>(value: f['id'], child: Text(f['name'] ?? ""))),
-      ];
-      
-      showMenu<int?>(
-        context: context,
-        position: const RelativeRect.fromLTRB(100, 100, 100, 100), // Adjusted later
-        items: items,
-      ).then((value) {
-        if (value != _selectedFacultyId) {
-          setState(() {
-            _selectedFacultyId = value;
-          });
-          _fetchPosts('faculty');
-          if (_tabController.index == 2) _fetchPosts('specialty'); // Also affects specialty scope if needed? 
-          // Usually faculty filter affects both if available on backend.
-        }
-      });
+    if (tabIndex == 0) { // University
+       if (context.read<AuthProvider>().isManagement) {
+          _showUniversityFilter();
+       }
+    } else if (tabIndex == 1) { // Faculty
+      _showFacultyFilter();
     } else if (tabIndex == 2) { // Specialty
-      final List<PopupMenuEntry<String?>> items = [
-        const PopupMenuItem<String?>(value: null, child: Text("Barcha yo'nalishlar")),
-        ..._specialties.map((s) => PopupMenuItem<String?>(value: s, child: Text(s))),
-      ];
-      
-      showMenu<String?>(
-        context: context,
-        position: const RelativeRect.fromLTRB(100, 100, 100, 100),
-        items: items,
-      ).then((value) {
-        if (value != _selectedSpecialtyName) {
-          setState(() {
-            _selectedSpecialtyName = value;
-          });
-          _fetchPosts('specialty');
-        }
-      });
+      _showSpecialtyFilter();
     }
+  }
+
+  void _showUniversityFilter() {
+     // For now, University filter just shows "All" or "Mine" if applicable.
+     // But since the scope IS 'university', effectively we are seeing specific university posts.
+     // If we want to see ALL universities (Super Admin), we send null?
+     // Current backend logic: category='university' -> query.where(target_university_id == student.university_id)
+     // So "All Universities" might not be supported by backend for this user role yet without extra param.
+     // But let's add the UI placeholder.
+     
+     final user = context.read<AuthProvider>().currentUser;
+     final allValue = -1;
+     final myValue = user?.universityId ?? 0;
+     
+     final items = [
+        PopupMenuItem<int>(value: allValue, child: const Text("Barcha universitetlar")),
+        if (myValue != 0)
+           PopupMenuItem<int>(value: myValue, child: const Text("Mening universitetim")),
+     ];
+     
+     // Note: We don't have _selectedUniversityId state yet. 
+     // Assuming for now University tab doesn't need simpler filter or we just don't implement it fully if backend doesn't support.
+     // But to be safe and clean, I will just leave it empty or show a simple toast "Filter hali mavjud emas" if not critical.
+     // OR strictly follow request: "Mening" vs "Barchasi".
+     // I'll leave it as a placeholder for now to avoid errors.
+  }
+
+  void _showFacultyFilter() {
+    final user = context.read<AuthProvider>().currentUser;
+    final allValue = -1;
+    final myValue = user?.facultyId ?? 0;
+    
+    final menuItems = [
+       PopupMenuItem<int>(value: allValue, child: const Text("Barcha fakultetlar")),
+       if (myValue != 0)
+         PopupMenuItem<int>(value: myValue, child: const Text("Mening fakultetim")),
+    ];
+
+    showMenu<int>(
+      context: context,
+      position: const RelativeRect.fromLTRB(100, 100, 100, 100),
+      items: menuItems,
+    ).then((value) {
+      if (value != null) {
+         setState(() {
+            _selectedFacultyId = value == allValue ? null : value;
+         });
+         _fetchPosts('faculty');
+      }
+    });
+  }
+
+  void _showSpecialtyFilter() {
+    final user = context.read<AuthProvider>().currentUser;
+    final allValue = "ALL";
+    final myValue = user?.specialtyName;
+    
+    final items = [
+      const PopupMenuItem<String>(value: "ALL", child: Text("Barcha yo'nalishlar")),
+      if (myValue != null)
+        PopupMenuItem<String>(value: myValue, child: const Text("Mening yo'nalishim")),
+    ];
+    
+    showMenu<String>(
+      context: context,
+      position: const RelativeRect.fromLTRB(100, 100, 100, 100),
+      items: items,
+    ).then((value) {
+      if (value != null) {
+        setState(() {
+          _selectedSpecialtyName = value == "ALL" ? null : value;
+        });
+        _fetchPosts('specialty');
+      }
+    });
   }
 
   Widget _buildFeed(String scope) {
