@@ -200,12 +200,20 @@ async def get_posts(
         f_id = getattr(student, 'faculty_id', None)
         
         # MODERATOR HARDCODED ACCESS
-        is_moderator = getattr(student, 'hemis_login', '') == '395251101412'
+        moderator_ids = ['395251101412', '395251101397']
+        login = getattr(student, 'hemis_login', '')
+        is_moderator = login in moderator_ids
+        
+        print(f"DEBUG: get_posts user={student.id} login='{login}' is_mod={is_moderator} cat={category} f_id={faculty_id}")
+
         
         if category == 'university': 
-             query = query.where(ChoyxonaPost.target_university_id == student.university_id)
+             if not is_moderator:
+                 query = query.where(ChoyxonaPost.target_university_id == student.university_id)
         elif category == 'faculty':
-             query = query.where(ChoyxonaPost.target_university_id == student.university_id)
+             if not is_moderator:
+                 query = query.where(ChoyxonaPost.target_university_id == student.university_id)
+             
              if is_moderator:
                  # Moderator can see all, or filter if requested
                  if faculty_id:
@@ -218,7 +226,9 @@ async def get_posts(
              else:
                  query = query.where(ChoyxonaPost.target_faculty_id == student.faculty_id)
         elif category == 'specialty':
-             query = query.where(ChoyxonaPost.target_university_id == student.university_id)
+             if not is_moderator:
+                 query = query.where(ChoyxonaPost.target_university_id == student.university_id)
+                 
              if is_moderator:
                  if faculty_id:
                      query = query.where(ChoyxonaPost.target_faculty_id == faculty_id)
@@ -550,7 +560,8 @@ async def delete_post(
     can_delete = False
     
     # MODERATOR HARDCODED ACCESS
-    if getattr(student, 'hemis_login', '') == '395251101412':
+    moderator_ids = ['395251101412', '395251101397']
+    if getattr(student, 'hemis_login', '') in moderator_ids:
         can_delete = True
     elif post.student_id == student.id or post.staff_id == student.id:
         can_delete = True

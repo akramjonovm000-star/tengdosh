@@ -167,13 +167,12 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
     }
 
     try {
-      final isManagement = context.read<AuthProvider>().isManagement;
       final newPosts = await _service.getPosts(
         scope: scope, 
         skip: 0, 
         limit: _limit,
-        facultyId: isManagement ? _selectedFacultyId : null,
-        specialtyName: isManagement ? _selectedSpecialtyName : null,
+        facultyId: _selectedFacultyId,
+        specialtyName: _selectedSpecialtyName,
       );
       if (mounted) {
         setState(() {
@@ -198,14 +197,13 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
      setState(() => _isFetchingMore[scope] = true);
      
      try {
-        final isManagement = context.read<AuthProvider>().isManagement;
         final skip = _posts[scope]?.length ?? 0;
         final morePosts = await _service.getPosts(
           scope: scope, 
           skip: skip, 
           limit: _limit,
-          facultyId: isManagement ? _selectedFacultyId : null,
-          specialtyName: isManagement ? _selectedSpecialtyName : null,
+          facultyId: _selectedFacultyId,
+          specialtyName: _selectedSpecialtyName,
         );
         
         if (mounted) {
