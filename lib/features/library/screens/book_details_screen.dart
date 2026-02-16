@@ -139,6 +139,29 @@ class BookDetailsScreen extends StatelessWidget {
                       ),
                     ),
                   
+                  const SizedBox(height: 16),
+
+                  // Reservation / Queue Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _handleReservation(context),
+                      icon: Icon(
+                        book.availableCopies > 0 ? Icons.bookmark_add : Icons.access_time_rounded,
+                      ),
+                      label: Text(
+                        book.availableCopies > 0 ? "Bron qilish" : "Navbatga yozilish"
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: book.availableCopies > 0 ? Colors.orange : Colors.indigo,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 2,
+                      ),
+                    ),
+                  ),
+                  
                   const SizedBox(height: 24),
                   
                   const Text(
