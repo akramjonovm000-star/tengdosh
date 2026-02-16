@@ -19,15 +19,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
   final TextEditingController _searchController = TextEditingController();
   
   // State
-  List<Book> _books = [];
-  List<String> _categories = ["Barchasi"];
+  Map<String, List<Book>> _booksByGenre = {};
+  List<String> _genres = [];
   bool _isLoading = true;
-
-  // Filters
-  String _selectedCategory = "Barchasi";
-  bool _availableOnly = false;
-  bool _ebookOnly = false;
-  String _sortBy = "popular";
   String _searchQuery = "";
 
   @override
@@ -37,88 +31,73 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   Future<void> _loadInitialData() async {
-    final cats = await _libraryService.getCategories();
+    setState(() => _isLoading = true);
+    
+    // Fetch all categories
+    final allCategories = await _libraryService.getCategories();
+    // Remove "Barchasi" as we want specific sections
+    final genres = allCategories.where((c) => c != "Barchasi").toList();
+
+    Map<String, List<Book>> genreUpdates = {};
+    
+    // In a real app, this should be an optimized batch query
+    for (var genre in genres) {
+      final books = await _libraryService.getBooks(category: genre);
+      if (books.isNotEmpty) {
+        genreUpdates[genre] = books;
+      }
+    }
+
     if (mounted) {
       setState(() {
-        _categories = cats;
+        _genres = genreUpdates.keys.toList();
+        _booksByGenre = genreUpdates;
+        _isLoading = false;
       });
-      _loadBooks();
     }
   }
 
-  Future<void> _loadBooks() async {
-    setState(() => _isLoading = true);
+  Future<void> _searchBooks(String query) async {
+    setState(() {
+      _isLoading = true;
+      _searchQuery = query;
+    });
+
+    if (query.isEmpty) {
+      // If search cleared, reload sections
+      _loadInitialData();
+      return;
+    }
+
     try {
-      final books = await _libraryService.getBooks(
-        query: _searchQuery,
-        category: _selectedCategory,
-        availableOnly: _availableOnly,
-        ebookOnly: _ebookOnly,
-        sortBy: _sortBy,
-      );
+      // If searching, we display a single grid of results instead of sections
+      final books = await _libraryService.getBooks(query: query);
       if (mounted) {
         setState(() {
-          _books = books;
+          _booksByGenre = {"Qidiruv natijalari": books};
+          _genres = ["Qidiruv natijalari"];
           _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Xatolik: $e")),
-        );
       }
     }
-  }
-
-  void _onSearchChanged(String query) {
-    // Debounce handled by Stream or simple delay in real app
-    // For mock, just set state
-    if (_searchQuery != query) {
-      setState(() {
-        _searchQuery = query;
-      });
-      _loadBooks();
-    }
-  }
-
-  void _openFilterSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => LibraryFilterSheet(
-        categories: _categories,
-        initialCategory: _selectedCategory,
-        initialAvailableOnly: _availableOnly,
-        initialEbookOnly: _ebookOnly,
-        initialSortBy: _sortBy,
-        onApply: (cat, avail, ebook, sort) {
-          setState(() {
-            _selectedCategory = cat;
-            _availableOnly = avail;
-            _ebookOnly = ebook;
-            _sortBy = sort;
-          });
-          _loadBooks();
-        },
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundWhite,
+      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         title: const Text("Kutubxona", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        centerTitle: false,
         actions: [
           IconButton(
-            icon: const Icon(Icons.bookmark_border_rounded),
+            icon: const Icon(Icons.bookmark_rounded, color: AppTheme.primaryBlue),
             onPressed: () {
                Navigator.push(
                 context, 
@@ -127,15 +106,17 @@ class _LibraryScreenState extends State<LibraryScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.filter_list_rounded),
-            onPressed: _openFilterSheet,
+            icon: const Icon(Icons.tune_rounded, color: Colors.black),
+            onPressed: () {
+              // Show filter sheet if needed for advanced filtering
+              // For now, implementing basic genre browsing
+            },
           ),
         ],
       ),
       body: Column(
         children: [
           _buildSearchBar(),
-          _buildCategories(),
           Expanded(child: _buildContent()),
         ],
       ),
@@ -144,14 +125,14 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
   Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withOpacity(0.03),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -159,65 +140,21 @@ class _LibraryScreenState extends State<LibraryScreen> {
         ),
         child: TextField(
           controller: _searchController,
-          onChanged: _onSearchChanged,
-          decoration: const InputDecoration(
+          onChanged: (val) {
+             // Debounce logic could be added here
+             if (val.isEmpty && _searchQuery.isNotEmpty) {
+               _searchBooks("");
+             }
+          },
+          onSubmitted: _searchBooks,
+          decoration: InputDecoration(
             hintText: "Kitob, muallif yoki janr...",
-            prefixIcon: Icon(Icons.search, color: Colors.grey),
+            hintStyle: TextStyle(color: Colors.grey[400]),
+            prefixIcon: const Icon(Icons.search_rounded, color: Colors.grey),
             border: InputBorder.none,
-            contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildCategories() {
-    return Container(
-      height: 40, // More compact
-      margin: const EdgeInsets.only(bottom: 16, top: 4),
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        scrollDirection: Axis.horizontal,
-        itemCount: _categories.length,
-        itemBuilder: (context, index) {
-          final cat = _categories[index];
-          final isSelected = _selectedCategory == cat;
-          return Padding(
-            padding: const EdgeInsets.only(right: 10),
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedCategory = cat;
-                });
-                _loadBooks();
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: isSelected ? AppTheme.primaryBlue : Colors.white,
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(
-                    color: isSelected ? Colors.transparent : Colors.grey.shade300,
-                    width: 1.5,
-                  ),
-                  boxShadow: isSelected 
-                    ? [BoxShadow(color: AppTheme.primaryBlue.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))]
-                    : null,
-                ),
-                child: Text(
-                  cat,
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.grey.shade700,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
       ),
     );
   }
@@ -227,50 +164,92 @@ class _LibraryScreenState extends State<LibraryScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (_books.isEmpty) {
+    if (_genres.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.menu_book_rounded, size: 64, color: Colors.grey[300]),
+            Icon(Icons.search_off_rounded, size: 64, color: Colors.grey[300]),
             const SizedBox(height: 16),
-            Text(
-              "Kitoblar topilmadi",
-              style: TextStyle(fontSize: 18, color: Colors.grey[600], fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              "Qidiruvni o'zgartirib ko'ring",
-              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-            ),
+            Text("Hech narsa topilmadi", style: TextStyle(color: Colors.grey[500], fontSize: 16)),
           ],
         ),
       );
     }
 
+    // Use ListView for Genre Sections
     return RefreshIndicator(
-      onRefresh: _loadBooks,
-      child: GridView.builder(
-        padding: const EdgeInsets.all(20),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 20,
-          childAspectRatio: 0.62, // Adjusted for BookCard height
-        ),
-        itemCount: _books.length,
+      onRefresh: _loadInitialData,
+      child: ListView.builder(
+        padding: const EdgeInsets.only(bottom: 20),
+        itemCount: _genres.length,
         itemBuilder: (context, index) {
-          return BookCard(
-            book: _books[index],
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => BookDetailsScreen(book: _books[index])),
-              );
-            },
-          );
+          final genre = _genres[index];
+          final books = _booksByGenre[genre] ?? [];
+          return _buildGenreSection(genre, books);
         },
       ),
+    );
+  }
+
+  Widget _buildGenreSection(String title, List<Book> books) {
+    if (books.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
+              ),
+              GestureDetector(
+                onTap: () {
+                  // Navigate to a "See All" screen for this genre
+                  // For now, we interactively just show a toast or simplified action
+                },
+                child: const Row(
+                  children: [
+                    Text("Barchasi", style: TextStyle(color: AppTheme.primaryBlue, fontWeight: FontWeight.w600, fontSize: 14)),
+                    SizedBox(width: 4),
+                    Icon(Icons.arrow_forward_ios_rounded, size: 12, color: AppTheme.primaryBlue),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 280, // Height for horizontal list
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            scrollDirection: Axis.horizontal,
+            itemCount: books.length,
+            physics: const BouncingScrollPhysics(),
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: SizedBox(
+                  width: 160, // Fixed width for each card in horizontal list
+                  child: BookCard(
+                    book: books[index],
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => BookDetailsScreen(book: books[index])),
+                      );
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
