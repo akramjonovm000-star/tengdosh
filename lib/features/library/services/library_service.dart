@@ -155,6 +155,7 @@ class LibraryService {
       id: "res_101",
       bookId: "1",
       bookTitle: "O'tkan kunlar",
+      author: "Abdulla Qodiriy",
       coverUrl: "https://assets.asaxiy.uz/product/items/desktop/5e15bc9d9k.jpg",
       status: "reserved",
       reserveDate: DateTime.now().subtract(const Duration(hours: 4)),
@@ -165,15 +166,105 @@ class LibraryService {
       id: "res_102",
       bookId: "2",
       bookTitle: "Clean Code",
+      author: "Robert C. Martin",
       coverUrl: "https://m.media-amazon.com/images/I/41xShlnTZTL._SX376_BO1,204,203,200_.jpg",
       status: "queue",
       queuePosition: 2,
     ),
   ];
 
+  static final List<Reservation> _mockBorrowings = [
+    Reservation(
+      id: "borrow_201",
+      bookId: "3",
+      bookTitle: "Sapiens: A Brief History of Humankind",
+      author: "Yuval Noah Harari",
+      coverUrl: "https://images-na.ssl-images-amazon.com/images/I/713jIoMO3UL.jpg",
+      status: "borrowed",
+      pickupDeadline: DateTime.now().subtract(const Duration(days: 5)),
+      returnDeadLine: DateTime.now().add(const Duration(days: 5)), // 5 days left
+    ),
+    Reservation(
+      id: "borrow_202",
+      bookId: "4",
+      bookTitle: "Algorithm Design Manual",
+      author: "Steven Skiena",
+      coverUrl: "https://m.media-amazon.com/images/I/51T5+i9yR5L.jpg",
+      status: "overdue",
+      pickupDeadline: DateTime.now().subtract(const Duration(days: 15)),
+      returnDeadLine: DateTime.now().subtract(const Duration(days: 1)), // Overdue by 1 day
+    ),
+  ];
+
+  static final List<Reservation> _mockReadingList = [
+    Reservation(
+      id: "read_301",
+      bookId: "5",
+      bookTitle: "Harry Potter and the Sorcerer's Stone",
+      author: "J.K. Rowling",
+      coverUrl: "https://images-na.ssl-images-amazon.com/images/I/81iqZ2HHD-L.jpg",
+      status: "reading",
+      progress: 0.75, // 75%
+      totalPageCount: 320,
+      readPageCount: 240,
+      lastReadDate: DateTime.now().subtract(const Duration(hours: 2)),
+    ),
+    Reservation(
+      id: "read_302",
+      bookId: "1",
+      bookTitle: "O'tkan kunlar",
+      author: "Abdulla Qodiriy",
+      coverUrl: "https://assets.asaxiy.uz/product/items/desktop/5e15bc9d9k.jpg",
+      status: "completed",
+      progress: 1.0,
+      totalPageCount: 280,
+      readPageCount: 280,
+      lastReadDate: DateTime.now().subtract(const Duration(days: 10)),
+    ),
+  ];
+
   Future<List<Reservation>> getReservations() async {
     await Future.delayed(const Duration(milliseconds: 600));
     return _mockReservations;
+  }
+
+  Future<List<Reservation>> getBorrowedBooks() async {
+    await Future.delayed(const Duration(milliseconds: 600));
+    return _mockBorrowings;
+  }
+
+  Future<List<Reservation>> getReadingList() async {
+    await Future.delayed(const Duration(milliseconds: 600));
+    return _mockReadingList;
+  }
+
+  Future<List<Reservation>> getHistory() async {
+    await Future.delayed(const Duration(milliseconds: 800));
+    // Combine all and some mocked past history
+    final all = [
+      ..._mockReservations,
+      ..._mockBorrowings,
+      ..._mockReadingList,
+      Reservation(
+        id: "hist_401",
+        bookId: "2",
+        bookTitle: "Clean Code",
+        author: "Robert C. Martin",
+        coverUrl: "https://m.media-amazon.com/images/I/41xShlnTZTL._SX376_BO1,204,203,200_.jpg",
+        status: "returned",
+        returnDeadLine: DateTime.now().subtract(const Duration(days: 30)),
+      ),
+       Reservation(
+        id: "hist_402",
+        bookId: "3",
+        bookTitle: "Sapiens",
+        author: "Yuval Noah Harari",
+        coverUrl: "https://images-na.ssl-images-amazon.com/images/I/713jIoMO3UL.jpg",
+        status: "cancelled",
+        reserveDate: DateTime.now().subtract(const Duration(days: 40)),
+      ),
+    ];
+    return all;
   }
 
   Future<Reservation> reserveBook(String bookId) async {
@@ -191,6 +282,7 @@ class LibraryService {
       id: "res_${DateTime.now().millisecondsSinceEpoch}",
       bookId: book.id,
       bookTitle: book.title,
+      author: book.author,
       coverUrl: book.coverUrl,
       status: "reserved",
       reserveDate: DateTime.now(),
@@ -210,6 +302,7 @@ class LibraryService {
       id: "q_${DateTime.now().millisecondsSinceEpoch}",
       bookId: book.id,
       bookTitle: book.title,
+      author: book.author,
       coverUrl: book.coverUrl,
       status: "queue",
       queuePosition: 5, // Mock position

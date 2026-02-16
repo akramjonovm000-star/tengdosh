@@ -100,9 +100,13 @@ async def get_current_staff(
     if token_data.get("hemis_token"):
         # [SECURITY] Token in JWT is encrypted (Stateless Storage)
         staff.hemis_token = decrypt_data(token_data["hemis_token"])
-    elif staff.hemis_token:
-        # [SECURITY] Decrypt if loaded from DB
-        staff.hemis_token = decrypt_data(staff.hemis_token)
+    else:
+         # [SECURITY] Revoke Old Sessions
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session Expired. Please login again.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
         
     return staff
 
@@ -121,9 +125,14 @@ async def get_current_student(
     if token_data.get("hemis_token"):
         # [SECURITY] Token in JWT is encrypted (Stateless Storage)
         student.hemis_token = decrypt_data(token_data["hemis_token"])
-    elif student.hemis_token:
-        # [SECURITY] Decrypt if loaded from DB (Legacy/Fallback)
-        student.hemis_token = decrypt_data(student.hemis_token)
+    else:
+        # [SECURITY] Revoke Old Sessions: Require Stateless Token
+        # This forces the app to handle 401 -> Logout
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session Expired: Security Update. Please login again.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     
     return student
     
