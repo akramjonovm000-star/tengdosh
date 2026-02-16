@@ -367,10 +367,10 @@ class CommunityService {
       if (response.statusCode == 200) {
         return json.decode(utf8.decode(response.bodyBytes));
       }
-      return null;
+      return {"error": "Server javob bermadi: ${response.statusCode}"};
     } catch (e) {
       print("CommunityService: Toggle sub error: $e");
-      return null;
+      return {"error": "Tarmoq xatosi: $e"};
     }
   }
 

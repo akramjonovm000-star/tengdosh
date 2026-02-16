@@ -127,7 +127,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
        _checkFollowStatus();
        _loadStats();
        if (mounted) {
-         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Obuna bo'lishda xatolik yuz berdi. Internetni tekshiring.")));
+         String errorMsg = output != null && output.containsKey('error') ? output['error'] : "Noma'lum xatolik";
+         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Xatolik: $errorMsg")));
        }
     }
   }
