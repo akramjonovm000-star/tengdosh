@@ -536,12 +536,16 @@ async def login_via_hemis(
 
     # [STATELESS] Generate JWT with embedded HEMIS token
     user_agent = request.headers.get("user-agent", "unknown")
+    
+    # [SECURITY] Encrypt Token for Client Storage (Stateless)
+    encrypted_token = encrypt_data(token)
+    
     access_token = create_access_token(
         data={
             "sub": student.hemis_login,
             "type": "student",
             "id": student.id,
-            "hemis_token": token # CRITICAL: Embed token in JWT
+            "hemis_token": encrypted_token # Embed Encrypted Token
         },
         expires_delta=timedelta(minutes=60 * 24 * 7), # 7 days
         user_agent=user_agent

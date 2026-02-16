@@ -3,6 +3,8 @@ import '../models/book_model.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'secure_reader_screen.dart';
+import '../services/library_service.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class BookDetailsScreen extends StatelessWidget {
   final Book book;
@@ -192,6 +194,157 @@ class BookDetailsScreen extends StatelessWidget {
           Text(value, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
         ],
       ),
+    );
+  }
+
+  void _handleReservation(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (context) => _ReservationSheet(book: book),
+    );
+  }
+}
+
+class _ReservationSheet extends StatefulWidget {
+  final Book book;
+
+  const _ReservationSheet({required this.book});
+
+  @override
+  State<_ReservationSheet> createState() => _ReservationSheetState();
+}
+
+class _ReservationSheetState extends State<_ReservationSheet> {
+  final LibraryService _libraryService = LibraryService();
+  bool _isLoading = false;
+  bool _isSuccess = false;
+
+  void _submit() async {
+    setState(() => _isLoading = true);
+    try {
+      if (widget.book.availableCopies > 0) {
+        await _libraryService.reserveBook(widget.book.id);
+      } else {
+        await _libraryService.addToQueue(widget.book.id);
+      }
+      
+      setState(() {
+        _isLoading = false;
+        _isSuccess = true;
+      });
+
+      // Close after delay
+      await Future.delayed(const Duration(seconds: 2));
+      if (mounted) Navigator.pop(context);
+
+    } catch (e) {
+      setState(() => _isLoading = false);
+      Fluttertoast.showToast(msg: "Xatolik: $e");
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isAvailable = widget.book.availableCopies > 0;
+
+    if (_isSuccess) {
+      return Container(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.check_circle_outline_rounded, size: 80, color: Colors.green),
+            const SizedBox(height: 20),
+            Text(
+              isAvailable ? "Muvaffaqiyatli bron qilindi!" : "Navbatga yozildingiz!",
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              "Mening kitoblarim bo'limida ko'rishingiz mumkin",
+              style: TextStyle(color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            isAvailable ? "Bron qilishni tasdiqlang" : "Navbatga yozilish",
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: CachedNetworkImage(
+                  imageUrl: widget.book.coverUrl,
+                  width: 50,
+                  height: 75,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(widget.book.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text(widget.book.author, style: const TextStyle(color: Colors.grey)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          if (isAvailable) ...[
+             _buildInfoRow(Icons.calendar_today, "Olib ketish muddati", "3 kun ichida"),
+             const SizedBox(height: 12),
+             _buildInfoRow(Icons.update, "Qaytarish muddati", "14 kun"),
+          ] else
+             const Text(
+               "Hozirda barcha nusxalar band. Navbatga yozilsangiz, kitob qaytishi bilan sizga habar beramiz.",
+               style: TextStyle(color: Colors.grey, height: 1.5),
+             ),
+          
+          const SizedBox(height: 32),
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton(
+              onPressed: _isLoading ? null : _submit,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isAvailable ? Colors.orange : Colors.indigo,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: _isLoading 
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                : Text(isAvailable ? "Tasdiqlash" : "Navbatga yozilish", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: Colors.blueGrey),
+        const SizedBox(width: 12),
+        Expanded(child: Text(label, style: const TextStyle(color: Colors.black87))),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+      ],
     );
   }
 }

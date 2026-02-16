@@ -5,6 +5,7 @@ import '../widgets/book_card.dart';
 import '../widgets/library_filter_sheet.dart';
 import 'book_details_screen.dart';
 import '../../../../core/theme/app_theme.dart';
+import 'my_books/my_books_screen.dart';
 
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
@@ -116,6 +117,15 @@ class _LibraryScreenState extends State<LibraryScreen> {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.bookmark_border_rounded),
+            onPressed: () {
+               Navigator.push(
+                context, 
+                MaterialPageRoute(builder: (_) => const MyBooksScreen())
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.filter_list_rounded),
             onPressed: _openFilterSheet,

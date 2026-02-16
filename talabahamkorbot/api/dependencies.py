@@ -98,7 +98,8 @@ async def get_current_staff(
     
     # [NEW] Inject Token from JWT (Stateless)
     if token_data.get("hemis_token"):
-        staff.hemis_token = token_data["hemis_token"]
+        # [SECURITY] Token in JWT is encrypted (Stateless Storage)
+        staff.hemis_token = decrypt_data(token_data["hemis_token"])
     elif staff.hemis_token:
         # [SECURITY] Decrypt if loaded from DB
         staff.hemis_token = decrypt_data(staff.hemis_token)
@@ -118,9 +119,10 @@ async def get_current_student(
 
     # [NEW] Inject Token from JWT (Stateless)
     if token_data.get("hemis_token"):
-        student.hemis_token = token_data["hemis_token"]
+        # [SECURITY] Token in JWT is encrypted (Stateless Storage)
+        student.hemis_token = decrypt_data(token_data["hemis_token"])
     elif student.hemis_token:
-        # [SECURITY] Decrypt if loaded from DB
+        # [SECURITY] Decrypt if loaded from DB (Legacy/Fallback)
         student.hemis_token = decrypt_data(student.hemis_token)
     
     return student

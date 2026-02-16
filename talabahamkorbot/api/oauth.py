@@ -18,7 +18,9 @@ router = APIRouter(prefix="/oauth", tags=["OAuth"])
 authlog_router = APIRouter(tags=["AuthLog"])
 logger = logging.getLogger(__name__)
 
-from api.security import limiter
+from api.security import limiter, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+from utils.encryption import encrypt_data
+from datetime import timedelta
 
 @router.get("/login")
 @limiter.limit("10/minute")
@@ -192,7 +194,20 @@ async def authlog_callback(request: Request, code: Optional[str] = None, error: 
             # import asyncio
             # asyncio.create_task(HemisService.prefetch_data(student.hemis_token, student.id))
             
-        internal_token = f"student_id_{student.id}"
+            # [STATELESS] Generate JWT with embedded HEMIS token
+            user_agent = request.headers.get("user-agent", "unknown")
+            encrypted_token = encrypt_data(access_token)
+            
+            internal_token = create_access_token(
+                data={
+                    "sub": student.hemis_login,
+                    "type": "student",
+                    "id": student.id,
+                    "hemis_token": encrypted_token # Embed Encrypted
+                },
+                expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+                user_agent=user_agent
+            )
         
     else:
         # Staff
@@ -301,7 +316,21 @@ async def authlog_callback(request: Request, code: Optional[str] = None, error: 
                     logger.warning(f"Invalid university_id format for staff: {u_id}")
                  
             await db.commit()
-            internal_token = f"staff_id_{staff.id}"
+            
+            # [STATELESS] Generate JWT with embedded HEMIS token
+            user_agent = request.headers.get("user-agent", "unknown")
+            encrypted_token = encrypt_data(access_token)
+            
+            internal_token = create_access_token(
+                data={
+                    "sub": str(h_id), 
+                    "type": "staff", 
+                    "id": staff.id,
+                    "hemis_token": encrypted_token # Embed Encrypted
+                },
+                expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+                user_agent=user_agent
+            )
         else:
             # Auto-register Staff
             logger.info(f"Auto-registering new staff: {h_id} - {me.get('firstname')} {me.get('surname')}")
@@ -330,13 +359,27 @@ from utils.encryption import encrypt_data
                 phone=me.get("phone"),
                 is_active=True,
                 hemis_token=encrypt_data(access_token), # [NEW] Encrypted
+                # hemis_password=None, # [DISABLED] Privacy
                 university_id=uni_id_final
             )
             db.add(staff)
             await db.commit()
             await db.refresh(staff)
             
-            internal_token = f"staff_id_{staff.id}"
+            # [STATELESS] Generate JWT with embedded HEMIS token
+            user_agent = request.headers.get("user-agent", "unknown")
+            encrypted_token = encrypt_data(access_token)
+            
+            internal_token = create_access_token(
+                data={
+                    "sub": str(h_id), 
+                    "type": "staff", 
+                    "id": staff.id,
+                    "hemis_token": encrypted_token # Embed Encrypted
+                },
+                expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+                user_agent=user_agent
+            )
 
     # 4. Return HTML
     

@@ -262,6 +262,9 @@ app.include_router(api_router, prefix="/api/v1")
 app.include_router(authlog_router) # Support callback paths like /authlog and /oauth/login
 app.include_router(announcements_router, prefix="/api/v1")
 
+from api.security_rsa import router as security_rsa_router
+app.include_router(security_rsa_router, prefix="/api/v1")
+
 from api.support import router as support_router
 app.include_router(support_router, prefix="/api")
 

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../models/book_model.dart';
+import '../models/reservation_model.dart';
 
 class LibraryService {
   // Mock Data
@@ -144,4 +145,76 @@ class LibraryService {
     genres.sort();
     return ["Barchasi", ...genres];
   }
-}
+
+  // --- Reservation System ---
+
+  // Mock Reservations
+  static final List<Reservation> _mockReservations = [
+    // Example: Reserved Book
+    Reservation(
+      id: "res_101",
+      bookId: "1",
+      bookTitle: "O'tkan kunlar",
+      coverUrl: "https://assets.asaxiy.uz/product/items/desktop/5e15bc9d9k.jpg",
+      status: "reserved",
+      reserveDate: DateTime.now().subtract(const Duration(hours: 4)),
+      pickupDeadline: DateTime.now().add(const Duration(days: 3)),
+    ),
+    // Example: In Queue
+    Reservation(
+      id: "res_102",
+      bookId: "2",
+      bookTitle: "Clean Code",
+      coverUrl: "https://m.media-amazon.com/images/I/41xShlnTZTL._SX376_BO1,204,203,200_.jpg",
+      status: "queue",
+      queuePosition: 2,
+    ),
+  ];
+
+  Future<List<Reservation>> getReservations() async {
+    await Future.delayed(const Duration(milliseconds: 600));
+    return _mockReservations;
+  }
+
+  Future<Reservation> reserveBook(String bookId) async {
+    // Simulate check
+    await Future.delayed(const Duration(seconds: 1));
+    
+    // In real backend, this would check stock atomically
+    final book = _mockBooks.firstWhere((b) => b.id == bookId);
+    
+    if (book.availableCopies <= 0) {
+      throw Exception("Kitob mavjud emas");
+    }
+
+    final newRes = Reservation(
+      id: "res_${DateTime.now().millisecondsSinceEpoch}",
+      bookId: book.id,
+      bookTitle: book.title,
+      coverUrl: book.coverUrl,
+      status: "reserved",
+      reserveDate: DateTime.now(),
+      pickupDeadline: DateTime.now().add(const Duration(days: 3)),
+    );
+    
+    // Add to mock local list for session
+    _mockReservations.insert(0, newRes);
+    return newRes;
+  }
+
+  Future<Reservation> addToQueue(String bookId) async {
+    await Future.delayed(const Duration(seconds: 1));
+    final book = _mockBooks.firstWhere((b) => b.id == bookId);
+
+    final newRes = Reservation(
+      id: "q_${DateTime.now().millisecondsSinceEpoch}",
+      bookId: book.id,
+      bookTitle: book.title,
+      coverUrl: book.coverUrl,
+      status: "queue",
+      queuePosition: 5, // Mock position
+    );
+
+    _mockReservations.insert(0, newRes);
+    return newRes;
+  }
