@@ -299,15 +299,15 @@ async def initiate_feedback_upload(
     result = await db.execute(stmt)
     tg_account = result.scalars().first()
     
-    if not tg_account:
-        return {"success": False, "message": "Telegram hisob ulanmagan! Avval botga kiring (@talabahamkorbot)"}
-        
-    # 2. Create Pending Upload Session
+    from config import BOT_USERNAME
     session_id = req.session_id
     
     # Cleanup old pending for same session if exists
-    await db.delete(await db.get(PendingUpload, session_id)) if await db.get(PendingUpload, session_id) else None
+    existing = await db.get(PendingUpload, session_id)
+    if existing:
+        await db.delete(existing)
     
+    # 2. Create Pending Upload Session
     new_pending = PendingUpload(
         session_id=session_id,
         student_id=student.id,
@@ -318,7 +318,17 @@ async def initiate_feedback_upload(
     db.add(new_pending)
     await db.commit()
     
-    # 3. Notify Bot & Set State
+    # [SMART CONTEXT] Logic from documents.py
+    if not tg_account:
+        auth_link = f"https://t.me/{BOT_USERNAME}?start=upload_{session_id}"
+        return {
+            "success": False, 
+            "requires_auth": True, 
+            "auth_link": auth_link,
+            "message": "Telegram hisob ulanmagan. Iltimos, havolani oching."
+        }
+        
+    # 3. Existing Account Logic (Smart Flow)
     try:
         text = (
             f"📨 <b>Murojaat uchun fayl yuklash</b>\n\n"
@@ -331,9 +341,23 @@ async def initiate_feedback_upload(
         # [CRITICAL] Set Bot State
         await set_bot_state(tg_account.telegram_id, FeedbackStates.WAIT_FOR_APP_FILE)
         
-        return {"success": True, "message": "Botga yuklash so'rovi yuborildi. Telegramni oching.", "session_id": session_id}
+        return {
+            "success": True, 
+            "requires_auth": False,
+            "message": "Botga yuklash so'rovi yuborildi. Telegramni oching.", 
+            "session_id": session_id,
+            "bot_link": f"https://t.me/{BOT_USERNAME}"
+        }
     except Exception as e:
-        return {"success": False, "message": f"Botga xabar yuborishda xatolik: {str(e)}"}
+        logger.error(f"Failed to send bot message: {e}")
+        # Fallback: Just give them the bot link, maybe they blocked the bot
+        return {
+            "success": True, 
+            "requires_auth": False,
+            "message": "Botga yuklash so'rovi yuborildi.", 
+            "session_id": session_id,
+            "bot_link": f"https://t.me/{BOT_USERNAME}"
+        }
 
 @router.get("/upload-status/{session_id}")
 async def check_feedback_upload_status(

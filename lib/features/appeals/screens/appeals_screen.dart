@@ -5,6 +5,7 @@ import '../services/appeal_service.dart';
 import '../models/appeal_model.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/api_constants.dart';
 
 class AppealsScreen extends StatefulWidget {
@@ -692,8 +693,21 @@ class _CreateAppealSheetState extends State<CreateAppealSheet> {
           isAnonymous: _isAnonymous
       );
 
-      if (res['success'] == true) {
-          _sessionId = res['session_id']; // The backend needs to return this!
+      if (res['success'] == true || res['requires_auth'] == true) {
+          _sessionId = res['session_id']; 
+          
+          String urlToLaunch = "";
+           if (res['requires_auth'] == true) {
+             urlToLaunch = res['auth_link'];
+           } else {
+             urlToLaunch = res['bot_link'] ?? "https://t.me/talabahamkorbot";
+           }
+           
+           if (await canLaunchUrl(Uri.parse(urlToLaunch))) {
+             await launchUrl(Uri.parse(urlToLaunch), mode: LaunchMode.externalApplication);
+           } else {
+             if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Telegramni ochib bo'lmadi")));
+           }
           
           // Show instructions
           if (mounted) {
@@ -707,7 +721,7 @@ class _CreateAppealSheetState extends State<CreateAppealSheet> {
                          children: [
                              Icon(Icons.telegram, size: 50, color: Colors.blue),
                              SizedBox(height: 16),
-                             Text("Talaba Hamkor Bot sizga xabar yubordi. Iltimos, u yerda faylni (Rasm/PDF) yuklang."),
+                             Text("Telegram bot ochildi. Iltimos, u yerda faylni (Rasm/PDF) yuklang."),
                              SizedBox(height: 16),
                              LinearProgressIndicator(),
                              SizedBox(height: 8),

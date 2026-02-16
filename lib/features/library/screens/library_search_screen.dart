@@ -245,7 +245,7 @@ class _LibrarySearchScreenState extends State<LibrarySearchScreen> {
             children: [
               Text(
                 "#$rank",
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.900, color: Colors.grey),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.grey),
               ),
               const SizedBox(width: 16),
               ClipRRect(
