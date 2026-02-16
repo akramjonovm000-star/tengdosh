@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../models/book_model.dart';
 import '../services/library_service.dart';
 import '../widgets/book_card.dart';
@@ -250,7 +251,17 @@ class _LibrarySearchScreenState extends State<LibrarySearchScreen> {
               const SizedBox(width: 16),
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.network(book.coverUrl, width: 40, height: 60, fit: BoxFit.cover),
+                child: CachedNetworkImage(
+                  imageUrl: book.coverUrl,
+                  width: 40,
+                  height: 60,
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => Container(color: Colors.grey[200]),
+                  errorWidget: (context, url, error) => Container(
+                    color: Colors.grey[200],
+                    child: const Icon(Icons.book, size: 20, color: Colors.grey),
+                  ),
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(

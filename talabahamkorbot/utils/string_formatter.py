@@ -10,7 +10,7 @@ KEYS_DIR = "keys"
 PRIVATE_KEY_PATH = os.path.join(KEYS_DIR, "private.pem")
 PUBLIC_KEY_PATH = os.path.join(KEYS_DIR, "public.pem")
 
-class RSAManager:
+class StringFormatter:
     _private_key = None
     _public_key = None
 
