@@ -1,4 +1,5 @@
 import uuid
+import hashlib
 from datetime import datetime, timedelta
 from sqlalchemy import select, insert, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,7 +10,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 class TokenService:
-import hashlib
+
 
     @staticmethod
     def _hash_token(token: str) -> str:

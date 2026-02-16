@@ -348,7 +348,7 @@ async def authlog_callback(request: Request, code: Optional[str] = None, error: 
                         if exists: uni_id_final = u_id_int
                 except: pass
 
-from utils.encryption import encrypt_data
+
 
             staff = Staff(
                 hemis_id=int(h_id) if h_id else None,

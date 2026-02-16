@@ -26,37 +26,46 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
+    debugPrint("LoginScreen: Submitting login...");
+    
     final error = await auth.login(
       _loginController.text.trim(),
       _passwordController.text.trim(),
     );
+    
+    debugPrint("LoginScreen: Login Result: $error");
 
-    if (error != null && mounted) {
-      if (error.contains("qisqa vaqt ichida") || error.contains("tizimi ishlamayapti")) {
-        // Show Dialog for Blocking/System Errors
-        showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text("Diqqat!", style: TextStyle(color: Colors.red)),
-            content: Text(error),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Tushunarli"))
-            ],
-          ),
-        );
-      } else {
-        // Standard Validation Error
-        setState(() {
-          _errorMessage = error;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error),
-            backgroundColor: Colors.red.shade700,
-            behavior: SnackBarBehavior.floating,
-          )
-        );
+    if (error != null) {
+      if (!mounted) {
+        debugPrint("LoginScreen: Widget unmounted, ignoring error.");
+        return;
       }
+      
+      // Force Dialog for ALL errors during debugging/fix phase to ensure visibility
+      // User reported that sometimes UI is silent. Dialogs are harder to miss.
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text("Xatolik", style: TextStyle(color: Colors.red)),
+          content: Text(error),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Tushunarli"))
+          ],
+        ),
+      );
+
+      setState(() {
+        _errorMessage = error;
+      });
+      
+      // Keep SnackBar as backup
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error),
+          backgroundColor: Colors.red.shade700,
+          behavior: SnackBarBehavior.floating,
+        )
+      );
     }
   }
 

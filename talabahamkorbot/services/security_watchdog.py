@@ -3,7 +3,7 @@ import asyncio
 from datetime import datetime
 from collections import defaultdict
 from bot import bot
-from config import ADMIN_ID
+from config import OWNER_TELEGRAM_ID
 
 logger = logging.getLogger(__name__)
 
@@ -31,9 +31,8 @@ class SecurityWatchdog:
             f"<b>Vaqt:</b> {datetime.now().strftime('%H:%M:%S')}"
         )
         try:
-            # Send to Admin (assuming ADMIN_ID is set in config or hardcoded for now)
-            # You might need to add ADMIN_ID to config.py if not present
-            target_id = ADMIN_ID if ADMIN_ID else "73118956" # Fallback/Example ID
+            # Send to Owner
+            target_id = OWNER_TELEGRAM_ID if OWNER_TELEGRAM_ID else "73118956"
             await bot.send_message(chat_id=target_id, text=msg, parse_mode="HTML")
             logger.critical(f"SECURITY ALERT SENT: {incident_type} - {ip}")
         except Exception as e:

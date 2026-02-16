@@ -65,6 +65,7 @@ class AuthProvider with ChangeNotifier {
   Future<void> checkLoginStatus() => loadUser();
 
   Future<String?> login(String login, String password) async {
+    debugPrint("AuthProvider: login initiated for $login");
     _isLoading = true;
     notifyListeners();
 
@@ -72,19 +73,22 @@ class AuthProvider with ChangeNotifier {
       final student = await _authService.login(login, password);
       if (student != null) {
         _currentUser = student;
-        // URL is now static constant, no need to save preference
         _isLoading = false;
+        debugPrint("AuthProvider: Login Success");
         notifyListeners();
         return null; // Success
       } else {
          _isLoading = false;
         notifyListeners();
+        debugPrint("AuthProvider: Login Failed (Null Response)");
         return "Login yoki parol xato";
       }
     } catch (e) {
       _isLoading = false;
       notifyListeners();
       
+      debugPrint("AuthProvider: Login Exception Caught: $e");
+
       // Clean up error message
       String errorMsg = e.toString();
       if (errorMsg.contains("Exception:")) {
@@ -99,9 +103,11 @@ class AuthProvider with ChangeNotifier {
       } else if (errorMsg.contains("HEMIS_ERROR")) {
          return "Universitet HEMIS tizimi ishlamayapti.\nBu bizga bog'liq emas, keyinroq kiring.";
       } else if (errorMsg.contains("INVALID_CREDENTIALS") || errorMsg.toLowerCase().contains("login yoki parol")) {
+         debugPrint("AuthProvider: Returning localized INVALID_CREDENTIALS error");
          return "Login yoki parol xato!\nIltimos ma'lumotlarni tekshirib qayta kiring.";
       }
       
+      debugPrint("AuthProvider: Returning generic error: $errorMsg");
       return "Xatolik: $errorMsg";
     }
   }

@@ -9,7 +9,7 @@ from typing import Union
 from database.db_connect import get_db
 from database.models import User, Student, Club, StaffRole, Staff, ClubMembership
 from models.states import ClubCreationStates, ClubEditStates
-from handlers.auth import get_current_user
+from ..auth import get_current_user
 
 router = Router()
 

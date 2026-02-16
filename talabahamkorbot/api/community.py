@@ -7,9 +7,8 @@ from typing import List
 
 from database.db_connect import AsyncSessionLocal
 from database.models import Student, Staff, ChoyxonaPost, ChoyxonaPostLike, ChoyxonaPostRepost, ChoyxonaComment, ChoyxonaPostView
-from api.dependencies import get_current_student, get_db
+from api.dependencies import get_current_student, get_db, require_action_token
 from utils.student_utils import format_name
-from api.dependencies import get_current_student, get_db
 from api.schemas import PostCreateSchema, PostResponseSchema, CommentCreateSchema, CommentResponseSchema
 from services.notification_service import NotificationService
 from database.models import ChoyxonaCommentLike # Fix for NameError

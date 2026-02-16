@@ -479,10 +479,7 @@ def get_back_inline_kb(callback_to: str) -> InlineKeyboardMarkup:
             [InlineKeyboardButton(text="⬅️ Ortga", callback_data=callback_to)]
         ]
     )
-# [InlineKeyboardButton(text="🤖 AI Yordamchi", callback_data="ai_assistant_main")],
-            [InlineKeyboardButton(text="📊 Statistika", callback_data="staff_stats")]
-        ]
-    )
+
 
 def get_rahb_broadcast_back_kb():
     return InlineKeyboardMarkup(
@@ -506,20 +503,6 @@ def get_rahb_broadcast_confirm_kb():
                 )
             ],
             [InlineKeyboardButton(text="⬅️ Ortga", callback_data="rahb_menu")]
-        ]
-    )
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-
-
-def get_rahb_broadcast_back_kb() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(
-                    text="⬅️ Ortga",
-                    callback_data="rahb_menu"
-                )
-            ]
         ]
     )
 
@@ -817,3 +800,91 @@ def get_candidate_detail_kb(candidate_id: int, can_vote: bool = False, back_call
     
     rows.append([InlineKeyboardButton(text="⬅️ Ortga", callback_data=back_callback)])
     return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+# ============================================================
+# DEVELOPER MENYUSI (MISSING FUNCTIONS)
+# ============================================================
+
+def get_owner_developers_kb(developers: list) -> InlineKeyboardMarkup:
+    """
+    Developerlar ro'yxati va qo'shish tugmasi.
+    """
+    rows = []
+    
+    # 1. Yangi qo'shish
+    rows.append([
+        InlineKeyboardButton(
+            text="➕ Yangi Developer qo'shish",
+            callback_data="owner_dev_add"
+        )
+    ])
+    
+    # 2. Mavjudlar (o'chirish uchun)
+    for dev in developers:
+        rows.append([
+            InlineKeyboardButton(
+                text=f"🗑 {dev.full_name} (O'chirish)",
+                callback_data=f"owner_dev_del:{dev.telegram_id}"
+            )
+        ])
+        
+    rows.append([InlineKeyboardButton(text="⬅️ Ortga", callback_data="owner_menu")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def get_dev_add_cancel_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="❌ Bekor qilish", callback_data="owner_dev")]
+        ]
+    )
+
+# ============================================================
+# DEVELOPER MENUS
+# ============================================================
+
+def get_owner_developers_kb(developers: list) -> InlineKeyboardMarkup:
+    """
+    Shows "Add Developer" button and "Back".
+    The developers list is just for info (already in message text).
+    """
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="➕ Yangi Developer qo'shish", callback_data="owner_dev_add"),
+            ],
+            [
+               InlineKeyboardButton(text="⬅️ Ortga", callback_data="owner_menu"),
+            ]
+        ]
+    )
+
+
+def get_dev_add_cancel_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="❌ Bekor qilish", callback_data="owner_dev")]
+        ]
+    )
+
+def get_student_main_menu_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="📊 Baholar", callback_data="student_grades"),
+                InlineKeyboardButton(text="📅 Dars jadvali", callback_data="student_schedule"),
+            ],
+            [
+                InlineKeyboardButton(text="✅ Davomat", callback_data="student_attendance"),
+                InlineKeyboardButton(text="✍️ Murojaat", callback_data="student_feedback"),
+            ],
+             [
+                InlineKeyboardButton(text="📄 Hujjatlar", callback_data="student_documents"),
+                InlineKeyboardButton(text="🗳 Saylovlar", callback_data="election_menu"),
+             ],
+            [
+                InlineKeyboardButton(text="👤 Profil", callback_data="student_profile"),
+            ]
+        ]
+    )

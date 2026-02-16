@@ -493,11 +493,7 @@ async def login_via_hemis(
                 logger.warning(f"Username {u_name} already taken. Skipping for {h_login}.")
                 u_name = None # Set to None to avoid UniqueViolation
         
-        new_user = User(
-            hemis_login=h_login,
-            username=u_name,
-            role="student",
-            full_name=full_name_db,
+
         new_user = User(
             hemis_login=h_login,
             username=u_name,
