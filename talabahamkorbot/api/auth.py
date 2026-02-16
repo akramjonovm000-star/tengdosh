@@ -33,7 +33,7 @@ async def login_via_hemis(
     login_clean = creds.login.strip().lower()
     pass_clean = creds.password.strip()
     
-    logger.warning(f"DEBUG AUTH: login='{login_clean}' pass='{pass_clean}' ENV_DEMO='{os.environ.get('ENABLE_DEMO_AUTH')}'")
+    logger.info(f"Auth Attempt: login='{login_clean}'")
     
     # [SECURITY] HARDCODED CREDENTIALS REMOVED
     # Previous demo logic was here. Removed for security self-audit.
@@ -455,6 +455,7 @@ async def login_via_hemis(
     await db.refresh(student)
 
     # --- SYNC TO USERS TABLE (Unified Auth) ---
+    from utils.encryption import encrypt_data
     existing_user = await db.scalar(select(User).where(User.hemis_login == h_login))
     if not existing_user:
         # Check if username is already taken by ANOTHER hemis_login
@@ -470,11 +471,17 @@ async def login_via_hemis(
             username=u_name,
             role="student",
             full_name=full_name_db,
+        new_user = User(
+            hemis_login=h_login,
+            username=u_name,
+            role="student",
+            full_name=full_name_db,
             short_name=first_name,
             image_url=image_url,
             hemis_id=h_id,
-            hemis_token=token,
-            hemis_password=creds.password,
+            hemis_token=encrypt_data(token),  # Encrypt
+            # hemis_password=encrypt_data(creds.password), # [DISABLED] Privacy: Do not store password
+            header_data=None, # Explicitly clear old data
             university_id=uni_id,
             faculty_id=fac_id,
             group_number=group_num
@@ -482,8 +489,8 @@ async def login_via_hemis(
         db.add(new_user)
     else:
         # Update existing
-        existing_user.hemis_token = token
-        existing_user.hemis_password = creds.password
+        existing_user.hemis_token = encrypt_data(token) # Encrypt
+        # existing_user.hemis_password = encrypt_data(creds.password) # [DISABLED] Privacy
         if not (existing_user.image_url and "static/uploads" in existing_user.image_url):
             existing_user.image_url = image_url
         existing_user.full_name = full_name_db
@@ -527,10 +534,23 @@ async def login_via_hemis(
     except Exception as e:
         print(f"Login activity log error: {e}")
 
+    # [STATELESS] Generate JWT with embedded HEMIS token
+    user_agent = request.headers.get("user-agent", "unknown")
+    access_token = create_access_token(
+        data={
+            "sub": student.hemis_login,
+            "type": "student",
+            "id": student.id,
+            "hemis_token": token # CRITICAL: Embed token in JWT
+        },
+        expires_delta=timedelta(minutes=60 * 24 * 7), # 7 days
+        user_agent=user_agent
+    )
+
     return {
         "success": True,
         "data": {
-            "token": f"student_id_{student.id}",
+            "token": access_token,
             "role": "student",
             "profile": profile_data
         }

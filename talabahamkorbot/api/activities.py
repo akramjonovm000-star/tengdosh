@@ -133,6 +133,7 @@ async def check_upload_status(
     
     return {"status": "pending", "count": 0}
 
+from api.dependencies import require_action_token
 
 @router.post("/")
 @router.post("")
@@ -142,6 +143,7 @@ async def create_activity(
     description: str = Form(...),
     date: str = Form(...),
     session_id: str = Form(None), # LINK TO UPLOADED FILE
+    token: str = Depends(require_action_token), # [SECURITY] ATS Enforced
     student: Student = Depends(get_premium_student),
     db: AsyncSession = Depends(get_db)
 ):
@@ -167,6 +169,10 @@ async def create_activity(
     if session_id:
         pending = await db.get(PendingUpload, session_id)
         if pending and pending.file_ids:
+            # [SECURITY] Verify Ownership
+            if pending.student_id != student.id:
+                raise HTTPException(status_code=403, detail="Siz faqat o'zingiz yuklagan faylni saqlay olasiz")
+
             file_ids = [fid for fid in pending.file_ids.split(",") if fid]
             
             for fid in file_ids:
@@ -200,6 +206,7 @@ async def create_activity(
 @router.delete("/{activity_id}")
 async def delete_activity(
     activity_id: int,
+    token: str = Depends(require_action_token), # [SECURITY] ATS Enforced
     student: Student = Depends(get_premium_student),
     db: AsyncSession = Depends(get_db)
 ):
@@ -228,6 +235,7 @@ async def update_activity(
     name: str = Form(None),
     description: str = Form(None),
     date: str = Form(None),
+    token: str = Depends(require_action_token), # [SECURITY] ATS Enforced
     student: Student = Depends(get_premium_student),
     db: AsyncSession = Depends(get_db)
 ):

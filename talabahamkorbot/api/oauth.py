@@ -319,6 +319,8 @@ async def authlog_callback(request: Request, code: Optional[str] = None, error: 
                         if exists: uni_id_final = u_id_int
                 except: pass
 
+from utils.encryption import encrypt_data
+
             staff = Staff(
                 hemis_id=int(h_id) if h_id else None,
                 full_name=full_name,
@@ -327,7 +329,7 @@ async def authlog_callback(request: Request, code: Optional[str] = None, error: 
                 role=user_role,
                 phone=me.get("phone"),
                 is_active=True,
-                hemis_token=access_token, # [NEW]
+                hemis_token=encrypt_data(access_token), # [NEW] Encrypted
                 university_id=uni_id_final
             )
             db.add(staff)

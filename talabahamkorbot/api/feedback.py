@@ -355,12 +355,17 @@ async def check_feedback_upload_status(
     
     return {"status": "pending"}
 
+    return {"status": "pending"}
+
+from api.dependencies import require_action_token
+
 @router.post("")
 async def create_feedback(
     text: str = Form(...),
     role: str = Form("dekanat"), 
     is_anonymous: bool = Form(False),
     session_id: Optional[str] = Form(None), # For Telegram-upload flow
+    token: str = Depends(require_action_token), # [SECURITY] ATS Enforced
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
 ):
@@ -384,6 +389,10 @@ async def create_feedback(
     if session_id:
         pending = await db.get(PendingUpload, session_id)
         if pending and pending.file_ids:
+            # [SECURITY] Verify Ownership
+            if pending.student_id != student.id:
+                raise HTTPException(status_code=403, detail="Siz faqat o'zingiz yuklagan faylni saqlay olasiz")
+
             feedback.file_id = pending.file_ids.split(",")[0]
             feedback.file_type = "document" # Simplification
             await db.delete(pending)
@@ -396,6 +405,7 @@ async def create_feedback(
 async def reply_feedback(
     id: int,
     text: str = Form(...),
+    token: str = Depends(require_action_token), # [SECURITY] ATS Enforced
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
 ):
@@ -430,6 +440,7 @@ async def reply_feedback(
 @router.post("/{id}/close")
 async def close_feedback(
     id: int,
+    token: str = Depends(require_action_token), # [SECURITY] ATS Enforced
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
 ):

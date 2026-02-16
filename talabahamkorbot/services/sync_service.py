@@ -21,25 +21,10 @@ def run_sync_all_students():
 async def sync_all_students():
     """
     Kunda 1 marta barcha aktiv talabalarni HEMIS bilan sinxronizatsiya qiladi.
+    [DISABLED] Privacy Policy Update: Background sync is disabled to avoid storing user passwords.
     """
-    logger.info("Starting Global HEMIS Sync...")
-    async with AsyncSessionLocal() as session:
-        stmt = select(Student).where(Student.is_active == True)
-        result = await session.execute(stmt)
-        students = result.scalars().all()
-        
-        count = 0
-        for student in students:
-            try:
-                await sync_student_data(session, student.id)
-                count += 1
-                # Prevent Rate Limiting
-                await asyncio.sleep(0.5) 
-            except Exception as e:
-                logger.error(f"Sync failed for student {student.id}: {e}")
-        
-        await session.commit()
-    logger.info(f"Global Sync Finished. Updated {count} students.")
+    logger.info("Global HEMIS Sync is DISABLED by Privacy Policy.")
+    return
 
 async def sync_student_data(session: AsyncSession, student_id: int):
     """

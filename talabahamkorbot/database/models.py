@@ -1491,3 +1491,34 @@ class DailyActivityStats(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow, onupdate=datetime.utcnow)
 
     faculty: Mapped["Faculty"] = relationship("Faculty")
+
+# ============================================================
+# SECURITY ACTION TOKENS (ATS)
+# ============================================================
+
+class SecurityToken(Base):
+    __tablename__ = "security_tokens"
+    __table_args__ = (
+        UniqueConstraint("token", name="uq_security_token"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    token: Mapped[str] = mapped_column(String(64), nullable=False, index=True) # The "Shifr"
+    
+    student_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    staff_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("staff.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+
+    status: Mapped[str] = mapped_column(String(20), default="active", index=True) # active, used
+    
+    issued_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(), nullable=True)
+    
+    action_meta: Mapped[str | None] = mapped_column(String(255), nullable=True) # What it was used for
+
+    # Relationships
+    student: Mapped["Student"] = relationship("Student")
+    staff: Mapped["Staff"] = relationship("Staff")

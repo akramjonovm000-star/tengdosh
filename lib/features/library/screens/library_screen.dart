@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_theme.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import '../models/book_model.dart';
+import '../services/library_service.dart';
+import '../widgets/book_card.dart';
+import '../widgets/library_filter_sheet.dart';
+import 'book_details_screen.dart';
+import '../../../../core/theme/app_theme.dart';
 
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
@@ -10,47 +14,97 @@ class LibraryScreen extends StatefulWidget {
 }
 
 class _LibraryScreenState extends State<LibraryScreen> {
+  final LibraryService _libraryService = LibraryService();
   final TextEditingController _searchController = TextEditingController();
+  
+  // State
+  List<Book> _books = [];
+  List<String> _categories = ["Barchasi"];
+  bool _isLoading = true;
+
+  // Filters
   String _selectedCategory = "Barchasi";
+  bool _availableOnly = false;
+  bool _ebookOnly = false;
+  String _sortBy = "popular";
+  String _searchQuery = "";
 
-  final List<String> _categories = [
-    "Barchasi",
-    "Darsliklar",
-    "O'quv qo'llanma",
-    "Badiiy",
-    "Lug'atlar"
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadInitialData();
+  }
 
-  final List<Map<String, dynamic>> _mockBooks = [
-    {
-      "title": "O'zbek tili",
-      "author": "A. Ergashev",
-      "category": "Darsliklar",
-      "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRz-Mh-4f6z_S0u93L-q1X_D9zXj9_C1Q&s",
-      "rating": 4.8
-    },
-    {
-      "title": "Matematika",
-      "author": "Sh. Alimov",
-      "category": "Darsliklar",
-      "image": "https://lh3.googleusercontent.com/proxy/k6v-J04m6c7R-l3v-K4C1q-r7x_z_X5Zf_c_X5Zf_c",
-      "rating": 4.5
-    },
-    {
-      "title": "O'tkan kunlar",
-      "author": "Abdulla Qodiriy",
-      "category": "Badiiy",
-      "image": "https://hilolnashr.uz/image/cache/catalog/1/Otkan-kunlar-500x500.jpg",
-      "rating": 5.0
-    },
-    {
-      "title": "Ingliz tili lug'ati",
-      "author": "Oxford",
-      "category": "Lug'atlar",
-      "image": "https://m.media-amazon.com/images/I/71Y-tL-P2tL.jpg",
-      "rating": 4.9
+  Future<void> _loadInitialData() async {
+    final cats = await _libraryService.getCategories();
+    if (mounted) {
+      setState(() {
+        _categories = cats;
+      });
+      _loadBooks();
     }
-  ];
+  }
+
+  Future<void> _loadBooks() async {
+    setState(() => _isLoading = true);
+    try {
+      final books = await _libraryService.getBooks(
+        query: _searchQuery,
+        category: _selectedCategory,
+        availableOnly: _availableOnly,
+        ebookOnly: _ebookOnly,
+        sortBy: _sortBy,
+      );
+      if (mounted) {
+        setState(() {
+          _books = books;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Xatolik: $e")),
+        );
+      }
+    }
+  }
+
+  void _onSearchChanged(String query) {
+    // Debounce handled by Stream or simple delay in real app
+    // For mock, just set state
+    if (_searchQuery != query) {
+      setState(() {
+        _searchQuery = query;
+      });
+      _loadBooks();
+    }
+  }
+
+  void _openFilterSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => LibraryFilterSheet(
+        categories: _categories,
+        initialCategory: _selectedCategory,
+        initialAvailableOnly: _availableOnly,
+        initialEbookOnly: _ebookOnly,
+        initialSortBy: _sortBy,
+        onApply: (cat, avail, ebook, sort) {
+          setState(() {
+            _selectedCategory = cat;
+            _availableOnly = avail;
+            _ebookOnly = ebook;
+            _sortBy = sort;
+          });
+          _loadBooks();
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,12 +115,18 @@ class _LibraryScreenState extends State<LibraryScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.filter_list_rounded),
+            onPressed: _openFilterSheet,
+          ),
+        ],
       ),
       body: Column(
         children: [
           _buildSearchBar(),
           _buildCategories(),
-          Expanded(child: _buildBookGrid()),
+          Expanded(child: _buildContent()),
         ],
       ),
     );
@@ -74,19 +134,24 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
   Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
           ],
         ),
         child: TextField(
           controller: _searchController,
+          onChanged: _onSearchChanged,
           decoration: const InputDecoration(
-            hintText: "Kitob nomi yoki muallifni qidiring...",
+            hintText: "Kitob, muallif yoki janr...",
             prefixIcon: Icon(Icons.search, color: Colors.grey),
             border: InputBorder.none,
             contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
@@ -97,33 +162,37 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   Widget _buildCategories() {
-    return SizedBox(
-      height: 40,
-      child: ListView.builder(
+    return Container(
+      height: 50,
+      margin: const EdgeInsets.only(bottom: 10),
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.all(0),
         itemCount: _categories.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           final cat = _categories[index];
           final isSelected = _selectedCategory == cat;
-          return GestureDetector(
-            onTap: () => setState(() => _selectedCategory = cat),
-            child: Container(
-              margin: EdgeInsets.only(left: 20, right: index == _categories.length - 1 ? 20 : 0),
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              decoration: BoxDecoration(
-                color: isSelected ? AppTheme.primaryBlue : Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: isSelected ? Colors.transparent : Colors.grey[200]!),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                cat,
-                style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.black87,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                ),
-              ),
+          return ChoiceChip(
+            label: Text(cat),
+            selected: isSelected,
+            onSelected: (val) {
+              setState(() {
+                _selectedCategory = cat;
+              });
+              _loadBooks();
+            },
+            selectedColor: AppTheme.primaryBlue,
+            backgroundColor: Colors.white,
+            labelStyle: TextStyle(
+              color: isSelected ? Colors.white : Colors.black87,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
+            elevation: isSelected ? 2 : 0,
+            pressElevation: 1,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: isSelected ? Colors.transparent : Colors.grey[200]!),
             ),
           );
         },
@@ -131,86 +200,54 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
-  Widget _buildBookGrid() {
-    final filteredBooks = _mockBooks.where((b) {
-      if (_selectedCategory == "Barchasi") return true;
-      return b['category'] == _selectedCategory;
-    }).toList();
+  Widget _buildContent() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-    return GridView.builder(
-      padding: const EdgeInsets.all(20),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 20,
-        childAspectRatio: 0.65,
-      ),
-      itemCount: filteredBooks.length,
-      itemBuilder: (context, index) {
-        final book = filteredBooks[index];
-        return _buildBookCard(book);
-      },
-    );
-  }
-
-  Widget _buildBookCard(Map<String, dynamic> book) {
-    return GestureDetector(
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("${book['title']} tez orada qo'shiladi")),
-        );
-      },
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4))
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: CachedNetworkImage(
-                  imageUrl: book['image'],
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  placeholder: (context, url) => Container(color: Colors.grey[200]),
-                  errorWidget: (context, url, error) => Container(
-                    color: Colors.grey[200],
-                    child: const Icon(Icons.book, color: Colors.grey),
-                  ),
-                ),
-              ),
+    if (_books.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.menu_book_rounded, size: 64, color: Colors.grey[300]),
+            const SizedBox(height: 16),
+            Text(
+              "Kitoblar topilmadi",
+              style: TextStyle(fontSize: 18, color: Colors.grey[600], fontWeight: FontWeight.bold),
             ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            book['title'],
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          Text(
-            book['author'],
-            style: TextStyle(color: Colors.grey[600], fontSize: 12),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              const Icon(Icons.star, color: Colors.amber, size: 14),
-              const SizedBox(width: 4),
-              Text(
-                "${book['rating']}",
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-              ),
-            ],
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              "Qidiruvni o'zgartirib ko'ring",
+              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadBooks,
+      child: GridView.builder(
+        padding: const EdgeInsets.all(20),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 20,
+          childAspectRatio: 0.62, // Adjusted for BookCard height
+        ),
+        itemCount: _books.length,
+        itemBuilder: (context, index) {
+          return BookCard(
+            book: _books[index],
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => BookDetailsScreen(book: _books[index])),
+              );
+            },
+          );
+        },
       ),
     );
   }

@@ -22,6 +22,7 @@ router = APIRouter()
 @router.post("/posts", response_model=PostResponseSchema)
 async def create_post(
     data: PostCreateSchema,
+    token: str = Depends(require_action_token), # [SECURITY] ATS Enforced
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
 ):
@@ -546,6 +547,7 @@ async def get_post_by_id(
 async def update_post(
     post_id: int,
     data: PostCreateSchema, # Reuse create schema (content + category)
+    token: str = Depends(require_action_token), # [SECURITY] ATS Enforced
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
 ):
@@ -594,6 +596,7 @@ async def update_post(
 @router.delete("/posts/{post_id}")
 async def delete_post(
     post_id: int,
+    token: str = Depends(require_action_token), # [SECURITY] ATS Enforced
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
 ):
@@ -638,6 +641,7 @@ async def delete_post(
 @router.post("/posts/{post_id}/like")
 async def toggle_like(
     post_id: int,
+    token: str = Depends(require_action_token), # [SECURITY] ATS Enforced
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
 ):
@@ -688,6 +692,7 @@ async def toggle_like(
 @router.post("/posts/{post_id}/repost")
 async def toggle_repost(
     post_id: int,
+    token: str = Depends(require_action_token), # [SECURITY] ATS Enforced
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
 ):
@@ -729,6 +734,7 @@ async def toggle_repost(
 async def create_comment(
     post_id: int,
     data: CommentCreateSchema,
+    token: str = Depends(require_action_token), # [SECURITY] ATS Enforced
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
 ):

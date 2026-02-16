@@ -230,9 +230,7 @@ class HemisService:
                 client, "POST", url, data=json_payload
             )
             
-            # [DEBUG] Log Headers to verify if IP is being forwarded
-            if hasattr(response.request, 'headers'):
-                 logger.info(f"DEBUG OUTGOING HEADERS: {response.request.headers}")
+
             logger.info(f"Auth Response: {response.status_code}")
             
             if response.status_code == 200:

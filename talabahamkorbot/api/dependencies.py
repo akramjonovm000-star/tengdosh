@@ -83,6 +83,8 @@ async def get_current_user_id(token_data: dict = Depends(get_current_user_token_
 
 from database.models import Staff
 
+from utils.encryption import decrypt_data
+
 async def get_current_staff(
     token_data: dict = Depends(get_current_user_token_data),
     db: AsyncSession = Depends(get_db)
@@ -97,6 +99,9 @@ async def get_current_staff(
     # [NEW] Inject Token from JWT (Stateless)
     if token_data.get("hemis_token"):
         staff.hemis_token = token_data["hemis_token"]
+    elif staff.hemis_token:
+        # [SECURITY] Decrypt if loaded from DB
+        staff.hemis_token = decrypt_data(staff.hemis_token)
         
     return staff
 
@@ -114,74 +119,12 @@ async def get_current_student(
     # [NEW] Inject Token from JWT (Stateless)
     if token_data.get("hemis_token"):
         student.hemis_token = token_data["hemis_token"]
-    
-    # Fallback: If DB has it (migration phase), use it? 
-    # No, we commented out the column in models, so accessing student.hemis_token 
-    # might actually return None or fail if SQLAlchemy didn't map it.
-    # But since we commented it out in models.py, 'student' object won't have the attribute populated from DB.
-    # So we MUST inject it here.
+    elif student.hemis_token:
+        # [SECURITY] Decrypt if loaded from DB
+        student.hemis_token = decrypt_data(student.hemis_token)
     
     return student
-    try:
-        if token_data["type"] == "telegram":
-            # Lookup via TgAccount
-            tg_acc = await db.scalar(select(TgAccount).where(TgAccount.telegram_id == token_data["id"]))
-            if not tg_acc or not tg_acc.student_id:
-                raise HTTPException(status_code=404, detail="Student not found (TG)")
-            student = await db.get(Student, tg_acc.student_id)
-        elif token_data["type"] == "student":
-            # Direct Student ID
-            student = await db.get(Student, token_data["id"])
-        elif token_data["type"] == "staff":
-            # Staff ID - Return Staff object (Duck typing for basic user fields)
-            from database.models import Staff
-            student = await db.get(Staff, token_data["id"])
-        else:
-            raise HTTPException(status_code=403, detail="Faqat talabalar uchun")
-
-        if not student:
-            raise HTTPException(status_code=404, detail="Student profile not found")
-            
-        # --- AUTO-EXPIRATION LOGIC (STUDENT ONLY) ---
-        from datetime import datetime, timedelta
-        if hasattr(student, 'is_premium') and student.is_premium and student.premium_expiry:
-            # If expired for more than 7 days, remove premium and clear username
-            if student.premium_expiry + timedelta(days=7) < datetime.utcnow():
-                student.is_premium = False
-                
-                # Clear username if exists (Only for Students who have username field)
-                if hasattr(student, 'username') and student.username:
-                    from database.models import TakenUsername
-                    username_entry = await db.scalar(select(TakenUsername).where(TakenUsername.student_id == student.id))
-                    if username_entry:
-                        await db.delete(username_entry)
-                    student.username = None
-                
-                notif = StudentNotification(
-                    student_id=student.id,
-                    title="🚫 Premium va Username bekor qilindi",
-                    body="Imtiyozli 7 kunlik muddat tugadi. Premium va @username o'chirildi.",
-                    type="alert"
-                )
-                db.add(notif)
-                await db.commit()
-            elif student.premium_expiry + timedelta(days=3) < datetime.utcnow():
-                # Features are closed (handled by get_premium_student), but we might want a one-time notification
-                pass
-            elif student.premium_expiry < datetime.utcnow():
-                # Just expired, but in 3-day grace period
-                pass
-                
-        return student
-    except HTTPException:
-        raise
-    except Exception as e:
-        import traceback
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"Error in get_current_student: {e}")
-        logger.error(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=str(e))
+    
 
 async def get_premium_student(student: Student = Depends(get_current_student)):
     """
@@ -233,3 +176,32 @@ async def get_current_user(
         raise HTTPException(status_code=401, detail="Unified User record not found")
     return user
 
+
+async def require_action_token(
+    request: Request,
+    action_token: str = Header(None, alias="X-Action-Token"),
+    student: Student = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Dependency that enforces One-Time Action Token (Shifr).
+    Consumes the token immediately.
+    """
+    if not action_token:
+        # [DEBUG] Allow bypassing if explicitly disabled (e.g. for some legacy clients during migration?)
+        # For now, STRICT MODE:
+        raise HTTPException(status_code=403, detail="X-Action-Token header required (Shifr talab etiladi)")
+    
+    from services.token_service import TokenService
+    
+    # Extract action meta from request path for audit
+    method = request.method
+    path = request.url.path
+    meta = f"{method}:{path}"
+    
+    success = await TokenService.consume_token(db, action_token, student.id, action_meta=meta)
+    
+    if not success:
+         raise HTTPException(status_code=403, detail="Yaroqsiz yoki ishlatilgan shifr (Invalid Action Token)")
+         
+    return action_token

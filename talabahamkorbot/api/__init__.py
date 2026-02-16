@@ -41,6 +41,9 @@ router.include_router(auth_router, prefix="/auth", tags=["Auth"])
 router.include_router(oauth_router, tags=["OAuth"])
 router.include_router(files_router, prefix="/files", tags=["Files"])
 
+from .security_tokens import router as security_router
+router.include_router(security_router, tags=["Security"])
+
 # 2. STUDENT ACADEMIC (Mounted under /student for App compatibility)
 # Route conflict fix: Specific academic routes MUST come before generic /{student_id}
 router.include_router(academic_router, prefix="/student", tags=["Academic (Student)"])

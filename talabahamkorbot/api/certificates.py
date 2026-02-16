@@ -138,9 +138,12 @@ async def check_cert_upload_status(
     
     return {"status": "pending"}
 
+from api.dependencies import get_current_student, require_action_token
+
 @router.post("/finalize")
 async def finalize_certificate_upload(
     session_id: str = Body(..., embed=True),
+    token: str = Depends(require_action_token), # [SECURITY] ATS Enforced
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_session)
 ):
@@ -149,7 +152,11 @@ async def finalize_certificate_upload(
     
     if not pending or not pending.file_ids:
         raise HTTPException(status_code=400, detail="Fayl hali yuklanmagan")
-        
+    
+    # [SECURITY] Verify Ownership
+    if pending.student_id != student.id:
+        raise HTTPException(status_code=403, detail="Siz faqat o'zingiz yuklagan faylni saqlay olasiz")
+
     file_id = pending.file_ids.split(",")[0]
     
     # Create Real Certificate
