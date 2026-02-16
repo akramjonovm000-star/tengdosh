@@ -173,36 +173,48 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
   Widget _buildCategories() {
     return Container(
-      height: 50,
-      margin: const EdgeInsets.only(bottom: 10),
-      child: ListView.separated(
+      height: 40, // More compact
+      margin: const EdgeInsets.only(bottom: 16, top: 4),
+      child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         scrollDirection: Axis.horizontal,
         itemCount: _categories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           final cat = _categories[index];
           final isSelected = _selectedCategory == cat;
-          return ChoiceChip(
-            label: Text(cat),
-            selected: isSelected,
-            onSelected: (val) {
-              setState(() {
-                _selectedCategory = cat;
-              });
-              _loadBooks();
-            },
-            selectedColor: AppTheme.primaryBlue,
-            backgroundColor: Colors.white,
-            labelStyle: TextStyle(
-              color: isSelected ? Colors.white : Colors.black87,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            ),
-            elevation: isSelected ? 2 : 0,
-            pressElevation: 1,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: BorderSide(color: isSelected ? Colors.transparent : Colors.grey[200]!),
+          return Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedCategory = cat;
+                });
+                _loadBooks();
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: isSelected ? AppTheme.primaryBlue : Colors.white,
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(
+                    color: isSelected ? Colors.transparent : Colors.grey.shade300,
+                    width: 1.5,
+                  ),
+                  boxShadow: isSelected 
+                    ? [BoxShadow(color: AppTheme.primaryBlue.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))]
+                    : null,
+                ),
+                child: Text(
+                  cat,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : Colors.grey.shade700,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
             ),
           );
         },
