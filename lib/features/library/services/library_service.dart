@@ -331,4 +331,9 @@ class LibraryService {
     _mockReservations.insert(0, newRes);
     return newRes;
   }
+
+  Future<void> cancelReservation(String reservationId) async {
+    await Future.delayed(const Duration(seconds: 1));
+    _mockReservations.removeWhere((r) => r.id == reservationId);
+  }
 }

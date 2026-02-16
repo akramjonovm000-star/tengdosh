@@ -3,6 +3,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../services/library_service.dart';
 import '../../models/reservation_model.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../book_details_screen.dart';
 
 class MyBooksScreen extends StatefulWidget {
   const MyBooksScreen({super.key});
@@ -53,6 +54,53 @@ class _MyBooksScreenState extends State<MyBooksScreen> with SingleTickerProvider
          setState(() => _isLoading = false);
       }
     }
+  }
+
+  Future<void> _handleCancel(Reservation item) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Bekor qilish"),
+        content: Text("${item.bookTitle} ni bekor qilishni xohlaysizmi?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Yo'q")),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Ha", style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      // Simulate API call
+      setState(() => _isLoading = true);
+      await Future.delayed(const Duration(seconds: 1));
+      
+      // In real app, call service.cancelReservation(item.id)
+      // updating local list for now
+      setState(() {
+        _reservations.remove(item);
+        _isLoading = false;
+      });
+       if (mounted) {
+         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Bekor qilindi")));
+      }
+    }
+  }
+
+  void _navigateToDetails(Reservation item) async { // Using BookId to fetch
+      // For simplicity in this mock version, we aren't fetching the full book object if we don't have it.
+      // But let's try to fetch it from service mock
+      setState(() => _isLoading = true);
+      final book = await _libraryService.getBookDetails(item.bookId);
+      setState(() => _isLoading = false);
+
+      if (mounted && book != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => BookDetailsScreen(book: book)),
+        );
+      } else if (mounted) {
+         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Kitob topilmadi")));
+      }
   }
 
   @override
@@ -353,7 +401,8 @@ class _MyBooksScreenState extends State<MyBooksScreen> with SingleTickerProvider
                          ],
                        ),
                      ),
-                  ],
+                      ),
+                   ],
                 ),
               ),
             ],
@@ -363,7 +412,7 @@ class _MyBooksScreenState extends State<MyBooksScreen> with SingleTickerProvider
             children: [
               Expanded(
                 child: TextButton(
-                  onPressed: () {}, 
+                  onPressed: () => _handleCancel(item), 
                   style: TextButton.styleFrom(
                     foregroundColor: Colors.red[400],
                     shape: const StadiumBorder(),
@@ -375,7 +424,11 @@ class _MyBooksScreenState extends State<MyBooksScreen> with SingleTickerProvider
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {}, 
+                  onPressed: () {
+                    // Navigate to details if we can fetch the book
+                    // For mock, we simply find the book in service or show unavailable
+                    _navigateToDetails(item);
+                  }, 
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFF0F5FF),
                     foregroundColor: AppTheme.primaryBlue,
@@ -391,6 +444,16 @@ class _MyBooksScreenState extends State<MyBooksScreen> with SingleTickerProvider
         ],
       ),
     );
+  }
+
+  void _navigateToDetails(Reservation item) async {
+    // In real app, we might need to fetch full book details.
+    // Here we use service to get book by ID.
+    final book = await _libraryService.getBookDetails(item.bookId);
+    if (mounted && book != null) {
+       // We need to import BookDetailsScreen
+       // Assuming it is accessible or needs import
+    }
   }
 
   Widget _buildBorrowedList() {
