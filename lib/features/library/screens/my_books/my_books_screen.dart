@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../services/library_service.dart';
-import '../models/reservation_model.dart';
+import '../../services/library_service.dart';
+import '../../models/reservation_model.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class MyBooksScreen extends StatefulWidget {
