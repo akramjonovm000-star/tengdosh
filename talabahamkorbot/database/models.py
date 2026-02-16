@@ -1528,9 +1528,6 @@ class SecurityToken(Base):
 # PENDING UPLOAD (TELEGRAM BOT SYNC)
 # ============================================================
 
-class PendingUpload(Base):
-    __tablename__ = "pending_uploads"
-
     session_id: Mapped[str] = mapped_column(String(64), primary_key=True) # UUID
     
     student_id: Mapped[int] = mapped_column(

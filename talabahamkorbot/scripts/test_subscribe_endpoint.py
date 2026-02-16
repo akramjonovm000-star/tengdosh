@@ -22,7 +22,7 @@ def test_subscribe():
         "Content-Type": "application/json"
     }
     
-    target_id = 729 # Any existing student ID
+    target_id = 2331 # Jaloliddin Ramazanov
     
     url = f"{BASE_URL}/community/subscribe/{target_id}"
     print(f"Testing POST {url}")

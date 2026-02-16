@@ -43,6 +43,10 @@ async def cmd_start_deep_link(message: Message, command: CommandObject, session:
             # Find Pending Upload
             pending = await session.get(PendingUpload, session_id)
             if pending:
+                # 1. Fetch existing account
+                result = await session.execute(select(TgAccount).where(TgAccount.telegram_id == user_id))
+                tg_account = result.scalar_one_or_none()
+
                 # Link Account (Auto-Auth)
                 if not tg_account:
                     tg_account = TgAccount(

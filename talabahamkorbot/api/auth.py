@@ -190,6 +190,8 @@ async def login_via_hemis(
 
     # 1. AUTHENTICATE
     import time
+    from sqlalchemy.exc import SQLAlchemyError
+    from aiohttp import ClientError
     t_start = time.time()
     
     # [NEW] Rate Limiting Check
@@ -200,7 +202,7 @@ async def login_via_hemis(
     is_blocked, ttl = await RateLimitService.check_rate_limit(rate_key, limit=10, block_time=3600)
     
     if is_blocked:
-        # Convert seconds to hours/minutes for friendly message
+        # Convert seconds to hours/minutes
         minutes = int(ttl / 60)
         hours = int(minutes / 60)
         
@@ -210,26 +212,51 @@ async def login_via_hemis(
              
         raise HTTPException(
             status_code=429, 
-            detail=msg
+            detail={"error": "RATE_LIMIT", "message": msg}
         )
 
     # [NEW] Dynamic University Detection
     base_url = UniversityService.get_api_url(creds.login)
     logger.info(f"AuthLog: Resolved URL for {creds.login}: {base_url}")
     
-    token, error = await HemisService.authenticate(creds.login, creds.password, base_url=base_url)
-    t_auth = time.time()
-    logger.info(f"AuthLog: Authenticate took {t_auth - t_start:.2f}s")
-    
-    if not token:
-        # [NEW] Increment Failed Attempt
-        await RateLimitService.increment_attempt(rate_key, block_time=3600)
+    try:
+        token, error = await HemisService.authenticate(creds.login, creds.password, base_url=base_url)
+        t_auth = time.time()
+        logger.info(f"AuthLog: Authenticate took {t_auth - t_start:.2f}s")
         
-        logger.warning(f"AuthLog: Auth failed via Hemis: {error}")
-        raise HTTPException(status_code=401, detail="Login yoki parol noto'g'ri")
-    
-    # [NEW] Clear Attempts on Success
-    await RateLimitService.clear_attempts(rate_key)
+        if not token:
+            # [NEW] Increment Failed Attempt
+            await RateLimitService.increment_attempt(rate_key, block_time=3600)
+            
+            error_code = "INVALID_CREDENTIALS"
+            error_msg = "Login yoki parol noto'g'ri"
+            
+            # Check if Hemis explicitly said something else (e.g. 500)
+            if error and "50" in str(error): # 500, 502, 503
+                 error_code = "HEMIS_ERROR"
+                 error_msg = "Hemis tizimi javob bermayapti"
+
+            logger.warning(f"AuthLog: Auth failed via Hemis: {error}")
+            raise HTTPException(
+                status_code=401 if error_code == "INVALID_CREDENTIALS" else 502, 
+                detail={"error": error_code, "message": error_msg}
+            )
+        
+        # [NEW] Clear Attempts on Success
+        await RateLimitService.clear_attempts(rate_key)
+            
+    except ClientError as e:
+        logger.error(f"Hemis Network Error: {e}")
+        raise HTTPException(
+            status_code=502,
+            detail={"error": "HEMIS_ERROR", "message": "Hemis tizimi bilan aloqa yo'q (Network)."}
+        )
+    except SQLAlchemyError as e:
+        logger.critical(f"Database Error during Auth: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail={"error": "DB_ERROR", "message": "Ma'lumotlar bazasi vaqtincha ishlamayapti."}
+        )
         
 
     # 2. GET PROFILE

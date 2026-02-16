@@ -91,9 +91,15 @@ class AuthProvider with ChangeNotifier {
         errorMsg = errorMsg.replaceAll("Exception:", "").trim();
       }
       
-      // Specific checks
-      if (errorMsg.toLowerCase().contains("login yoki parol")) {
-        return "Login yoki parol xato";
+      // [NEW] Localized Error Mapping
+      if (errorMsg.contains("RATE_LIMIT")) {
+         return "Siz qisqa vaqt ichida ko'p marta xato kiritdingiz.\nIltimos 2 daqiqadan so'ng urinib ko'ring.";
+      } else if (errorMsg.contains("DB_ERROR")) {
+         return "Tizimda vaqtincha nosozlik (Baza).\nBirozdan so'ng qayta urinib ko'ring.";
+      } else if (errorMsg.contains("HEMIS_ERROR")) {
+         return "Universitet HEMIS tizimi ishlamayapti.\nBu bizga bog'liq emas, keyinroq kiring.";
+      } else if (errorMsg.contains("INVALID_CREDENTIALS") || errorMsg.toLowerCase().contains("login yoki parol")) {
+         return "Login yoki parol xato!\nIltimos ma'lumotlarni tekshirib qayta kiring.";
       }
       
       return "Xatolik: $errorMsg";

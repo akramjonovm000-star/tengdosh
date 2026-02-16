@@ -46,8 +46,11 @@ app.add_middleware(
 # So we need to mount with prefix.
 
 from api.dependencies import get_current_student # Just to ensure dependencies load
+from api import community
+from api import subscription  # [NEW] Import subscription router
 
 app.include_router(community.router, prefix="/api/v1/community", tags=["Community"])
+app.include_router(subscription.router, prefix="/api/v1/community", tags=["Subscription"]) # [NEW] Include subscription routes
 
 @app.get("/")
 async def root():

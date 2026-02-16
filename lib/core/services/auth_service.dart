@@ -77,11 +77,24 @@ class AuthService {
         } else {
              throw Exception("Token topilmadi. Javob: ${response.body}");
         }
-      } else if (response.statusCode == 401 || response.statusCode == 400) {
-           final body = jsonDecode(response.body);
-           throw Exception(body['error'] ?? "Login yoki parol noto'g'ri");
       } else {
-           throw Exception("Server xatosi: ${response.statusCode}");
+           // [NEW] Structured Error Parsing
+           String errorMsg = "Server xatosi: ${response.statusCode}";
+           try {
+             final body = jsonDecode(response.body);
+             if (body['detail'] is Map) {
+               // New Format: {"detail": {"error": "CODE", "message": "Msg"}}
+               final detail = body['detail'];
+               throw Exception("${detail['error']}: ${detail['message']}");
+             } else if (body['detail'] is String) {
+               // Old Format or Simple Message
+               throw Exception(body['detail']);
+             }
+           } catch (e) {
+             if (e.toString().contains("Exception:")) rethrow;
+             // Fallback if JSON decode fails
+           }
+           throw Exception(errorMsg);
       }
     } catch (e) {
       print('Auth Error: $e');
