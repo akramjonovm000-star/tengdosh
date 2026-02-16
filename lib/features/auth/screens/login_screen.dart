@@ -21,6 +21,9 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _errorMessage; // NEW
 
   Future<void> _submit() async {
+    // 1. Dismiss Keyboard immediately to ensure UI visibility
+    FocusScope.of(context).unfocus();
+    
     setState(() => _errorMessage = null);
     
     if (!_formKey.currentState!.validate()) return;
@@ -41,31 +44,37 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
       
-      // Force Dialog for ALL errors during debugging/fix phase to ensure visibility
-      // User reported that sometimes UI is silent. Dialogs are harder to miss.
-      showDialog(
+      debugPrint("LoginScreen: Attempting to show Dialog now...");
+      
+      // 2. Small yield to ensure keyboard fully closes and frame settles
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      // Force Dialog for ALL errors
+      await showDialog(
         context: context,
+        barrierDismissible: false, // User MUST tap button
         builder: (ctx) => AlertDialog(
           title: const Text("Xatolik", style: TextStyle(color: Colors.red)),
           content: Text(error),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Tushunarli"))
+            TextButton(
+              onPressed: () { 
+                 debugPrint("LoginScreen: User closed dialog");
+                 Navigator.pop(ctx); 
+              }, 
+              child: const Text("Tushunarli")
+            )
           ],
         ),
       );
-
-      setState(() {
-        _errorMessage = error;
-      });
       
-      // Keep SnackBar as backup
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error),
-          backgroundColor: Colors.red.shade700,
-          behavior: SnackBarBehavior.floating,
-        )
-      );
+      debugPrint("LoginScreen: Dialog closed or shown.");
+
+      if (mounted) {
+        setState(() {
+          _errorMessage = error;
+        });
+      }
     }
   }
 
