@@ -104,6 +104,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   }
 
   Future<void> _toggleFollow() async {
+    if (widget.authorId == "0" || widget.authorId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Foydalanuvchi topilmadi")));
+      return;
+    }
+
     // Optimistic Update
     setState(() {
       _isFollowing = !_isFollowing;
@@ -490,10 +495,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         ElevatedButton(
-                          onPressed: _toggleFollow,
+                          onPressed: (widget.authorId == "0" || widget.authorId.isEmpty) ? null : _toggleFollow,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: _isFollowing ? Colors.red[50] : AppTheme.primaryBlue,
                             foregroundColor: _isFollowing ? Colors.red : Colors.white,
+                            disabledBackgroundColor: Colors.grey[300],
+                            disabledForegroundColor: Colors.grey[500],
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                               side: _isFollowing ? BorderSide(color: Colors.red) : BorderSide.none
