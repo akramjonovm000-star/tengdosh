@@ -391,25 +391,18 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
   }
 
   void _showFilterMenu(int tabIndex) {
-    if (tabIndex == 0) { // University
-       if (context.read<AuthProvider>().isManagement) {
-          _showUniversityFilter();
-       }
-    } else if (tabIndex == 1) { // Faculty
+    final scope = _getCurrentScope();
+    
+    if (scope == 'university') {
+      _showUniversityFilter();
+    } else if (scope == 'faculty') {
       _showFacultyFilter();
-    } else if (tabIndex == 2) { // Specialty
+    } else if (scope == 'specialty') {
       _showSpecialtyFilter();
     }
   }
 
   void _showUniversityFilter() {
-     // For now, University filter just shows "All" or "Mine" if applicable.
-     // But since the scope IS 'university', effectively we are seeing specific university posts.
-     // If we want to see ALL universities (Super Admin), we send null?
-     // Current backend logic: category='university' -> query.where(target_university_id == student.university_id)
-     // So "All Universities" might not be supported by backend for this user role yet without extra param.
-     // But let's add the UI placeholder.
-     
      final user = context.read<AuthProvider>().currentUser;
      final allValue = -1;
      final myValue = user?.universityId ?? 0;
@@ -420,11 +413,9 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
            PopupMenuItem<int>(value: myValue, child: const Text("Mening universitetim")),
      ];
      
-     // Note: We don't have _selectedUniversityId state yet. 
-     // Assuming for now University tab doesn't need simpler filter or we just don't implement it fully if backend doesn't support.
-     // But to be safe and clean, I will just leave it empty or show a simple toast "Filter hali mavjud emas" if not critical.
-     // OR strictly follow request: "Mening" vs "Barchasi".
-     // I'll leave it as a placeholder for now to avoid errors.
+     // Note: We don't have _selectedUniversityId state yet, assuming 'university' scope relies on backend user context mostly.
+     // But for consistently, if we want to support this toggle later we can.
+     // For now, let's just show it to confirm it works, but maybe not trigger fetch if not implemented.
   }
 
   void _showFacultyFilter() {
