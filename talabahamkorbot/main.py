@@ -132,17 +132,47 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware) # Rate Limiting
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["127.0.0.1"]) # Support X-Forwarded-Proto
 
+from services.security_watchdog import SecurityWatchdog
+from fastapi.responses import JSONResponse
+
+# --- HONEYPOT ROUTES ---
+@app.get("/admin/backup")
+@app.get("/wp-login.php")
+@app.get("/.env")
+@app.get("/config.json")
+async def honeypot_trap(request: Request):
+    ip = request.client.host
+    SecurityWatchdog.ban_ip(ip, f"Honeypot Triggered: {request.url.path}")
+    return JSONResponse(status_code=403, content={"error": "Access Denied"})
+
 @app.middleware("http")
 async def security_middleware(request: Request, call_next):
     start_time = time.time()
+    client_ip = request.client.host
     
-    # 1. Process Request
+    # 0. Check Bans
+    if SecurityWatchdog.is_banned(client_ip):
+         return JSONResponse(status_code=403, content={"error": "IP Blocked due to suspicious activity."})
+
+    # 1. Check User Agent & Device Type
+    user_agent = request.headers.get("user-agent", "unknown")
+    check_result = SecurityWatchdog.check_user_agent(user_agent, client_ip)
+    
+    if check_result is False:
+         return JSONResponse(status_code=403, content={"error": "Suspicious User-Agent detected."})
+    elif check_result == "PC_BLOCK":
+         return JSONResponse(status_code=403, content={"error": "Desktop devices are not allowed. Please use the mobile app."})
+
+    # 2. Process Request
     response = await call_next(request)
     
-    # 2. Add Security Headers
+    # 3. Track Errors
+    SecurityWatchdog.track_error(client_ip, response.status_code)
+    
+    # 4. Add Security Headers
     secure_headers.set_headers(response)
     
-    # 3. Audit Log
+    # 5. Audit Log
     process_time = time.time() - start_time
     await audit_logger(request, response, process_time)
     

@@ -4,7 +4,6 @@ import '../../../../core/theme/app_theme.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'secure_reader_screen.dart';
 import '../services/library_service.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 
 class BookDetailsScreen extends StatelessWidget {
   final Book book;
@@ -240,7 +239,9 @@ class _ReservationSheetState extends State<_ReservationSheet> {
 
     } catch (e) {
       setState(() => _isLoading = false);
-      Fluttertoast.showToast(msg: "Xatolik: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Xatolik: $e")),
+      );
     }
   }
 

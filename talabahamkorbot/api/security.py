@@ -58,6 +58,7 @@ def verify_token(token: str):
 # RATE LIMITING
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+from services.security_watchdog import SecurityWatchdog # Expose for other modules
 
 # Initialize Limiter with global default limits
 # This object is imported by main.py and other routers
