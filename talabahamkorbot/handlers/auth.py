@@ -54,42 +54,83 @@ async def cmd_start(message: Message, state: FSMContext, session: AsyncSession):
 
     # ===================== DEEP LINK LOGIN LOGIC =====================
     # Format: /start login__student_id_{id}
+    # Format: /start upload_{session_id}
     command_args = message.text.split()[1] if len(message.text.split()) > 1 else None
-    if command_args and command_args.startswith("login__"):
-        token_payload = command_args.replace("login__", "")
-        
-        # Verify format
-        if token_payload.startswith("student_id_"):
-            try:
-                sid = int(token_payload.replace("student_id_", ""))
-                student = await session.get(Student, sid)
-                
-                if student:
-                    # Link Account
-                    if not account:
-                        account = TgAccount(
-                            telegram_id=tg_id,
-                            student_id=student.id,
-                            current_role="student"
-                        )
-                        session.add(account)
-                    else:
-                        account.student_id = student.id
-                        account.current_role = "student"
-                    
-                    # Update phone (if missing) - Optional, we might ask for it later
-                    # But HEMIS provides phone usually.
-                    
+    if command_args:
+        # 1. HANDLE UPLOAD DEEP LINK (Smart Context)
+        if command_args.startswith("upload_"):
+            session_id = command_args.replace("upload_", "")
+            from database.models import PendingUpload, TgAccount
+            from models.states import DocumentAddStates, CertificateAddStates
+            
+            # Find Pending Upload
+            pending = await session.get(PendingUpload, session_id)
+            if pending:
+                # Link Account (Auto-Auth)
+                if not account:
+                    account = TgAccount(
+                        telegram_id=tg_id,
+                        student_id=pending.student_id,
+                        current_role="student"
+                    )
+                    session.add(account)
                     await session.commit()
+                elif not account.student_id:
+                     account.student_id = pending.student_id
+                     account.current_role = "student"
+                     await session.commit()
+                
+                # Determine intended state based on category/title or generic DocumentAdd
+                # We can store 'target_state' in PendingUpload or infer it.
+                # For now, let's assume DocumentAddStates.WAIT_FOR_APP_FILE is generic enough 
+                # or check category
+                
+                target_state = DocumentAddStates.WAIT_FOR_APP_FILE
+                if pending.category == "sertifikat":
+                     target_state = CertificateAddStates.WAIT_FOR_APP_FILE
+                
+                await state.set_state(target_state)
+                
+                display_name = pending.title or "Hujjat"
+                await message.answer(
+                    f"🔗 <b>Hisob Ulandi!</b>\n\n"
+                    f"📎 <b>{display_name}</b> yuklanmoqda...\n"
+                    "Iltimos, faylni shu yerga yuboring:",
+                    parse_mode="HTML"
+                )
+                return
+
+        # 2. HANDLE LOGIN DEEP LINK (Legacy/Direct)
+        elif command_args.startswith("login__"):
+            token_payload = command_args.replace("login__", "")
+            
+            # Verify format
+            if token_payload.startswith("student_id_"):
+                try:
+                    sid = int(token_payload.replace("student_id_", ""))
+                    student = await session.get(Student, sid)
                     
-                    
-                    display_name = student.short_name or student.full_name
-                    
-                    from handlers.student.navigation import show_student_main_menu
-                    return await show_student_main_menu(message, session, state, text=f"🎉 <b>Xush kelibsiz, {display_name}!</b>\nSiz tizimga muvaffaqiyatli ulandingiz (OAuth).\n\nQuyidagilardan birini tanlang:")
-            except Exception as e:
-                logger.error(f"Deep link login error: {e}")
-                await message.answer("⚠️ Login havolasi yaroqsiz yoki eskirgan.")
+                    if student:
+                        # Link Account
+                        if not account:
+                            account = TgAccount(
+                                telegram_id=tg_id,
+                                student_id=student.id,
+                                current_role="student"
+                            )
+                            session.add(account)
+                        else:
+                            account.student_id = student.id
+                            account.current_role = "student"
+                        
+                        await session.commit()
+                        
+                        display_name = student.short_name or student.full_name
+                        from handlers.student.navigation import show_student_main_menu
+                        return await show_student_main_menu(message, session, state, text=f"🎉 <b>Xush kelibsiz, {display_name}!</b>\nSiz tizimga muvaffaqiyatli ulandingiz (OAuth).\n\nQuyidagilardan birini tanlang:")
+                except Exception as e:
+                    logger.error(f"Deep link login error: {e}")
+                    await message.answer("⚠️ Login havolasi yaroqsiz yoki eskirgan.")
     # =================================================================
 
 

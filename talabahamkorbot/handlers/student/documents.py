@@ -284,34 +284,51 @@ from database.models import PendingUpload
 
 @router.message(DocumentAddStates.WAIT_FOR_APP_FILE, F.photo | F.document)
 async def on_mobile_document_upload(message: Message, state: FSMContext, session: AsyncSession):
-    logger.info(f"DEBUG: Document upload triggered for {message.from_user.id}")
-    student = await get_student(message, session)
-    if not student:
-        return await message.answer("Siz talaba emassiz.")
+    # logger.info(f"DEBUG: Document upload triggered for {message.from_user.id}")
+    
+    # Check TG Account
+    stmt = select(TgAccount).where(TgAccount.telegram_id == message.from_user.id)
+    result = await session.execute(stmt)
+    tg = result.scalars().first()
+    
+    if not tg or not tg.student_id:
+        await message.answer("Siz talaba emassiz yoki hisob ulanmagan.")
+        return
 
     # Find active pending upload for this student
-    pending = await session.scalar(
+    # We prioritize the MOST RECENT pending upload
+    stmt = (
         select(PendingUpload)
-        .where(PendingUpload.student_id == student.id)
+        .where(PendingUpload.student_id == tg.student_id)
         .order_by(PendingUpload.created_at.desc())
         .limit(1)
     )
+    result = await session.execute(stmt)
+    pending = result.scalars().first()
 
     if not pending:
         await state.clear()
         return await message.answer("Hozirda faol hujjat yuklash so'rovi mavjud emas.")
 
     # Save File ID and Metadata
+    file_id = None
+    file_unique_id = None
+    file_size = 0
+    mime_type = "application/octet-stream"
+
     if message.photo:
-        file_id = message.photo[-1].file_id
-        file_unique_id = message.photo[-1].file_unique_id
-        file_size = message.photo[-1].file_size
+        # Best quality
+        photo = message.photo[-1]
+        file_id = photo.file_id
+        file_unique_id = photo.file_unique_id
+        file_size = photo.file_size
         mime_type = "image/jpeg"
-    else:
-        file_id = message.document.file_id
-        file_unique_id = message.document.file_unique_id
-        file_size = message.document.file_size
-        mime_type = message.document.mime_type
+    elif message.document:
+        doc = message.document
+        file_id = doc.file_id
+        file_unique_id = doc.file_unique_id
+        file_size = doc.file_size
+        mime_type = doc.mime_type
         
     # Notify User IMMEDIATELY
     await message.answer(
@@ -326,12 +343,13 @@ async def on_mobile_document_upload(message: Message, state: FSMContext, session
     pending.file_size = file_size
     pending.mime_type = mime_type
     
+    # Mark as uploaded (optional, status serves this)
+    pending.status = "uploaded"
+    
     await session.commit()
     
-    # State remains or clears? Usually we keep it until they leave or we can clear
-    # Clearing state is better once we got the file.
+    # Clear state so user isn't stuck
     await state.clear()
-
 
 
 

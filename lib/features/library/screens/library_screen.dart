@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import '../models/book_model.dart';
 import '../services/library_service.dart';
 import '../widgets/book_card.dart';
-import '../widgets/library_filter_sheet.dart';
 import 'book_details_screen.dart';
+import 'library_search_screen.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'my_books/my_books_screen.dart';
 
@@ -16,13 +16,11 @@ class LibraryScreen extends StatefulWidget {
 
 class _LibraryScreenState extends State<LibraryScreen> {
   final LibraryService _libraryService = LibraryService();
-  final TextEditingController _searchController = TextEditingController();
   
   // State
   Map<String, List<Book>> _booksByGenre = {};
   List<String> _genres = [];
   bool _isLoading = true;
-  String _searchQuery = "";
 
   @override
   void initState() {
@@ -57,35 +55,6 @@ class _LibraryScreenState extends State<LibraryScreen> {
     }
   }
 
-  Future<void> _searchBooks(String query) async {
-    setState(() {
-      _isLoading = true;
-      _searchQuery = query;
-    });
-
-    if (query.isEmpty) {
-      // If search cleared, reload sections
-      _loadInitialData();
-      return;
-    }
-
-    try {
-      // If searching, we display a single grid of results instead of sections
-      final books = await _libraryService.getBooks(query: query);
-      if (mounted) {
-        setState(() {
-          _booksByGenre = {"Qidiruv natijalari": books};
-          _genres = ["Qidiruv natijalari"];
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -97,65 +66,29 @@ class _LibraryScreenState extends State<LibraryScreen> {
         centerTitle: false,
         actions: [
           IconButton(
-            icon: const Icon(Icons.bookmark_rounded, color: AppTheme.primaryBlue),
+            icon: const Icon(Icons.search_rounded, color: Colors.black87),
             onPressed: () {
                Navigator.push(
                 context, 
-                MaterialPageRoute(builder: (_) => const MyBooksScreen())
+                MaterialPageRoute(builder: (_) => const LibrarySearchScreen())
               );
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.tune_rounded, color: Colors.black),
-            onPressed: () {
-              // Show filter sheet if needed for advanced filtering
-              // For now, implementing basic genre browsing
-            },
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          _buildSearchBar(),
-          Expanded(child: _buildContent()),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: IconButton(
+              icon: const Icon(Icons.person_outline_rounded, color: Colors.black87),
+              onPressed: () {
+                 Navigator.push(
+                  context, 
+                  MaterialPageRoute(builder: (_) => const MyBooksScreen())
+                );
+              },
             ),
-          ],
-        ),
-        child: TextField(
-          controller: _searchController,
-          onChanged: (val) {
-             // Debounce logic could be added here
-             if (val.isEmpty && _searchQuery.isNotEmpty) {
-               _searchBooks("");
-             }
-          },
-          onSubmitted: _searchBooks,
-          decoration: InputDecoration(
-            hintText: "Kitob, muallif yoki janr...",
-            hintStyle: TextStyle(color: Colors.grey[400]),
-            prefixIcon: const Icon(Icons.search_rounded, color: Colors.grey),
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
           ),
-        ),
+        ],
       ),
+      body: _buildContent(),
     );
   }
 

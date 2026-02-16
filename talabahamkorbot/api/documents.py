@@ -99,23 +99,62 @@ async def initiate_document_upload(
     db: AsyncSession = Depends(get_session)
 ):
     """Triggers a prompt in the Telegram bot for the user to upload a document"""
-    from database.models import PendingUpload, TgAccount
+    from database.models import PendingUpload, TgAccount, SecurityToken
+    from services.token_service import TokenService
+    from config import BOT_USERNAME
     
     # 1. Check TG Account
     stmt = select(TgAccount).where(TgAccount.student_id == student.id)
     result = await db.execute(stmt)
     tg_account = result.scalars().first()
     
+    # [SMART CONTEXT] Logic
     if not tg_account:
-        return {"success": False, "message": "Telegram hisob ulanmagan! Avval botga kiring (@talabahamkorbot)"}
+        # Generate Auth Token for Deep Link
+        # We can use a short-lived token or just sign the student_id
+        # Let's use a simple signed format: auth_<student_id>_<timestamp>_signature
+        # OR just reuse the ATS system if appropriate, but ATS is for actions.
+        # Let's keep it simple: "auth_{student_id}" is insecure if guessed.
+        # Better: Generate a specialized token.
         
-    # 2. Create Session
+        # New approach: Use PendingUpload session_id as the auth token!
+        # When user clicks start=session_id, we link them AND set state.
+        
+        auth_link = f"https://t.me/{BOT_USERNAME}?start=upload_{req.session_id}"
+        
+        # Create PendingUpload even if not linked, so we can link later
+        # Parse Intent
+        category = req.category if req.category else "boshqa"
+        title = req.title if req.title else "Hujjat"
+        
+        # Cleanup old pending for same session
+        existing = await db.get(PendingUpload, req.session_id)
+        if existing: await db.delete(existing)
+        
+        new_pending = PendingUpload(
+            session_id=req.session_id,
+            student_id=student.id,
+            category=category,
+            title=title,
+            file_ids=""
+        )
+        db.add(new_pending)
+        await db.commit()
+
+        return {
+            "success": False, 
+            "requires_auth": True, 
+            "auth_link": auth_link,
+            "message": "Telegram hisob ulanmagan. Iltimos, havolani oching."
+        }
+        
+    # 2. Existing Account Logic (Smart Flow)
     session_id = req.session_id
     
-    # Cleanup old pending for same session if exists
-    await db.delete(await db.get(PendingUpload, session_id)) if await db.get(PendingUpload, session_id) else None
+    # Cleanup old pending
+    existing = await db.get(PendingUpload, session_id)
+    if existing: await db.delete(existing)
     
-    # Parse Intent
     category = req.category if req.category else "boshqa"
     title = req.title if req.title else "Hujjat"
     
@@ -144,7 +183,13 @@ async def initiate_document_upload(
         # [CRITICAL] Set Bot State
         await set_bot_state(tg_account.telegram_id, DocumentAddStates.WAIT_FOR_APP_FILE)
         
-        return {"success": True, "message": "Botga yuklash so'rovi yuborildi. Telegramni oching.", "session_id": session_id}
+        return {
+            "success": True, 
+            "requires_auth": False,
+            "message": "Botga yuklash so'rovi yuborildi. Telegramni oching.", 
+            "session_id": session_id,
+            "bot_link": f"https://t.me/{BOT_USERNAME}"
+        }
     except Exception as e:
         return {"success": False, "message": f"Botga xabar yuborishda xatolik: {str(e)}"}
 

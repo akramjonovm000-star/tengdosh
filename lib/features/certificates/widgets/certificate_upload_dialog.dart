@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/services/data_service.dart';
 
@@ -43,21 +44,46 @@ class _CertificateUploadDialogState extends State<CertificateUploadDialog> {
 
     setState(() => _isLoading = true);
 
-    final result = await _dataService.initiateCertificateUpload(
-      sessionId: _sessionId,
-      title: _titleController.text.trim(),
-    );
+    try {
+      final result = await _dataService.initiateCertificateUpload(
+        sessionId: _sessionId,
+        title: _titleController.text.trim(),
+      );
 
-    if (mounted) {
-      setState(() => _isLoading = false);
-      if (result['success'] == true) {
-        setState(() => _isInitiated = true);
-        _startPolling();
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result['message'] ?? "Xatolik yuz berdi"), backgroundColor: Colors.red),
-        );
+      if (mounted) {
+        setState(() => _isLoading = false);
+        
+        // [SMART UPLOAD LOGIC]
+        if (result['success'] == true || result['requires_auth'] == true) {
+           setState(() => _isInitiated = true);
+           
+           String urlToLaunch = "";
+           if (result['requires_auth'] == true) {
+             urlToLaunch = result['auth_link'];
+           } else {
+             urlToLaunch = result['bot_link'] ?? "https://t.me/talabahamkorbot";
+           }
+           
+           if (await canLaunchUrl(Uri.parse(urlToLaunch))) {
+             await launchUrl(Uri.parse(urlToLaunch), mode: LaunchMode.externalApplication);
+           } else {
+             ScaffoldMessenger.of(context).showSnackBar(
+               const SnackBar(content: Text("Telegramni ochib bo'lmadi"), backgroundColor: Colors.orange),
+             );
+           }
+           
+           _startPolling();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(result['message'] ?? "Xatolik yuz berdi"), backgroundColor: Colors.red),
+          );
+        }
       }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Xatolik: $e"), backgroundColor: Colors.red),
+      );
     }
   }
 

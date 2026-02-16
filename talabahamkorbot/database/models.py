@@ -1522,3 +1522,31 @@ class SecurityToken(Base):
     # Relationships
     student: Mapped["Student"] = relationship("Student")
     staff: Mapped["Staff"] = relationship("Staff")
+
+
+# ============================================================
+# PENDING UPLOAD (TELEGRAM BOT SYNC)
+# ============================================================
+
+class PendingUpload(Base):
+    __tablename__ = "pending_uploads"
+
+    session_id: Mapped[str] = mapped_column(String(64), primary_key=True) # UUID
+    
+    student_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    
+    category: Mapped[str | None] = mapped_column(String(64), nullable=True) # certificate, document, etc.
+    title: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    
+    file_ids: Mapped[str | None] = mapped_column(Text, nullable=True) # Comma separated
+    file_unique_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    mime_type: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    file_size: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+
+    status: Mapped[str] = mapped_column(String(32), default="pending")
+    created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
+
+    student: Mapped["Student"] = relationship("Student")
+

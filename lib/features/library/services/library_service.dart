@@ -146,6 +146,26 @@ class LibraryService {
     return ["Barchasi", ...genres];
   }
 
+  Future<List<String>> getAuthors() async {
+    final authors = _mockBooks.map((b) => b.author).toSet().toList();
+    authors.sort();
+    return authors;
+  }
+
+  Future<List<Book>> getPopularBooks() async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    final sorted = List<Book>.from(_mockBooks);
+    sorted.sort((a, b) => b.rating.compareTo(a.rating));
+    return sorted.take(5).toList();
+  }
+
+  Future<List<Book>> getRecommendedBooks() async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    // Mock recommendations (random shuffle for demo)
+    final shuffled = List<Book>.from(_mockBooks)..shuffle();
+    return shuffled.take(3).toList();
+  }
+
   // --- Reservation System ---
 
   // Mock Reservations
