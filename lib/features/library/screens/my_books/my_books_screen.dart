@@ -4,6 +4,7 @@ import '../../services/library_service.dart';
 import '../../models/reservation_model.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../book_details_screen.dart';
+import '../secure_reader_screen.dart';
 
 class MyBooksScreen extends StatefulWidget {
   const MyBooksScreen({super.key});
@@ -101,6 +102,32 @@ class _MyBooksScreenState extends State<MyBooksScreen> with SingleTickerProvider
       } else if (mounted) {
          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Kitob topilmadi")));
       }
+  }
+
+  // Call this from onPressed
+  Future<void> _handleContinue(Reservation item) async {
+    setState(() => _isLoading = true);
+    try {
+      final book = await _libraryService.getBookDetails(item.bookId);
+      setState(() => _isLoading = false);
+      
+      if (mounted && book != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => SecureReaderScreen(book: book)),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Kitob ma'lumotlari topilmadi")));
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
@@ -317,7 +344,7 @@ class _MyBooksScreenState extends State<MyBooksScreen> with SingleTickerProvider
               borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
             ),
             child: ElevatedButton(
-              onPressed: () {}, // Navigate to reader
+              onPressed: () => _handleContinue(item),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryBlue,
                 foregroundColor: Colors.white,
