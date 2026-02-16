@@ -16,4 +16,9 @@ def is_global_moderator(hemis_login: str) -> bool:
     """
     if not hemis_login:
         return False
-    return str(hemis_login).strip() in MODERATOR_LOGINS
+    
+    # Remove all non-digit characters for safety
+    import re
+    clean_login = re.sub(r'\D', '', str(hemis_login))
+    
+    return clean_login in MODERATOR_LOGINS

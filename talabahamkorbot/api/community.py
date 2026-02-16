@@ -202,30 +202,14 @@ async def get_posts(
         # MODERATOR CHECK (Refactored)
         from utils.moderators import is_global_moderator
         
-        # Ensure robust string comparison
+        # Ensure robust string comparison (Try Login, then Hemis ID, then ID)
         login_raw = getattr(student, 'hemis_login', None)
+        if not login_raw:
+             # Fallback for Staff or odd Student records
+             login_raw = getattr(student, 'hemis_id', None)
+        
         login = str(login_raw or '').strip()
         is_moderator = is_global_moderator(login)
-        
-        # Explicit File Logging to /tmp (safer permissions)
-        try:
-             with open("/tmp/debug_community.log", "a") as f:
-                 import datetime
-                 f.write(f"\n--- REQUEST {datetime.datetime.now()} ---\n")
-                 f.write(f"User ID: {getattr(student, 'id', 'N/A')}\n")
-                 f.write(f"Type: {type(student)}\n")
-                 f.write(f"Raw Login: '{login_raw}' (Type: {type(login_raw)})\n")
-                 f.write(f"Processed Login: '{login}'\n")
-                 f.write(f"Is Moderator: {is_moderator}\n")
-                 f.write(f"Category: {category}\n")
-                 f.write(f"Faculty ID Filter: {faculty_id}\n")
-                 f.write(f"University ID: {getattr(student, 'university_id', 'N/A')}\n")
-                 f.write("----------------------------------------\n")
-        except Exception as e:
-             print(f"LOGGING ERROR: {e}")
-
-        print(f"DEBUG: get_posts user={getattr(student, 'id', '?')} login='{login}' is_mod={is_moderator} cat={category} f_id={faculty_id}", flush=True)
-
         
         if category == 'university': 
              if not is_moderator:
