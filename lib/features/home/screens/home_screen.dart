@@ -510,7 +510,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   title: "Kutubxona",
                   icon: Icons.local_library_rounded,
                   color: Colors.indigo,
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LibraryScreen())),
+                  onTap: () {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Kutubxona tez orada ishga tushadi"),
+                        duration: Duration(seconds: 2),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
                 ),
               ],
             ),

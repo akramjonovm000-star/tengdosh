@@ -211,38 +211,25 @@ async def get_posts(
         login = str(login_raw or '').strip()
         is_moderator = is_global_moderator(login)
         
-        # [FORCE BACKUP] Explicit check for the demo user/id
         if not is_moderator:
              if login == '395251101397' or getattr(student, 'id', 0) == 730:
                  is_moderator = True
-                 
-        # Path Logging for journalctl
-        m_id = getattr(student, 'id', '?')
-        print(f"COMMUNITY_DEBUG: user={m_id} login='{login}' is_mod={is_moderator} cat={category} f_id={faculty_id}", flush=True)
 
         if category == 'university': 
              if not is_moderator:
                  query = query.where(ChoyxonaPost.target_university_id == student.university_id)
-                 print(f"COMMUNITY_DEBUG: Path=UNIVERSITY_STUDENT", flush=True)
-             else:
-                 print(f"COMMUNITY_DEBUG: Path=UNIVERSITY_MODERATOR", flush=True)
         
         elif category == 'faculty':
              # MODERATOR LOGIC:
              if is_moderator:
-                 print(f"COMMUNITY_DEBUG: Path=FACULTY_MODERATOR", flush=True)
                  # If faculty_id is provided, filter by it.
                  # If NOT provided (All Faculties), do NOTHING (Global View).
                  if faculty_id:
                      query = query.where(ChoyxonaPost.target_faculty_id == faculty_id)
-                     print(f"COMMUNITY_DEBUG: Filter=fac_{faculty_id}", flush=True)
-                 else:
-                     print(f"COMMUNITY_DEBUG: Filter=NONE_GLOBAL", flush=True)
              
              # MANAGEMENT LOGIC:
              elif is_management:
-                 print(f"COMMUNITY_DEBUG: Path=FACULTY_MGMT", flush=True)
-                 query = query.where(ChoyxonaPost.target_university_id == student.university_id) # Management is still Uni-bound?
+                 query = query.where(ChoyxonaPost.target_university_id == student.university_id)
                  if f_id:
                      query = query.where(ChoyxonaPost.target_faculty_id == f_id)
                  elif faculty_id:
@@ -250,7 +237,6 @@ async def get_posts(
              
              # STUDENT LOGIC:
              else:
-                 print(f"COMMUNITY_DEBUG: Path=FACULTY_STUDENT", flush=True)
                  query = query.where(ChoyxonaPost.target_university_id == student.university_id)
                  # Default to own faculty if specific filter not requested 
                  if faculty_id:
@@ -258,7 +244,6 @@ async def get_posts(
                  else:
                     if getattr(student, 'faculty_id', None):
                         query = query.where(ChoyxonaPost.target_faculty_id == student.faculty_id)
-                        print(f"COMMUNITY_DEBUG: AutoFilter=my_fac_{student.faculty_id}", flush=True)
 
         elif category == 'specialty':
              # MODERATOR LOGIC:

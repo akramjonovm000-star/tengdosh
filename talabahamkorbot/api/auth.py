@@ -22,7 +22,7 @@ from utils.academic import get_or_create_academic_context
 
 @router.post("/hemis")
 @router.post("/hemis/")
-@limiter.limit("5/minute")
+# @limiter.limit("5/minute") # [CONFIG] Disabled by User Request
 async def login_via_hemis(
     request: Request, # Required for limiter
     creds: HemisLoginRequest,
@@ -728,11 +728,27 @@ async def hemis_callback(
             return HTMLResponse(content=_get_success_html("Tizimga kirdingiz, lekin botga xabar yuborishda xatolik bo'ldi. Botni qayta ishga tushiring."))
 
     elif state == "app":
-        # Generate our internal token (session check)
-        # Using the same format as login_via_hemis for now
-        app_token = f"student_id_{student.id}"
-        # Redirect back to App via Deep Link
-        return RedirectResponse(url=f"talabahamkor://auth?token={app_token}&status=success")
+        # [STATELESS] Generate JWT with embedded HEMIS token for OAuth/App Login
+        user_agent = request.headers.get("user-agent", "unknown")
+        
+        # [SECURITY] Encrypt Token
+        from utils.encryption import encrypt_data
+        encrypted_token = encrypt_data(token)
+        
+        # Create Access Token
+        access_token = create_access_token(
+            data={
+                "sub": student.hemis_login,
+                "type": "student",
+                "id": student.id,
+                "hemis_token": encrypted_token # Embed Encrypted Token
+            },
+            expires_delta=timedelta(minutes=60 * 24 * 7), # 7 days
+            user_agent=user_agent
+        )
+        
+        # Redirect back to App with NEW Token Format
+        return RedirectResponse(url=f"talabahamkor://auth?token={access_token}&status=success")
 
     return HTMLResponse(content=_get_success_html("Muvaffaqiyatli kirdingiz!"))
 

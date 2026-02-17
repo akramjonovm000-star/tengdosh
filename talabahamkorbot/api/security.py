@@ -62,4 +62,5 @@ from services.security_watchdog import SecurityWatchdog # Expose for other modul
 
 # Initialize Limiter with global default limits
 # This object is imported by main.py and other routers
-limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
+# [CONFIG] Limits REMOVED by User Request (Set to very high value)
+limiter = Limiter(key_func=get_remote_address, default_limits=["10000/minute"])

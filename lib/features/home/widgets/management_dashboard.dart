@@ -148,9 +148,13 @@ class ManagementDashboard extends StatelessWidget {
                   icon: Icons.local_library_rounded,
                   color: Colors.blueAccent,
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const LibraryScreen()),
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Kutubxona tez orada ishga tushadi"),
+                        duration: Duration(seconds: 2),
+                        behavior: SnackBarBehavior.floating,
+                      ),
                     );
                   },
                 ),

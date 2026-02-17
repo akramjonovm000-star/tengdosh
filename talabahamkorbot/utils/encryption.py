@@ -10,14 +10,7 @@ ENCRYPTION_KEY = os.environ.get("ENCRYPTION_KEY")
 
 if not ENCRYPTION_KEY:
     # Generate a temporary key for dev if missing (WARNING: Restarting app invalidates old data!)
-    # But usually we want a persistent dev key or error out.
-    # For now, let's use a hardcoded dev key if env is missing to avoid "invalid token" errors on restart in dev.
-    # DONT DO THIS IN PROD.
-    logger.warning("ENCRYPTION_KEY not found in env. Using INSECURE dev key.")
-    ENCRYPTION_KEY = b"ChangeMeInProduction_AbsoluteMust32BytesKey=" # Placeholder logic
-    # Real Fernet key needs to be valid base64 32 bytes
-    # Let's just generate one and log it if missing, or user should provide one.
-    # Better: Generate one-time key
+    logger.warning("ENCRYPTION_KEY not found in env. Generating temporary key (Will invalidate sessions on restart).")
     try:
         ENCRYPTION_KEY = Fernet.generate_key()
         logger.warning(f"Generated TEMP Encryption Key: {ENCRYPTION_KEY.decode()}")

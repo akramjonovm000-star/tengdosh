@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 # Structure: {ip: count}
 _error_counts = defaultdict(int) 
 _banned_ips = set()
+_whitelisted_ips = {"172.30.0.22", "127.0.0.1"} # [CONFIG] Trusted IPs
 _suspicious_agents = ["curl", "python-requests", "wget", "scrapy", "go-http-client"]
 
 class SecurityWatchdog:
@@ -39,10 +40,21 @@ class SecurityWatchdog:
             logger.error(f"Failed to send security alert: {e}")
 
     @staticmethod
+    def is_whitelisted(ip: str) -> bool:
+        """
+        Checks if IP is trusted.
+        """
+        return ip in _whitelisted_ips
+
+    @staticmethod
     def ban_ip(ip: str, reason: str):
         """
         Temporarily bans an IP address (In-Memory).
         """
+        if SecurityWatchdog.is_whitelisted(ip):
+             logger.info(f"Skipping ban for Whitelisted IP: {ip} (Reason: {reason})")
+             return
+
         if ip not in _banned_ips:
             _banned_ips.add(ip)
             logger.warning(f"IP BANNED: {ip} Reason: {reason}")
@@ -60,6 +72,8 @@ class SecurityWatchdog:
 
     @staticmethod
     def is_banned(ip: str) -> bool:
+        if SecurityWatchdog.is_whitelisted(ip):
+            return False
         return ip in _banned_ips
 
     @staticmethod
@@ -67,6 +81,9 @@ class SecurityWatchdog:
         """
         Checks if User-Agent is suspicious or restricted.
         """
+        if SecurityWatchdog.is_whitelisted(ip):
+             return True
+
         ua_lower = user_agent.lower()
         
         # 1. Block Known Bots/Scrapers
@@ -98,6 +115,9 @@ class SecurityWatchdog:
         """
         Tracks 401/403 errors. If threshold exceeded -> Alert/Ban.
         """
+        if SecurityWatchdog.is_whitelisted(ip):
+             return
+
         if status_code in [401, 403]:
             _error_counts[ip] += 1
             if _error_counts[ip] >= 10: # 10 errors = Suspicious

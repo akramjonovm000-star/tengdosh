@@ -339,7 +339,17 @@ class Chat {
 
   String get formattedName {
     if (partnerName.isEmpty) return "Noma'lum";
-    return UzbekNameFormatter.format(partnerName);
+    
+    final formatted = UzbekNameFormatter.format(partnerName);
+    final parts = formatted.split(' ');
+    
+    // Swap "Last First ..." -> "First Last"
+    // Usually parts[0] is Lastname, parts[1] is Firstname.
+    if (parts.length >= 2) {
+      return "${parts[1]} ${parts[0]}";
+    }
+    
+    return formatted;
   }
 }
 class Message {
