@@ -742,9 +742,13 @@ class _SocialActivityScreenState extends State<SocialActivityScreen> {
       }
 
       // Count Statuses
-      if (act.status == 'approved') approved++;
-      else if (act.status == 'pending') pending++;
-      else if (act.status == 'rejected') rejected++;
+      if (act.status == 'approved') {
+        approved++;
+      } else if (act.status == 'rejected') {
+        rejected++;
+      } else {
+        pending++;
+      }
     }
 
     final stats = [
@@ -992,7 +996,7 @@ class _SocialActivityScreenState extends State<SocialActivityScreen> {
         if (_selectedStatus == "Tasdiqlangan") {
             if (a.status != "approved") return false;
         } else if (_selectedStatus == "Kutilayotgan") {
-            if (a.status != "pending") return false;
+            if (a.status == "approved" || a.status == "rejected") return false;
         } else if (_selectedStatus == "Rad etilgan") {
             if (a.status != "rejected") return false;
         }

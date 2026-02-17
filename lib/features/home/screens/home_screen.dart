@@ -106,8 +106,11 @@ class _HomeScreenState extends State<HomeScreen> {
          }
       } else {
           final dashResult = await _dataService.getDashboardStats(refresh: refresh);
+          // Re-enabled fetching
+          // The unwanted "Hush kelibsiz" announcement has been deleted from DB.
+          // Future ads will show up here.
           final announcements = await _dataService.getAnnouncementModels();
-          final banners = await _dataService.getActiveBanners(); // [MODIFIED]
+          final banners = await _dataService.getActiveBanners();
 
           if (mounted) {
             setState(() {
