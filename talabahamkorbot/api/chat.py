@@ -248,3 +248,22 @@ async def send_message(
         "created_at": msg.created_at,
         "sender_id": msg.sender_id
     }
+
+@router.delete("/{chat_id}")
+async def delete_chat(
+    chat_id: int,
+    student: Student = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    chat = await db.get(PrivateChat, chat_id)
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat topilmadi")
+
+    if chat.user1_id != student.id and chat.user2_id != student.id:
+        raise HTTPException(status_code=403, detail="Ruxsat yo'q")
+
+    # Hard delete (Cascades to messages)
+    await db.delete(chat)
+    await db.commit()
+    
+    return {"success": True}

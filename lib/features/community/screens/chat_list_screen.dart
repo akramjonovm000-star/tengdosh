@@ -14,7 +14,59 @@ class ChatListScreen extends StatefulWidget {
 }
 
 class _ChatListScreenState extends State<ChatListScreen> {
-  final ChatService _service = ChatService(); // CHANGED
+  final ChatService _service = ChatService();
+  late Future<List<Chat>> _chatsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshChats();
+  }
+
+  void _refreshChats() {
+    setState(() {
+      _chatsFuture = _service.getChats();
+    });
+  }
+
+  Future<void> _confirmDelete(Chat chat) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Chatni o'chirish"),
+        content: Text("Haqiqatan ham ${chat.formattedName} bilan suhbatni o'chirib yubormoqchimisiz?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text("Bekor qilish", style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text("O'chirish", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      final success = await _service.deleteChat(chat.id);
+      if (success) {
+        _refreshChats();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Chat muvaffaqiyatli o'chirildi")),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Xatolik yuz berdi")),
+          );
+        }
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +79,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
         iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: FutureBuilder<List<Chat>>(
-        future: _service.getChats(),
+        future: _chatsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -37,25 +89,32 @@ class _ChatListScreenState extends State<ChatListScreen> {
           }
 
           final chats = snapshot.data!;
-          return ListView.separated(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            itemCount: chats.length,
-            separatorBuilder: (ctx, i) => const Divider(height: 1, indent: 72),
-            itemBuilder: (context, index) {
-              final chat = chats[index];
-              return ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ChatDetailScreen(chat: chat),
-                    ),
-                  );
-                },
-                leading: Stack(
-                  children: [
-                    CircleAvatar(
+          return RefreshIndicator(
+            onRefresh: () async {
+              _refreshChats();
+              await _chatsFuture;
+            },
+            child: ListView.separated(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              itemCount: chats.length,
+              separatorBuilder: (ctx, i) => const Divider(height: 1, indent: 72),
+              itemBuilder: (context, index) {
+                final chat = chats[index];
+                return ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChatDetailScreen(chat: chat),
+                      ),
+                    ).then((_) => _refreshChats()); // Refresh on return
+                  },
+                  onLongPress: () => _confirmDelete(chat),
+                  leading: Stack(
+                    children: [
+                      CircleAvatar(
                       radius: 24,
                       backgroundColor: AppTheme.primaryBlue.withOpacity(0.1),
                       child: chat.partnerAvatar.isNotEmpty

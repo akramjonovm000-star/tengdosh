@@ -150,4 +150,18 @@ class ChatService {
       return 0;
     }
   }
+  // Delete Chat
+  Future<bool> deleteChat(String chatId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('${ApiConstants.backendUrl}/chat/$chatId'),
+        headers: await _getHeaders(),
+      );
+      
+      return response.statusCode == 200;
+    } catch (e) {
+      print("Delete Chat Error: $e");
+      return false;
+    }
+  }
 }
