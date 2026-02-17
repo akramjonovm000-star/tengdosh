@@ -164,4 +164,34 @@ class ChatService {
       return false;
     }
   }
+  // Edit Message
+  Future<bool> editMessage(String messageId, String content) async {
+    try {
+      final response = await http.put(
+        Uri.parse('${ApiConstants.backendUrl}/chat/message/$messageId'),
+        headers: await _getHeaders(),
+        body: json.encode({'content': content}),
+      );
+      
+      return response.statusCode == 200;
+    } catch (e) {
+      print("Edit Message Error: $e");
+      return false;
+    }
+  }
+
+  // Delete Message
+  Future<bool> deleteMessage(String messageId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('${ApiConstants.backendUrl}/chat/message/$messageId'),
+        headers: await _getHeaders(),
+      );
+      
+      return response.statusCode == 200;
+    } catch (e) {
+      print("Delete Message Error: $e");
+      return false;
+    }
+  }
 }

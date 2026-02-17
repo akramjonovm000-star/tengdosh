@@ -208,53 +208,172 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   }
 
   Widget _buildMessageBubble(Message msg) {
-    final isMe = msg.isMe;
-    return Align(
-      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: isMe ? AppTheme.primaryBlue : Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(16),
-            topRight: const Radius.circular(16),
-            bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(0),
-            bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(16),
-          ),
-          boxShadow: [
-             BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset:const Offset(0, 2))
-          ]
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              msg.content,
-              style: TextStyle(color: isMe ? Colors.white : Colors.black87, fontSize: 15),
+    bool isMe = msg.isMe;
+    return GestureDetector(
+      onLongPress: () {
+        if (isMe) {
+          _showMessageOptions(msg);
+        }
+      },
+      child: Align(
+        alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: isMe ? AppTheme.primaryBlue : Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: const Radius.circular(16),
+              topRight: const Radius.circular(16),
+              bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(0),
+              bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(16),
             ),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  msg.timestamp,
-                  style: TextStyle(color: isMe ? Colors.white70 : Colors.grey[400], fontSize: 10),
-                ),
-                if (isMe) ...[
-                   const SizedBox(width: 4),
-                   Icon(
-                     msg.isRead ? Icons.done_all : Icons.done, 
-                     size: 12, 
-                     color: Colors.white70
-                   )
-                ]
-              ],
-            )
-          ],
+            boxShadow: [
+               BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset:const Offset(0, 2))
+            ]
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                msg.content,
+                style: TextStyle(color: isMe ? Colors.white : Colors.black87, fontSize: 15),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    msg.timestamp,
+                    style: TextStyle(color: isMe ? Colors.white70 : Colors.grey[400], fontSize: 10),
+                  ),
+                  if (isMe) ...[
+                     const SizedBox(width: 4),
+                     Icon(
+                       msg.isRead ? Icons.done_all : Icons.done, 
+                       size: 12, 
+                       color: Colors.white70
+                     )
+                  ]
+                ],
+              )
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  void _showMessageOptions(Message msg) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.edit, color: Colors.blue),
+                title: const Text("Tahrirlash"),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showEditDialog(msg);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete, color: Colors.red),
+                title: const Text("O'chirish", style: TextStyle(color: Colors.red)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _confirmDeleteMessage(msg);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showEditDialog(Message msg) {
+    final editController = TextEditingController(text: msg.content);
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Xabarni tahrirlash"),
+          content: TextField(
+            controller: editController,
+            decoration: const InputDecoration(hintText: "Yangi matn..."),
+            minLines: 1,
+            maxLines: 5,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Bekor qilish", style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final newContent = editController.text.trim();
+                if (newContent.isNotEmpty && newContent != msg.content) {
+                  Navigator.pop(context);
+                  final success = await _service.editMessage(msg.id, newContent);
+                  if (success) {
+                    setState(() {
+                      final index = _messages.indexWhere((m) => m.id == msg.id);
+                      if (index != -1) {
+                         _messages[index] = _messages[index].copyWith(content: newContent);
+                      }
+                    });
+                    _loadMessages(silent: true); // Refresh just in case
+                  } else {
+                    if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Xatolik yuz berdi")));
+                  }
+                }
+              },
+              child: const Text("Saqlash"),
+            )
+          ],
+        );
+      },
+    );
+  }
+
+  void _confirmDeleteMessage(Message msg) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Xabarni o'chirish"),
+          content: const Text("Haqiqatan ham ushbu xabarni o'chirib yubormoqchimisiz?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Bekor qilish", style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: () async {
+                Navigator.pop(context);
+                final success = await _service.deleteMessage(msg.id);
+                if (success) {
+                  setState(() {
+                    _messages.removeWhere((m) => m.id == msg.id);
+                  });
+                } else {
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("O'chirishda xatolik")));
+                }
+              },
+              child: const Text("O'chirish", style: TextStyle(color: Colors.white)),
+            )
+          ],
+        );
+      },
     );
   }
 

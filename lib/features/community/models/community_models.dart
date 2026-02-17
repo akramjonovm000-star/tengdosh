@@ -383,6 +383,26 @@ class Message {
       isRead: json['is_read'] ?? false,
     );
   }
+
+  Message copyWith({
+    String? id,
+    String? content,
+    bool? isMe,
+    String? timestamp,
+    DateTime? createdAt,
+    bool? isRead,
+    String? mediaUrl,
+  }) {
+    return Message(
+      id: id ?? this.id,
+      content: content ?? this.content,
+      isMe: isMe ?? this.isMe,
+      timestamp: timestamp ?? this.timestamp,
+      createdAt: createdAt ?? this.createdAt,
+      isRead: isRead ?? this.isRead,
+      mediaUrl: mediaUrl ?? this.mediaUrl,
+    );
+  }
 }
 
 String _formatDate(String? dateStr) {

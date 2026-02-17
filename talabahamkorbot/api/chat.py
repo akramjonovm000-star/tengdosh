@@ -267,3 +267,64 @@ async def delete_chat(
     await db.commit()
     
     return {"success": True}
+
+@router.put("/message/{message_id}")
+async def edit_message(
+    message_id: int,
+    data: dict, # {"content": "..."}
+    student: Student = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    content = data.get("content")
+    if not content or not content.strip():
+        raise HTTPException(status_code=400, detail="Xabar bo'sh bo'lishi mumkin emas")
+
+    msg = await db.get(PrivateMessage, message_id)
+    if not msg:
+        raise HTTPException(status_code=404, detail="Xabar topilmadi")
+
+    if msg.sender_id != student.id:
+        raise HTTPException(status_code=403, detail="Faqat o'zingizning xabarlaringizni tahrirlashingiz mumkin")
+
+    msg.content = content
+    # Optional: msg.updated_at = datetime.utcnow() (if column exists)
+    
+    await db.commit()
+    
+    return {"success": True, "content": content}
+
+@router.delete("/message/{message_id}")
+async def delete_message(
+    message_id: int,
+    student: Student = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    msg = await db.get(PrivateMessage, message_id)
+    if not msg:
+        raise HTTPException(status_code=404, detail="Xabar topilmadi")
+
+    if msg.sender_id != student.id:
+        raise HTTPException(status_code=403, detail="Faqat o'zingizning xabarlaringizni o'chirishingiz mumkin")
+
+    # Check if this was the last message in the chat
+    chat = await db.get(PrivateChat, msg.chat_id)
+    
+    await db.delete(msg)
+    await db.commit()
+    
+    # Update last message if needed
+    if chat:
+        last_msg_stmt = select(PrivateMessage).where(PrivateMessage.chat_id == chat.id).order_by(desc(PrivateMessage.created_at)).limit(1)
+        last_msg_res = await db.execute(last_msg_stmt)
+        last_msg = last_msg_res.scalar_one_or_none()
+        
+        if last_msg:
+            chat.last_message_content = last_msg.content[:100]
+            chat.last_message_time = last_msg.created_at
+        else:
+            chat.last_message_content = ""
+            # chat.last_message_time = chat.created_at # Optional: reset time
+            
+        await db.commit()
+
+    return {"success": True}
