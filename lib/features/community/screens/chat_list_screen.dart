@@ -201,6 +201,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 ),
               );
             },
+          ),
           );
         },
       ),
