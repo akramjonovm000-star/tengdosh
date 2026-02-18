@@ -466,8 +466,7 @@ class _PostCardState extends State<PostCard> {
           children: [
             Icon(icon, size: 20, color: color ?? Colors.grey[600]),
             const SizedBox(width: 4),
-            if (label != "0")
-              Text(label, style: TextStyle(color: color ?? Colors.grey[600], fontSize: 13)),
+            Text(label, style: TextStyle(color: color ?? Colors.grey[600], fontSize: 13)),
           ],
         ),
       ),
