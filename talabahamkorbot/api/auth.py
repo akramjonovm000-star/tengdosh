@@ -48,16 +48,17 @@ async def login_via_hemis(
                  demo_login = "demo.student"
                  full_name = "Demo Talaba"
                  role = "student"
-            elif login_clean == "demo.jurn" or login_clean == "demo.jurnalistika":
-                 demo_login = "demo.jurnalistika"
-                 full_name = "Jurnalistika Rahbariyati"
-                 role = "rahbariyat"
+            elif login_clean == "dean1":
+                 demo_login = "dean1"
+                 full_name = "Jurnalistika Dekanati"
+                 role = "dekan"
              
     logger.debug(f"DEBUG AUTH: demo_login='{demo_login}'")
             
     if demo_login:
         # EXCLUSIVE FOR JURNALISTIKA DEMO
-        if demo_login == "demo.jurnalistika":
+        # EXCLUSIVE FOR DEAN1 (Jurnalistika Dean)
+        if demo_login == "dean1":
              from datetime import datetime
              from database.models import Staff, StaffRole
              
@@ -66,17 +67,17 @@ async def login_via_hemis(
              
              if not demo_staff:
                  demo_staff = Staff(
-                    hemis_id=777888999, 
+                    hemis_id=777888777, 
                     full_name=full_name,
-                    role=StaffRole.RAHBARIYAT, 
+                    role=StaffRole.DEKAN, 
                     university_id=1,
-                    faculty_id=None, # Global
+                    faculty_id=36, # [CONFIG] Jurnalistika Faculty
                     is_premium=True,
-                    premium_expiry=datetime.utcnow() + timedelta(days=30),
-                    custom_badge="Rahbariyat (Demo)",
+                    premium_expiry=datetime.utcnow() + timedelta(days=1), # 24 hours
+                    custom_badge="Dekanat (Demo)",
                     image_url=f"https://ui-avatars.com/api/?name={full_name.replace(' ', '+')}&background=random",
-                    position="Rektor",
-                    department="Rektorat",
+                    position="Dekan",
+                    department="Dekanat",
                     employee_id_number=demo_login
                  )
                  db.add(demo_staff)
@@ -85,14 +86,14 @@ async def login_via_hemis(
              else:
                  # Update permissions if exists
                  demo_staff.is_premium = True
-                 demo_staff.premium_expiry = datetime.utcnow() + timedelta(days=30)
-                 demo_staff.faculty_id = None # Force Global
-                 demo_staff.role = StaffRole.RAHBARIYAT
+                 demo_staff.premium_expiry = datetime.utcnow() + timedelta(days=1)
+                 demo_staff.faculty_id = 36 # Ensure Faculty 36
+                 demo_staff.role = StaffRole.DEKAN
                  await db.commit()
                  await db.refresh(demo_staff)
              
              from utils.encryption import encrypt_data
-             encrypted_dummy_token = encrypt_data("demo.token.123")
+             encrypted_dummy_token = encrypt_data("demo.token.dean1")
              user_agent = request.headers.get("user-agent", "unknown")
                  
              access_token = create_access_token(
@@ -114,12 +115,13 @@ async def login_via_hemis(
                     "full_name": demo_staff.full_name,
                     "type": "staff",
                     "university_id": 1,
+                    "faculty_id": 36,
                     "image_url": demo_staff.image_url,
-                    "role": "rahbariyat",
+                    "role": "dekan",
                     "profile": {
                          "id": demo_staff.id,
                          "full_name": demo_staff.full_name,
-                         "role": "rahbariyat",
+                         "role": "dekan",
                          "image": demo_staff.image_url
                     }
                 }
