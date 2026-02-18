@@ -145,6 +145,7 @@ async def login_via_hemis(
                      u_id = 1
                      f_id = 36
                      
+                from datetime import datetime
                 demo_user = Student(
                     hemis_id=f"{login_clean}_123",
                     full_name=full_name,
@@ -157,6 +158,9 @@ async def login_via_hemis(
                     hemis_role=role,
                     university_id=u_id,
                     faculty_id=f_id,
+                    is_premium=True,
+                    premium_expiry=datetime.utcnow() + timedelta(days=30),
+                    custom_badge="Rahbariyat (Demo)",
                     image_url=f"https://ui-avatars.com/api/?name={full_name.replace(' ', '+')}&background=random"
                 )
                 db.add(demo_user)
