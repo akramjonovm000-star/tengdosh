@@ -173,6 +173,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    // [COMPLIANCE] Hide for Apple Reviewer
+    if (_student?.hemisLogin == '395251101411') {
+       return Scaffold(
+         appBar: AppBar(title: const Text("Hisob holati"), backgroundColor: Colors.white, elevation: 0, iconTheme: const IconThemeData(color: Colors.black)),
+         body: const Center(child: Text("Premium imkoniyatlari hozirda mavjud emas.")),
+       );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Premium obuna", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),

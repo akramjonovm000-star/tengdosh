@@ -131,16 +131,32 @@ async def login_via_hemis(
             # Ensure Demo User Exists
             demo_user = await db.scalar(select(Student).where(Student.hemis_login == demo_login))
             if not demo_user:
+                # Define Demo Data based on login
+                u_name = "Test Universiteti"
+                f_name = "Test Fakulteti"
+                g_num = "101-GROUP"
+                u_id = 1
+                f_id = 5
+                
+                if demo_login == "demo.jurnalistika":
+                     u_name = "O‘zbekiston jurnalistika va ommaviy kommunikatsiyalar universiteti"
+                     f_name = "Jurnalistika fakulteti"
+                     g_num = "JURN-202"
+                     u_id = 1
+                     f_id = 36
+                     
                 demo_user = Student(
                     hemis_id=f"{login_clean}_123",
                     full_name=full_name,
                     hemis_login=demo_login,
                     hemis_password="123",
-                    university_name="Test Universiteti",
-                    faculty_name="Test Fakulteti",
+                    university_name=u_name,
+                    faculty_name=f_name,
                     level_name="1-kurs",
-                    group_number="101-GROUP",
+                    group_number=g_num,
                     hemis_role=role,
+                    university_id=u_id,
+                    faculty_id=f_id,
                     image_url=f"https://ui-avatars.com/api/?name={full_name.replace(' ', '+')}&background=random"
                 )
                 db.add(demo_user)

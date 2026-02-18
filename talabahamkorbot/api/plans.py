@@ -25,7 +25,11 @@ PLANS = [
 ]
 
 @router.get("", response_model=List[PlanSchema])
-async def get_plans():
+async def get_plans(student: Student = Depends(get_current_student)):
+    # [COMPLIANCE] Hide for Apple Reviewer
+    if student.hemis_login == "395251101411":
+        return []
+
     return PLANS
 
 @router.post("/buy/{plan_id}")

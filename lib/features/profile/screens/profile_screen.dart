@@ -385,6 +385,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             })(),
 
           // --- PREMIUM BANNER ---
+          if (student.hemisLogin != '395251101411')
           GestureDetector(
             onTap: () {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionScreen()));
