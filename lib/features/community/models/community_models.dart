@@ -353,6 +353,13 @@ class Chat {
   }
 }
 class Message {
+  final String id;
+  final String content;
+  final bool isMe;
+  final String timestamp;
+  final bool isRead;
+  final String? mediaUrl;
+  final DateTime createdAt;
   final String? replyToMessageId; // NEW
   final String? replyToContent; // NEW
   final String? replyToSenderId; // NEW
