@@ -139,12 +139,64 @@ async def login_via_hemis(
                 f_id = 5
                 
                 if demo_login == "demo.jurnalistika":
-                     u_name = "O‘zbekiston jurnalistika va ommaviy kommunikatsiyalar universiteti"
-                     f_name = "Jurnalistika fakulteti"
-                     g_num = "JURN-202"
-                     u_id = 1
-                     f_id = 36
+                     # EXCLUSIVE FOR JURNALISTIKA DEMO: Create/Get Staff for Management Access
+                     from datetime import datetime
+                     from database.models import Staff, StaffRole
                      
+                     # Check if Staff already exists
+                     demo_staff = await db.scalar(select(Staff).where(Staff.employee_id_number == demo_login))
+                     
+                     if not demo_staff:
+                         demo_staff = Staff(
+                            hemis_id=777888999, 
+                            full_name=full_name,
+                            role=StaffRole.RAHBARIYAT, 
+                            university_id=u_id,
+                            faculty_id=None, # Global
+                            is_premium=True,
+                            premium_expiry=datetime.utcnow() + timedelta(days=30),
+                            custom_badge="Rahbariyat (Demo)",
+                            image_url=f"https://ui-avatars.com/api/?name={full_name.replace(' ', '+')}&background=random",
+                            position="Rektor",
+                            department="Rektorat",
+                            employee_id_number=demo_login
+                         )
+                         db.add(demo_staff)
+                         await db.commit()
+                         await db.refresh(demo_staff)
+                     else:
+                         # Update permissions if exists
+                         demo_staff.is_premium = True
+                         demo_staff.premium_expiry = datetime.utcnow() + timedelta(days=30)
+                         demo_staff.faculty_id = None # Force Global
+                         demo_staff.role = StaffRole.RAHBARIYAT
+                         await db.commit()
+                         await db.refresh(demo_staff)
+                     
+                     access_token = create_access_token(
+                        data={"sub": demo_staff.full_name, "type": "staff", "id": demo_staff.id}
+                     )
+                     return {
+                        "access_token": access_token,
+                        "token_type": "bearer",
+                        "user_info": {
+                            "id": demo_staff.id,
+                            "hemis_id": demo_staff.hemis_id,
+                            "full_name": demo_staff.full_name,
+                            "type": "staff",
+                            "university_id": u_id,
+                            "university_name": u_name,
+                            "image_url": demo_staff.image_url,
+                            "role": "rahbariyat",
+                            "profile": {
+                                 "id": demo_staff.id,
+                                 "full_name": demo_staff.full_name,
+                                 "role": "rahbariyat",
+                                 "image": demo_staff.image_url
+                            }
+                        }
+                     }
+
                 from datetime import datetime
                 demo_user = Student(
                     hemis_id=f"{login_clean}_123",
@@ -164,18 +216,6 @@ async def login_via_hemis(
                     image_url=f"https://ui-avatars.com/api/?name={full_name.replace(' ', '+')}&background=random"
                 )
                 db.add(demo_user)
-                await db.flush()
-                
-                # Also sync to Users table
-                new_u = User(
-                    hemis_login=demo_login,
-                    role=role,
-                    full_name=full_name,
-                    hemis_password="123",
-                    university_name="Test Universiteti",
-                    faculty_name="Test Fakulteti"
-                )
-                db.add(new_u)
                 await db.commit()
                 await db.refresh(demo_user)
             
