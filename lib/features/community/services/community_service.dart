@@ -356,6 +356,24 @@ class CommunityService {
     }
   }
 
+
+  Future<void> viewPost(String postId) async {
+    try {
+      // Fire and forget, we don't need to wait for response or handle error strictly
+      // But we should catch to avoid app crashes
+      final response = await http.post(
+        Uri.parse('${ApiConstants.communityPosts}/$postId/view'),
+        headers: await _getHeaders(),
+      );
+      
+      if (response.statusCode != 200) {
+        // print("View post failed: ${response.statusCode}");
+      }
+    } catch (e) {
+      // print("Error viewing post: $e");
+    }
+  }
+
   // --- Subscription ---
   Future<Map<String, dynamic>?> toggleSubscription(String targetId) async {
     try {

@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -53,6 +54,16 @@ class _PostCardState extends State<PostCard> {
   void initState() {
     super.initState();
     _initializeState();
+    _registerView();
+  }
+
+  void _registerView() {
+    // Wait 0.5s to ensure user actually saw it (impression)
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        CommunityService().viewPost(widget.post.id);
+      }
+    });
   }
 
   @override

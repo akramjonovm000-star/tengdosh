@@ -577,6 +577,84 @@ async def update_post(
 
     return _map_post_optimized(post, student, student.id, is_liked, is_reposted)
 
+
+@router.post("/posts/{post_id}/view")
+async def view_post(
+    post_id: int,
+    student: Student = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Increment view count for a post.
+    Has a 30-second cooldown per user per post.
+    """
+    # 1. Check if post exists (Optional optimization: skip check if using foreign key catch, 
+    # but we need to check cooldown first anyway)
+    
+    # We can do this efficiently without loading the whole post if we want, 
+    # but we need to check Cooldown on ChoyxonaPostView
+    
+    is_staff = isinstance(student, Staff)
+    current_user_id = student.id
+    
+    # 2. Check Existing View
+    v_query = select(ChoyxonaPostView).where(ChoyxonaPostView.post_id == post_id)
+    if is_staff:
+        v_query = v_query.where(ChoyxonaPostView.staff_id == current_user_id)
+    else:
+        v_query = v_query.where(ChoyxonaPostView.student_id == current_user_id)
+        
+    result = await db.execute(v_query.limit(1))
+    existing_view = result.scalar_one_or_none()
+    
+    now = datetime.utcnow()
+    should_increment = False
+    
+    if existing_view:
+        # Check cooldown
+        if (now - existing_view.viewed_at).total_seconds() >= 30:
+            existing_view.viewed_at = now
+            should_increment = True
+    else:
+        # Create New View
+        # Check if post exists first to avoid FK error
+        # Or Just try insert and catch error? Better to check existence lightly if needed.
+        # But for speed, let's assuming client sends valid ID. 
+        # Actually proper way:
+        
+        # Verify Post Exists
+        # p_check = await db.execute(select(ChoyxonaPost.id).where(ChoyxonaPost.id == post_id))
+        # if not p_check.scalar_one_or_none():
+        #     raise HTTPException(status_code=404, detail="Post topilmadi")
+
+        new_view = ChoyxonaPostView(
+            post_id=post_id,
+            student_id=current_user_id if not is_staff else None,
+            staff_id=current_user_id if is_staff else None,
+            viewed_at=now
+        )
+        db.add(new_view)
+        should_increment = True
+        
+    if should_increment:
+        # Increment Counter on Post
+        # We use strict update to avoid race conditions is better, but here we can fetch-update
+        # update(ChoyxonaPost).where(ChoyxonaPost.id == post_id).values(views_count=ChoyxonaPost.views_count + 1)
+        
+        from sqlalchemy import update
+        stmt = (
+            update(ChoyxonaPost)
+            .where(ChoyxonaPost.id == post_id)
+            .values(views_count=ChoyxonaPost.views_count + 1)
+            .execution_options(synchronize_session=False)
+        )
+        await db.execute(stmt)
+        await db.commit()
+        return {"status": "incremented"}
+    
+    await db.commit()
+    return {"status": "cooldown"}
+
 @router.delete("/posts/{post_id}")
 async def delete_post(
     post_id: int,
