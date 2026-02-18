@@ -56,79 +56,79 @@ async def login_via_hemis(
     logger.debug(f"DEBUG AUTH: demo_login='{demo_login}'")
             
     if demo_login:
+        # EXCLUSIVE FOR JURNALISTIKA DEMO
+        if demo_login == "demo.jurnalistika":
+             from datetime import datetime
+             from database.models import Staff, StaffRole
+             
+             # Check if Staff already exists
+             demo_staff = await db.scalar(select(Staff).where(Staff.employee_id_number == demo_login))
+             
+             if not demo_staff:
+                 demo_staff = Staff(
+                    hemis_id=777888999, 
+                    full_name=full_name,
+                    role=StaffRole.RAHBARIYAT, 
+                    university_id=1,
+                    faculty_id=None, # Global
+                    is_premium=True,
+                    premium_expiry=datetime.utcnow() + timedelta(days=30),
+                    custom_badge="Rahbariyat (Demo)",
+                    image_url=f"https://ui-avatars.com/api/?name={full_name.replace(' ', '+')}&background=random",
+                    position="Rektor",
+                    department="Rektorat",
+                    employee_id_number=demo_login
+                 )
+                 db.add(demo_staff)
+                 await db.commit()
+                 await db.refresh(demo_staff)
+             else:
+                 # Update permissions if exists
+                 demo_staff.is_premium = True
+                 demo_staff.premium_expiry = datetime.utcnow() + timedelta(days=30)
+                 demo_staff.faculty_id = None # Force Global
+                 demo_staff.role = StaffRole.RAHBARIYAT
+                 await db.commit()
+                 await db.refresh(demo_staff)
+             
+             from utils.encryption import encrypt_data
+             encrypted_dummy_token = encrypt_data("demo.token.123")
+             user_agent = request.headers.get("user-agent", "unknown")
+                 
+             access_token = create_access_token(
+                data={
+                    "sub": demo_staff.full_name, 
+                    "type": "staff", 
+                    "id": demo_staff.id,
+                    "hemis_token": encrypted_dummy_token
+                },
+                user_agent=user_agent
+             )
+             return {
+                "access_token": access_token,
+                "token_type": "bearer",
+                "user_info": {
+                    "id": demo_staff.id,
+                    "hemis_id": demo_staff.hemis_id,
+                    "full_name": demo_staff.full_name,
+                    "type": "staff",
+                    "university_id": 1,
+                    "image_url": demo_staff.image_url,
+                    "role": "rahbariyat",
+                    "profile": {
+                         "id": demo_staff.id,
+                         "full_name": demo_staff.full_name,
+                         "role": "rahbariyat",
+                         "image": demo_staff.image_url
+                    }
+                }
+             }
+
         if role in ["tutor", "tyutor", "rahbariyat", "dekan"]:
             # Demo Staff Logic
             from database.models import Staff, StaffRole
             
             demo_staff = None
-            if demo_login == "demo.jurnalistika":
-                 # EXCLUSIVE FOR JURNALISTIKA DEMO: Create/Get Staff for Management Access
-                 from datetime import datetime
-                 from database.models import StaffRole
-                 
-                 # Check if Staff already exists
-                 demo_staff = await db.scalar(select(Staff).where(Staff.employee_id_number == demo_login))
-                 
-                 if not demo_staff:
-                     demo_staff = Staff(
-                        hemis_id=777888999, 
-                        full_name=full_name,
-                        role=StaffRole.RAHBARIYAT, 
-                        university_id=1,
-                        faculty_id=None, # Global
-                        is_premium=True,
-                        premium_expiry=datetime.utcnow() + timedelta(days=30),
-                        custom_badge="Rahbariyat (Demo)",
-                        image_url=f"https://ui-avatars.com/api/?name={full_name.replace(' ', '+')}&background=random",
-                        position="Rektor",
-                        department="Rektorat",
-                        employee_id_number=demo_login
-                     )
-                     db.add(demo_staff)
-                     await db.commit()
-                     await db.refresh(demo_staff)
-                 else:
-                     # Update permissions if exists
-                     demo_staff.is_premium = True
-                     demo_staff.premium_expiry = datetime.utcnow() + timedelta(days=30)
-                     demo_staff.faculty_id = None # Force Global
-                     demo_staff.role = StaffRole.RAHBARIYAT
-                     await db.commit()
-                     await db.refresh(demo_staff)
-                     
-                 # EXCLUSIVE RETURN for Jurnalistika
-                 from utils.encryption import encrypt_data
-                 encrypted_dummy_token = encrypt_data("demo.token.123")
-                 user_agent = request.headers.get("user-agent", "unknown")
-                     
-                 access_token = create_access_token(
-                    data={
-                        "sub": demo_staff.full_name, 
-                        "type": "staff", 
-                        "id": demo_staff.id,
-                        "hemis_token": encrypted_dummy_token
-                    },
-                    user_agent=user_agent
-                 )
-                 return {
-                    "access_token": access_token,
-                    "token_type": "bearer",
-                    "user_info": {
-                        "id": demo_staff.id,
-                        "hemis_id": demo_staff.hemis_id,
-                        "full_name": demo_staff.full_name,
-                        "type": "staff",
-                        "university_id": 1,
-                        "image_url": demo_staff.image_url,
-                        "role": "rahbariyat",
-                        "profile": {
-                             "id": demo_staff.id,
-                             "full_name": demo_staff.full_name,
-                             "role": "rahbariyat",
-                             "image": demo_staff.image_url
-                        }
-                    }
-                 }
             if demo_login == "demo.nazokat":
                  # Fetch actual user 64
                  demo_staff = await db.scalar(select(Staff).where(Staff.id == 64))
