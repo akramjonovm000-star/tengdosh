@@ -187,7 +187,9 @@ async def send_message(
     db: AsyncSession = Depends(get_db)
 ):
     content = data.get("content")
-    reply_to_id = data.get("reply_to_message_id") # NEW
+    reply_to_id_raw = data.get("reply_to_message_id") # NEW
+    
+    reply_to_id = int(reply_to_id_raw) if reply_to_id_raw else None
     
     if not content or not content.strip():
         raise HTTPException(status_code=400, detail="Xabar bo'sh bo'lishi mumkin emas")
