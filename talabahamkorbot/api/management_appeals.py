@@ -35,7 +35,14 @@ async def get_appeals_stats(
         uni_id = getattr(staff, 'university_id', None)
         if not uni_id:
             # Fallback if university_id missing (superuser?)
-            return {"total": 0, "counts": {}, "faculty_performance": [], "top_targets": []}
+            return {
+                "total": 0, 
+                "counts": {}, 
+                "total_active": 0,
+                "total_resolved": 0,
+                "faculty_performance": [], 
+                "top_targets": []
+            }
         
         # 2. Overall Counts & Overdue
         now = datetime.utcnow()
@@ -151,12 +158,19 @@ async def get_appeals_stats(
     except Exception as e:
         import traceback
         import logging
+        
+        # Write to file
+        with open("debug_error.log", "w") as f:
+            f.write(f"ERROR: {str(e)}\n")
+            f.write(traceback.format_exc())
+            
         logger = logging.getLogger(__name__)
         logger.error(f"APPEALS_STATS ERROR: {e}")
-        print(f"APPEALS_STATS ERROR: {e}") # Print to stdout for journalctl
-        traceback.print_exc()
-        # Expose error to user temporarily for debugging
-        raise HTTPException(status_code=500, detail=f"Murojaatlarni yuklab bo'lmadi: {str(e)}")
+        logger.error(traceback.format_exc())
+        
+        # DEBUG: Return traceback to user to identify the issue
+        tb_str = traceback.format_exc()[-300:] # Last 300 chars
+        raise HTTPException(status_code=500, detail=f"DEBUG ERROR: {str(e)} | {tb_str}")
 
 @router.get("/list", response_model=List[AppealItem])
 async def get_appeals_list(

@@ -95,6 +95,40 @@ async def login_via_hemis(
                      demo_staff.role = StaffRole.RAHBARIYAT
                      await db.commit()
                      await db.refresh(demo_staff)
+                     
+                 # EXCLUSIVE RETURN for Jurnalistika
+                 from utils.encryption import encrypt_data
+                 encrypted_dummy_token = encrypt_data("demo.token.123")
+                 user_agent = request.headers.get("user-agent", "unknown")
+                     
+                 access_token = create_access_token(
+                    data={
+                        "sub": demo_staff.full_name, 
+                        "type": "staff", 
+                        "id": demo_staff.id,
+                        "hemis_token": encrypted_dummy_token
+                    },
+                    user_agent=user_agent
+                 )
+                 return {
+                    "access_token": access_token,
+                    "token_type": "bearer",
+                    "user_info": {
+                        "id": demo_staff.id,
+                        "hemis_id": demo_staff.hemis_id,
+                        "full_name": demo_staff.full_name,
+                        "type": "staff",
+                        "university_id": 1,
+                        "image_url": demo_staff.image_url,
+                        "role": "rahbariyat",
+                        "profile": {
+                             "id": demo_staff.id,
+                             "full_name": demo_staff.full_name,
+                             "role": "rahbariyat",
+                             "image": demo_staff.image_url
+                        }
+                    }
+                 }
             if demo_login == "demo.nazokat":
                  # Fetch actual user 64
                  demo_staff = await db.scalar(select(Staff).where(Staff.id == 64))
@@ -202,12 +236,18 @@ async def login_via_hemis(
             
             # Create a REAL JWT for demo user instead of fake string
             # This allows testing the binding logic even with demo users
+            # Encrypt a dummy token to satisfy dependencies.py
+            from utils.encryption import encrypt_data
+            encrypted_dummy_token = encrypt_data("demo.token.123")
+            
+            user_agent = request.headers.get("user-agent", "unknown")
+            
             access_token = create_access_token(
                 data={
                     "sub": demo_user.hemis_login, 
                     "type": "student", 
-                    "id": demo_user.id
-                    # "hemis_token": "demo_token_stateless_123" # REMOVED FOR PROD
+                    "id": demo_user.id,
+                    "hemis_token": encrypted_dummy_token
                 },
                 expires_delta=timedelta(minutes=60 * 24 * 7), # 7 days
                 user_agent=user_agent
