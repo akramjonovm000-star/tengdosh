@@ -353,13 +353,9 @@ class Chat {
   }
 }
 class Message {
-  final String id;
-  final String content;
-  final bool isMe;
-  final String timestamp;
-  final bool isRead;
-  final String? mediaUrl;
-  final DateTime createdAt;
+  final String? replyToMessageId; // NEW
+  final String? replyToContent; // NEW
+  final String? replyToSenderId; // NEW
 
   Message({
     required this.id,
@@ -369,9 +365,13 @@ class Message {
     required this.createdAt,
     this.isRead = false,
     this.mediaUrl,
+    this.replyToMessageId,
+    this.replyToContent,
+    this.replyToSenderId,
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {
+    final replyTo = json['reply_to'];
     return Message(
       id: json['id'].toString(),
       content: json['content'] ?? "",
@@ -381,6 +381,9 @@ class Message {
           ? DateTime.parse(json['created_at']).toLocal() 
           : DateTime.now(),
       isRead: json['is_read'] ?? false,
+      replyToMessageId: replyTo != null ? replyTo['id'].toString() : null,
+      replyToContent: replyTo != null ? replyTo['content'] : null,
+      replyToSenderId: replyTo != null ? replyTo['sender_id'].toString() : null,
     );
   }
 
@@ -392,6 +395,9 @@ class Message {
     DateTime? createdAt,
     bool? isRead,
     String? mediaUrl,
+    String? replyToMessageId,
+    String? replyToContent,
+    String? replyToSenderId,
   }) {
     return Message(
       id: id ?? this.id,
@@ -401,6 +407,9 @@ class Message {
       createdAt: createdAt ?? this.createdAt,
       isRead: isRead ?? this.isRead,
       mediaUrl: mediaUrl ?? this.mediaUrl,
+      replyToMessageId: replyToMessageId ?? this.replyToMessageId,
+      replyToContent: replyToContent ?? this.replyToContent,
+      replyToSenderId: replyToSenderId ?? this.replyToSenderId, 
     );
   }
 }

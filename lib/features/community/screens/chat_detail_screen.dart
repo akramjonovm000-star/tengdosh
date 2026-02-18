@@ -23,6 +23,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   List<Message> _messages = [];
   bool _isLoading = true;
   Timer? _timer;
+  Message? _replyToMessage; // NEW
 
   @override
   void initState() {
@@ -66,11 +67,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     // Optimistic UI (Optional, but let's wait for server for consistency or add simple local pending)
     // Actually, let's just send and refresh.
     
-    final newMsg = await _service.sendMessage(widget.chat.id, text);
+    final newMsg = await _service.sendMessage(widget.chat.id, text, replyToMessageId: _replyToMessage?.id);
     
     if (newMsg != null && mounted) {
       setState(() {
         _messages.insert(0, newMsg);
+        _replyToMessage = null; // Clear reply
       });
     } else {
       // Error
@@ -209,56 +211,101 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
 
   Widget _buildMessageBubble(Message msg) {
     bool isMe = msg.isMe;
-    return GestureDetector(
-      onLongPress: () {
-        if (isMe) {
-          _showMessageOptions(msg);
-        }
+    return Dismissible(
+      key: Key('msg_${msg.id}'),
+      direction: isMe ? DismissDirection.endToStart : DismissDirection.startToEnd, // Dynamic direction
+      confirmDismiss: (direction) async {
+        setState(() {
+          _replyToMessage = msg;
+        });
+        return false; // Don't actually dismiss
       },
-      child: Align(
-        alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-        child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 4),
-          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: isMe ? AppTheme.primaryBlue : Colors.white,
-            borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(16),
-              topRight: const Radius.circular(16),
-              bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(0),
-              bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(16),
-            ),
-            boxShadow: [
-               BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset:const Offset(0, 2))
-            ]
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                msg.content,
-                style: TextStyle(color: isMe ? Colors.white : Colors.black87, fontSize: 15),
+      background: Container(
+        alignment: isMe ? Alignment.centerRight : Alignment.centerLeft, // Dynamic alignment
+        padding: EdgeInsets.only(
+          right: isMe ? 20 : 0,
+          left: isMe ? 0 : 20,
+        ),
+        color: Colors.transparent,
+        child: const Icon(Icons.reply, color: Colors.grey),
+      ),
+      child: GestureDetector(
+        onLongPress: () {
+          if (isMe) {
+            _showMessageOptions(msg);
+          }
+        },
+        child: Align(
+          alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+          child: Container(
+            margin: const EdgeInsets.symmetric(vertical: 4),
+            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: isMe ? AppTheme.primaryBlue : Colors.white,
+              borderRadius: BorderRadius.only(
+                topLeft: const Radius.circular(16),
+                topRight: const Radius.circular(16),
+                bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(0),
+                bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(16),
               ),
-              const SizedBox(height: 4),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    msg.timestamp,
-                    style: TextStyle(color: isMe ? Colors.white70 : Colors.grey[400], fontSize: 10),
-                  ),
-                  if (isMe) ...[
-                     const SizedBox(width: 4),
-                     Icon(
-                       msg.isRead ? Icons.done_all : Icons.done, 
-                       size: 12, 
-                       color: Colors.white70
-                     )
-                  ]
+              boxShadow: [
+                 BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset:const Offset(0, 2))
+              ]
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (msg.replyToContent != null) ...[
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border(left: BorderSide(color: isMe ? Colors.white70 : AppTheme.primaryBlue, width: 3))
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                           "Javob", 
+                           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: isMe ? Colors.white70 : AppTheme.primaryBlue)
+                        ),
+                        Text(
+                          msg.replyToContent!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: isMe ? Colors.white70 : Colors.black54, fontSize: 12),
+                        )
+                      ]
+                    ),
+                  )
                 ],
-              )
-            ],
+                Text(
+                  msg.content,
+                  style: TextStyle(color: isMe ? Colors.white : Colors.black87, fontSize: 15),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      msg.timestamp,
+                      style: TextStyle(color: isMe ? Colors.white70 : Colors.grey[400], fontSize: 10),
+                    ),
+                    if (isMe) ...[
+                       const SizedBox(width: 4),
+                       Icon(
+                         msg.isRead ? Icons.done_all : Icons.done, 
+                         size: 12, 
+                         color: Colors.white70
+                       )
+                    ]
+                  ],
+                )
+              ],
+            ),
           ),
         ),
       ),
@@ -378,37 +425,74 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   }
 
   Widget _buildInputArea() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: Colors.white,
-      child: SafeArea( 
-        child: Row(
-          children: [
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: TextField(
-                  controller: _controller,
-                  decoration: const InputDecoration(
-                    hintText: "Xabar yozing...",
-                    border: InputBorder.none,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (_replyToMessage != null)
+          Container(
+            padding: const EdgeInsets.all(12),
+            color: Colors.grey[200],
+            child: Row(
+              children: [
+                const Icon(Icons.reply, color: AppTheme.primaryBlue, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Javob berilmoqda",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.primaryBlue),
+                      ),
+                      Text(
+                        _replyToMessage!.content,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.black87, fontSize: 12),
+                      ),
+                    ],
                   ),
-                  onSubmitted: (_) => _sendMessage(),
                 ),
-              ),
+                IconButton(
+                  icon: const Icon(Icons.close, size: 18),
+                  onPressed: () => setState(() => _replyToMessage = null),
+                )
+              ],
             ),
-            const SizedBox(width: 8),
-            IconButton(
-              icon: const Icon(Icons.send_rounded, color: AppTheme.primaryBlue),
-              onPressed: _sendMessage,
+          ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          color: Colors.white,
+          child: SafeArea( 
+            child: Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: TextField(
+                      controller: _controller,
+                      decoration: InputDecoration(
+                        hintText: _replyToMessage != null ? "Javob yozing..." : "Xabar yozing...",
+                        border: InputBorder.none,
+                      ),
+                      onSubmitted: (_) => _sendMessage(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.send_rounded, color: AppTheme.primaryBlue),
+                  onPressed: _sendMessage,
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }

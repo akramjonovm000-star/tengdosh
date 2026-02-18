@@ -116,6 +116,7 @@ class PrivateMessage(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     chat_id: Mapped[int] = mapped_column(Integer, ForeignKey("private_chats.id", ondelete="CASCADE"), nullable=False, index=True)
     sender_id: Mapped[int] = mapped_column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
+    reply_to_message_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("private_messages.id", ondelete="SET NULL"), nullable=True) # NEW
     
     content: Mapped[str] = mapped_column(Text, nullable=False)
     is_read: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -124,6 +125,7 @@ class PrivateMessage(Base):
 
     chat: Mapped["PrivateChat"] = relationship("PrivateChat", back_populates="messages")
     sender: Mapped["Student"] = relationship("Student", foreign_keys=[sender_id])
+    reply_to: Mapped["PrivateMessage"] = relationship("PrivateMessage", remote_side=[id]) # NEW
 
 
 class StudentStatus(str, enum.Enum):

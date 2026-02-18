@@ -149,7 +149,8 @@ async def get_messages(
         chat.user2_unread_count = 0
     
     # Query messages
-    stmt = select(PrivateMessage).where(PrivateMessage.chat_id == chat_id)
+    from sqlalchemy.orm import selectinload # NEW
+    stmt = select(PrivateMessage).options(selectinload(PrivateMessage.reply_to)).where(PrivateMessage.chat_id == chat_id) # NEW
     if before_id:
         stmt = stmt.where(PrivateMessage.id < before_id)
         
@@ -168,7 +169,12 @@ async def get_messages(
             "content": m.content,
             "created_at": m.created_at,
             "is_read": m.is_read,
-            "is_mine": m.sender_id == student.id
+            "is_mine": m.sender_id == student.id,
+            "reply_to": {
+                "id": m.reply_to.id,
+                "content": m.reply_to.content,
+                "sender_id": m.reply_to.sender_id
+            } if m.reply_to else None # NEW
         }
         for m in messages
     ]
@@ -181,6 +187,8 @@ async def send_message(
     db: AsyncSession = Depends(get_db)
 ):
     content = data.get("content")
+    reply_to_id = data.get("reply_to_message_id") # NEW
+    
     if not content or not content.strip():
         raise HTTPException(status_code=400, detail="Xabar bo'sh bo'lishi mumkin emas")
         
@@ -195,7 +203,8 @@ async def send_message(
     msg = PrivateMessage(
         chat_id=chat_id,
         sender_id=student.id,
-        content=content
+        content=content,
+        reply_to_message_id=reply_to_id # NEW
     )
     db.add(msg)
     
@@ -228,6 +237,17 @@ async def send_message(
     await db.commit()
     await db.refresh(msg)
     
+    # Fetch reply details for response if needed
+    reply_details = None
+    if reply_to_id:
+        reply_msg = await db.get(PrivateMessage, reply_to_id)
+        if reply_msg:
+             reply_details = {
+                "id": reply_msg.id,
+                "content": reply_msg.content,
+                "sender_id": reply_msg.sender_id
+            }
+
     # Send Notification (Lightweight)
     try:
         notif = StudentNotification(
@@ -246,7 +266,8 @@ async def send_message(
         "id": msg.id,
         "content": msg.content,
         "created_at": msg.created_at,
-        "sender_id": msg.sender_id
+        "sender_id": msg.sender_id,
+        "reply_to": reply_details # NEW
     }
 
 @router.delete("/{chat_id}")

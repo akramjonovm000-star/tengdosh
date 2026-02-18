@@ -103,12 +103,17 @@ class ChatService {
   }
 
   // Send Message
-  Future<Message?> sendMessage(String chatId, String content) async {
+  Future<Message?> sendMessage(String chatId, String content, {String? replyToMessageId}) async {
     try {
+      final body = {
+        'content': content,
+        if (replyToMessageId != null) 'reply_to_message_id': replyToMessageId,
+      };
+
       final response = await http.post(
         Uri.parse('${ApiConstants.backendUrl}/chat/$chatId/send'),
         headers: await _getHeaders(),
-        body: json.encode({'content': content}),
+        body: json.encode(body),
       );
       
       if (response.statusCode == 200) {
