@@ -48,7 +48,7 @@ async def login_via_hemis(
                  demo_login = "demo.student"
                  full_name = "Demo Talaba"
                  role = "student"
-            elif login_clean == "demo.jurn":
+            elif login_clean == "demo.jurn" or login_clean == "demo.jurnalistika":
                  demo_login = "demo.jurnalistika"
                  full_name = "Jurnalistika Rahbariyati"
                  role = "rahbariyat"
@@ -106,6 +106,7 @@ async def login_via_hemis(
              )
              return {
                 "access_token": access_token,
+                "token": access_token, # [COMPAT] Mobile App expects 'token'
                 "token_type": "bearer",
                 "user_info": {
                     "id": demo_staff.id,
