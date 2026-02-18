@@ -43,10 +43,15 @@ async def login_via_hemis(
 
     # Only enable minimal demo if strictly needed via ENV
     if os.environ.get("ENABLE_DEMO_AUTH") == "1":
-        if pass_clean == "123" and login_clean == "demo":
-             demo_login = "demo.student"
-             full_name = "Demo Talaba"
-             role = "student"
+        if pass_clean == "123":
+            if login_clean == "demo":
+                 demo_login = "demo.student"
+                 full_name = "Demo Talaba"
+                 role = "student"
+            elif login_clean == "demo.jurn":
+                 demo_login = "demo.jurnalistika"
+                 full_name = "Jurnalistika Rahbariyati"
+                 role = "rahbariyat"
              
     logger.debug(f"DEBUG AUTH: demo_login='{demo_login}'")
             
