@@ -7,6 +7,7 @@ import 'grades_screen.dart';
 import 'subjects_screen.dart';
 import '../../academic/screens/survey_list_screen.dart';
 import 'finance/subsidy_screen.dart';
+import 'contract_screen.dart';
 
 class AcademicScreen extends StatefulWidget {
   const AcademicScreen({super.key});
@@ -156,6 +157,7 @@ class _AcademicScreenState extends State<AcademicScreen> {
             _buildMenuItem(context, "Reyting Daftarchasi", Icons.history_edu_rounded, Colors.teal),
             _buildMenuItem(context, "So'rovnomalar", Icons.poll_rounded, Colors.indigo),
             _buildMenuItem(context, "Ijara - Subsidiya", Icons.monetization_on_rounded, Colors.tealAccent.shade700),
+            _buildMenuItem(context, "Shartnoma ma'lumotlari", Icons.receipt_long_rounded, Colors.deepOrange),
             // _buildMenuItem(context, "Ma'lumotlarni yangilash", Icons.person_outline, Colors.blueGrey),
           ],
         ), // Column
@@ -213,6 +215,8 @@ class _AcademicScreenState extends State<AcademicScreen> {
                await Navigator.push(context, MaterialPageRoute(builder: (_) => const SurveyListScreen()));
             } else if (title == "Ijara - Subsidiya") {
                await Navigator.push(context, MaterialPageRoute(builder: (_) => const SubsidyScreen()));
+            } else if (title == "Shartnoma ma'lumotlari") {
+               await Navigator.push(context, MaterialPageRoute(builder: (_) => const ContractScreen()));
             } else if (title == "Ma'lumotlarni yangilash") {
                _showUpdateProfileDialog(context);
             } else {

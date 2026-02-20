@@ -4,6 +4,7 @@ from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from database.models import Student, Staff, TgAccount
 import logging
 
@@ -154,10 +155,46 @@ async def cmd_start_deep_link(message: Message, command: CommandObject, session:
             await message.answer("❌ Tizim xatoligi yuz berdi. Keyinroq urinib ko'ring.")
 
 @router.message(CommandStart())
-async def cmd_start_generic(message: Message):
+async def cmd_start_generic(message: Message, session: AsyncSession):
     """
     Fallback for non-deep-link start.
+    Check if user is Owner/Developer/Admin and show menu.
     """
+    user_id = message.from_user.id
+    from config import OWNER_TELEGRAM_ID
+    from database.models import StaffRole
+
+    # 1. Check if OWNER
+    if user_id == int(OWNER_TELEGRAM_ID):
+        from keyboards.inline_kb import get_owner_main_menu_inline_kb
+        await message.answer(
+            f"👋 Assalomu alaykum, <b>Owner</b>!\n\nBoshqaruv menyusi:",
+            reply_markup=get_owner_main_menu_inline_kb(),
+            parse_mode="HTML"
+        )
+        return
+
+    # 2. Check Role via TgAccount
+    result = await session.execute(
+        select(TgAccount)
+        .where(TgAccount.telegram_id == user_id)
+        .options(selectinload(TgAccount.staff))
+    )
+    account = result.scalar_one_or_none()
+    
+    if account and account.staff:
+        # Check privileges
+        role = account.staff.role
+        if role in [StaffRole.DEVELOPER, StaffRole.OWNER]:
+            from keyboards.inline_kb import get_owner_main_menu_inline_kb
+            await message.answer(
+                f"👋 Assalomu alaykum, <b>{account.staff.full_name}</b>!\n\n(Developer/Owner Maqomi)\nBoshqaruv menyusi:",
+                reply_markup=get_owner_main_menu_inline_kb(),
+                parse_mode="HTML"
+            )
+            return
+
+    # 3. Default Fallback
     await message.answer(
         "👋 <b>Assalomu alaykum!</b>\n\n"
         "Bu bot faqat <b>TalabaHamkor</b> ilovasi orqali fayl yuklash va kirish uchun ishlatiladi.\n\n"

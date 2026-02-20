@@ -63,6 +63,11 @@ post_install do |installer|
       config.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
       config.build_settings['DEFINES_MODULE'] = 'YES'
 
+      # [FIX] Force removal of simulator architectures for Release/Archive to fix "Invalid Executable"
+      if config.name == 'Release'
+        config.build_settings['EXCLUDED_ARCHS[sdk=iphoneos*]'] = 'x86_64 i386'
+      end
+
       # Fix Xcode 15+ DT_TOOLCHAIN_DIR Error in xcconfigs
       if config.base_configuration_reference
           xcconfig_path = config.base_configuration_reference.real_path

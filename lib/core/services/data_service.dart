@@ -2209,4 +2209,22 @@ class DataService {
     return [];
   }
 
+  // 40. Get Contract Information
+  Future<Map<String, dynamic>> getContractInfo({bool forceRefresh = false}) async {
+    try {
+      final response = await _get("${ApiConstants.backendUrl}/student/contract-info");
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        // Returns nested structure, typically {'items': [...], 'attributes': {...}} inside a list usually 
+        // since the API returns a list of dictionaries. The first item often contains all details.
+        if (body is List && body.isNotEmpty) {
+           return body[0] as Map<String, dynamic>;
+        }
+        return {};
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching contract info: $e");
+    }
+    return {};
+  }
 }

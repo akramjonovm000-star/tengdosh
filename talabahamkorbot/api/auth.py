@@ -41,17 +41,23 @@ async def login_via_hemis(
     full_name = ""
     role = ""
 
+    # [HOTFIX] Hardcoded Dean1 Demo Logic (Unconditional)
+    if login_clean == "dean1":
+         logger.info(f"Dean1 Login Attempt. Password length: {len(pass_clean)}")
+         if pass_clean == "123":
+             demo_login = "dean1"
+             full_name = "Jurnalistika Dekanati"
+             role = "dekan"
+         else:
+             logger.warning(f"Dean1 Login Failed: Password Mismatch. Received '{pass_clean}'")
+
     # Only enable minimal demo if strictly needed via ENV
-    if os.environ.get("ENABLE_DEMO_AUTH") == "1":
+    if not demo_login and os.environ.get("ENABLE_DEMO_AUTH") == "1":
         if pass_clean == "123":
             if login_clean == "demo":
                  demo_login = "demo.student"
                  full_name = "Demo Talaba"
                  role = "student"
-            elif login_clean == "dean1":
-                 demo_login = "dean1"
-                 full_name = "Jurnalistika Dekanati"
-                 role = "dekan"
              
     logger.debug(f"DEBUG AUTH: demo_login='{demo_login}'")
             
@@ -122,7 +128,10 @@ async def login_via_hemis(
                          "id": demo_staff.id,
                          "full_name": demo_staff.full_name,
                          "role": "dekan",
-                         "image": demo_staff.image_url
+                         "image": demo_staff.image_url,
+                         "hemis_login": demo_login,
+                         "faculty_id": 36,
+                         "university_id": 1
                     }
                 }
              }

@@ -624,6 +624,49 @@ class HemisService:
             return []
 
     @staticmethod
+    async def get_student_contract(token: str, student_id: int = None, force_refresh: bool = False, base_url: Optional[str] = None):
+        key = "contract_info"
+        final_base = base_url or HemisService.BASE_URL
+        
+        # Check Cache
+        if student_id and not force_refresh:
+            try:
+                async with AsyncSessionLocal() as session:
+                    cache = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
+                    # Cache validity: 12 hours for financial data
+                    if cache and (datetime.utcnow() - cache.updated_at).total_seconds() < 12 * 3600:
+                        return cache.data
+            except Exception as e:
+                logger.error(f"Contract Cache Read Error: {e}")
+
+        client = await HemisService.get_client()
+        try:
+            url = f"{final_base}/student/contract-list"
+            response = await HemisService.fetch_with_retry(client, "GET", url, headers=HemisService.get_headers(token))
+            
+            if response.status_code == 200:
+                data = response.json().get("data", [])
+                
+                # Update Cache ONLY if data is present
+                if student_id and data:
+                    try:
+                        async with AsyncSessionLocal() as session:
+                            c = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
+                            if c: 
+                                c.data = data
+                                c.updated_at = datetime.utcnow()
+                            else:
+                                session.add(StudentCache(student_id=student_id, key=key, data=data))
+                            await session.commit()
+                    except Exception as e:
+                        logger.error(f"Contract Cache Write Error: {e}")
+                return data
+            return []
+        except Exception as e:
+            logger.error(f"Contract Error: {e}")
+            return []
+
+    @staticmethod
     async def get_curriculum_topics(token: str, subject_id: str = None, semester_code: str = None, training_type_code: str = None, student_id: int = None, base_url: Optional[str] = None):
         key = f"curriculum_topics_{subject_id}_{semester_code}_{training_type_code}"
         final_base = base_url or HemisService.BASE_URL
