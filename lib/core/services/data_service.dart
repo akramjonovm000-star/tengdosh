@@ -2215,10 +2215,17 @@ class DataService {
       final response = await _get("${ApiConstants.backendUrl}/student/contract-info");
       if (response.statusCode == 200) {
         final body = json.decode(response.body);
-        // Returns nested structure, typically {'items': [...], 'attributes': {...}} inside a list usually 
-        // since the API returns a list of dictionaries. The first item often contains all details.
-        if (body is List && body.isNotEmpty) {
-           return body[0] as Map<String, dynamic>;
+        
+        // Handle both List and Map structures dynamically
+        if (body is List) {
+           if (body.isNotEmpty && body[0] is Map) {
+               return body[0] as Map<String, dynamic>;
+           }
+        } else if (body is Map<String, dynamic>) {
+           // If Backend already returns a Map with attributes/items directly
+           if (body.containsKey('attributes') || body.containsKey('items')) {
+               return body;
+           }
         }
         return {};
       }
