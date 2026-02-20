@@ -104,7 +104,7 @@ class AuthProvider with ChangeNotifier {
          return "Universitet HEMIS tizimi ishlamayapti.\nBu bizga bog'liq emas, keyinroq kiring.";
       } else if (errorMsg.contains("INVALID_CREDENTIALS") || errorMsg.toLowerCase().contains("login yoki parol")) {
          debugPrint("AuthProvider: Returning localized INVALID_CREDENTIALS error");
-         return "Login yoki parol xato!\nIltimos ma'lumotlarni tekshirib qayta kiring.";
+         return "Login yoki parol xato!";
       }
       
       debugPrint("AuthProvider: Returning generic error: $errorMsg");

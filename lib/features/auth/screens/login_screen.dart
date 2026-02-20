@@ -39,6 +39,12 @@ class _LoginScreenState extends State<LoginScreen> {
     debugPrint("LoginScreen: Login Result: $error");
 
     if (error != null) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = error;
+        });
+      }
+
       if (!mounted) {
         debugPrint("LoginScreen: Widget unmounted, ignoring error.");
         return;
@@ -69,12 +75,6 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       
       debugPrint("LoginScreen: Dialog closed or shown.");
-
-      if (mounted) {
-        setState(() {
-          _errorMessage = error;
-        });
-      }
     }
   }
 
@@ -280,7 +280,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               size: 20
                             ),
                             label: Text(
-                              "OneID orqali kirish (xodimlar ucun)", 
+                              "OneID orqali kirish (xodimlar uchun)", 
                               style: TextStyle(
                                 color: _isPolicyAccepted ? AppTheme.primaryBlue : Colors.grey, 
                                 fontSize: 13, 

@@ -693,6 +693,7 @@ async def get_student_contract_info(
     
     try:
         data = await HemisService.get_student_contract(token, student_id=student.id, force_refresh=force_refresh, base_url=base_url)
+        logger.warning(f"DEBUG CONTRACT PAYLOAD for {student.id}: {data}")
         return data
     except Exception as e:
         logger.error(f"Error fetching contract info for student {student.id}: {e}")

@@ -82,6 +82,7 @@ async def init_upload_session(
     new_pending = PendingUpload(
         session_id=session_id,
         student_id=student.id,
+        category=category, # Use categroy from Form (Default: Faollik)
         file_ids="" # Empty initially
     )
     db.add(new_pending)

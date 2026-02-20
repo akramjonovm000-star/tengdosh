@@ -41,7 +41,7 @@ async def cmd_start_deep_link(message: Message, command: CommandObject, session:
     elif args.startswith("upload_"):
         session_id = args.replace("upload_", "")
         from database.models import PendingUpload
-        from models.states import DocumentAddStates, CertificateAddStates
+        from models.states import DocumentAddStates, CertificateAddStates, FeedbackStates, ActivityUploadState
         
         # Find Pending Upload
         pending = await session.get(PendingUpload, session_id)
@@ -64,18 +64,24 @@ async def cmd_start_deep_link(message: Message, command: CommandObject, session:
                 tg_account.current_role = "student"
                 await session.commit()
             
-            # Determine intended state
+            # Determine intended state & message
             target_state = DocumentAddStates.WAIT_FOR_APP_FILE
+            display_name = pending.title or "Hujjat"
+            msg_prefix = f"📎 <b>{display_name}</b> yuklanmoqda...\nIltimos, faylni shu yerga yuboring:"
+
             if pending.category == "sertifikat":
                 target_state = CertificateAddStates.WAIT_FOR_APP_FILE
+            elif pending.category == "feedback":
+                target_state = FeedbackStates.WAIT_FOR_APP_FILE
+                msg_prefix = f"📨 <b>Murojaat uchun fayl yuklash</b>\n\nIlova qilmoqchi bo'lgan faylingizni (Rasm, Video yoki PDF) yuboring:"
+            elif pending.category == "Faollik":
+                target_state = ActivityUploadState.waiting_for_photo
+                msg_prefix = f"📸 <b>Faollik uchun rasm yuklang!</b>\n\nIltimos, faollikka oid rasmlarni yuboring (Maksimal 5 ta):"
             
             await state.set_state(target_state)
             
-            display_name = pending.title or "Hujjat"
             await message.answer(
-                f"🔗 <b>Hisob Ulandi!</b>\n\n"
-                f"📎 <b>{display_name}</b> yuklanmoqda...\n"
-                "Iltimos, faylni shu yerga yuboring:",
+                f"🔗 <b>Hisob Ulandi!</b>\n\n{msg_prefix}",
                 parse_mode="HTML"
             )
             return
