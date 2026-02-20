@@ -2212,7 +2212,7 @@ class DataService {
   // 40. Get Contract Information
   Future<Map<String, dynamic>> getContractInfo({bool forceRefresh = false}) async {
     try {
-      final response = await _get("${ApiConstants.backendUrl}/student/contract-info");
+      final response = await _get("${ApiConstants.backendUrl}/student/contract-info?force_refresh=$forceRefresh");
       if (response.statusCode == 200) {
         final body = json.decode(response.body);
         

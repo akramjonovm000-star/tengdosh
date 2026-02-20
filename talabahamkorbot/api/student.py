@@ -664,6 +664,7 @@ async def update_profile(
 
 @router.get("/contract-info")
 async def get_student_contract_info(
+    force_refresh: bool = False,
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
 ):
@@ -691,7 +692,7 @@ async def get_student_contract_info(
     base_url = UniversityService.get_api_url(student.hemis_login)
     
     try:
-        data = await HemisService.get_student_contract(token, student_id=student.id, force_refresh=False, base_url=base_url)
+        data = await HemisService.get_student_contract(token, student_id=student.id, force_refresh=force_refresh, base_url=base_url)
         return data
     except Exception as e:
         logger.error(f"Error fetching contract info for student {student.id}: {e}")
