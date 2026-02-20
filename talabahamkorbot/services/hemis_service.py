@@ -627,17 +627,6 @@ class HemisService:
     async def get_student_contract(token: str, student_id: int = None, force_refresh: bool = False, base_url: Optional[str] = None):
         key = "contract_info"
         final_base = base_url or HemisService.BASE_URL
-        
-        # Check Cache
-        if student_id and not force_refresh:
-            try:
-                async with AsyncSessionLocal() as session:
-                    cache = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
-                    # Cache validity: 12 hours for financial data
-                    if cache and (datetime.utcnow() - cache.updated_at).total_seconds() < 12 * 3600:
-                        return cache.data
-            except Exception as e:
-                logger.error(f"Contract Cache Read Error: {e}")
 
         client = await HemisService.get_client()
         try:
@@ -696,19 +685,6 @@ class HemisService:
                         }
 
             if data:
-                # Update Cache ONLY if data is present
-                if student_id:
-                    try:
-                        async with AsyncSessionLocal() as session:
-                            c = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
-                            if c: 
-                                c.data = data
-                                c.updated_at = datetime.utcnow()
-                            else:
-                                session.add(StudentCache(student_id=student_id, key=key, data=data))
-                            await session.commit()
-                    except Exception as e:
-                        logger.error(f"Contract Cache Write Error: {e}")
                 return data
             return []
         except Exception as e:
