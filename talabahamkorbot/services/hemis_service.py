@@ -641,14 +641,63 @@ class HemisService:
 
         client = await HemisService.get_client()
         try:
-            url = f"{final_base}/student/contract-list"
-            response = await HemisService.fetch_with_retry(client, "GET", url, headers=HemisService.get_headers(token))
+            url_list = f"{final_base}/student/contract-list"
+            response = await HemisService.fetch_with_retry(client, "GET", url_list, headers=HemisService.get_headers(token))
             
+            data = None
             if response.status_code == 200:
-                data = response.json().get("data", [])
+                resp_json = response.json()
+                data_list = resp_json.get("data", {})
                 
+                # Check if contract-list is actually populated with financial values
+                is_valid_list = False
+                if isinstance(data_list, dict):
+                    attrs = data_list.get("attributes", {})
+                    items = data_list.get("items", [])
+                    # If we have items, it's definitely valid
+                    if items:
+                        is_valid_list = True
+                    else:
+                        # If no items, check if contractAmount is an actual number (not the "Jami summa" label)
+                        amt = attrs.get("contractAmount") or attrs.get("eduContractSum")
+                        if amt and str(amt).replace('.', '', 1).isdigit():
+                            is_valid_list = True
+
+                if is_valid_list:
+                    data = data_list
+            
+            # Fallback to single contract endpoint if list is empty
+            if not data:
+                url_single = f"{final_base}/student/contract"
+                response_single = await HemisService.fetch_with_retry(client, "GET", url_single, headers=HemisService.get_headers(token))
+                
+                if response_single.status_code == 200:
+                    single_data = response_single.json().get("data")
+                    if single_data and isinstance(single_data, dict):
+                        # Normalize single data into the same structure expected by frontend
+                        summa = float(single_data.get("eduContractSum") or 0)
+                        debit = float(single_data.get("debit") or 0)
+                        credit = float(single_data.get("credit") or 0)
+                        
+                        # Basic logic: Paid = Total - Debt + Credit
+                        paid = summa - debit + credit
+                        
+                        data = {
+                            "items": [],  # No history in single view
+                            "attributes": {
+                                "amount": summa,
+                                "amount_debt": debit,
+                                "amount_paid": paid,
+                                "amount_credit": credit,
+                                "discount": 0,
+                                "status": "Faol",
+                                "total_computed": summa
+                            }
+                        }
+
+            if data:
                 # Update Cache ONLY if data is present
-                if student_id and data:
+                if student_id:
                     try:
                         async with AsyncSessionLocal() as session:
                             c = await session.scalar(select(StudentCache).where(StudentCache.student_id == student_id, StudentCache.key == key))
