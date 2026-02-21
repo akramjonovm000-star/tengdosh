@@ -121,7 +121,24 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 40),
                   
-                    TextFormField(
+                  if (_errorMessage != null)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 24.0),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFD54F), // Amber 300 as the yellow banner
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        "Parol yoki login noto'g'ri ko'rsatilgan. Qaytadan urinib ko'ring.",
+                        style: TextStyle(
+                          color: Colors.black87,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    
+                  TextFormField(
                     controller: _loginController,
                     onChanged: (_) {
                       if (_errorMessage != null) setState(() => _errorMessage = null);
@@ -227,32 +244,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          if (_errorMessage != null)
-                            Container(
-                              margin: const EdgeInsets.only(bottom: 16.0),
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              decoration: BoxDecoration(
-                                color: Colors.red.shade50,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.red.shade200),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      _errorMessage!,
-                                      style: TextStyle(
-                                        color: Colors.red.shade700,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
                           ElevatedButton(
                             onPressed: (_isPolicyAccepted && !auth.isLoading) ? _submit : null,
                             style: ElevatedButton.styleFrom(
