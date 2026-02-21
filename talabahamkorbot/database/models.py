@@ -8,6 +8,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Integer,
+    Float,
     String,
     Text,
     UniqueConstraint,
@@ -1549,3 +1550,30 @@ class SecurityToken(Base):
 
     student: Mapped["Student"] = relationship("Student")
 
+
+# ============================================================
+# CLICK TRANSACTIONS
+# ============================================================
+
+class ClickTransaction(Base):
+    __tablename__ = "click_transactions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    
+    click_trans_id: Mapped[int] = mapped_column(BigInteger, unique=True, index=True, nullable=False)
+    click_paydoc_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    
+    merchant_trans_id: Mapped[str] = mapped_column(String(128), index=True, nullable=False) # Internal order/invoice ID
+    amount: Mapped[float] = mapped_column(Float, nullable=False)
+    
+    action: Mapped[int] = mapped_column(Integer, nullable=False)
+    error: Mapped[int] = mapped_column(Integer, nullable=False)
+    error_note: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    
+    sign_time: Mapped[str] = mapped_column(String(64), nullable=False)
+    sign_string: Mapped[str] = mapped_column(String(255), nullable=False)
+    
+    status: Mapped[str] = mapped_column(String(20), default="preparing", index=True) # preparing, completed, cancelled
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime(), nullable=True, onupdate=datetime.utcnow)

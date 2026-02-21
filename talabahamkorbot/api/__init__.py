@@ -25,6 +25,7 @@ from .community import router as community_router
 from .market import router as market_router
 from .notifications import router as notifications_router
 from .payment import router as payment_router
+from .payment_click import click_router
 from .subscription import router as subscription_router
 from .chat import router as chat_router
 from .gpa import router as gpa_router
@@ -74,6 +75,7 @@ router.include_router(announcements_router, tags=["Announcements"])
 router.include_router(ai_router, prefix="/ai", tags=["AI"])
 router.include_router(market_router, prefix="/market", tags=["Market"])
 router.include_router(payment_router, prefix="/payment", tags=["Payment"])
+router.include_router(click_router, prefix="/api/v1", tags=["Payment Click"])
 router.include_router(gpa_router, prefix="/gpa", tags=["GPA"])
 router.include_router(plans_router, prefix="/plans", tags=["Plans"])
 router.include_router(election_router, prefix="/election", tags=["Election"])
