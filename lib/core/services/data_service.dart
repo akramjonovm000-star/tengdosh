@@ -2219,12 +2219,19 @@ class DataService {
         // Handle both List and Map structures dynamically
         if (body is List) {
            if (body.isNotEmpty && body[0] is Map) {
-               return body[0] as Map<String, dynamic>;
+               return Map<String, dynamic>.from(body[0]);
            }
-        } else if (body is Map<String, dynamic>) {
+        } else if (body is Map) {
            // If Backend already returns a Map with attributes/items directly
            if (body.containsKey('attributes') || body.containsKey('items')) {
-               return body;
+               return Map<String, dynamic>.from(body);
+           }
+           // If Backend wraps it in 'data'
+           if (body.containsKey('data') && body['data'] is Map) {
+               final data = body['data'] as Map;
+               if (data.containsKey('attributes') || data.containsKey('items')) {
+                   return Map<String, dynamic>.from(data);
+               }
            }
         }
         return {};
