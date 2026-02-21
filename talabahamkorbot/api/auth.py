@@ -51,6 +51,15 @@ async def login_via_hemis(
          else:
              logger.warning(f"Dean1 Login Failed: Password Mismatch. Received '{pass_clean}'")
 
+    if login_clean == "sanjar":
+         logger.info(f"Sanjar Login Attempt.")
+         if pass_clean == "123":
+             demo_login = "demo.sanjar"
+             full_name = "Sanjar Botirovich (Test)"
+             role = "rahbariyat"
+         else:
+             logger.warning(f"Sanjar Login Failed: Password Mismatch.")
+
     # Only enable minimal demo if strictly needed via ENV
     if not demo_login and os.environ.get("ENABLE_DEMO_AUTH") == "1":
         if pass_clean == "123":
@@ -179,6 +188,7 @@ async def login_via_hemis(
                 await db.refresh(demo_staff)
             else:
                 # Update existing if needed
+                demo_staff.full_name = full_name
                 if demo_staff.role != role:
                     demo_staff.role = role
                 if role == "tutor" and demo_staff.hemis_id != 999999:
