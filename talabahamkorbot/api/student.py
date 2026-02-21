@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from api.dependencies import get_current_student, get_db, get_premium_student
+from api.dependencies import get_current_student, get_db, get_premium_student, get_student_or_staff
 from api.schemas import StudentProfileSchema
 from database.models import Student, TgAccount
 from sqlalchemy import select
@@ -11,7 +11,7 @@ router = APIRouter()
 @router.get("/me")
 @router.get("/me/")
 async def get_my_profile(
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     """Get the currently logged-in student's profile."""
@@ -20,12 +20,13 @@ async def get_my_profile(
     logger = logging.getLogger(__name__)
     token = getattr(student, 'hemis_token', None)
     logger.warning(f"DEBUG: /student/me call. ID={student.id}, Type={type(student)}. Token Present? {bool(token)}")
-    if token:
+    if token and not hasattr(student, 'role') or getattr(student, 'role') == 'student':
          logger.warning(f"DEBUG: Token Length: {len(token)}")
          # Check Validity
          from services.hemis_service import HemisService
          from services.university_service import UniversityService
-         base = UniversityService.get_api_url(student.hemis_login)
+         base_url_input = getattr(student, 'hemis_login', '') if hasattr(student, 'hemis_login') else ''
+         base = UniversityService.get_api_url(base_url_input)
          try:
              check = await HemisService.check_auth_status(token, base_url=base)
              logger.warning(f"DEBUG: Hemis Auth Check Result: {check}")
@@ -51,7 +52,8 @@ async def get_my_profile(
         if token:
              from services.hemis_service import HemisService
              from services.university_service import UniversityService
-             base = UniversityService.get_api_url(student.hemis_login)
+             base_url_input = getattr(student, 'hemis_login', '') if hasattr(student, 'hemis_login') else ''
+             base = UniversityService.get_api_url(base_url_input)
              # Don't await here to avoid slowing down, just log
              # actually we need to await to know result
              try:
@@ -202,7 +204,7 @@ async def get_my_profile(
 
 @router.post("/sync")
 async def sync_data(
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -230,7 +232,7 @@ import os
 async def upload_profile_image(
     request: Request,
     file: UploadFile = File(...),
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -314,7 +316,7 @@ from fastapi import HTTPException, Header
 @router.post("/username")
 async def set_username(
     data: UsernameUpdateSchema,
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     """Set or update username"""
@@ -537,7 +539,7 @@ async def update_badge(
 @router.get("/contract-info")
 async def get_student_contract_info(
     force_refresh: bool = False,
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -618,7 +620,7 @@ class PasswordUpdateSchema(BaseModel):
 @router.post("/password")
 async def update_password(
     data: PasswordUpdateSchema,
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -659,7 +661,7 @@ class ProfileUpdateSchema(BaseModel):
 @router.post("/profile")
 async def update_profile(
     data: ProfileUpdateSchema,
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     """

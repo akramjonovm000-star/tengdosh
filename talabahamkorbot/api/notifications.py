@@ -7,7 +7,7 @@ from datetime import datetime
 
 from database.db_connect import get_db
 from database.models import StudentNotification
-from api.dependencies import get_current_student, get_owner
+from api.dependencies import get_current_student, get_owner, get_student_or_staff
 from services.notification_service import NotificationService
 
 router = APIRouter()
@@ -38,7 +38,7 @@ class NotificationResponse(BaseModel):
 async def get_notifications(
     skip: int = 0, 
     limit: int = 20, 
-    student = Depends(get_current_student),
+    student = Depends(get_student_or_staff),
     session: AsyncSession = Depends(get_db)
 ):
     stmt = (
@@ -53,7 +53,7 @@ async def get_notifications(
 
 @router.get("/unread-count")
 async def get_unread_count(
-    student = Depends(get_current_student),
+    student = Depends(get_student_or_staff),
     session: AsyncSession = Depends(get_db)
 ):
     # Using simple list count, optimization possible with count(*) query
@@ -68,7 +68,7 @@ async def get_unread_count(
 @router.post("/{notif_id}/read")
 async def mark_read(
     notif_id: int,
-    student = Depends(get_current_student),
+    student = Depends(get_student_or_staff),
     session: AsyncSession = Depends(get_db)
 ):
     notif = await session.get(StudentNotification, notif_id)
@@ -81,7 +81,7 @@ async def mark_read(
 
 @router.post("/read-all")
 async def mark_all_read(
-    student = Depends(get_current_student),
+    student = Depends(get_student_or_staff),
     session: AsyncSession = Depends(get_db)
 ):
     stmt = (
@@ -96,7 +96,7 @@ async def mark_all_read(
 @router.post("/register-token")
 async def register_fcm_token(
     data: TokenRegistrationSchema,
-    student = Depends(get_current_student),
+    student = Depends(get_student_or_staff),
     session: AsyncSession = Depends(get_db)
 ):
     """Register or update FCM token for the student"""

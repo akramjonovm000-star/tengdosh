@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, desc, and_, func
 from database.db_connect import AsyncSessionLocal
 from database.models import Student, PrivateChat, PrivateMessage, StudentNotification
-from api.dependencies import get_current_student, get_db
+from api.dependencies import get_current_student, get_db, get_student_or_staff
 from datetime import datetime
 from sqlalchemy import case # NEW
 import logging
@@ -34,7 +34,7 @@ async def get_or_create_chat(user1_id: int, user2_id: int, db: AsyncSession):
 @router.post("/start/{target_user_id}")
 async def start_chat(
     target_user_id: int,
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     if target_user_id == student.id:
@@ -49,7 +49,7 @@ async def start_chat(
 
 @router.get("/unread-count")
 async def get_total_unread_count(
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     """Get total unread messages count for the current student"""
@@ -67,7 +67,7 @@ async def get_total_unread_count(
 
 @router.get("/list")
 async def list_chats(
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     """List all chats ordered by last activity"""
@@ -121,7 +121,7 @@ async def get_messages(
     chat_id: int,
     before_id: int = Query(None),
     limit: int = 50,
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     # Verify access
@@ -183,7 +183,7 @@ async def get_messages(
 async def send_message(
     chat_id: int,
     data: dict, # {"content": "..."}
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     content = data.get("content")
@@ -275,7 +275,7 @@ async def send_message(
 @router.delete("/{chat_id}")
 async def delete_chat(
     chat_id: int,
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     chat = await db.get(PrivateChat, chat_id)
@@ -295,7 +295,7 @@ async def delete_chat(
 async def edit_message(
     message_id: int,
     data: dict, # {"content": "..."}
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     content = data.get("content")
@@ -319,7 +319,7 @@ async def edit_message(
 @router.delete("/message/{message_id}")
 async def delete_message(
     message_id: int,
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     msg = await db.get(PrivateMessage, message_id)

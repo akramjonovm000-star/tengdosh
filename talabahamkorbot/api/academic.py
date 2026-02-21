@@ -5,7 +5,7 @@ from sqlalchemy import select
 from services.hemis_service import HemisService
 from services.university_service import UniversityService
 from database.db_connect import get_session
-from api.dependencies import get_current_student
+from api.dependencies import get_current_student, get_student_or_staff
 from database.models import Student, TgAccount
 import asyncio
 from datetime import datetime
@@ -46,7 +46,7 @@ async def resolve_semester(student, requested_semester=None, refresh=False):
 async def get_grades(
     semester: str = None,
     refresh: bool = False,
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_session)
 ):
     token = getattr(student, 'hemis_token', None)
@@ -98,7 +98,7 @@ async def get_grades(
 @router.get("/semesters")
 async def get_semesters(
     refresh: bool = False,
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_session)
 ):
     if isinstance(student, Staff):
@@ -184,7 +184,7 @@ async def get_semesters(
 async def get_subjects(
     semester: str = None,
     refresh: bool = False,
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_session)
 ):
     if isinstance(student, Staff):
@@ -263,7 +263,7 @@ async def get_subjects(
 async def get_schedule(
     semester: str = None,
     refresh: bool = False,
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_session)
 ):
     if isinstance(student, Staff):
@@ -338,7 +338,7 @@ async def get_schedule(
 async def get_attendance(
     semester: str = None,
     refresh: bool = False,
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_session)
 ):
     if isinstance(student, Staff):
@@ -379,7 +379,7 @@ async def get_attendance(
         return {"success": True, "data": {"total": 0, "excused": 0, "unexcused": 0, "items": []}}
 
 @router.get("/resources/{subject_id}")
-async def get_resources(subject_id: str, student: Student = Depends(get_current_student)):
+async def get_resources(subject_id: str, student: Student = Depends(get_student_or_staff)):
     if isinstance(student, Staff):
         return {"success": True, "data": []}
 
@@ -400,7 +400,7 @@ async def get_resources(subject_id: str, student: Student = Depends(get_current_
     return {"success": True, "data": parsed}
 
 @router.get("/subject/{subject_id}/details")
-async def get_subject_details_endpoint(subject_id: str, semester: str = None, student: Student = Depends(get_current_student)):
+async def get_subject_details_endpoint(subject_id: str, semester: str = None, student: Student = Depends(get_student_or_staff)):
     if isinstance(student, Staff):
         return {"success": False, "message": "Xodimlar uchun mavjud emas"}
 
