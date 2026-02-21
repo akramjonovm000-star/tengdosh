@@ -4,6 +4,7 @@ import '../../../../core/services/data_service.dart';
 import '../../../../core/models/student.dart';
 import '../models/subscription_plan.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/services.dart';
 
 class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});
@@ -86,8 +87,26 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             TextField(
               controller: amountController,
               keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                TextInputFormatter.withFunction((oldValue, newValue) {
+                  if (newValue.text.isEmpty) return newValue;
+                  
+                  // Format with spaces for every 3 digits
+                  final numberString = newValue.text;
+                  final formattedString = numberString.replaceAllMapped(
+                    RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                    (Match m) => '${m[1]} '
+                  );
+                  
+                  return TextEditingValue(
+                    text: formattedString,
+                    selection: TextSelection.collapsed(offset: formattedString.length),
+                  );
+                }),
+              ],
               decoration: InputDecoration(
-                hintText: "Masalan: 50000",
+                hintText: "10 000",
                 suffixText: "so'm",
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
@@ -97,7 +116,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  final amountText = amountController.text.trim();
+                  final amountText = amountController.text.replaceAll(' ', '').trim();
                   if (amountText.isEmpty) return;
                   final amount = int.tryParse(amountText) ?? 0;
                   if (amount < 1000) {
