@@ -52,29 +52,8 @@ class _LoginScreenState extends State<LoginScreen> {
       
       debugPrint("LoginScreen: Attempting to show Dialog now...");
       
-      // 2. Small yield to ensure keyboard fully closes and frame settles
-      await Future.delayed(const Duration(milliseconds: 100));
-
-      // Force Dialog for ALL errors
-      await showDialog(
-        context: context,
-        barrierDismissible: false, // User MUST tap button
-        builder: (ctx) => AlertDialog(
-          title: const Text("Xatolik", style: TextStyle(color: Colors.red)),
-          content: Text(error),
-          actions: [
-            TextButton(
-              onPressed: () { 
-                 debugPrint("LoginScreen: User closed dialog");
-                 Navigator.pop(ctx); 
-              }, 
-              child: const Text("Tushunarli")
-            )
-          ],
-        ),
-      );
-      
-      debugPrint("LoginScreen: Dialog closed or shown.");
+      // Removed the forced Dialog here, as we are showing the error in a bubble UI instead.
+      debugPrint("LoginScreen: Error shown in inline bubble.");
     }
   }
 
@@ -249,12 +228,29 @@ class _LoginScreenState extends State<LoginScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           if (_errorMessage != null)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 12.0),
-                              child: Text(
-                                _errorMessage!,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 16.0),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.red.shade50,
+                                borderRadius: BorderRadius.circular(12),
+                                border: BorderSide(color: Colors.red.shade200),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      _errorMessage!,
+                                      style: TextStyle(
+                                        color: Colors.red.shade700,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ElevatedButton(
