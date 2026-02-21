@@ -7,7 +7,7 @@ from typing import List
 
 from database.db_connect import AsyncSessionLocal
 from database.models import Student, Staff, ChoyxonaPost, ChoyxonaPostLike, ChoyxonaPostRepost, ChoyxonaComment, ChoyxonaPostView
-from api.dependencies import get_current_student, get_db, require_action_token
+from api.dependencies import get_current_student, get_student_or_staff, get_db, require_action_token
 from utils.student_utils import format_name
 from api.schemas import PostCreateSchema, PostResponseSchema, CommentCreateSchema, CommentResponseSchema
 from services.notification_service import NotificationService
@@ -22,7 +22,7 @@ router = APIRouter()
 async def create_post(
     data: PostCreateSchema,
     token: str = Depends(require_action_token), # [SECURITY] ATS Enforced
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -37,48 +37,61 @@ async def create_post(
     custom_badge = getattr(student, 'custom_badge', None)
 
     # 1. Determine Context based on Category
-    target_uni = student.university_id
+    uni_id = getattr(student, 'university_id', None) or 1
+    target_uni = uni_id
     target_fac = None
     target_spec = None
     
-    is_management = getattr(student, 'hemis_role', None) == 'rahbariyat' or getattr(student, 'role', None) == 'rahbariyat'
+    from database.models import Staff
+    is_staff = isinstance(student, Staff)
+    staff_role = getattr(student, 'role', None) if is_staff else None
+    
+    is_management = False
+    is_global_mgmt = False
+    
+    if is_staff:
+        is_management = True
+        if staff_role in ['owner', 'developer', 'rektor', 'prorektor', 'yoshlar_prorektori', 'rahbariyat']:
+            is_global_mgmt = True
+    else:
+         is_management = getattr(student, 'hemis_role', None) == 'rahbariyat' or getattr(student, 'role', None) == 'rahbariyat'
+
     category = data.category_type
     
     if category == 'university':
-        target_uni = student.university_id
+        target_uni = uni_id
         
     elif category == 'faculty':
-        target_uni = student.university_id
+        target_uni = uni_id
         f_id = getattr(student, 'faculty_id', None)
         if is_management:
             if f_id:
-                # Restricted staff can only post to their own faculty
                 target_fac = f_id
             elif data.target_faculty_id:
                 target_fac = data.target_faculty_id
-            else:
-                 target_fac = student.faculty_id
+            elif not is_global_mgmt:
+                 target_fac = f_id
         else:
-            target_fac = student.faculty_id
+            target_fac = getattr(student, 'faculty_id', None)
             
-        if not target_fac:
+        if not target_fac and not is_global_mgmt:
             raise HTTPException(status_code=400, detail="Sizda fakultet biriktirilmagan")
             
     elif category == 'specialty':
-        target_uni = student.university_id
+        target_uni = uni_id
         f_id = getattr(student, 'faculty_id', None)
         if is_management:
             if f_id:
                 target_fac = f_id
             else:
-                target_fac = data.target_faculty_id or student.faculty_id
+                target_fac = data.target_faculty_id or getattr(student, 'faculty_id', None)
                 
-            target_spec = data.target_specialty_name or student.specialty_name
+            target_spec = data.target_specialty_name or getattr(student, 'specialty_name', None)
         else:
-            target_fac = student.faculty_id
-            target_spec = student.specialty_name
+            target_fac = getattr(student, 'faculty_id', None)
+            target_spec = getattr(student, 'specialty_name', None)
             
-        if not target_spec:
+        if not target_spec and not is_global_mgmt:
              raise HTTPException(status_code=400, detail="Sizda mutaxassislik (yo'nalish) ma'lumoti yo'q")
     else:
          raise HTTPException(status_code=400, detail="Noto'g'ri kategoriya")
@@ -134,7 +147,7 @@ async def create_post(
 
 @router.get("/filters/meta")
 async def get_filters_meta(
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -180,7 +193,7 @@ async def get_posts(
     specialty_name: str = Query(None),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -196,80 +209,75 @@ async def get_posts(
         # 1. Category Filter (Tab Filter)
         query = query.where(ChoyxonaPost.category_type == category)
         
-        is_management = getattr(student, 'hemis_role', None) == 'rahbariyat' or getattr(student, 'role', None) == 'rahbariyat'
+        uni_id = getattr(student, 'university_id', None) or 1
         f_id = getattr(student, 'faculty_id', None)
         
-        # MODERATOR CHECK (Refactored)
+        from database.models import Staff
+        is_staff = isinstance(student, Staff)
+        staff_role = getattr(student, 'role', None) if is_staff else None
+        
+        is_management = False
+        is_global_mgmt = False
+        
+        if is_staff:
+            is_management = True
+            # We consider owners and high level mgmt as global
+            if staff_role in ['owner', 'developer', 'rektor', 'prorektor', 'yoshlar_prorektori', 'rahbariyat']:
+                is_global_mgmt = True
+        else:
+             is_management = getattr(student, 'hemis_role', None) == 'rahbariyat' or getattr(student, 'role', None) == 'rahbariyat'
+        
+        # MODERATOR CHECK
         from utils.moderators import is_global_moderator
-        
-        # Ensure robust string comparison (Try Login, then Hemis ID, then ID)
-        login_raw = getattr(student, 'hemis_login', None)
-        if not login_raw:
-             # Fallback for Staff or odd Student records
-             login_raw = getattr(student, 'hemis_id', None)
-        
+        login_raw = getattr(student, 'hemis_login', None) or getattr(student, 'hemis_id', None)
         login = str(login_raw or '').strip()
         is_moderator = is_global_moderator(login)
-        
-        if not is_moderator:
-             if login == '395251101397' or getattr(student, 'id', 0) == 730:
-                 is_moderator = True
+        if not is_moderator and (login == '395251101397' or getattr(student, 'id', 0) == 730):
+             is_moderator = True
 
         if category == 'university': 
              if not is_moderator:
-                 query = query.where(ChoyxonaPost.target_university_id == student.university_id)
+                 query = query.where(ChoyxonaPost.target_university_id == uni_id)
         
         elif category == 'faculty':
-             # MODERATOR LOGIC:
-             if is_moderator:
-                 # If faculty_id is provided, filter by it.
-                 # If NOT provided (All Faculties), do NOTHING (Global View).
+             if is_moderator or is_global_mgmt:
+                 query = query.where(ChoyxonaPost.target_university_id == uni_id)
                  if faculty_id:
                      query = query.where(ChoyxonaPost.target_faculty_id == faculty_id)
-             
-             # MANAGEMENT LOGIC:
              elif is_management:
-                 query = query.where(ChoyxonaPost.target_university_id == student.university_id)
+                 query = query.where(ChoyxonaPost.target_university_id == uni_id)
                  if f_id:
                      query = query.where(ChoyxonaPost.target_faculty_id == f_id)
                  elif faculty_id:
                      query = query.where(ChoyxonaPost.target_faculty_id == faculty_id)
-             
-             # STUDENT LOGIC:
              else:
-                 query = query.where(ChoyxonaPost.target_university_id == student.university_id)
-                 # Default to own faculty if specific filter not requested 
+                 query = query.where(ChoyxonaPost.target_university_id == uni_id)
                  if faculty_id:
                     query = query.where(ChoyxonaPost.target_faculty_id == faculty_id)
-                 else:
-                    if getattr(student, 'faculty_id', None):
-                        query = query.where(ChoyxonaPost.target_faculty_id == student.faculty_id)
+                 elif f_id:
+                    query = query.where(ChoyxonaPost.target_faculty_id == f_id)
 
         elif category == 'specialty':
-             # MODERATOR LOGIC:
-             if is_moderator:
+             if is_moderator or is_global_mgmt:
+                 query = query.where(ChoyxonaPost.target_university_id == uni_id)
                  if faculty_id:
                      query = query.where(ChoyxonaPost.target_faculty_id == faculty_id)
                  if specialty_name:
                      query = query.where(ChoyxonaPost.target_specialty_name == specialty_name)
-             
-             # OTHERS:
              else:
-                 query = query.where(ChoyxonaPost.target_university_id == student.university_id)
-                 
+                 query = query.where(ChoyxonaPost.target_university_id == uni_id)
                  if is_management:
                      if f_id:
                          query = query.where(ChoyxonaPost.target_faculty_id == f_id)
-                 else:
-                     if getattr(student, 'faculty_id', None):
-                        query = query.where(ChoyxonaPost.target_faculty_id == student.faculty_id)
+                 elif f_id:
+                     query = query.where(ChoyxonaPost.target_faculty_id == f_id)
 
                  if specialty_name:
                      query = query.where(ChoyxonaPost.target_specialty_name == specialty_name)
                  else:
-                     # Default to student's own specialty if not specified
-                     if getattr(student, 'specialty_name', None):
-                         query = query.where(ChoyxonaPost.target_specialty_name == student.specialty_name)
+                     s_name = getattr(student, 'specialty_name', None)
+                     if s_name:
+                         query = query.where(ChoyxonaPost.target_specialty_name == s_name)
              
         query = query.offset(skip).limit(limit)
             
@@ -322,7 +330,7 @@ async def get_reposted_posts(
     target_student_id: int = Query(..., description="Student ID whose reposts we want"),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -449,7 +457,7 @@ def _map_post(post: ChoyxonaPost, author: Student, current_user_id: int):
 @router.get("/posts/{post_id}", response_model=PostResponseSchema)
 async def get_post_by_id(
     post_id: int,
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     query = select(ChoyxonaPost).options(
@@ -532,7 +540,7 @@ async def update_post(
     post_id: int,
     data: PostCreateSchema, # Reuse create schema (content + category)
     token: str = Depends(require_action_token), # [SECURITY] ATS Enforced
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     # Only load author (which is likely the student themselves since we check ID)
@@ -581,7 +589,7 @@ async def update_post(
 @router.post("/posts/{post_id}/view")
 async def view_post(
     post_id: int,
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -659,7 +667,7 @@ async def view_post(
 async def delete_post(
     post_id: int,
     token: str = Depends(require_action_token), # [SECURITY] ATS Enforced
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     post = await db.get(ChoyxonaPost, post_id)
@@ -704,7 +712,7 @@ async def delete_post(
 async def toggle_like(
     post_id: int,
     token: str = Depends(require_action_token), # [SECURITY] ATS Enforced
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     # Check if post exists
@@ -755,7 +763,7 @@ async def toggle_like(
 async def toggle_repost(
     post_id: int,
     token: str = Depends(require_action_token), # [SECURITY] ATS Enforced
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     from database.models import ChoyxonaPostRepost
@@ -797,7 +805,7 @@ async def create_comment(
     post_id: int,
     data: CommentCreateSchema,
     token: str = Depends(require_action_token), # [SECURITY] ATS Enforced
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     # ... (same checks)
@@ -921,7 +929,7 @@ async def create_comment(
 @router.get("/posts/{post_id}/comments", response_model=List[CommentResponseSchema])
 async def get_comments(
     post_id: int,
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -1000,7 +1008,7 @@ async def get_comments(
 @router.post("/comments/{comment_id}/like")
 async def toggle_comment_like(
     comment_id: int,
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     from database.models import ChoyxonaComment, ChoyxonaCommentLike
@@ -1044,7 +1052,7 @@ async def toggle_comment_like(
 @router.delete("/comments/{comment_id}")
 async def delete_comment(
     comment_id: int,
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     from database.models import ChoyxonaComment
@@ -1108,7 +1116,7 @@ async def delete_comment(
 async def edit_comment(
     comment_id: int,
     data: CommentCreateSchema, # Reuse create schema for content
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     from database.models import ChoyxonaComment

@@ -135,7 +135,36 @@ async def get_current_student(
         )
     
     return student
-    
+
+
+async def get_student_or_staff(
+    token_data: dict = Depends(get_current_user_token_data),
+    db: AsyncSession = Depends(get_db)
+):
+    """Allow both students and staff (management) to access shared resources"""
+    if token_data["type"] == "staff":
+        staff = await db.get(Staff, token_data["id"])
+        if not staff:
+            raise HTTPException(status_code=404, detail="Xodim topilmadi")
+        if token_data.get("hemis_token"):
+            staff.hemis_token = decrypt_data(token_data["hemis_token"])
+        return staff
+    elif token_data["type"] == "student":
+        student = await db.get(Student, token_data["id"])
+        if not student:
+            raise HTTPException(status_code=404, detail="Talaba topilmadi")
+        if token_data.get("hemis_token"):
+            student.hemis_token = decrypt_data(token_data["hemis_token"])
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Session Expired: Security Update. Please login again.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        return student
+    else:
+        raise HTTPException(status_code=403, detail="Ruxsat etilmagan foydalanuvchi turi")
+
 
 async def get_premium_student(student: Student = Depends(get_current_student)):
     """
@@ -171,16 +200,16 @@ async def get_owner(student: Student = Depends(get_current_student)):
 
 
 async def get_current_user(
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     """
     Returns the User model instance corresponding to the currently authenticated student/staff.
-    Reuses get_current_student to handle multiple auth types.
+    Reuses get_student_or_staff to handle multiple auth types.
     """
-    user = await db.scalar(select(User).where(User.hemis_login == student.hemis_login))
+    user = await db.scalar(select(User).where(User.hemis_login == getattr(student, 'hemis_login', None)))
     
-    if not user and student.hemis_id:
+    if not user and getattr(student, 'hemis_id', None):
         # Fallback 1: Try by HEMIS ID
         user = await db.scalar(select(User).where(User.hemis_id == str(student.hemis_id)))
 
@@ -196,7 +225,7 @@ async def get_current_user(
 async def require_action_token(
     request: Request,
     action_token: str = Header(None, alias="X-Action-Token"),
-    student: Student = Depends(get_current_student),
+    student: Student = Depends(get_student_or_staff),
     db: AsyncSession = Depends(get_db)
 ):
     """
