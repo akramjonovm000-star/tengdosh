@@ -534,6 +534,44 @@ async def update_badge(
     
     return {"success": True, "badge": data.emoji}
 
+@router.get("/contract-info")
+async def get_student_contract_info(
+    force_refresh: bool = False,
+    student: Student = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Fetch student contract information from HEMIS.
+    Returns financial data like contract amount, debt, discounts, and payment history.
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    # Staff/Teacher check. Only students typically have contracts.
+    from database.models import Staff
+    if isinstance(student, Staff):
+        # Staff don't have study contracts
+        return []
+        
+    token = getattr(student, 'hemis_token', None)
+    if not token:
+        logger.warning(f"DEBUG: No token found for student {student.id} when fetching contract info.")
+        return []
+
+    from services.hemis_service import HemisService
+    from services.university_service import UniversityService
+    
+    base_url = UniversityService.get_api_url(student.hemis_login)
+    
+    try:
+        data = await HemisService.get_student_contract(token, student_id=student.id, force_refresh=force_refresh, base_url=base_url)
+        logger.warning(f"DEBUG CONTRACT PAYLOAD for {student.id}: {data}")
+        return data
+    except Exception as e:
+        logger.error(f"Error fetching contract info for student {student.id}: {e}")
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail="Shartnoma ma'lumotlarini olishda xatolik yuz berdi")
+
 @router.get("/{student_id}")
 async def get_student_public_profile(
     student_id: int,
@@ -661,41 +699,3 @@ async def update_profile(
     # Optionally, we could sync FROM Hemis? But getProfile does that.
     
     return {"success": True, "message": "Ma'lumotlar yangilandi (faqat parol o'zgarishi mumkin)"}
-
-@router.get("/contract-info")
-async def get_student_contract_info(
-    force_refresh: bool = False,
-    student: Student = Depends(get_current_student),
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Fetch student contract information from HEMIS.
-    Returns financial data like contract amount, debt, discounts, and payment history.
-    """
-    import logging
-    logger = logging.getLogger(__name__)
-    
-    # Staff/Teacher check. Only students typically have contracts.
-    from database.models import Staff
-    if isinstance(student, Staff):
-        # Staff don't have study contracts
-        return []
-        
-    token = getattr(student, 'hemis_token', None)
-    if not token:
-        logger.warning(f"DEBUG: No token found for student {student.id} when fetching contract info.")
-        return []
-
-    from services.hemis_service import HemisService
-    from services.university_service import UniversityService
-    
-    base_url = UniversityService.get_api_url(student.hemis_login)
-    
-    try:
-        data = await HemisService.get_student_contract(token, student_id=student.id, force_refresh=force_refresh, base_url=base_url)
-        logger.warning(f"DEBUG CONTRACT PAYLOAD for {student.id}: {data}")
-        return data
-    except Exception as e:
-        logger.error(f"Error fetching contract info for student {student.id}: {e}")
-        from fastapi import HTTPException
-        raise HTTPException(status_code=500, detail="Shartnoma ma'lumotlarini olishda xatolik yuz berdi")
