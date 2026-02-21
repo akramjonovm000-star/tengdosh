@@ -192,11 +192,26 @@ async def login_via_hemis(
                     demo_staff.university_name = "O‘zbekiston jurnalistika va ommaviy kommunikatsiyalar universiteti"
                 await db.commit()
             
-            print(f"DEBUG AUTH: Success! Token='staff_id_{demo_staff.id}'")
+            from utils.encryption import encrypt_data
+            encrypted_dummy_token = encrypt_data(f"demo.token.{demo_staff.id}")
+            user_agent = request.headers.get("user-agent", "unknown")
+            
+            access_token = create_access_token(
+                data={
+                    "sub": demo_staff.full_name, 
+                    "type": "staff", 
+                    "id": demo_staff.id,
+                    "hemis_token": encrypted_dummy_token
+                },
+                expires_delta=timedelta(minutes=60 * 24 * 7), # 7 days
+                user_agent=user_agent
+            )
+
+            print(f"DEBUG AUTH: Success! Token Generated for Demo Staff {demo_staff.id}")
             return {
                 "success": True, 
                 "data": {
-                    "token": f"staff_id_{demo_staff.id}",
+                    "token": access_token,
                     "role": role,
                     "profile": {
                          "id": demo_staff.id,
@@ -417,13 +432,26 @@ async def login_via_hemis(
         
         await db.commit()
         
-        # Generate Staff Token
-        token_str = f"staff_id_{staff.id}"
+        # Generate Staff Token using JWT (Stateless)
+        from utils.encryption import encrypt_data
+        encrypted_token = encrypt_data(token)
+        user_agent = request.headers.get("user-agent", "unknown")
+        
+        access_token = create_access_token(
+            data={
+                "sub": staff.full_name,
+                "type": "staff",
+                "id": staff.id,
+                "hemis_token": encrypted_token
+            },
+            expires_delta=timedelta(minutes=60 * 24 * 7), # 7 days
+            user_agent=user_agent
+        )
         
         return {
             "success": True,
             "data": {
-                "token": token_str,
+                "token": access_token,
                 "role": "rahbariyat" if (staff.role.value if hasattr(staff.role, 'value') else staff.role) in ["dekan", "dekan_orinbosari", "dekan_yoshlar", "dekanat", "rahbariyat", "rektor", "prorektor", "yoshlar_prorektor"] else (staff.role.value if hasattr(staff.role, 'value') else staff.role), 
                 "profile": {
                     "id": staff.id,
