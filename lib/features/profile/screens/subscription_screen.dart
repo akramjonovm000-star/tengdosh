@@ -54,36 +54,104 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   }
 
   Future<void> _topUp(String provider) async {
-    // TEMPORARY: Show coming soon message
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Tez kunda ishga tushadi")),
-    );
-    
-    /* 
-    setState(() => _loadingAction = provider);
-    try {
-      String? url;
-      if (provider == 'Payme') {
-        url = await _dataService.getPaymeUrl(amount: 10000); // Default 10k top up
-      } else if (provider == 'Click') {
-        url = await _dataService.getClickUrl(amount: 10000);
-      } else if (provider == 'Uzum') {
-        url = await _dataService.getUzumUrl(amount: 10000);
-      }
+    if (provider != 'Click') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("$provider tez kunda ishga tushadi")),
+      );
+      return;
+    }
 
-      if (url != null && await canLaunchUrl(Uri.parse(url))) {
-        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    // Show bottom sheet to enter amount
+    final amountController = TextEditingController();
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(ctx).viewInsets.bottom,
+          left: 20, right: 20, top: 20,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "To'ldirish summasini kiriting",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 15),
+            TextField(
+              controller: amountController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                hintText: "Masalan: 50000",
+                suffixText: "so'm",
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  final amountText = amountController.text.trim();
+                  if (amountText.isEmpty) return;
+                  final amount = int.tryParse(amountText) ?? 0;
+                  if (amount < 1000) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Eng kam summa 1000 so'm")),
+                    );
+                    return;
+                  }
+                  Navigator.pop(ctx);
+                  _launchClickPay(amount);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0047BA),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text("Click orqali to'lash", style: TextStyle(color: Colors.white, fontSize: 16)),
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _launchClickPay(int amount) async {
+    final studentId = _student?.id;
+    if (studentId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Talaba ma'lumotlari topilmadi")));
+      return;
+    }
+
+    // Click config (should match Click Merchant cabinet)
+    const String serviceId = "36248"; // REPLACE WITH ACTUAL SERVICE ID
+    const String merchantId = "25883"; // REPLACE WITH ACTUAL MERCHANT ID
+    final String transactionParam = studentId.toString(); // Internal invoice/order ID
+
+    final String clickUrl = "https://my.click.uz/services/pay?service_id=$serviceId&merchant_id=$merchantId&amount=$amount&transaction_param=$transactionParam";
+
+    try {
+      final Uri url = Uri.parse(clickUrl);
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
       } else {
         throw Exception("To'lov havolasini ochib bo'lmadi");
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Xatolik: $e")),
-      );
-    } finally {
-      if (mounted) setState(() => _loadingAction = null);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Xatolik yuz berdi: $e")),
+        );
+      }
     }
-    */
   }
 
   Future<void> _purchasePlan(SubscriptionPlan plan) async {
