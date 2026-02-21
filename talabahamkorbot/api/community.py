@@ -319,10 +319,9 @@ async def get_posts(
     except Exception as e:
         import traceback
         import datetime
-        with open("api_debug.log", "a") as f:
-            f.write(f"\n--- ERROR {datetime.datetime.now()} in get_posts ---\n")
-            f.write(traceback.format_exc())
-            f.write("-" * 40 + "\n")
+        logger.error(f"\n--- ERROR {datetime.datetime.now()} in get_posts ---")
+        logger.error(traceback.format_exc())
+        logger.error("-" * 40)
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/posts/reposted", response_model=List[PostResponseSchema])

@@ -89,7 +89,7 @@ async def get_current_staff(
     token_data: dict = Depends(get_current_user_token_data),
     db: AsyncSession = Depends(get_db)
 ):
-    if token_data["type"] != "staff":
+    if token_data.get("type", "student") != "staff":
         raise HTTPException(status_code=403, detail="Faqat xodimlar uchun")
         
     staff = await db.get(Staff, token_data["id"])
@@ -114,7 +114,7 @@ async def get_current_student(
     token_data: dict = Depends(get_current_user_token_data),
     db: AsyncSession = Depends(get_db)
 ):
-    if token_data["type"] != "student":
+    if token_data.get("type", "student") != "student":
         raise HTTPException(status_code=403, detail="Faqat talabalar uchun")
         
     student = await db.get(Student, token_data["id"])
@@ -142,14 +142,15 @@ async def get_student_or_staff(
     db: AsyncSession = Depends(get_db)
 ):
     """Allow both students and staff (management) to access shared resources"""
-    if token_data["type"] == "staff":
+    user_type = token_data.get("type", "student")
+    if user_type == "staff":
         staff = await db.get(Staff, token_data["id"])
         if not staff:
             raise HTTPException(status_code=404, detail="Xodim topilmadi")
         if token_data.get("hemis_token"):
             staff.hemis_token = decrypt_data(token_data["hemis_token"])
         return staff
-    elif token_data["type"] == "student":
+    elif user_type == "student":
         student = await db.get(Student, token_data["id"])
         if not student:
             raise HTTPException(status_code=404, detail="Talaba topilmadi")
