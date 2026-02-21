@@ -742,13 +742,13 @@ class _SocialActivityScreenState extends State<SocialActivityScreen> {
       }
 
       // Count Statuses
-      if (act.status == 'approved') {
-        approved++;
-      } else if (act.status == 'rejected') {
-        rejected++;
-      } else {
-        pending++;
-      }
+        if (act.status == 'approved') {
+          approved++;
+        } else if (act.status == 'rejected') {
+          rejected++;
+        } else {
+          pending++;
+        }
     }
 
     final stats = [

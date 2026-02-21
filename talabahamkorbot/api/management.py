@@ -1694,8 +1694,7 @@ async def approve_mgmt_activity(
     
     if not activity:
         raise HTTPException(status_code=404, detail="Faollik topilmadi")
-    
-    activity.status = "confirmed"
+    activity.status = "approved"
     await db.commit()
     return {"success": True, "message": "Faollik tasdiqlandi"}
 

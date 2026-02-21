@@ -593,7 +593,10 @@ async def review_activity(
     if new_status not in ["accepted", "rejected"]:
         raise HTTPException(status_code=400, detail="Noto'g'ri status")
         
-    activity.status = new_status
+    if new_status == "accepted":
+        activity.status = "approved"
+    else:
+        activity.status = "rejected"
     await db.commit()
     
     return {"success": True, "message": f"Faollik {new_status} qilindi"}

@@ -103,7 +103,7 @@ async def get_dashboard_stats(
     status_map = {r[0]: r[1] for r in status_counts_res.all()}
     
     pending_count = status_map.get("pending", 0)
-    approved_count = status_map.get("confirmed", 0) 
+    approved_count = status_map.get("approved", 0) 
     rejected_count = status_map.get("rejected", 0)
 
     # 3. Activities this month (Scoped)

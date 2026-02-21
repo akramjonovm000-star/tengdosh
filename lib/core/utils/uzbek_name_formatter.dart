@@ -11,6 +11,10 @@ class UzbekNameFormatter {
       // Basic Title Case
       // This handles `Navro'Z` -> `Navro'z` because substring(1).toLowerCase() 
       // will lowercase the 'Z' properly.
+      if (part.toLowerCase() == 'approved') return 'Tasdiqlangan';
+      if (part.toLowerCase() == 'pending') return 'Kutilayotgan';
+      if (part.toLowerCase() == 'rejected') return 'Rad etilgan';
+      
       String formatted = part[0].toUpperCase() + part.substring(1).toLowerCase();
       
       // Specifically target known problem patterns like 'O‘G‘Li' -> 'O‘g‘li' if needed
