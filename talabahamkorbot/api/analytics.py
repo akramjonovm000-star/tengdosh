@@ -71,7 +71,10 @@ async def get_dashboard_stats(
     
     # Base stmt for scoping
     def apply_scoping(stmt_obj):
-        logger.debug(f"Applying Scoping: role={staff_role}, uni_id={uni_id}, f_id={f_id}")
+        logger.debug(f"Applying Scoping for Uni-wide View: role={staff_role}, uni_id={uni_id}")
+        
+        # Ignore demo users
+        stmt_obj = stmt_obj.where(~Student.hemis_login.ilike("demo%"))
         
         # 1. University Check
         if uni_id:
@@ -80,21 +83,9 @@ async def get_dashboard_stats(
             logger.error(f"Scoping Error: staff_id={staff.id} has no university_id")
             return None 
 
-        # 2. Faculty Scoping
-        # Global roles see everything if no faculty_id is assigned
-        is_global = staff_role in GLOBAL_MGMT_ROLES and f_id is None
-        
-        if is_global:
-            logger.debug(f"Global Access Granted for role={staff_role}")
-            return stmt_obj
-            
-        if f_id:
-            logger.debug(f"Faculty Scoping: f_id={f_id}")
-            stmt_obj = stmt_obj.where(Student.faculty_id == f_id)
-        elif staff_role in DEAN_LEVEL_ROLES or staff_role == StaffRole.TYUTOR:
-            logger.warning(f"Restricted Role with no Faculty: staff_id={staff.id}")
-            return None # Force zero results
-            
+        # We intentionally omit faculty scoping here so that ALL mgmt staff 
+        # (even Deans) see the university-wide totals in the top statistics,
+        # as requested by the user.
         return stmt_obj
 
     # 1. Total Activity Count

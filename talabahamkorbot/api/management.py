@@ -1598,7 +1598,8 @@ async def get_management_activities(
         .options(selectinload(UserActivity.student), selectinload(UserActivity.images))
     )
 
-    # 1. University Scoping
+    # 1. University Scoping / Exclude Demo
+    stmt = stmt.where(~Student.hemis_login.ilike("demo%"))
     if uni_id:
         stmt = stmt.where(Student.university_id == uni_id)
     elif staff_role not in global_roles:
@@ -1672,17 +1673,21 @@ async def approve_mgmt_activity(
 ):
     # Security Check
     dean_level_roles = [StaffRole.DEKAN, StaffRole.DEKAN_ORINBOSARI, StaffRole.DEKAN_YOSHLAR, StaffRole.DEKANAT]
-    global_roles = [StaffRole.OWNER, StaffRole.DEVELOPER, StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR]
+    global_roles = [StaffRole.OWNER, StaffRole.DEVELOPER, StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.YOSHLAR_YETAKCHISI]
     
     staff_role = getattr(staff, 'role', None)
-    if staff_role not in global_roles and staff_role not in dean_level_roles:
+    if staff_role not in global_roles and staff_role not in dean_level_roles and staff_role != StaffRole.TYUTOR:
         raise HTTPException(status_code=403, detail="Ruxsat etilmagan")
 
     stmt = select(UserActivity).join(Student, UserActivity.student_id == Student.id).where(UserActivity.id == activity_id)
     
-    # Faculty Check for Deans/Tutors
+    # Faculty / Group Check for Deans/Tutors
     f_id = getattr(staff, 'faculty_id', None)
-    if f_id and staff_role not in global_roles:
+    if staff_role == StaffRole.TYUTOR:
+        groups_result = await db.scalars(select(TutorGroup.group_number).where(TutorGroup.staff_id == staff.id))
+        group_numbers = [g for g in groups_result.all() if g]
+        stmt = stmt.where(Student.group_number.in_(group_numbers))
+    elif f_id and staff_role not in global_roles:
         stmt = stmt.where(Student.faculty_id == f_id)
 
     activity = (await db.execute(stmt)).scalars().first()
@@ -1706,17 +1711,21 @@ async def reject_mgmt_activity(
     """
     # Security Check
     dean_level_roles = [StaffRole.DEKAN, StaffRole.DEKAN_ORINBOSARI, StaffRole.DEKAN_YOSHLAR, StaffRole.DEKANAT]
-    global_roles = [StaffRole.OWNER, StaffRole.DEVELOPER, StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR]
+    global_roles = [StaffRole.OWNER, StaffRole.DEVELOPER, StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR, StaffRole.YOSHLAR_YETAKCHISI]
     
     staff_role = getattr(staff, 'role', None)
-    if staff_role not in global_roles and staff_role not in dean_level_roles:
+    if staff_role not in global_roles and staff_role not in dean_level_roles and staff_role != StaffRole.TYUTOR:
         raise HTTPException(status_code=403, detail="Ruxsat etilmagan")
 
     stmt = select(UserActivity).join(Student, UserActivity.student_id == Student.id).where(UserActivity.id == activity_id)
     
-    # Faculty Check for Deans
+    # Faculty / Group Check for Deans/Tutors
     f_id = getattr(staff, 'faculty_id', None)
-    if f_id and staff_role not in global_roles:
+    if staff_role == StaffRole.TYUTOR:
+        groups_result = await db.scalars(select(TutorGroup.group_number).where(TutorGroup.staff_id == staff.id))
+        group_numbers = [g for g in groups_result.all() if g]
+        stmt = stmt.where(Student.group_number.in_(group_numbers))
+    elif f_id and staff_role not in global_roles:
         stmt = stmt.where(Student.faculty_id == f_id)
 
     activity = (await db.execute(stmt)).scalars().first()
