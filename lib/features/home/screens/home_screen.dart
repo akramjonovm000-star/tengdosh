@@ -80,20 +80,6 @@ class _HomeScreenState extends State<HomeScreen> {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       final isTutor = auth.isTutor;
 
-      // Fetch profile and semesters first
-      final results = await Future.wait([
-        _dataService.getProfile(),
-        _dataService.getSemesters(),
-      ]);
-      
-      _profile = results[0] as Map<String, dynamic>?;
-      _semesters = results[1] as List<dynamic>? ?? [];
-      
-      if (_semesters.isNotEmpty && _selectedSemesterId == null) {
-        final first = _semesters.first;
-        _selectedSemesterId = first['code']?.toString() ?? first['id']?.toString();
-      }
-      
       // Fetch Dashboard Stats based on Role
       if (isTutor) {
          _dashboard = await _dataService.getTutorDashboard();
@@ -105,10 +91,21 @@ class _HomeScreenState extends State<HomeScreen> {
            });
          }
       } else {
+          // Fetch profile and semesters ONLY if student
+          final results = await Future.wait([
+            _dataService.getProfile(),
+            _dataService.getSemesters(),
+          ]);
+          
+          _profile = results[0] as Map<String, dynamic>?;
+          _semesters = results[1] as List<dynamic>? ?? [];
+          
+          if (_semesters.isNotEmpty && _selectedSemesterId == null) {
+            final first = _semesters.first;
+            _selectedSemesterId = first['code']?.toString() ?? first['id']?.toString();
+          }
+
           final dashResult = await _dataService.getDashboardStats(refresh: refresh);
-          // Re-enabled fetching
-          // The unwanted "Hush kelibsiz" announcement has been deleted from DB.
-          // Future ads will show up here.
           final announcements = await _dataService.getAnnouncementModels();
           final banners = await _dataService.getActiveBanners();
 
@@ -128,10 +125,8 @@ class _HomeScreenState extends State<HomeScreen> {
          }
       }
       
-      if (mounted) {
-        if (_profile != null) {
-           Provider.of<AuthProvider>(context, listen: false).updateUser(_profile!);
-        }
+      if (mounted && _profile != null) {
+         Provider.of<AuthProvider>(context, listen: false).updateUser(_profile!);
       }
     } catch (e) {
       print("Error loading home data: $e");

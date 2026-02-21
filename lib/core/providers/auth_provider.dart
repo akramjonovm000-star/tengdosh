@@ -21,7 +21,7 @@ class AuthProvider with ChangeNotifier {
     final role = _currentUser?.role?.toLowerCase();
     final staffRole = _currentUser?.staffRole?.toLowerCase();
     
-    final mgmtRoles = ['rahbariyat', 'dekan', 'dekan_orinbosari', 'dekan_yoshlar', 'dekanat'];
+    final mgmtRoles = ['rahbariyat', 'dekan', 'dekan_orinbosari', 'dekan_yoshlar', 'dekanat', 'owner', 'developer'];
     
     return mgmtRoles.contains(role) || mgmtRoles.contains(staffRole);
   }
