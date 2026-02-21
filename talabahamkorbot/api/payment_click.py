@@ -166,9 +166,24 @@ async def complete_payment(
 
         # 3. Complete Transaction
         tx.status = "completed"
-        await db.commit()
+        
+        # 4. Top-up Student Balance
+        # Assuming merchant_trans_id is either "1234" or "USER-1234" representing the student.id
+        try:
+            student_id_str = merchant_trans_id.split("-")[-1] if "-" in merchant_trans_id else merchant_trans_id
+            student_id = int(student_id_str)
+            from database.models import Student
+            student_result = await db.execute(select(Student).where(Student.id == student_id))
+            student = student_result.scalar_one_or_none()
+            if student:
+                student.balance += int(amount)
+                logger.info(f"Topped up balance for Student ID {student.id} by {amount} via Click.")
+            else:
+                logger.warning(f"Student ID {student_id} not found for Click payment {click_trans_id}")
+        except Exception as parse_err:
+             logger.error(f"Failed to parse merchant_trans_id {merchant_trans_id} to credit balance: {parse_err}")
 
-        # [TODO: Here we should handle actual business logic, e.g. marking contract as paid or storing payment history]
+        await db.commit()
 
         return {
             "click_trans_id": click_trans_id,
