@@ -60,7 +60,10 @@ async def get_management_dashboard(
 
     uni_id = getattr(staff, 'university_id', None)
     if not uni_id:
-        raise HTTPException(status_code=400, detail="Universitet aniqlanmadi")
+        if current_role in [StaffRole.OWNER, StaffRole.DEVELOPER]:
+            uni_id = 1
+        else:
+            raise HTTPException(status_code=400, detail="Universitet aniqlanmadi")
 
     from services.hemis_service import HemisService
     
@@ -91,7 +94,7 @@ async def get_management_dashboard(
             
         platform_users = await db.scalar(
             select(func.count(Student.id))
-            .where(Student.university_id == uni_id, Student.group_number.in_(group_numbers), Student.hemis_token != None)
+            .where(Student.university_id == uni_id, Student.group_number.in_(group_numbers), Student.last_active_at != None)
         ) or 0
         total_staff = 1
         
@@ -124,7 +127,7 @@ async def get_management_dashboard(
              
         platform_users = await db.scalar(
             select(func.count(Student.id))
-            .where(Student.university_id == uni_id, Student.faculty_id == effective_f_id, Student.hemis_token != None)
+            .where(Student.university_id == uni_id, Student.faculty_id == effective_f_id, Student.last_active_at != None)
         ) or 0
         total_staff = await db.scalar(
             select(func.count(Staff.id)).where(Staff.university_id == uni_id, Staff.faculty_id == effective_f_id)
@@ -148,7 +151,7 @@ async def get_management_dashboard(
 
         platform_users = await db.scalar(
             select(func.count(Student.id))
-            .where(Student.university_id == uni_id, Student.hemis_token != None)
+            .where(Student.university_id == uni_id, Student.last_active_at != None)
         ) or 0
 
         public_employees = await HemisService.get_public_employee_count()
@@ -672,7 +675,7 @@ async def search_mgmt_students(
     # App Users Count
     app_users_stmt = select(func.count(Student.id)).where(
         and_(*search_filters),
-        Student.hemis_token != None
+        Student.last_active_at != None
     )
     app_users_count = (await db.execute(app_users_stmt)).scalar() or 0
 
