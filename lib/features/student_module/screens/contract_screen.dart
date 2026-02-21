@@ -42,9 +42,18 @@ class _ContractScreenState extends State<ContractScreen> {
     }
   }
 
+  double _parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is num) return value.toDouble();
+    if (value is String) {
+      final sanitized = value.replaceAll(RegExp(r'[^0-9.\-]'), '');
+      return double.tryParse(sanitized) ?? 0.0;
+    }
+    return 0.0;
+  }
+
   String _formatCurrency(dynamic amount) {
-    if (amount == null) return "0 so'm";
-    final number = double.tryParse(amount.toString()) ?? 0.0;
+    final number = _parseDouble(amount);
     final formatter = NumberFormat.currency(locale: 'uz_UZ', symbol: "so'm", decimalDigits: 0);
     return formatter.format(number);
   }
@@ -128,12 +137,11 @@ class _ContractScreenState extends State<ContractScreen> {
     final attributes = _contractData?['attributes'] ?? {};
     final items = _contractData?['items'] as List<dynamic>? ?? [];
 
-    final totalAmount = attributes['amount'];
-    final discount = attributes['discount'];
-    final paidAmount = attributes['amount_paid'];
-    final debt = attributes['amount_debt'];
-    final credit = attributes['amount_credit'];
-    final totalComputedStr = attributes['total_computed'] ?? attributes['totalComputed']; // Fallback keys
+    final totalAmount = _parseDouble(attributes['amount'] ?? attributes['total_computed'] ?? attributes['totalComputed']);
+    final discount = _parseDouble(attributes['discount']);
+    final paidAmount = _parseDouble(attributes['amount_paid']);
+    final debt = _parseDouble(attributes['amount_debt']);
+    final credit = _parseDouble(attributes['amount_credit']);
     
     // Status text (sometimes HEMIS provides it directly)
     final contractStatus = attributes['status'] ?? "Faol";
@@ -195,16 +203,16 @@ class _ContractScreenState extends State<ContractScreen> {
                 children: [
                   _buildSummaryRow(
                     "Jami summa", 
-                    totalAmount ?? totalComputedStr, 
+                    totalAmount, 
                     Icons.account_balance_wallet_rounded, 
                     Colors.black87
                   ),
                   const Divider(height: 24),
-                  if (discount != null && double.tryParse(discount.toString()) != 0.0) ...[
+                  if (discount > 0) ...[
                     _buildSummaryRow("Chegirma", discount, Icons.local_offer_rounded, Colors.green),
                     const Divider(height: 24),
                   ],
-                    if (credit != null && double.tryParse(credit.toString()) != 0.0) ...[
+                  if (credit > 0) ...[
                     _buildSummaryRow("Kredit summa", credit, Icons.account_balance_rounded, AppTheme.primaryBlue),
                     const Divider(height: 24),
                   ],
@@ -214,7 +222,7 @@ class _ContractScreenState extends State<ContractScreen> {
                     "Qarzdorlik", 
                     debt, 
                     Icons.warning_rounded, 
-                    (double.tryParse(debt?.toString() ?? "0") ?? 0) > 0 ? Colors.red : Colors.grey
+                    debt > 0 ? Colors.red : Colors.grey
                   ),
                 ],
               ),
