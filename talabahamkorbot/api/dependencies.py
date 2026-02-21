@@ -114,10 +114,19 @@ async def get_current_student(
     token_data: dict = Depends(get_current_user_token_data),
     db: AsyncSession = Depends(get_db)
 ):
-    if token_data.get("type", "student") != "student":
+    user_type = token_data.get("type", "student")
+    if user_type == "telegram":
+        from database.models import TgAccount
+        from sqlalchemy import select
+        tg_acc = await db.scalar(select(TgAccount).where(TgAccount.telegram_id == token_data["id"]))
+        if not tg_acc or not tg_acc.student_id:
+            raise HTTPException(status_code=404, detail="Student not found (TG)")
+        student = await db.get(Student, tg_acc.student_id)
+    elif user_type == "student":
+        student = await db.get(Student, token_data["id"])
+    else:
         raise HTTPException(status_code=403, detail="Faqat talabalar uchun")
         
-    student = await db.get(Student, token_data["id"])
     if not student:
         raise HTTPException(status_code=404, detail="Talaba topilmadi")
 
@@ -125,14 +134,6 @@ async def get_current_student(
     if token_data.get("hemis_token"):
         # [SECURITY] Token in JWT is encrypted (Stateless Storage)
         student.hemis_token = decrypt_data(token_data["hemis_token"])
-    else:
-        # [SECURITY] Revoke Old Sessions: Require Stateless Token
-        # This forces the app to handle 401 -> Logout
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Session Expired: Security Update. Please login again.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
     
     return student
 
@@ -150,18 +151,21 @@ async def get_student_or_staff(
         if token_data.get("hemis_token"):
             staff.hemis_token = decrypt_data(token_data["hemis_token"])
         return staff
-    elif user_type == "student":
-        student = await db.get(Student, token_data["id"])
+    elif user_type == "student" or user_type == "telegram":
+        if user_type == "telegram":
+            from database.models import TgAccount
+            from sqlalchemy import select
+            tg_acc = await db.scalar(select(TgAccount).where(TgAccount.telegram_id == token_data["id"]))
+            if not tg_acc or not tg_acc.student_id:
+                raise HTTPException(status_code=404, detail="Student not found (TG)")
+            student = await db.get(Student, tg_acc.student_id)
+        else:
+            student = await db.get(Student, token_data["id"])
+            
         if not student:
             raise HTTPException(status_code=404, detail="Talaba topilmadi")
         if token_data.get("hemis_token"):
             student.hemis_token = decrypt_data(token_data["hemis_token"])
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Session Expired: Security Update. Please login again.",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
         return student
     else:
         raise HTTPException(status_code=403, detail="Ruxsat etilmagan foydalanuvchi turi")
