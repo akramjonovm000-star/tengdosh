@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 from api.dependencies import get_current_student, get_current_staff
 from database.db_connect import get_db
-from database.models import Student, Staff, TgAccount, UserActivity, TutorGroup
+from database.models import Student, Staff, TgAccount, UserActivity, TutorGroup, User
 from database.models import StaffRole
 from services.analytics_service import get_management_analytics
 from services.ai_service import generate_answer_by_key
@@ -94,7 +94,11 @@ async def get_management_dashboard(
             
         platform_users = await db.scalar(
             select(func.count(Student.id))
-            .where(Student.university_id == uni_id, Student.group_number.in_(group_numbers), Student.last_active_at != None)
+            .join(User, Student.hemis_login == User.hemis_login)
+            .where(
+                Student.university_id == uni_id, 
+                Student.group_number.in_(group_numbers)
+            )
         ) or 0
         total_staff = 1
         
@@ -127,7 +131,11 @@ async def get_management_dashboard(
              
         platform_users = await db.scalar(
             select(func.count(Student.id))
-            .where(Student.university_id == uni_id, Student.faculty_id == effective_f_id, Student.last_active_at != None)
+            .join(User, Student.hemis_login == User.hemis_login)
+            .where(
+                Student.university_id == uni_id, 
+                Student.faculty_id == effective_f_id
+            )
         ) or 0
         total_staff = await db.scalar(
             select(func.count(Staff.id)).where(Staff.university_id == uni_id, Staff.faculty_id == effective_f_id)
@@ -151,7 +159,10 @@ async def get_management_dashboard(
 
         platform_users = await db.scalar(
             select(func.count(Student.id))
-            .where(Student.university_id == uni_id, Student.last_active_at != None)
+            .join(User, Student.hemis_login == User.hemis_login)
+            .where(
+                Student.university_id == uni_id
+            )
         ) or 0
 
         public_employees = await HemisService.get_public_employee_count()
@@ -673,9 +684,8 @@ async def search_mgmt_students(
     students = result.scalars().all()
     
     # App Users Count
-    app_users_stmt = select(func.count(Student.id)).where(
-        and_(*search_filters),
-        Student.last_active_at != None
+    app_users_stmt = select(func.count(Student.id)).join(User, Student.hemis_login == User.hemis_login).where(
+        and_(*search_filters)
     )
     app_users_count = (await db.execute(app_users_stmt)).scalar() or 0
 
