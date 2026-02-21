@@ -636,7 +636,6 @@ async def login_via_hemis(
             hemis_id=h_id,
             hemis_token=encrypt_data(token),  # Encrypt
             # hemis_password=encrypt_data(creds.password), # [DISABLED] Privacy: Do not store password
-            header_data=None, # Explicitly clear old data
             university_id=uni_id,
             faculty_id=fac_id,
             group_number=group_num
