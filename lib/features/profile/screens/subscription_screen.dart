@@ -119,9 +119,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   final amountText = amountController.text.replaceAll(' ', '').trim();
                   if (amountText.isEmpty) return;
                   final amount = int.tryParse(amountText) ?? 0;
-                  if (amount < 1000) {
+                  if (amount <= 0) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Eng kam summa 1000 so'm")),
+                      const SnackBar(content: Text("Summa xato kiritildi")),
                     );
                     return;
                   }
