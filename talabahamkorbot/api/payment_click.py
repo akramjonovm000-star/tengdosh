@@ -2,11 +2,13 @@ import hashlib
 from fastapi import APIRouter, Depends, Form, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from loguru import logger
+import logging
 import os
 
 from database.db_connect import get_db
 from database.models import ClickTransaction
+
+logger = logging.getLogger(__name__)
 
 click_router = APIRouter(prefix="/payment/click", tags=["Payment Click"])
 
