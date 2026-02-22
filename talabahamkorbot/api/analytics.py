@@ -83,9 +83,10 @@ async def get_dashboard_stats(
             logger.error(f"Scoping Error: staff_id={staff.id} has no university_id")
             return None 
 
-        # We intentionally omit faculty scoping here so that ALL mgmt staff 
-        # (even Deans) see the university-wide totals in the top statistics,
-        # as requested by the user.
+        # We add faculty scoping back so that DEANs only see their faculty's statistics
+        if staff_role in DEAN_LEVEL_ROLES and f_id:
+            stmt_obj = stmt_obj.where(Student.faculty_id == f_id)
+            
         return stmt_obj
 
     # 1. Total Activity Count
