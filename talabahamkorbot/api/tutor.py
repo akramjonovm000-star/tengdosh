@@ -255,24 +255,33 @@ async def get_tutor_dashboard(
     # Use Admin Token to ensure we can see all groups (pagination + scope)
     hemis_student_count = await HemisService.get_total_students_for_groups(group_numbers, HEMIS_ADMIN_TOKEN)
     
+    # We use ILIKE to ensure we catch strings like '16-24 JURNALISTIKA ' when the tutor group is '16-24 JURNALISTIKA'
+    from sqlalchemy import or_
+    conditions = [Student.group_number.ilike(f"{g.strip()}%") for g in group_numbers]
+
     # Fallback to DB if HEMIS returns 0 (maybe network error or empty)
     if hemis_student_count > 0:
         student_count = hemis_student_count
     else:
         # Fallback to local DB count
-        student_count = await db.scalar(
-            select(func.count(Student.id)).where(Student.group_number.in_(group_numbers))
-        )
+        if conditions:
+            student_count = await db.scalar(
+                select(func.count(Student.id)).where(or_(*conditions))
+            )
+        else:
+            student_count = 0
 
     # 2.1 Count Active Students (Logged into App - Has HEMIS Token)
-    # User requested to count students who logged into the app
-    active_student_count = await db.scalar(
-        select(func.count(Student.id))
-        .where(
-            Student.group_number.in_(group_numbers),
-            Student.hemis_token != None
+    from database.models import User
+    
+    if conditions:
+        active_student_count = await db.scalar(
+            select(func.count(Student.id))
+            .join(User, User.hemis_login == Student.hemis_login)
+            .where(or_(*conditions))
         )
-    )
+    else:
+        active_student_count = 0
     
     # 3. KPI
     from datetime import datetime
@@ -320,11 +329,13 @@ async def get_tutor_students(
     if not my_groups:
         return {"success": True, "data": []}
         
+    from sqlalchemy import or_
     # 2. Build Query
-    stmt = select(Student).where(Student.group_number.in_(my_groups))
+    conditions = [Student.group_number.ilike(f"{g.strip()}%") for g in my_groups]
+    stmt = select(Student).where(or_(*conditions))
     
     if group and group in my_groups:
-        stmt = stmt.where(Student.group_number == group)
+        stmt = select(Student).where(Student.group_number.ilike(f"{group.strip()}%"))
         
     if search:
         stmt = stmt.where(Student.full_name.ilike(f"%{search}%"))
