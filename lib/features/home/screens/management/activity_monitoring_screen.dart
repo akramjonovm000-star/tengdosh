@@ -130,7 +130,7 @@ class _ActivityMonitoringScreenState extends State<ActivityMonitoringScreen> {
             "${_dashboardStats!['approved_count']}", 
             Icons.check_circle, 
             Colors.green,
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ActivityReviewScreen(title: "Tasdiqlangan Faolliklar", initialStatus: "confirmed"))),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ActivityReviewScreen(title: "Tasdiqlangan Faolliklar", initialStatus: "approved"))),
         ),
         _buildStatCard(
             "Bu Oy", 
@@ -460,7 +460,7 @@ class _ActivityMonitoringScreenState extends State<ActivityMonitoringScreen> {
         Color statusColor = Colors.orange;
         IconData statusIcon = Icons.hourglass_empty;
         
-        if (status == 'confirmed' || status == 'approved') {
+        if (status == 'approved') {
           statusColor = Colors.green;
           statusIcon = Icons.check_circle;
         } else if (status == 'rejected') {

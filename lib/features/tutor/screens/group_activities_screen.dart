@@ -76,8 +76,8 @@ class _GroupActivitiesScreenState extends State<GroupActivitiesScreen> with Sing
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(status == "accepted" ? "Faollik qabul qilindi" : "Faollik rad etildi"),
-            backgroundColor: status == "accepted" ? Colors.green : Colors.red,
+            content: Text(status == "approved" ? "Faollik qabul qilindi" : "Faollik rad etildi"),
+            backgroundColor: status == "approved" ? Colors.green : Colors.red,
             duration: const Duration(milliseconds: 1500),
             behavior: SnackBarBehavior.floating,
           )
@@ -205,7 +205,7 @@ class _GroupActivitiesScreenState extends State<GroupActivitiesScreen> with Sing
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: () => _handleReview(item['id'], "accepted"),
+                          onPressed: () => _handleReview(item['id'], "approved"),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green,
                             foregroundColor: Colors.white,
@@ -231,7 +231,7 @@ class _GroupActivitiesScreenState extends State<GroupActivitiesScreen> with Sing
     String label = status;
     
     switch (status) {
-      case 'accepted': color = Colors.green; label = "Tasdiqlangan"; break;
+      case 'approved': color = Colors.green; label = "Tasdiqlangan"; break;
       case 'rejected': color = Colors.red; label = "Rad etilgan"; break;
       case 'pending': color = Colors.orange; label = "Kutmoqda"; break;
     }

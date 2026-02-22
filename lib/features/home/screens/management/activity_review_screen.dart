@@ -136,10 +136,10 @@ class _ActivityReviewScreenState extends State<ActivityReviewScreen> {
       setState(() {
         final index = _activities.indexWhere((a) => a['id'] == id);
         if (index != -1) {
-          if (_selectedStatus != null && _selectedStatus != "Barchasi" && _selectedStatus != "confirmed") {
+          if (_selectedStatus != null && _selectedStatus != "Barchasi" && _selectedStatus != "approved") {
             _activities.removeAt(index);
           } else {
-            _activities[index]['status'] = 'confirmed';
+            _activities[index]['status'] = 'approved';
           }
         }
       });
@@ -428,7 +428,7 @@ class _ActivityReviewScreenState extends State<ActivityReviewScreen> {
     final statuses = [
       {"label": "Barchasi", "value": "Barchasi"},
       {"label": "Kutilmoqda", "value": "pending"},
-      {"label": "Tasdiqlangan", "value": "confirmed"},
+      {"label": "Tasdiqlangan", "value": "approved"},
       {"label": "Rad etilgan", "value": "rejected"},
     ];
 
@@ -469,7 +469,7 @@ class _ActivityReviewScreenState extends State<ActivityReviewScreen> {
     switch (status.toLowerCase()) {
       case 'pending':
         return 'Kutilmoqda';
-      case 'confirmed':
+      case 'approved':
       case 'accepted':
       case 'accapted':
         return 'Tasdiqlangan';
@@ -484,7 +484,7 @@ class _ActivityReviewScreenState extends State<ActivityReviewScreen> {
     final status = item['status'] ?? 'pending';
     final int id = int.tryParse(item['id'].toString()) ?? 0;
     Color statusColor = Colors.orange;
-    if (status == 'confirmed') statusColor = Colors.green;
+    if (status == 'approved') statusColor = Colors.green;
     if (status == 'rejected') statusColor = Colors.red;
 
     return Card(

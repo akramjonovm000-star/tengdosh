@@ -590,10 +590,10 @@ async def review_activity(
     # await verify_tutor_access(db, tutor.id, activity.student.group_number)
     
     new_status = request.get("status")
-    if new_status not in ["accepted", "rejected"]:
+    if new_status not in ["approved", "rejected"]:
         raise HTTPException(status_code=400, detail="Noto'g'ri status")
         
-    if new_status == "accepted":
+    if new_status == "approved":
         activity.status = "approved"
     else:
         activity.status = "rejected"
