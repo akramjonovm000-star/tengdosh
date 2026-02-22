@@ -270,7 +270,7 @@ async def get_tutor_dashboard(
         select(func.count(Student.id))
         .where(
             Student.group_number.in_(group_numbers),
-            Student.hemis_token.is_not(None)
+            Student.hemis_token != None
         )
     )
     
