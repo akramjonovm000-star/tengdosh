@@ -330,17 +330,26 @@ async def get_tutor_students(
         return {"success": True, "data": []}
         
     from sqlalchemy import or_
+    from database.models import User
     # 2. Build Query
     conditions = [Student.group_number.ilike(f"{g.strip()}%") for g in my_groups]
-    stmt = select(Student).where(or_(*conditions))
+    stmt = (
+        select(Student, User.id.is_not(None).label('is_registered'))
+        .outerjoin(User, User.hemis_login == Student.hemis_login)
+        .where(or_(*conditions))
+    )
     
     if group and group in my_groups:
-        stmt = select(Student).where(Student.group_number.ilike(f"{group.strip()}%"))
+        stmt = (
+            select(Student, User.id.is_not(None).label('is_registered'))
+            .outerjoin(User, User.hemis_login == Student.hemis_login)
+            .where(Student.group_number.ilike(f"{group.strip()}%"))
+        )
         
     if search:
         stmt = stmt.where(Student.full_name.ilike(f"%{search}%"))
         
-    stmt = stmt.limit(50)
+    stmt = stmt.limit(250)
     
     students = await db.execute(stmt)
     
@@ -353,9 +362,10 @@ async def get_tutor_students(
                 "group": s.group_number,
                 "hemis_id": s.hemis_id,
                 "hemis_login": s.hemis_login,
-                "image_url": s.image_url
+                "image_url": s.image_url,
+                "is_registered": is_reg
             }
-            for s in students.scalars().all()
+            for s, is_reg in students.all()
         ]
     }
 
