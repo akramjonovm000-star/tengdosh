@@ -455,6 +455,7 @@ class CommunityService {
       authorIsPremium: json['author_is_premium'] ?? false, // NEW
       authorCustomBadge: json['author_custom_badge'], // NEW
       isMine: json['is_mine'] ?? false,
+      views: json['views_count'] ?? 0,
     );
   }
 
