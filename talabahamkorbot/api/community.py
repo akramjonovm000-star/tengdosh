@@ -315,6 +315,7 @@ async def get_posts(
             r_result = await db.execute(r_query)
             reposted_ids = set(r_result.scalars().all())
         
+        
         return [_map_post_optimized(p, student, p.id in liked_ids, p.id in reposted_ids) for p in posts]
     except Exception as e:
         import traceback

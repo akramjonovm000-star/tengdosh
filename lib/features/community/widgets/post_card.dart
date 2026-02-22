@@ -48,7 +48,9 @@ class _PostCardState extends State<PostCard> {
   bool _isExpanded = false;
   
   late int _commentCount;
+  late int _views;
   late String _currentContent;
+  Timer? _viewTimer;
 
   @override
   void initState() {
@@ -57,11 +59,34 @@ class _PostCardState extends State<PostCard> {
     _registerView();
   }
 
+  @override
+  void dispose() {
+    _viewTimer?.cancel();
+    super.dispose();
+  }
+
   void _registerView() {
     // Wait 0.5s to ensure user actually saw it (impression)
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
         CommunityService().viewPost(widget.post.id);
+        if (mounted) {
+          setState(() {
+             _views++;
+          });
+        }
+      }
+    });
+    
+    // Increment view repeatedly every 30 seconds if still on screen
+    _viewTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (mounted) {
+        CommunityService().viewPost(widget.post.id);
+        setState(() {
+           _views++;
+        });
+      } else {
+        timer.cancel();
       }
     });
   }
@@ -83,6 +108,7 @@ class _PostCardState extends State<PostCard> {
      _pollVotes = widget.post.pollVotes;
      _userVote = widget.post.userVote;
      _currentContent = widget.post.content; 
+     _views = widget.post.views;
   }
 
   void _toggleLike() async {
@@ -412,7 +438,7 @@ class _PostCardState extends State<PostCard> {
             children: [
                 _buildActionButton(
                   icon: Icons.remove_red_eye_outlined, 
-                  label: "${widget.post.views}", 
+                  label: "$_views", 
                   onTap: () {} // Views are read-only
                 ),
                 _buildActionButton(
