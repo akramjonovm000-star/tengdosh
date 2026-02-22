@@ -40,6 +40,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       builder: (context) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
         child: DocumentUploadDialog(
+          existingTitles: _documents.map((d) => (d['title'] ?? '').toString()).toList(),
           onUploadSuccess: _loadDocuments,
         ),
       ),

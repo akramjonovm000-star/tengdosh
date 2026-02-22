@@ -7,8 +7,9 @@ import '../../../core/services/data_service.dart';
 
 class DocumentUploadDialog extends StatefulWidget {
   final VoidCallback onUploadSuccess;
+  final List<String> existingTitles;
 
-  const DocumentUploadDialog({super.key, required this.onUploadSuccess});
+  const DocumentUploadDialog({super.key, required this.onUploadSuccess, this.existingTitles = const []});
 
   @override
   State<DocumentUploadDialog> createState() => _DocumentUploadDialogState();
@@ -35,6 +36,23 @@ class _DocumentUploadDialogState extends State<DocumentUploadDialog> {
     {"id": "obyektivka", "name": "Obyektivka", "icon": Icons.assignment_ind_rounded},
     {"id": "boshqa", "name": "Boshqa", "icon": Icons.folder_shared_rounded},
   ];
+
+  List<Map<String, dynamic>> get _availableCategories {
+    return _categories.where((cat) {
+      if (['passport', 'diplom', 'rezyume', 'obyektivka'].contains(cat['id'])) {
+        return !widget.existingTitles.any((title) => title.toLowerCase() == cat['name'].toString().toLowerCase());
+      }
+      return true;
+    }).toList();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (_availableCategories.isNotEmpty) {
+      _selectedCategory = _availableCategories.first['id'] as String;
+    }
+  }
 
   @override
   void dispose() {
@@ -209,7 +227,7 @@ class _DocumentUploadDialogState extends State<DocumentUploadDialog> {
     return Wrap(
       spacing: 10,
       runSpacing: 10,
-      children: _categories.map((cat) {
+      children: _availableCategories.map((cat) {
         final isSelected = _selectedCategory == cat['id'];
         return InkWell(
           onTap: () => setState(() => _selectedCategory = cat['id']),
