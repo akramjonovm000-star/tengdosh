@@ -352,7 +352,8 @@ async def get_tutor_students(
                 "full_name": s.full_name,
                 "group": s.group_number,
                 "hemis_id": s.hemis_id,
-                "image": s.image_url
+                "hemis_login": s.hemis_login,
+                "image_url": s.image_url
             }
             for s in students.scalars().all()
         ]
