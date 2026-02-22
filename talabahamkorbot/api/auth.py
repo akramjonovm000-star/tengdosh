@@ -60,6 +60,24 @@ async def login_via_hemis(
          else:
              logger.warning(f"Sanjar Login Failed: Password Mismatch.")
 
+    if login_clean == "tyutor1":
+         logger.info(f"Tyutor1 Login Attempt.")
+         if pass_clean == "123":
+             demo_login = "tyutor1"
+             full_name = "Jurnalistika Tyutori"
+             role = "tyutor"
+         else:
+             logger.warning(f"Tyutor1 Login Failed: Password Mismatch.")
+
+    if login_clean == "3952311041":
+         logger.info(f"Maxmanazarov Login Attempt.")
+         if pass_clean == "123":
+             demo_login = "demo.maxmanazarov"
+             full_name = "Maxmanazarov Muslimbek Odiljon O‘g‘li"
+             role = "tyutor"
+         else:
+             logger.warning(f"Maxmanazarov Login Failed: Password Mismatch.")
+
     # Only enable minimal demo if strictly needed via ENV
     if not demo_login and os.environ.get("ENABLE_DEMO_AUTH") == "1":
         if pass_clean == "123":
@@ -161,6 +179,10 @@ async def login_via_hemis(
                  demo_staff = await db.scalar(select(Staff).where(Staff.id == 80))
                  if not demo_staff:
                      demo_staff = await db.scalar(select(Staff).where(Staff.username == "dekanat"))
+            elif demo_login == "demo.maxmanazarov":
+                 demo_staff = await db.scalar(select(Staff).where(Staff.hemis_id == 3952311041))
+                 if not demo_staff:
+                     demo_staff = await db.scalar(select(Staff).where(Staff.id == 74))
             
             if not demo_staff:     
                 # Check by ID OR JSHSHIR to avoid IntegrityError (Standard Demo Logic)
