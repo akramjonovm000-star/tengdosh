@@ -617,22 +617,11 @@ async def view_post(
     should_increment = False
     
     if existing_view:
-        # Check cooldown
-        if (now - existing_view.viewed_at).total_seconds() >= 30:
-            existing_view.viewed_at = now
-            should_increment = True
+        # User already viewed this post
+        # Update viewed_at but DO NOT increment global post view count
+        existing_view.viewed_at = now
     else:
         # Create New View
-        # Check if post exists first to avoid FK error
-        # Or Just try insert and catch error? Better to check existence lightly if needed.
-        # But for speed, let's assuming client sends valid ID. 
-        # Actually proper way:
-        
-        # Verify Post Exists
-        # p_check = await db.execute(select(ChoyxonaPost.id).where(ChoyxonaPost.id == post_id))
-        # if not p_check.scalar_one_or_none():
-        #     raise HTTPException(status_code=404, detail="Post topilmadi")
-
         new_view = ChoyxonaPostView(
             post_id=post_id,
             student_id=current_user_id if not is_staff else None,
@@ -643,10 +632,6 @@ async def view_post(
         should_increment = True
         
     if should_increment:
-        # Increment Counter on Post
-        # We use strict update to avoid race conditions is better, but here we can fetch-update
-        # update(ChoyxonaPost).where(ChoyxonaPost.id == post_id).values(views_count=ChoyxonaPost.views_count + 1)
-        
         from sqlalchemy import update
         stmt = (
             update(ChoyxonaPost)
@@ -655,11 +640,12 @@ async def view_post(
             .execution_options(synchronize_session=False)
         )
         await db.execute(stmt)
-        await db.commit()
-        return {"status": "incremented"}
-    
+        
     await db.commit()
-    return {"status": "cooldown"}
+    
+    # Return the current views_count of the post
+    post_views = await db.scalar(select(ChoyxonaPost.views_count).where(ChoyxonaPost.id == post_id))
+    return {"status": "success", "views_count": post_views}
 
 @router.delete("/posts/{post_id}")
 async def delete_post(

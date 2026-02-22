@@ -67,24 +67,26 @@ class _PostCardState extends State<PostCard> {
 
   void _registerView() {
     // Wait 0.5s to ensure user actually saw it (impression)
-    Future.delayed(const Duration(milliseconds: 500), () {
+    Future.delayed(const Duration(milliseconds: 500), () async {
       if (mounted) {
-        CommunityService().viewPost(widget.post.id);
-        if (mounted) {
+        final newCount = await CommunityService().viewPost(widget.post.id);
+        if (mounted && newCount != null) {
           setState(() {
-             _views++;
+             _views = newCount;
           });
         }
       }
     });
     
-    // Increment view repeatedly every 30 seconds if still on screen
-    _viewTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+    // Sync view repeatedly every 30 seconds if still on screen
+    _viewTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
       if (mounted) {
-        CommunityService().viewPost(widget.post.id);
-        setState(() {
-           _views++;
-        });
+        final newCount = await CommunityService().viewPost(widget.post.id);
+        if (mounted && newCount != null) {
+          setState(() {
+             _views = newCount;
+          });
+        }
       } else {
         timer.cancel();
       }

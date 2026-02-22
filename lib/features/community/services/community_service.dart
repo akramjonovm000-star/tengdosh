@@ -357,20 +357,21 @@ class CommunityService {
   }
 
 
-  Future<void> viewPost(String postId) async {
+  Future<int?> viewPost(String postId) async {
     try {
-      // Fire and forget, we don't need to wait for response or handle error strictly
-      // But we should catch to avoid app crashes
       final response = await http.post(
         Uri.parse('${ApiConstants.communityPosts}/$postId/view'),
         headers: await _getHeaders(),
       );
       
-      if (response.statusCode != 200) {
-        // print("View post failed: ${response.statusCode}");
+      if (response.statusCode == 200) {
+        final data = json.decode(utf8.decode(response.bodyBytes));
+        return data['views_count'] as int?;
       }
+      return null;
     } catch (e) {
       // print("Error viewing post: $e");
+      return null;
     }
   }
 
