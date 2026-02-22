@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:talabahamkor_mobile/core/services/data_service.dart';
 import 'package:talabahamkor_mobile/core/theme/app_theme.dart';
 import 'package:talabahamkor_mobile/features/tutor/screens/group_appeals_screen.dart';
+import 'package:talabahamkor_mobile/features/tutor/screens/tutor_group_students_screen.dart';
 
 class TutorGroupsScreen extends StatefulWidget {
-  const TutorGroupsScreen({super.key});
+  final bool isAppealsMode;
+
+  const TutorGroupsScreen({super.key, this.isAppealsMode = true});
 
   @override
   State<TutorGroupsScreen> createState() => _TutorGroupsScreenState();
@@ -41,7 +44,7 @@ class _TutorGroupsScreenState extends State<TutorGroupsScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundWhite,
       appBar: AppBar(
-        title: const Text("Murojaatlar (Guruhlar)"),
+        title: Text(widget.isAppealsMode ? "Murojaatlar (Guruhlar)" : "Guruhlarim"),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -63,14 +66,25 @@ class _TutorGroupsScreenState extends State<TutorGroupsScreen> {
                       ),
                       child: InkWell(
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => GroupAppealsScreen(
-                                groupNumber: group['group_number'],
+                          if (widget.isAppealsMode) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => GroupAppealsScreen(
+                                  groupNumber: group['group_number'],
+                                ),
                               ),
-                            ),
-                          ).then((_) => _loadGroups()); // Refresh
+                            ).then((_) => _loadGroups()); // Refresh
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => TutorGroupStudentsScreen(
+                                  groupNumber: group['group_number'] ?? '',
+                                ),
+                              ),
+                            );
+                          }
                         },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),

@@ -59,7 +59,7 @@ class TutorDashboardScreen extends StatelessWidget {
                     Expanded(
                       child: InkWell(
                         onTap: () {
-                           Navigator.push(context, MaterialPageRoute(builder: (_) => const TutorGroupsScreen()));
+                           Navigator.push(context, MaterialPageRoute(builder: (_) => const TutorGroupsScreen(isAppealsMode: false)));
                         },
                         borderRadius: BorderRadius.circular(16),
                         child: _StatCard(
