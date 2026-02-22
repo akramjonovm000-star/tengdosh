@@ -374,7 +374,7 @@ async def get_reposted_posts(
         )
         reposted_ids = set(r_result.scalars().all())
     
-    return [_map_post_optimized(p, p.student, student.id, p.id in liked_ids, p.id in reposted_ids) for p in posts]
+    return [_map_post_optimized(p, student, p.id in liked_ids, p.id in reposted_ids) for p in posts]
 
 def format_name(student: Student):
     if not student: return "Unknown"
@@ -446,14 +446,6 @@ def _map_post_optimized(post: ChoyxonaPost, current_user, is_liked: bool, is_rep
         is_mine=is_mine
     )
 
-def _map_post(post: ChoyxonaPost, author: Student, current_user_id: int):
-    # Fallback to old behavior if eager loaded, or efficient check if passed
-    # Use stored counts
-    is_liked = any(l.student_id == current_user_id for l in post.likes) if post.likes else False
-    is_reposted = any(r.student_id == current_user_id for r in post.reposts) if post.reposts else False
-
-    return _map_post_optimized(post, author, current_user_id, is_liked, is_reposted)
-    
 @router.get("/posts/{post_id}", response_model=PostResponseSchema)
 async def get_post_by_id(
     post_id: int,
@@ -583,7 +575,7 @@ async def update_post(
          r_result = await db.execute(select(ChoyxonaPostRepost.id).where(ChoyxonaPostRepost.post_id == post_id, ChoyxonaPostRepost.student_id == student.id).limit(1))
          is_reposted = r_result.scalar_one_or_none() is not None
 
-    return _map_post_optimized(post, student, student.id, is_liked, is_reposted)
+    return _map_post_optimized(post, student, is_liked, is_reposted)
 
 
 @router.post("/posts/{post_id}/view")
