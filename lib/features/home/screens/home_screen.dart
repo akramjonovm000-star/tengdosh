@@ -82,7 +82,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // Fetch Dashboard Stats based on Role
       if (isTutor) {
-         _dashboard = await _dataService.getTutorDashboard();
+         final dash = await _dataService.getTutorDashboard();
+         if (mounted) {
+           setState(() {
+             _dashboard = dash;
+           });
+         }
       } else if (auth.isManagement) {
          final dash = await _dataService.getManagementDashboard(refresh: refresh);
          if (mounted) {
