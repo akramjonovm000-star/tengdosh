@@ -568,6 +568,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                _posts[i] = _posts[i].copyWith(content: newContent);
                             });
                           },
+                          onRepostChanged: (isReposted, count) {
+                             if (_isMe) {
+                                _loadUserPosts();
+                             }
+                          },
                         ),
                       ),
                       
@@ -591,7 +596,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                           itemCount: _reposts.length,
                           itemBuilder: (ctx, i) => PostCard(
                             post: _reposts[i],
-                            // onDelete: _handleDeleteRepost... logic if needed
+                            onRepostChanged: (isReposted, count) {
+                               if (_isMe) _loadUserPosts();
+                            },
                           ),
                         ),
             ],

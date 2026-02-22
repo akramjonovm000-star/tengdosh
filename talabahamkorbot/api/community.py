@@ -336,10 +336,16 @@ async def get_reposted_posts(
     """
     Get posts reposted by a specific student.
     """
+    from sqlalchemy import or_
     # Join Reposts -> Posts -> Student (Author)
     stmt = select(ChoyxonaPost).join(ChoyxonaPostRepost).options(
         selectinload(ChoyxonaPost.student) # Only load author
-    ).where(ChoyxonaPostRepost.student_id == target_student_id).order_by(desc(ChoyxonaPostRepost.created_at)).offset(skip).limit(limit)
+    ).where(
+        or_(
+            ChoyxonaPostRepost.student_id == target_student_id,
+            ChoyxonaPostRepost.staff_id == target_student_id
+        )
+    ).order_by(desc(ChoyxonaPostRepost.created_at)).offset(skip).limit(limit)
     
     result = await db.execute(stmt)
     posts = result.scalars().all()
