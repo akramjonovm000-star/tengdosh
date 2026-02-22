@@ -199,7 +199,7 @@ class TutorDashboardScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                "Davomat Ko'rsatkichi",
+                "Ro'yxatdan o'tganlar",
                 style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
               ),
               Container(
