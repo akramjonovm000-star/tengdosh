@@ -41,29 +41,30 @@ async def handle_app_file_upload(message: types.Message, state):
              return
 
         # 2. Find Pending Upload Session for this User
+        # We need to find which student corresponds to this TG ID
         async for db in get_session():
-             state_data = await state.get_data()
-             session_id = state_data.get("session_id")
+             # Find Student via TgAccount
+             stmt = select(TgAccount).where(TgAccount.telegram_id == user_id)
+             result = await db.execute(stmt)
+             tg_account = result.scalars().first()
              
-             if session_id:
-                 pending = await db.get(PendingUpload, session_id)
-             else:
-                 # Fallback logic
-                 stmt = select(TgAccount).where(TgAccount.telegram_id == user_id)
-                 result = await db.execute(stmt)
-                 tg_account = result.scalars().first()
+             if not tg_account:
+                 await message.answer("❌ Sizning Telegram hisobingiz talaba profiliga ulanmagan.")
+                 return
                  
-                 if not tg_account:
-                     await message.answer("❌ Sizning Telegram hisobingiz talaba profiliga ulanmagan.")
-                     return
-                     
-                 stmt = select(PendingUpload).where(
-                     PendingUpload.student_id == tg_account.student_id,
-                     (PendingUpload.file_ids == "") | (PendingUpload.file_ids == None)
-                 ).order_by(PendingUpload.created_at.desc())
-                 
-                 result = await db.execute(stmt)
-                 pending = result.scalars().first()
+             # Find latest PendingUpload for this student
+             # NOTE:Ideally we should have session_id in state data, but init-upload only sets state string.
+             # We assume the Last Created Pending Upload is the target. 
+             # Or we can check if there is *any* pending upload for this student.
+             
+             # Better approach: Find pending upload where file_ids is EMPTY
+             stmt = select(PendingUpload).where(
+                 PendingUpload.student_id == tg_account.student_id,
+                 (PendingUpload.file_ids == "") | (PendingUpload.file_ids == None)
+             ).order_by(PendingUpload.created_at.desc())
+             
+             result = await db.execute(stmt)
+             pending = result.scalars().first()
              
              if not pending:
                  await message.answer("⚠️ Hujjat yuklash sessiyasi topilmadi yoki muddati tugagan. Ilovadan qayta urinib ko'ring.")
@@ -109,27 +110,23 @@ async def handle_activity_photo(message: types.Message, state):
         
         # 2. Find Pending Upload
         async for db in get_session():
-             state_data = await state.get_data()
-             session_id = state_data.get("session_id")
+             stmt = select(TgAccount).where(TgAccount.telegram_id == user_id)
+             result = await db.execute(stmt)
+             tg_account = result.scalars().first()
              
-             if session_id:
-                 pending = await db.get(PendingUpload, session_id)
-             else:
-                 # Fallback logic if session_id not in state
-                 stmt = select(TgAccount).where(TgAccount.telegram_id == user_id)
-                 result = await db.execute(stmt)
-                 tg_account = result.scalars().first()
-                 
-                 if not tg_account:
-                     await message.answer("❌ Sizning Telegram hisobingiz talaba profiliga ulanmagan.")
-                     return
-    
-                 stmt = select(PendingUpload).where(
-                     PendingUpload.student_id == tg_account.student_id
-                 ).order_by(PendingUpload.created_at.desc())
-                 
-                 result = await db.execute(stmt)
-                 pending = result.scalars().first()
+             if not tg_account:
+                 await message.answer("❌ Sizning Telegram hisobingiz talaba profiliga ulanmagan.")
+                 return
+
+             # Find latest pending upload for this student
+             # We look for the MOST RECENT one, regardless of whether it has files or not
+             # because we are appending to it.
+             stmt = select(PendingUpload).where(
+                 PendingUpload.student_id == tg_account.student_id
+             ).order_by(PendingUpload.created_at.desc())
+             
+             result = await db.execute(stmt)
+             pending = result.scalars().first()
              
              if not pending:
                  await message.answer("⚠️ Faollik yuklash sessiyasi topilmadi. Ilovadan qayta urinib ko'ring.")

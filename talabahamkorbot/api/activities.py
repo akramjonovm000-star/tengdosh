@@ -97,16 +97,31 @@ async def init_upload_session(
             "session_id": session_id
         }
 
-    # 3. We no longer notify via bot here, because the mobile app will launch
-    # the Telegram DEEP LINK, which triggers `deep_link_auth.py` -> `cmd_start_generic` -> `upload_{session_id}`
-    # and the bot will ask for the files there.
-    
+    # 3. Notify & Set State for Already Linked Users
+    try:
+        msg_text = (
+            f"📸 <b>{category} uchun rasm yuklang!</b>\n\n"
+            f"Iltimos, <b>{category}</b>ga oid rasmlarni yuboring.\n"
+            "<i>(Maksimal 5 ta rasm qabul qilinadi)</i>"
+        )
+        
+        await bot.send_message(
+            chat_id=tg_acc.telegram_id,
+            text=msg_text,
+            parse_mode="HTML"
+        )
+        
+        # Set State
+        await set_bot_state(tg_acc.telegram_id, ActivityUploadState.waiting_for_photo)
+        
+    except Exception as e:
+        print(f"Failed to notify user: {e}")
+
     return {
         "success": True,
         "status": "initialized", 
         "session_id": session_id,
-        "bot_link": auth_link,
-        "requires_auth": True  # Always tell mobile app to launch deep link
+        "bot_link": auth_link  # provide the link just in case
     }
 
 

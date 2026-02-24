@@ -78,16 +78,11 @@ async def cmd_start_deep_link(message: Message, command: CommandObject, session:
             elif pending.category == "feedback":
                 target_state = FeedbackStates.WAIT_FOR_APP_FILE
                 msg_prefix = f"📨 <b>Murojaat uchun fayl yuklash</b>\n\nIlova qilmoqchi bo'lgan faylingizni (Rasm, Video yoki PDF) yuboring:"
-            elif pending.category == "document":
-                target_state = DocumentAddStates.WAIT_FOR_APP_FILE
-                msg_prefix = f"📎 <b>{display_name}</b> yuklanmoqda...\n\nIltimos, faylni shu yerga yuboring:"
-            else:
+            elif pending.category == "Faollik":
                 target_state = ActivityUploadState.waiting_for_photo
-                cat_name = pending.category if pending.category not in ["Faollik", "", None] else "Faollik"
-                msg_prefix = f"📸 <b>{cat_name} uchun rasm yuklang!</b>\n\nIltimos, <b>{cat_name}</b> oid rasmlarni yuboring (Maksimal 5 ta):"
+                msg_prefix = f"📸 <b>Faollik uchun rasm yuklang!</b>\n\nIltimos, faollikka oid rasmlarni yuboring (Maksimal 5 ta):"
             
             await state.set_state(target_state)
-            await state.update_data(session_id=session_id)
             
             await message.answer(
                 f"👋 Assalomu alaykum, <b>{student_name}</b>!\n\n"
