@@ -67,13 +67,7 @@ async def init_upload_session(
     2. Notify User via Bot.
     3. Set User State in Bot.
     """
-    
-    # 1. Check TG Account
-    tg_acc = await db.scalar(select(TgAccount).where(TgAccount.student_id == student.id))
-    if not tg_acc:
-        raise HTTPException(status_code=400, detail="Telegram account not linked")
-
-    # 2. Create Pending Record
+    # 1. Create Pending Record First
     # Remove old pending for this session if exists
     existing = await db.get(PendingUpload, session_id)
     if existing:
@@ -88,7 +82,22 @@ async def init_upload_session(
     db.add(new_pending)
     await db.commit()
 
-    # 3. Notify & Set State
+    # 2. Check TG Account & Prepare Link
+    from config import BOT_USERNAME
+    auth_link = f"https://t.me/{BOT_USERNAME}?start=upload_{session_id}"
+    
+    tg_acc = await db.scalar(select(TgAccount).where(TgAccount.student_id == student.id))
+    
+    if not tg_acc:
+        # User not linked, return auth link so mobile app opens telegram correctly
+        return {
+            "success": False, 
+            "requires_auth": True, 
+            "auth_link": auth_link,
+            "session_id": session_id
+        }
+
+    # 3. Notify & Set State for Already Linked Users
     try:
         msg_text = (
             f"📸 <b>{category} uchun rasm yuklang!</b>\n\n"
@@ -108,7 +117,12 @@ async def init_upload_session(
     except Exception as e:
         print(f"Failed to notify user: {e}")
 
-    return {"status": "initialized", "session_id": session_id}
+    return {
+        "success": True,
+        "status": "initialized", 
+        "session_id": session_id,
+        "bot_link": auth_link  # provide the link just in case
+    }
 
 
 @router.get("/upload/status/{session_id}")

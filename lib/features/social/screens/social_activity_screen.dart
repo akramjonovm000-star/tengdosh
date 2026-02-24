@@ -583,8 +583,7 @@ class _SocialActivityScreenState extends State<SocialActivityScreen> {
   bool _isLoading = false;
   
   // Registration Check
-  bool _isRegisteredBot = false;
-  bool _isCheckingReg = true;
+
 
   final List<String> _categories = ["Barchasi", "To'garak", "Yutuqlar", "Ma'rifat darslari", "Volontyorlik", "Madaniy tashriflar", "Sport", "Boshqa"];
   final List<String> _statuses = ["Barchasi", "Tasdiqlangan", "Kutilayotgan", "Rad etilgan"];
@@ -610,7 +609,7 @@ class _SocialActivityScreenState extends State<SocialActivityScreen> {
       setState(() {
         _activities = rawData.map((e) => SocialActivity.fromJson(e)).toList();
         _isRegisteredBot = profile['is_registered_bot'] ?? false;
-        _isCheckingReg = false;
+
       });
     } catch (e) {
       debugPrint("Load Error: $e");
@@ -682,35 +681,7 @@ class _SocialActivityScreenState extends State<SocialActivityScreen> {
           height: 56,
           child: ElevatedButton(
             onPressed: () async {
-               if (_isCheckingReg) return;
-               
-               if (!_isRegisteredBot) {
-                 // Double check (User might have just registered)
-                 setState(() => _isCheckingReg = true); 
-                 
-                 try {
-                    final profile = await Provider.of<DataService>(context, listen: false).getProfile();
-                    if (mounted) {
-                       setState(() {
-                          _isRegisteredBot = profile['is_registered_bot'] ?? false;
-                          _isCheckingReg = false;
-                       });
-                       
-                       if (_isRegisteredBot) {
-                          _showAddActivitySheet();
-                          return;
-                       }
-                    }
-                 } catch (e) {
-                    if (mounted) setState(() => _isCheckingReg = false);
-                 }
-                 
-                 if (mounted && !_isRegisteredBot) {
-                    _showRegistrationAlert();
-                 }
-               } else {
-                 _showAddActivitySheet();
-               }
+               _showAddActivitySheet();
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primaryBlue,
@@ -1005,36 +976,7 @@ class _SocialActivityScreenState extends State<SocialActivityScreen> {
     }).toList();
   }
 
-  void _showRegistrationAlert() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("Diqqat! 🔒"),
-        content: const Text("Faollik qo'shish uchun avval Telegram botimizdan ro'yxatdan o'tishingiz kerak.\n\nBu sizning shaxsingizni tasdiqlash uchun zarur."),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text("Yopish", style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
-            onPressed: () async {
-                Navigator.pop(ctx);
-                final Uri url = Uri.parse("https://t.me/talabahamkorbot");
-                if (await canLaunchUrl(url)) {
-                  await launchUrl(url, mode: LaunchMode.externalApplication);
-                } else {
-                  if (ctx.mounted) {
-                     ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text("Botni ochib bo'lmadi. @talabahamkorbot ni qidiring.")));
-                  }
-                }
-            }, 
-            child: const Text("Botga o'tish", style: TextStyle(color: Colors.white)),
-          )
-        ],
-      ),
-    );
-  }
+
 
   void _showAddActivitySheet() {
     showModalBottomSheet(

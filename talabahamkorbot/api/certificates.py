@@ -71,17 +71,7 @@ async def initiate_certificate_upload(
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_session)
 ):
-    """Triggers a prompt in the Telegram bot for the user to upload a certificate"""
-    
-    # 1. Check TG Account
-    stmt = select(TgAccount).where(TgAccount.student_id == student.id)
-    result = await db.execute(stmt)
-    tg_account = result.scalars().first()
-    
-    if not tg_account:
-        return {"success": False, "message": "Telegram hisob ulanmagan! Avval botga kiring (@talabahamkorbot)"}
-        
-    # 2. Create Session
+    # 1. Create Session First
     session_id = req.session_id
     # Default values for certificate
     category = "sertifikat" 
@@ -99,6 +89,22 @@ async def initiate_certificate_upload(
     )
     db.add(new_pending)
     await db.commit()
+
+    # 2. Check TG Account
+    from config import BOT_USERNAME
+    auth_link = f"https://t.me/{BOT_USERNAME}?start=upload_{session_id}"
+
+    stmt = select(TgAccount).where(TgAccount.student_id == student.id)
+    result = await db.execute(stmt)
+    tg_account = result.scalars().first()
+    
+    if not tg_account:
+        return {
+            "success": False, 
+            "requires_auth": True, 
+            "auth_link": auth_link,
+            "session_id": session_id
+        }
     
     # 3. Notify Bot & Set State
     try:
@@ -113,7 +119,7 @@ async def initiate_certificate_upload(
         # [CRITICAL] Set Bot State
         await set_bot_state(tg_account.telegram_id, CertificateAddStates.WAIT_FOR_APP_FILE)
         
-        return {"success": True, "message": "Botga yuklash so'rovi yuborildi. Telegramni oching.", "session_id": session_id}
+        return {"success": True, "message": "Botga yuklash so'rovi yuborildi. Telegramni oching.", "session_id": session_id, "bot_link": auth_link}
     except Exception as e:
         return {"success": False, "message": f"Botga xabar yuborishda xatolik: {str(e)}"}
 
