@@ -191,7 +191,7 @@ async def cmd_start_generic(message: Message, state: FSMContext, session: AsyncS
     result = await session.execute(
         select(TgAccount)
         .where(TgAccount.telegram_id == user_id)
-        .options(selectinload(TgAccount.staff))
+        .options(selectinload(TgAccount.staff), selectinload(TgAccount.student))
     )
     account = result.scalar_one_or_none()
     
@@ -206,6 +206,21 @@ async def cmd_start_generic(message: Message, state: FSMContext, session: AsyncS
                 parse_mode="HTML"
             )
             return
+            
+        return await message.answer(
+            f"👋 Assalomu alaykum, <b>{account.staff.full_name}</b>!\n\n"
+            "Siz tizimdan muvaffaqiyatli ro'yxatdan o'tgansiz. Bot orqali ishlarni davom ettirishingiz mumkin.\n\n"
+            "🚪 <i>Hisobdan chiqish uchun /exit buyrug'ini yuboring.</i>",
+            parse_mode="HTML"
+        )
+
+    if account and account.student:
+        return await message.answer(
+            f"👋 Assalomu alaykum, <b>{account.student.full_name}</b>!\n\n"
+            "Siz tizimdan muvaffaqiyatli ro'yxatdan o'tgansiz. Faollik va boshqa xizmatlardan foydalanishingiz mumkin.\n\n"
+            "🚪 <i>Hisobdan chiqish (logout) uchun /exit buyrug'ini yuboring.</i>",
+            parse_mode="HTML"
+        )
 
     # 3. Default Fallback
     from models.states import AuthStates

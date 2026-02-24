@@ -239,6 +239,23 @@ async def process_hemis_password(message: Message, state: FSMContext, session: A
             f"Xodim sifatida tizimga muvaffaqiyatli kirdingiz."
         )
 
+# =====================================================================
+#                     LOGOUT / EXIT
+# =====================================================================
+from aiogram.filters import Command
+@router.message(Command("exit"))
+async def cmd_exit(message: Message, state: FSMContext, session: AsyncSession):
+    await state.clear()
+    
+    # Check link
+    account = await session.scalar(select(TgAccount).where(TgAccount.telegram_id == message.from_user.id))
+    if account:
+        await session.delete(account)
+        await session.commit()
+        await message.answer("✅ <b>Muvaffaqiyatli chiqildi.</b>\n\nQayta kirish uchun /start ni bosing.", parse_mode="HTML")
+    else:
+        await message.answer("Siz oldin tizimga kirmagansiz.", parse_mode="HTML")
+
 # Catch-all for text to initiate login
 from aiogram.filters import StateFilter
 @router.message(StateFilter(None), F.text & ~F.text.startswith("/"))
