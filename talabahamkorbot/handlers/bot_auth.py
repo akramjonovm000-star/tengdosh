@@ -7,7 +7,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.models import Staff, StaffRole, Student, TgAccount, Club, User
-from keyboards.inline_kb import get_retry_or_home_kb
 from models.states import AuthStates
 from services.hemis_service import HemisService
 from services.university_service import UniversityService
@@ -42,15 +41,13 @@ async def process_hemis(message: Message, state: FSMContext, session: AsyncSessi
             f"{greeting_header}\n\n"
             f"👤 <b>{student.full_name}</b>\n"
             "Haqiqatan ham siz ekanligingizni tasdiqlash uchun <b>HEMIS parolingizni</b> kiriting:",
-            parse_mode="HTML",
-             reply_markup=get_retry_or_home_kb()
+            parse_mode="HTML"
         )
     else:
         await message.answer(
             f"{greeting_header}\n\n"
             "Tizimga kirish uchun parolingizni yozib yuboring:\n"
             "(Parol faqat sessiya olish uchun ishlatiladi)",
-            reply_markup=get_retry_or_home_kb(),
             parse_mode="HTML"
         )
 
@@ -75,7 +72,6 @@ async def process_hemis_password(message: Message, state: FSMContext, session: A
         )
         return await message.answer(
             msg_text,
-            reply_markup=get_retry_or_home_kb(),
             parse_mode="HTML"
         )
 
