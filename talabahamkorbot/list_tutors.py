@@ -1,20 +1,16 @@
 import asyncio
-from sqlalchemy import select
+import sys
+import os
+sys.path.append(os.getcwd())
 from database.db_connect import AsyncSessionLocal
 from database.models import Staff, StaffRole
+from sqlalchemy.future import select
 
 async def main():
-    async with AsyncSessionLocal() as db:
-        # Fetch staff with tutor role
-        stmt = select(Staff).where(Staff.role.in_([StaffRole.TYUTOR, "tutor"]))
-        result = await db.execute(stmt)
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(select(Staff).where(Staff.role == StaffRole.TYUTOR).limit(3))
         tutors = result.scalars().all()
-        
-        print(f"Found {len(tutors)} tutors:")
         for t in tutors:
-            print(f"- ID: {t.id} | Name: {t.full_name} | Login: {t.username or t.employee_id_number or t.hemis_id} | University: {t.university_id}")
-            
-if __name__ == "__main__":
-    import sys
-    sys.path.append("/home/user/talabahamkor/talabahamkorbot")
-    asyncio.run(main())
+            print(f"Name: {t.full_name}, EmpID: {t.employee_id_number}")
+
+asyncio.run(main())

@@ -260,19 +260,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 16),
                           OutlinedButton.icon(
-                            onPressed: (_isPolicyAccepted && !auth.isLoading) ? () {
-                              // We can't really track external OAuth loading from inside easily,
-                              // But we can set the auth provider to loading or local state
-                              // Since launchUrl leaves the app, when they come back it's handled by DeepLink
-                              _launchHemisLogin(isStaff: true);
-                              // Show a temporary snackbar to let them know it's verifying
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Oynaga yo'naltirilmoqda... Xodim roli aniqlanadi."),
-                                  duration: Duration(seconds: 4),
-                                )
-                              );
-                            } : null,
+                            onPressed: (_isPolicyAccepted && !auth.isLoading) ? () => _launchHemisLogin(isStaff: true) : null,
                             icon: Icon(
                               Icons.badge_outlined, 
                               color: _isPolicyAccepted ? AppTheme.primaryBlue : Colors.grey, 

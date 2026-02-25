@@ -129,6 +129,28 @@ class _TalabaHamkorAppState extends State<TalabaHamkorApp> {
       locale: const Locale('uz', 'UZ'),
       home: Consumer<AuthProvider>(
         builder: (context, auth, _) {
+          if (auth.isStaffOAuthLoading) {
+             return Scaffold(
+               backgroundColor: AppTheme.backgroundWhite,
+               body: Center(
+                 child: Column(
+                   mainAxisAlignment: MainAxisAlignment.center,
+                   children: const [
+                     CircularProgressIndicator(color: AppTheme.primaryBlue),
+                     SizedBox(height: 24),
+                     Text(
+                       "Xodim roli va guruhlaringiz aniqlanmoqda...",
+                       style: TextStyle(
+                         color: AppTheme.primaryBlue,
+                         fontSize: 14,
+                         fontWeight: FontWeight.w600
+                       ),
+                     ),
+                   ],
+                 ),
+               ),
+             );
+          }
           if (auth.isLoading) {
              return const Scaffold(body: Center(child: CircularProgressIndicator()));
           }

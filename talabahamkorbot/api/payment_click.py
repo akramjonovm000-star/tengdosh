@@ -170,16 +170,34 @@ async def complete_payment(
         tx.status = "completed"
         
         # 4. Top-up Student Balance
-        # Assuming merchant_trans_id is either "1234" or "USER-1234" representing the student.id
+        # merchant_trans_id is expected to be "click_{student.id}_{timestamp}"
         try:
-            student_id_str = merchant_trans_id.split("-")[-1] if "-" in merchant_trans_id else merchant_trans_id
-            student_id = int(student_id_str)
-            from database.models import Student
+            parts = merchant_trans_id.split("_")
+            student_id = int(parts[1])
+            from database.models import Student, TgAccount
+            from bot import bot
             student_result = await db.execute(select(Student).where(Student.id == student_id))
             student = student_result.scalar_one_or_none()
             if student:
                 student.balance += int(amount)
                 logger.info(f"Topped up balance for Student ID {student.id} by {amount} via Click.")
+                
+                # Try sending a Telegram receipt
+                try:
+                    tg_acc_result = await db.execute(select(TgAccount).where(TgAccount.student_id == student.id))
+                    tg_acc = tg_acc_result.scalar_one_or_none()
+                    if tg_acc:
+                         receipt_msg = (
+                             f"🧾 <b>To'lov qabul qilindi!</b>\n\n"
+                             f"💳 <b>Tizim:</b> Click\n"
+                             f"💰 <b>Summa:</b> {int(amount):,} so'm\n"
+                             f"🆔 <b>Tranzaksiya:</b> {click_trans_id}\n\n"
+                             f"✅ <i>Sizning balansingiz muvaffaqiyatli to'ldirildi.</i>"
+                         )
+                         await bot.send_message(tg_acc.telegram_id, receipt_msg, parse_mode="HTML")
+                except Exception as msg_err:
+                     logger.error(f"Failed to send Click receipt to student {student.id}: {msg_err}")
+                
             else:
                 logger.warning(f"Student ID {student_id} not found for Click payment {click_trans_id}")
         except Exception as parse_err:

@@ -464,12 +464,15 @@ class HemisService:
                     
                 logger.info(f"Dynamic Role Mapping: {staff_position} -> {assigned_role}")
                 
+                tutor_groups_data = employee.get("tutorGroups", [])
+                
                 return {
                     "role": assigned_role,
                     "full_name": full_name,
                     "hemis_id": hemis_id,
                     "staff_position": staff_position,
-                    "department": department
+                    "department": department,
+                    "tutor_groups": tutor_groups_data
                 }
             else:
                  logger.error(f"Failed to fetch employee list. Status: {response.status_code}")

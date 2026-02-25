@@ -188,9 +188,10 @@ async def get_filters_meta(
 
 @router.get("/posts", response_model=List[PostResponseSchema])
 async def get_posts(
-    category: str = Query(..., description="university, faculty, specialty"),
+    category: Optional[str] = Query(None, description="university, faculty, specialty"),
     faculty_id: int = Query(None),
     specialty_name: str = Query(None),
+    author_id: int = Query(None, description="Filter by user id"),
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     student: Student = Depends(get_student_or_staff),
@@ -206,8 +207,18 @@ async def get_posts(
             selectinload(ChoyxonaPost.staff)
         ).order_by(desc(ChoyxonaPost.created_at))
         
+        if author_id:
+            from sqlalchemy import or_
+            query = query.where(
+                or_(
+                    ChoyxonaPost.student_id == author_id,
+                    ChoyxonaPost.staff_id == author_id
+                )
+            )
+        
         # 1. Category Filter (Tab Filter)
-        query = query.where(ChoyxonaPost.category_type == category)
+        if category:
+            query = query.where(ChoyxonaPost.category_type == category)
         
         uni_id = getattr(student, 'university_id', None) or 1
         f_id = getattr(student, 'faculty_id', None)

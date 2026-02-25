@@ -166,8 +166,12 @@ class AuthProvider with ChangeNotifier {
     return result;
   }
 
+  bool _isStaffOAuthLoading = false;
+  bool get isStaffOAuthLoading => _isStaffOAuthLoading;
+
   Future<String?> loginWithToken(String token) async {
     _isLoading = true;
+    _isStaffOAuthLoading = true;
     notifyListeners();
 
     try {
@@ -175,15 +179,18 @@ class AuthProvider with ChangeNotifier {
       if (student != null) {
         _currentUser = student;
         _isLoading = false;
+        _isStaffOAuthLoading = false;
         notifyListeners();
         return null;
       } else {
         _isLoading = false;
+        _isStaffOAuthLoading = false;
         notifyListeners();
         return "Tizimga kirishda xatolik (Token yaroqsiz)";
       }
     } catch (e) {
       _isLoading = false;
+      _isStaffOAuthLoading = false;
       notifyListeners();
       return "Xatolik: $e";
     }

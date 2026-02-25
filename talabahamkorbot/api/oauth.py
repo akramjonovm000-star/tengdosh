@@ -285,7 +285,28 @@ async def authlog_callback(request: Request, code: Optional[str] = None, error: 
                   await db.commit()
                   await db.refresh(new_staff)
                   staff = new_staff
-        
+                  
+        # [NEW] Sync Tutor Groups
+        if staff.role == StaffRole.TYUTOR:
+            tutor_groups = role_data.get("tutor_groups", [])
+            logger.info(f"Syncing {len(tutor_groups)} tutor groups for {staff.full_name}")
+            
+            # Delete old mappings
+            from database.models import TutorGroup
+            from sqlalchemy import delete
+            await db.execute(delete(TutorGroup).where(TutorGroup.tutor_id == staff.id))
+            
+            # Insert new mappings. Assuming university_id=1 for JMCU
+            for tg in tutor_groups:
+                new_tg = TutorGroup(
+                    tutor_id=staff.id,
+                    university_id=1,
+                    group_number=tg.get("name", "Unknown")
+                )
+                db.add(new_tg)
+            
+            await db.commit()
+            
         # [STATELESS] Generate JWT with embedded HEMIS token
         user_agent = request.headers.get("user-agent", "unknown")
         encrypted_token = encrypt_data(access_token)
