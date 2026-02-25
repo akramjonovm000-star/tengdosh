@@ -168,6 +168,7 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.85,
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -478,32 +479,70 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
              ),
            )
         else
-          GestureDetector(
-            onTap: _initUpload,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              decoration: BoxDecoration(
-                color: Colors.blue[50], // AppTheme.primaryBlue logic
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.blue[200]!),
+          Column(
+            children: [
+              GestureDetector(
+                onTap: _initUpload,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue[200]!),
+                  ),
+                  child: const Column(
+                    children: [
+                       Icon(Icons.telegram, color: Colors.blue, size: 40),
+                       SizedBox(height: 8),
+                       Text(
+                         "Rasm yuklash (Telegram orqali)", 
+                         style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)
+                       ),
+                       SizedBox(height: 4),
+                       Text(
+                         "Tugmani bosing va Botga rasm yuboring", 
+                         style: TextStyle(color: Colors.grey, fontSize: 12)
+                       ),
+                    ],
+                  ),
+                ),
               ),
-              child: const Column(
-                children: [
-                   Icon(Icons.telegram, color: Colors.blue, size: 40),
-                   SizedBox(height: 8),
-                   Text(
-                     "Rasm yuklash (Telegram orqali)", 
-                     style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)
-                   ),
-                   SizedBox(height: 4),
-                   Text(
-                     "Tugmani bosing va Botga rasm yuboring", 
-                     style: TextStyle(color: Colors.grey, fontSize: 12)
-                   ),
-                ],
+              const SizedBox(height: 12),
+              GestureDetector(
+                onTap: () async {
+                  try {
+                    setState(() => _isUploading = true);
+                    await Provider.of<DataService>(context, listen: false).unlinkTelegram();
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Eski hisob uzildi. Yangi hisob ulang.")));
+                    await _initUpload();
+                  } catch (e) {
+                    setState(() => _isUploading = false);
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Xatolik: $e")));
+                  }
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                       Icon(Icons.refresh, color: Colors.grey, size: 18),
+                       SizedBox(width: 8),
+                       Text(
+                         "Telegramim yangi", 
+                         style: TextStyle(color: Colors.black54, fontWeight: FontWeight.w600, fontSize: 13)
+                       ),
+                    ],
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
       ],
     );
