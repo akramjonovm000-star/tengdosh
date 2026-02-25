@@ -150,14 +150,13 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       return;
     }
 
-    // Click config (should match Click Merchant cabinet)
-    const String serviceId = "36248"; // REPLACE WITH ACTUAL SERVICE ID
-    const String merchantId = "25883"; // REPLACE WITH ACTUAL MERCHANT ID
-    final String transactionParam = studentId.toString(); // Internal invoice/order ID
-
-    final String clickUrl = "https://my.click.uz/services/pay?service_id=$serviceId&merchant_id=$merchantId&amount=$amount&transaction_param=$transactionParam";
-
+    setState(() => _loadingAction = 'Click');
     try {
+      final String? clickUrl = await _dataService.getClickUrl(amount: amount);
+      if (clickUrl == null || clickUrl.isEmpty) {
+        throw Exception("Serverdan to'lov manzilini olishda xatolik");
+      }
+
       final Uri url = Uri.parse(clickUrl);
       if (await canLaunchUrl(url)) {
         await launchUrl(url, mode: LaunchMode.externalApplication);
@@ -170,6 +169,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           SnackBar(content: Text("Xatolik yuz berdi: $e")),
         );
       }
+    } finally {
+      if (mounted) setState(() => _loadingAction = null);
     }
   }
 
