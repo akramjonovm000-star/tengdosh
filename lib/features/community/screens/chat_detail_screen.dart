@@ -254,13 +254,12 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               ]
             ),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (msg.replyToContent != null) ...[
                   Container(
-                    width: double.infinity,
                     margin: const EdgeInsets.only(bottom: 6),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
                       color: isMe ? Colors.black.withOpacity(0.15) : Colors.grey.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
@@ -289,15 +288,17 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   style: TextStyle(color: isMe ? Colors.white : Colors.black87, fontSize: 15),
                 ),
                 const SizedBox(height: 4),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      msg.timestamp,
-                      style: TextStyle(color: isMe ? Colors.white70 : Colors.grey[400], fontSize: 10),
-                    ),
-                    if (isMe) ...[
-                       const SizedBox(width: 4),
+                Align(
+                  alignment: Alignment.bottomRight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        msg.timestamp,
+                        style: TextStyle(color: isMe ? Colors.white70 : Colors.grey[400], fontSize: 10),
+                      ),
+                      if (isMe) ...[
+                         const SizedBox(width: 4),
                        Icon(
                          msg.isRead ? Icons.done_all : Icons.done, 
                          size: 12, 
