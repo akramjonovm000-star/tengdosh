@@ -253,9 +253,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                  BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset:const Offset(0, 2))
               ]
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+            child: IntrinsicWidth(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                 if (msg.replyToContent != null) ...[
                   Container(
                     margin: const EdgeInsets.only(bottom: 6),
@@ -309,6 +310,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   ),
                 )
               ],
+            ),
             ),
           ),
         ),
