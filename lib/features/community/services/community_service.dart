@@ -192,14 +192,21 @@ class CommunityService {
   }
 
   Future<List<Post>> getPosts({
-    required String scope, 
+    String? scope, 
     int skip = 0, 
     int limit = 20,
     int? facultyId,
     String? specialtyName,
+    String? authorId,
   }) async {
     try {
-      String url = '${ApiConstants.communityPosts}?category=$scope&skip=$skip&limit=$limit';
+      String url = '${ApiConstants.communityPosts}?skip=$skip&limit=$limit';
+      if (scope != null) {
+        url += '&category=$scope';
+      }
+      if (authorId != null && authorId.isNotEmpty) {
+        url += '&author_id=$authorId';
+      }
       if (facultyId != null) {
         url += '&faculty_id=$facultyId';
       }

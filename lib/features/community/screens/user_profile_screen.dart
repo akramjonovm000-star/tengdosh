@@ -238,27 +238,15 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         }
       }
 
-      // Fetch from all scopes to ensure we get every post
-      final univPosts = await _service.getPosts(scope: "university");
-      final facPosts = await _service.getPosts(scope: "faculty");
-      final specPosts = await _service.getPosts(scope: "specialty");
-
-      // Combine and Dedup
-      final all = [...univPosts, ...facPosts, ...specPosts];
-      final uniqueMap = { for (var p in all) p.id : p }; // Dedup by ID
-      
-      final userPosts = uniqueMap.values.where((p) {
-        // Use realAuthorId first, fallback to name
-        if (realAuthorId != "0" && p.authorId == realAuthorId) return true;
-        return p.authorName == widget.authorName;
-      }).toList();
-      
-      // Sort newest first
-      userPosts.sort((a, b) => b.id.compareTo(a.id));
+      // Fetch accurately from API using the new author_id param
+      List<Post> userPosts = [];
+      if (realAuthorId != "0" && realAuthorId.isNotEmpty) {
+          userPosts = await _service.getPosts(authorId: realAuthorId, limit: 100);
+      }
       
       // Load Reposts with valid author Id
       final reposts = realAuthorId != "0" && realAuthorId.isNotEmpty 
-          ? await _service.getRepostedPosts(realAuthorId)
+          ? await _service.getRepostedPosts(realAuthorId, limit: 100)
           : <Post>[];
 
       if (mounted) {
