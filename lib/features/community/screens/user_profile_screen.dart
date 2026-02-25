@@ -93,8 +93,17 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   }
   
   Future<void> _loadStats() async {
-     if (widget.authorId == "0") return;
-     final stats = await _service.getProfileStats(widget.authorId);
+     String realAuthorId = widget.authorId;
+     if (realAuthorId == "0" || realAuthorId.isEmpty) {
+       final me = await AuthService().getSavedUser();
+       if (me != null) {
+         realAuthorId = me.id.toString();
+       }
+     }
+     
+     if (realAuthorId == "0" || realAuthorId.isEmpty) return;
+
+     final stats = await _service.getProfileStats(realAuthorId);
      if (mounted) {
        setState(() {
          _followersCount = stats['followers'] ?? 0;
@@ -607,7 +616,17 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                           itemBuilder: (ctx, i) => PostCard(
                             post: _reposts[i],
                             onRepostChanged: (isReposted, count) {
-                               if (_isMe) _loadUserPosts();
+                               if (_isMe && mounted) {
+                                  setState(() {
+                                     if (isReposted) {
+                                       _repostCount++;
+                                     } else {
+                                       _repostCount--;
+                                       _reposts.removeAt(i);
+                                     }
+                                     if (_repostCount < 0) _repostCount = 0;
+                                  });
+                               }
                             },
                           ),
                         ),
