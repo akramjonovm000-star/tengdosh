@@ -350,7 +350,8 @@ async def get_reposted_posts(
     from sqlalchemy import or_
     # Join Reposts -> Posts -> Student (Author)
     stmt = select(ChoyxonaPost).join(ChoyxonaPostRepost).options(
-        selectinload(ChoyxonaPost.student) # Only load author
+        selectinload(ChoyxonaPost.student),
+        selectinload(ChoyxonaPost.staff)
     ).where(
         or_(
             ChoyxonaPostRepost.student_id == target_student_id,
