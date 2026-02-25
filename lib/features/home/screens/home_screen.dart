@@ -22,6 +22,8 @@ import 'package:talabahamkor_mobile/core/services/permission_service.dart'; // [
 import '../../certificates/screens/certificates_screen.dart';
 import 'package:talabahamkor_mobile/features/home/widgets/management_dashboard.dart';
 import 'package:talabahamkor_mobile/features/tutor/screens/tutor_dashboard_screen.dart'; // [NEW]
+import 'package:talabahamkor_mobile/features/yetakchi/screens/yetakchi_dashboard_screen.dart'; // [NEW]
+import 'package:talabahamkor_mobile/features/yetakchi/services/yetakchi_service.dart'; // [NEW]
 import 'package:talabahamkor_mobile/features/profile/screens/subscription_screen.dart';
 import '../../clubs/screens/clubs_screen.dart';
 import '../../appeals/screens/appeals_screen.dart';
@@ -81,7 +83,15 @@ class _HomeScreenState extends State<HomeScreen> {
       final isTutor = auth.isTutor;
 
       // Fetch Dashboard Stats based on Role
-      if (isTutor) {
+      if (auth.isYetakchi) {
+         final service = YetakchiService();
+         final dash = await service.getDashboardStats();
+         if (mounted) {
+           setState(() {
+             _dashboard = dash;
+           });
+         }
+      } else if (isTutor) {
          final dash = await _dataService.getTutorDashboard();
          if (mounted) {
            setState(() {
@@ -360,7 +370,9 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 24),
 
-            if (auth.isManagement)
+            if (auth.isYetakchi)
+               YetakchiDashboardScreen(initialStats: _dashboard)
+            else if (auth.isManagement)
                ManagementDashboard(stats: _dashboard)
             else if (isTutor) 
                TutorDashboardScreen(stats: _dashboard)

@@ -55,9 +55,17 @@ class ApiConstants {
   static const String aiChat = '$backendUrl/ai/chat';
   static const String documentsSend = '$backendUrl/documents/send';
   
-  // Community
-  static const String communityPosts = '$backendUrl/community/posts'; 
+  // Yetakchi 
+  static const String yetakchiDashboard = '$backendUrl/yetakchi/dashboard/stats';
+  static const String yetakchiStudents = '$backendUrl/yetakchi/students';
+  static const String yetakchiActivities = '$backendUrl/yetakchi/activities';
+  static const String yetakchiEvents = '$backendUrl/yetakchi/events';
+  static const String yetakchiReportsExport = '$backendUrl/yetakchi/reports/export';
+  static const String yetakchiAnnouncements = '$backendUrl/yetakchi/announcements';
+  static const String yetakchiDocuments = '$backendUrl/yetakchi/documents';
 
+  // Community
+  static const String communityPosts = '$backendUrl/community/posts';
   // Subscription
   // Subscription
   static const String subscription = '$backendUrl/subscription';

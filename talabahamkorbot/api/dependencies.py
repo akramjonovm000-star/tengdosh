@@ -203,6 +203,21 @@ async def get_owner(student: Student = Depends(get_current_student)):
         )
     return student
 
+async def get_yetakchi(user = Depends(get_student_or_staff)):
+    """
+    Dependency to ensure the user is a Yetakchi (Leader).
+    """
+    from database.models import Staff
+    if isinstance(user, Staff):
+        if user.role in ['yetakchi', 'prorektor', 'yoshlar_prorektori', 'owner', 'developer']:
+            return user
+    else:
+        # If it's a student, check hemis role or direct role
+        if getattr(user, 'role', None) == 'yetakchi' or getattr(user, 'hemis_role', None) == 'yetakchi':
+            return user
+            
+    raise HTTPException(status_code=403, detail="Sizda Yetakchi moduliga kirish huquqi yo'q")
+
 
 async def get_current_user(
     student: Student = Depends(get_student_or_staff),

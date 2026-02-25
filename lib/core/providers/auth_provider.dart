@@ -26,6 +26,16 @@ class AuthProvider with ChangeNotifier {
     return mgmtRoles.contains(role) || mgmtRoles.contains(staffRole);
   }
 
+  bool get isYetakchi {
+    final role = _currentUser?.role?.toLowerCase();
+    final staffRole = _currentUser?.staffRole?.toLowerCase();
+    
+    final leaderRoles = ['yetakchi', 'yoshlar_prorektori', 'prorektor', 'owner', 'developer'];
+    
+    return leaderRoles.contains(role) || leaderRoles.contains(staffRole) || 
+           _currentUser?.hemisRole?.toLowerCase() == 'yetakchi';
+  }
+
   bool get isModerator {
     return _currentUser?.hemisLogin == '395251101397' || _currentUser?.hemisLogin == '395251101412';
   }

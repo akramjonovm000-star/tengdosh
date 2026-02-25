@@ -69,6 +69,15 @@ async def login_via_hemis(
          else:
              logger.warning(f"Tyutor1 Login Failed: Password Mismatch.")
 
+    if login_clean == "yetakchi1":
+         logger.info(f"Yetakchi1 Login Attempt.")
+         if pass_clean == "123":
+             demo_login = "yetakchi1"
+             full_name = "Jurnalistika Yetakchisi (Demo)"
+             role = "yetakchi"
+         else:
+             logger.warning(f"Yetakchi1 Login Failed: Password Mismatch.")
+
     if login_clean == "3952311041":
          logger.info(f"Maxmanazarov Login Attempt.")
          if pass_clean == "123":
@@ -163,7 +172,81 @@ async def login_via_hemis(
                 }
              }
 
-        if role in ["tutor", "tyutor", "rahbariyat", "dekan"]:
+        if demo_login == "yetakchi1":
+             from datetime import datetime
+             from database.models import Staff, StaffRole
+             
+             # Check if Staff already exists
+             demo_staff = await db.scalar(select(Staff).where(Staff.employee_id_number == demo_login))
+             
+             if not demo_staff:
+                 demo_staff = Staff(
+                    hemis_id=777888778, 
+                    full_name=full_name,
+                    role="yetakchi", 
+                    university_id=1,
+                    faculty_id=36, # [CONFIG] Jurnalistika Faculty
+                    is_premium=True,
+                    premium_expiry=datetime.utcnow() + timedelta(days=1), # 24 hours
+                    custom_badge="Yetakchi (Demo)",
+                    image_url=f"https://ui-avatars.com/api/?name={full_name.replace(' ', '+')}&background=random",
+                    position="Yetakchi",
+                    department="Fakultet",
+                    employee_id_number=demo_login
+                 )
+                 db.add(demo_staff)
+                 await db.commit()
+                 await db.refresh(demo_staff)
+             else:
+                 # Update permissions if exists
+                 demo_staff.is_premium = True
+                 demo_staff.premium_expiry = datetime.utcnow() + timedelta(days=1)
+                 demo_staff.faculty_id = 36 # Ensure Faculty 36
+                 demo_staff.role = "yetakchi"
+                 await db.commit()
+                 await db.refresh(demo_staff)
+             
+             from utils.encryption import encrypt_data
+             encrypted_dummy_token = encrypt_data("demo.token.yetakchi1")
+             user_agent = request.headers.get("user-agent", "unknown")
+                 
+             access_token = create_access_token(
+                data={
+                    "sub": demo_staff.full_name, 
+                    "type": "staff", 
+                    "id": demo_staff.id,
+                    "hemis_token": encrypted_dummy_token
+                },
+                user_agent=user_agent
+             )
+             
+             print(f"DEBUG AUTH: Success! Token Generated for Demo Yetakchi {demo_staff.id}")
+             return {
+                "access_token": access_token,
+                "token": access_token, # [COMPAT] Mobile App expects 'token'
+                "token_type": "bearer",
+                "user_info": {
+                    "id": demo_staff.id,
+                    "hemis_id": demo_staff.hemis_id,
+                    "full_name": demo_staff.full_name,
+                    "type": "staff",
+                    "university_id": 1,
+                    "faculty_id": 36,
+                    "image_url": demo_staff.image_url,
+                    "role": "yetakchi",
+                    "profile": {
+                         "id": demo_staff.id,
+                         "full_name": demo_staff.full_name,
+                         "role": "yetakchi",
+                         "image": demo_staff.image_url,
+                         "hemis_login": demo_login,
+                         "faculty_id": 36,
+                         "university_id": 1
+                    }
+                }
+             }
+
+        if role in ["tutor", "tyutor", "rahbariyat", "dekan", "yetakchi"]:
             # Demo Staff Logic
             from database.models import Staff, StaffRole
             

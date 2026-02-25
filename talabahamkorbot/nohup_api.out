@@ -1,6 +1,6 @@
 /home/user/talabahamkor/talabahamkorbot/api/gpa.py:85: FastAPIDeprecationWarning: `regex` has been deprecated, please use `pattern` instead
   retake_policy: str = Query("latest", regex="^(latest|best)$"),
-/home/user/talabahamkor/talabahamkorbot/main.py:188: DeprecationWarning: 
+/home/user/talabahamkor/talabahamkorbot/main.py:193: DeprecationWarning: 
         on_event is deprecated, use lifespan event handlers instead.
 
         Read more about it in the

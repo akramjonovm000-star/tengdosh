@@ -138,6 +138,11 @@ from fastapi.responses import JSONResponse
 # --- HONEYPOT ROUTES ---
 @app.get("/admin/backup")
 @app.get("/wp-login.php")
+async def honeypot():
+    return JSONResponse(status_code=403, content={"error": "Access Denied"})
+
+from api.yetakchi import router as yetakchi_router
+app.include_router(yetakchi_router, prefix="/api/v1/yetakchi", tags=["Yetakchi"])
 @app.get("/.env")
 @app.get("/config.json")
 async def honeypot_trap(request: Request):

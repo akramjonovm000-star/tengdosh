@@ -586,6 +586,49 @@ class UserActivity(Base):
         "UserActivityImage", back_populates="activity", cascade="all, delete-orphan"
     )
 
+# ============================================================
+# YETAKCHI MODULI (LEADER MODULE)
+# ============================================================
+
+class YetakchiActivity(Base):
+    __tablename__ = "yetakchi_activities"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    student_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    images: Mapped[str | None] = mapped_column(Text, nullable=True) # JSON list of images
+
+    status: Mapped[str] = mapped_column(String(32), default="pending", index=True) # pending, approved, rejected
+    points_awarded: Mapped[int] = mapped_column(Integer, default=0)
+    reviewer_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("staff.id", ondelete="SET NULL"), nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    student: Mapped["Student"] = relationship("Student")
+    reviewer: Mapped["Staff"] = relationship("Staff")
+
+class YetakchiEvent(Base):
+    __tablename__ = "yetakchi_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    creator_id: Mapped[int] = mapped_column(Integer, ForeignKey("staff.id", ondelete="CASCADE"), nullable=False)
+    
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    event_date: Mapped[datetime] = mapped_column(DateTime(), nullable=False)
+    
+    participants_count: Mapped[int] = mapped_column(Integer, default=0)
+    documents: Mapped[str | None] = mapped_column(Text, nullable=True) # JSON list of documents/photos
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
+    
+    creator: Mapped["Staff"] = relationship("Staff")
+
+
 
 # ============================================================
 # HUJJATLAR MODELI
