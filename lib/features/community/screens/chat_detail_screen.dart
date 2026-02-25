@@ -258,25 +258,27 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               children: [
                 if (msg.replyToContent != null) ...[
                   Container(
+                    width: double.infinity,
                     margin: const EdgeInsets.only(bottom: 6),
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.05),
+                      color: isMe ? Colors.black.withOpacity(0.15) : Colors.grey.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border(left: BorderSide(color: isMe ? Colors.white70 : AppTheme.primaryBlue, width: 3))
+                      border: Border(left: BorderSide(color: isMe ? Colors.white : AppTheme.primaryBlue, width: 3)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                            "Javob", 
-                           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: isMe ? Colors.white70 : AppTheme.primaryBlue)
+                           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: isMe ? Colors.white : AppTheme.primaryBlue)
                         ),
+                        const SizedBox(height: 2),
                         Text(
                           msg.replyToContent!,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: isMe ? Colors.white70 : Colors.black54, fontSize: 12),
+                          style: TextStyle(color: isMe ? Colors.white.withOpacity(0.9) : Colors.black87, fontSize: 13),
                         )
                       ]
                     ),
