@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 from sqlalchemy.orm import selectinload
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 from database.db_connect import AsyncSessionLocal
 from database.models import Student, Staff, ChoyxonaPost, ChoyxonaPostLike, ChoyxonaPostRepost, ChoyxonaComment, ChoyxonaPostView
