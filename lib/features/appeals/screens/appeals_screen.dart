@@ -7,6 +7,8 @@ import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/api_constants.dart';
+import '../../../../core/services/data_service.dart';
+import 'package:provider/provider.dart';
 
 class AppealsScreen extends StatefulWidget {
   const AppealsScreen({super.key});
@@ -744,8 +746,7 @@ class _CreateAppealSheetState extends State<CreateAppealSheet> {
                                  setState(() { _isSubmitting = false; _isUploading = false; });
                                  try {
                                      // Call unlink via data_service/appeal_service
-                                     // But DataService is what we updated
-                                     await DataService().unlinkTelegram();
+                                     await Provider.of<DataService>(context, listen: false).unlinkTelegram();
                                      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Eski hisob uzildi. Qayta yuborishni bosing.")));
                                  } catch(e) {
                                      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Xatolik: \$e")));
