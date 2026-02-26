@@ -201,14 +201,12 @@ async def get_club_members(
     ms = memberships.scalars().all()
     res = []
     for m in ms:
-        # To avoid N+1, ideally we join faculty. For simplicity we use relations.
-        # Ensure relationships are loaded or handle None
-        faculty_name = m.student.faculty.name if getattr(m.student, 'faculty', None) else None
+        # Use the string property directly instead of relationship to avoid N+1 and Detached issues
+        faculty_name = m.student.faculty_name or (m.student.faculty.name if getattr(m.student, 'faculty', None) else None)
         
         # Try to find telegram username from TgAccount
-        from database.models import TgAccount
-        tg_acc = await db.scalar(select(TgAccount).where(TgAccount.student_id == m.student_id))
-        username = tg_acc.username if tg_acc else None
+        # Telegram username fallback
+        username = getattr(m.student, 'username', None)
         
         res.append({
             "student_id": m.student_id,
