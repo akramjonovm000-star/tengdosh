@@ -276,37 +276,24 @@ async def authlog_callback(request: Request, code: Optional[str] = None, error: 
              await db.commit()
              await db.refresh(staff)
         else:
-             # Look for matching hemis_id just in case
-             if h_id:
-                  res = await db.execute(select(Staff).where(Staff.hemis_id == int(h_id)))
-                  staff = res.scalar_one_or_none()
-                  
-             if staff:
-                  logger.info(f"DEBUG: Staff matched by hemis_id. Updating Role: {staff.role} -> {assigned_role}")
-                  staff.role = assigned_role
-                  staff.employee_id_number = emp_id_num
-                  staff.full_name = dynamic_full_name
-                  await db.commit()
-                  await db.refresh(staff)
-             else:
-                  # [NEW] Auto-create staff if found in dynamic verification
-                  logger.info(f"DEBUG: Auto-creating new staff: {dynamic_full_name} / {assigned_role}")
-                  image_url = me.get("picture") or me.get("picture_full") or me.get("image") or me.get("image_url")
-                  
-                  new_staff = Staff(
-                      full_name=dynamic_full_name,
-                      username=me.get('login', f"staff_{emp_id_num}"),
-                      employee_id_number=emp_id_num,
-                      hemis_id=int(h_id) if h_id else None,
-                      jshshir=pinfl,
-                      role=assigned_role,
-                      is_active=True,
-                      image_url=image_url
-                  )
-                  db.add(new_staff)
-                  await db.commit()
-                  await db.refresh(new_staff)
-                  staff = new_staff
+             # [NEW] Auto-create staff if found in dynamic verification
+             logger.info(f"DEBUG: Auto-creating new staff: {dynamic_full_name} / {assigned_role}")
+             image_url = me.get("picture") or me.get("picture_full") or me.get("image") or me.get("image_url")
+             
+             new_staff = Staff(
+                 full_name=dynamic_full_name,
+                 username=me.get('login', f"staff_{emp_id_num}"),
+                 employee_id_number=emp_id_num,
+                 hemis_id=int(h_id) if h_id else None,
+                 jshshir=pinfl,
+                 role=assigned_role,
+                 is_active=True,
+                 image_url=image_url
+             )
+             db.add(new_staff)
+             await db.commit()
+             await db.refresh(new_staff)
+             staff = new_staff
                   
         # [NEW] Sync Tutor Groups
         if staff.role == StaffRole.TYUTOR:
