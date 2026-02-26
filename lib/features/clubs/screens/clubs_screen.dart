@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../../core/services/data_service.dart'; // [FIXED] Added Import
+import '../../../../core/services/data_service.dart';
+import 'club_detail_screen.dart';
 
 class ClubsScreen extends StatefulWidget {
   const ClubsScreen({super.key});
@@ -121,7 +122,12 @@ class _ClubsScreenState extends State<ClubsScreen> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
-          onTap: () => _showClubDetails(club),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => ClubDetailScreen(club: club)),
+            ).then((_) => _loadClubs()); // reload on back
+          },
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -143,9 +149,20 @@ class _ClubsScreenState extends State<ClubsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        club['name'] ?? 'Klub nomi',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              club['name'] ?? 'Klub nomi',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (club['is_leader'] == true) ...[
+                            const SizedBox(width: 4),
+                            const Text("👑", style: TextStyle(fontSize: 14)),
+                          ]
+                        ],
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -157,7 +174,19 @@ class _ClubsScreenState extends State<ClubsScreen> {
                 ),
 
                 // Action / Status
-                if (isJoined)
+                if (club['is_leader'] == true)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryBlue.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text(
+                      "Boshqarish",
+                      style: TextStyle(color: AppTheme.primaryBlue, fontWeight: FontWeight.bold, fontSize: 12),
+                    ),
+                  )
+                else if (isJoined)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
@@ -179,171 +208,5 @@ class _ClubsScreenState extends State<ClubsScreen> {
     );
   }
 
-  void _showClubDetails(Map<String, dynamic> club) {
-    final Color clubColor = _getColor(club['color']);
-    final IconData clubIcon = _getIconData(club['icon']);
-    final bool isJoined = club['is_joined'] ?? false;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.6,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            const SizedBox(height: 8),
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: clubColor.withValues(alpha: 0.1), // [FIXED]
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(clubIcon, color: clubColor, size: 40),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      club['name'] ?? 'Klub nomi',
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "${club['members_count'] ?? 0} ta ishtirokchi",
-                      style: TextStyle(color: Colors.grey[500], fontSize: 14),
-                    ),
-                    const SizedBox(height: 24),
-                    const Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text("Klub haqida", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      club['description'] ?? 'Tavsif yo\'q',
-                      style: TextStyle(color: Colors.grey[700], fontSize: 15, height: 1.5),
-                    ),
-                    const SizedBox(height: 30),
-                  ],
-                ),
-              ),
-            ),
-            
-            // Bottom Action
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: isJoined
-                  ? OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        side: BorderSide(color: Colors.grey[300]!)
-                      ),
-                      child: const Text("Yopish", style: TextStyle(color: Colors.black)),
-                    )
-                  : ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _showJoinProcess(club);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryBlue,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        elevation: 0,
-                      ),
-                      child: const Text("A'zo bo'lish", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                    ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showJoinProcess(Map<String, dynamic> club) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text("Tasdiqlash", textAlign: TextAlign.center),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              "A'zo bo'lish uchun avval klubning Telegram kanaliga qo'shiling.",
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            ListTile(
-              leading: const Icon(Icons.telegram, color: Colors.blue, size: 32),
-              title: const Text("Telegram Kanal", style: TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: const Text("Linkni ochish"),
-              onTap: () {
-                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Telegramga o'tilmoqda... (Mock)"))
-                );
-              },
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: Colors.grey[200]!)
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Bekor qilish", style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              
-              final success = await _dataService.joinClub(club['id']);
-              
-              if (success) {
-                _loadClubs(); // Refresh list to show "A'zosiz"
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text("Tabriklaymiz! Siz ${club['name']} a'zosi bo'ldingiz"),
-                      backgroundColor: Colors.green,
-                    )
-                  );
-                }
-              } else {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Klubga a'zo bo'lishda xatolik yuz berdi"),
-                      backgroundColor: Colors.red,
-                    )
-                  );
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: const Text("A'zo bo'ldim"),
-          ),
-        ],
-      ),
-    );
-  }
+  // Replaced bottom sheet logic completely.
 }

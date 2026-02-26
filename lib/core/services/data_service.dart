@@ -631,8 +631,17 @@ class DataService {
   }
 
   Future<List<dynamic>> getMyClubs() async {
-     if (useMock) return [];
-     return [];
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConstants.backendUrl}/student/clubs/my'),
+        headers: await _getHeaders(),
+      ).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        return json.decode(utf8.decode(response.bodyBytes));
+      }
+    } catch (_) {}
+    return [];
   }
 
   Future<bool> joinClub(int clubId) async {
@@ -650,6 +659,91 @@ class DataService {
       debugPrint("DataService: Error joining club: $e");
     }
     return false;
+  }
+
+  // Club Role-Based Endpoints
+  Future<List<dynamic>> getClubMembers(int clubId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConstants.backendUrl}/student/clubs/$clubId/members'),
+        headers: await _getHeaders(),
+      ).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) return json.decode(utf8.decode(response.bodyBytes));
+    } catch (_) {}
+    return [];
+  }
+
+  Future<List<dynamic>> getClubAnnouncements(int clubId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConstants.backendUrl}/student/clubs/$clubId/announcements'),
+        headers: await _getHeaders(),
+      ).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) return json.decode(utf8.decode(response.bodyBytes));
+    } catch (_) {}
+    return [];
+  }
+
+  Future<bool> createClubAnnouncement(int clubId, String content, bool sendToTelegram, {String? mediaUrl}) async {
+    try {
+      final body = {
+        'content': content,
+        'send_to_telegram': sendToTelegram,
+        if (mediaUrl != null) 'media_url': mediaUrl,
+      };
+      final response = await http.post(
+        Uri.parse('${ApiConstants.backendUrl}/student/clubs/$clubId/announcements'),
+        headers: await _getHeaders(),
+        body: json.encode(body),
+      ).timeout(const Duration(seconds: 15));
+      return response.statusCode == 200;
+    } catch (_) {}
+    return false;
+  }
+
+  Future<List<dynamic>> getClubEvents(int clubId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConstants.backendUrl}/student/clubs/$clubId/events'),
+        headers: await _getHeaders(),
+      ).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) return json.decode(utf8.decode(response.bodyBytes));
+    } catch (_) {}
+    return [];
+  }
+
+  Future<bool> createClubEvent(int clubId, Map<String, dynamic> data) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConstants.backendUrl}/student/clubs/$clubId/events'),
+        headers: await _getHeaders(),
+        body: json.encode(data),
+      ).timeout(const Duration(seconds: 15));
+      return response.statusCode == 200;
+    } catch (_) {}
+    return false;
+  }
+
+  Future<bool> participateInClubEvent(int eventId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConstants.backendUrl}/student/clubs/events/$eventId/participate'),
+        headers: await _getHeaders(),
+      ).timeout(const Duration(seconds: 15));
+      return response.statusCode == 200;
+    } catch (_) {}
+    return false;
+  }
+
+  Future<List<dynamic>> getClubEventParticipants(int eventId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConstants.backendUrl}/student/clubs/events/$eventId/participants'),
+        headers: await _getHeaders(),
+      ).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) return json.decode(utf8.decode(response.bodyBytes));
+    } catch (_) {}
+    return [];
   }
 
   // Announcements

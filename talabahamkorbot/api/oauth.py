@@ -228,26 +228,42 @@ async def authlog_callback(request: Request, code: Optional[str] = None, error: 
              logger.warning(f"OAuth: Missing identification (employee_id, pinfl, student_id) for {me.get('login')}")
              return HTMLResponse(content="<h1>Xatolik</h1><p>Siz tizimda xodim (yoki shaxs sifatida) identifikatsiya qilinmadingiz. Iltimos adminga murojaat qiling.</p>", status_code=403)
              
-        # Dynamic Role Verification via HEMIS Admin API
-        role_data = await HemisService.verify_staff_role_from_hemis(emp_id_num)
-        if not role_data:
-             logger.warning(f"Unauthorized staff login attempt (Not found in JMCU root): {me.get('login')} / EmpID: {emp_id_num}")
-             return HTMLResponse(content="<h1>Xatolik</h1><p>Kechirasiz, siz JMCU xodimlar bazasida topilmadingiz yoki ruxsat etilgan rolingiz yo'q. Iltimos adminga murojaat qiling.</p>", status_code=403)
-             
-        assigned_role = role_data["role"]
-        dynamic_full_name = role_data["full_name"]
-        
-        # Check Local DB
+        # [NEW] Check Local DB FIRST (Bypass HEMIS if they exist manually)
         result = await db.execute(select(Staff).where(Staff.employee_id_number == emp_id_num))
         staff = result.scalar_one_or_none()
+        
+        # [NEW] Also check by pinfl/jshshir
+        if not staff and pinfl:
+             result = await db.execute(select(Staff).where(Staff.jshshir == pinfl))
+             staff = result.scalar_one_or_none()
+             
+        # Dynamic Role Verification via HEMIS Admin API
+        role_data = await HemisService.verify_staff_role_from_hemis(emp_id_num)
+        
+        if not role_data and not staff:
+             logger.warning(f"Unauthorized staff login attempt (Not found in JMCU root or local DB): {me.get('login')} / EmpID: {emp_id_num}")
+             return HTMLResponse(content="<h1>Xatolik</h1><p>Kechirasiz, siz JMCU xodimlar bazasida topilmadingiz yoki ruxsat etilgan rolingiz yo'q. Iltimos adminga murojaat qiling.</p>", status_code=403)
+             
+        # Process Identity
+        if role_data:
+            assigned_role = role_data["role"]
+            dynamic_full_name = role_data["full_name"]
+            department = role_data.get("department")
+            position = role_data.get("position")
+        elif staff:
+            # Fallback to Local DB properties
+            assigned_role = staff.role
+            dynamic_full_name = staff.full_name
+            department = staff.department
+            position = staff.position
 
         if staff:
              # Update existing Staff record
              logger.info(f"DEBUG: Staff matched: {staff.full_name}. Updating Role: {staff.role} -> {assigned_role}")
              staff.role = assigned_role
              staff.full_name = dynamic_full_name
-             staff.department = role_data.get("department")
-             staff.position = role_data.get("position")
+             staff.department = department
+             staff.position = position
              if not staff.hemis_id and h_id:
                  staff.hemis_id = int(h_id)
              if not staff.jshshir and pinfl:

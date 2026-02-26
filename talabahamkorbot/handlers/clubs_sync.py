@@ -17,13 +17,22 @@ async def on_user_leave(event: ChatMemberUpdated, bot: Bot):
     Marks their club membership as 'inactive' if the channel matches a club.
     """
     channel_id = str(event.chat.id)
+    channel_user = f"@{event.chat.username}" if event.chat.username else None
     user_id = event.from_user.id
     
-    logger.info(f"User {user_id} left channel {channel_id}")
+    logger.info(f"User {user_id} left channel {channel_id} ({channel_user})")
     
     async with AsyncSessionLocal() as db:
         # Check if this channel is linked to any club
-        club = await db.scalar(select(Club).where(Club.telegram_channel_id == channel_id))
+        from sqlalchemy import or_
+        club = await db.scalar(
+            select(Club).where(
+                or_(
+                    Club.telegram_channel_id == channel_id,
+                    Club.telegram_channel_id == channel_user
+                )
+            )
+        )
         
         if club:
             # Find the user's student_id using TgAccount
@@ -50,12 +59,21 @@ async def on_user_join(event: ChatMemberUpdated, bot: Bot):
     Syncs the telegram_id and optionally marks 'active'.
     """
     channel_id = str(event.chat.id)
+    channel_user = f"@{event.chat.username}" if event.chat.username else None
     user_id = event.from_user.id
     
-    logger.info(f"User {user_id} joined channel {channel_id}")
+    logger.info(f"User {user_id} joined channel {channel_id} ({channel_user})")
     
     async with AsyncSessionLocal() as db:
-        club = await db.scalar(select(Club).where(Club.telegram_channel_id == channel_id))
+        from sqlalchemy import or_
+        club = await db.scalar(
+            select(Club).where(
+                or_(
+                    Club.telegram_channel_id == channel_id,
+                    Club.telegram_channel_id == channel_user
+                )
+            )
+        )
         
         if club:
             tg_acc = await db.scalar(select(TgAccount).where(TgAccount.telegram_id == user_id))
