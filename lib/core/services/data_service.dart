@@ -630,6 +630,24 @@ class DataService {
     return [];
   }
 
+  Future<Map<String, dynamic>> createClub(Map<String, dynamic> data) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConstants.backendUrl}/student/clubs/'),
+        headers: await _getHeaders(),
+        body: json.encode(data),
+      ).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': json.decode(utf8.decode(response.bodyBytes))};
+      }
+      return {'success': false, 'message': 'Klub yaratishda xatolik'};
+    } catch (e) {
+      debugPrint("DataService: Error creating club: $e");
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
   Future<List<dynamic>> getMyClubs() async {
     try {
       final response = await http.get(
