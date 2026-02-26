@@ -151,6 +151,7 @@ class ClubEventSchema(BaseModel):
     created_at: datetime
     participants_count: int = 0
     is_participating: bool = False
+    status: str = "upcoming"
 
     class Config:
         from_attributes = True

@@ -376,10 +376,13 @@ async def get_club_events(
         )
         my_part_ids = set(m_subq.all())
         
+        from datetime import datetime
+        now_dt = datetime.utcnow()
         for e in events_list:
             schema = ClubEventSchema.from_orm(e)
             schema.participants_count = counts.get(e.id, 0)
             schema.is_participating = e.id in my_part_ids
+            schema.status = "O'tkazildi" if e.event_date < now_dt else "O'tkaziladi"
             res.append(schema)
             
     return res

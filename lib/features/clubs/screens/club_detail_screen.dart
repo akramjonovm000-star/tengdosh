@@ -544,44 +544,77 @@ class _EventsTabState extends State<_EventsTab> {
 
   void _showAddDialog() {
     final titleCtrl = TextEditingController();
-    final dateCtrl = TextEditingController(); // Simple format logic for mock
+    final descCtrl = TextEditingController();
+    DateTime? selectedDate;
+    TimeOfDay? selectedTime;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 24, right: 24, top: 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text("Yangi tadbir", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            TextField(controller: titleCtrl, decoration: InputDecoration(hintText: "Tadbir nomi", border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
-            const SizedBox(height: 12),
-            TextField(controller: dateCtrl, decoration: InputDecoration(hintText: "Sana (2024-05-01T10:00:00Z)", border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                onPressed: () async {
-                  if (titleCtrl.text.isEmpty || dateCtrl.text.isEmpty) return;
-                  Navigator.pop(ctx);
-                  final ok = await widget.dataService.createClubEvent(widget.clubId, {
-                    "title": titleCtrl.text,
-                    "event_date": dateCtrl.text,
-                  });
-                  if (ok) _loadData();
-                },
-                child: const Text("Yaratish", style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (BuildContext context, StateSetter setModalState) {
+          return Padding(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom, left: 24, right: 24, top: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text("Yangi tadbir", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                TextField(controller: titleCtrl, decoration: InputDecoration(hintText: "Tadbir mavzusi", border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
+                const SizedBox(height: 12),
+                TextField(controller: descCtrl, maxLines: 3, decoration: InputDecoration(hintText: "Tadbir haqida batafsil ma'lumot...", border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
+                const SizedBox(height: 12),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.calendar_today, color: AppTheme.primaryBlue),
+                  title: Text(selectedDate == null ? "Sana va vaqtni tanlang" : "${selectedDate!.year}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.day.toString().padLeft(2, '0')} ${selectedTime?.format(context) ?? ''}"),
+                  onTap: () async {
+                    final d = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime.now(), lastDate: DateTime.now().add(const Duration(days: 365)));
+                    if (d != null) {
+                      if (!context.mounted) return;
+                      final t = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+                      if (t != null) {
+                        setModalState(() {
+                          selectedDate = d;
+                          selectedTime = t;
+                        });
+                      }
+                    }
+                  }
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                    onPressed: () async {
+                      if (titleCtrl.text.isEmpty || selectedDate == null || selectedTime == null) return;
+                      Navigator.pop(ctx);
+                      
+                      // Convert to correctly formatted local time string combined logically, backend assumes UTC unless indicated but we send naive as local for now
+                      final formattedDate = DateTime(
+                        selectedDate!.year, selectedDate!.month, selectedDate!.day,
+                        selectedTime!.hour, selectedTime!.minute
+                      ).toIso8601String();
+
+                      final ok = await widget.dataService.createClubEvent(widget.clubId, {
+                        "title": titleCtrl.text,
+                        "description": descCtrl.text,
+                        "event_date": formattedDate,
+                      });
+                      if (ok) _loadData();
+                    },
+                    child: const Text("Yaratish", style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
             ),
-            const SizedBox(height: 24),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -609,13 +642,37 @@ class _EventsTabState extends State<_EventsTab> {
                        child: Column(
                          crossAxisAlignment: CrossAxisAlignment.start,
                          children: [
-                           Text(a['title'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                           const SizedBox(height: 8),
+                           Row(
+                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                             crossAxisAlignment: CrossAxisAlignment.start,
+                             children: [
+                               Expanded(
+                                 child: Text(a['title'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), maxLines: 2, overflow: TextOverflow.ellipsis),
+                               ),
+                               const SizedBox(width: 8),
+                               Container(
+                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                 decoration: BoxDecoration(
+                                    color: (a['status'] == "O'tkazildi") ? Colors.grey.shade200 : Colors.green.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(8)
+                                 ),
+                                 child: Text(a['status'] ?? "O'tkaziladi", style: TextStyle(
+                                    fontSize: 10, fontWeight: FontWeight.bold,
+                                    color: (a['status'] == "O'tkazildi") ? Colors.grey : Colors.green
+                                 )),
+                               )
+                             ],
+                           ),
+                           if (a['description'] != null && a['description'].toString().trim().isNotEmpty) ...[
+                             const SizedBox(height: 8),
+                             Text(a['description'], style: TextStyle(color: Colors.grey.shade700, fontSize: 13, height: 1.4)),
+                           ],
+                           const SizedBox(height: 12),
                            Row(
                              children: [
                                const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
                                const SizedBox(width: 4),
-                               Text(a['event_date']?.toString().substring(0, 10) ?? '', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                               Text(a['event_date']?.toString().substring(0, 16).replaceAll("T", " ") ?? '', style: const TextStyle(color: Colors.grey, fontSize: 12)),
                              ],
                            ),
                            const SizedBox(height: 16),
