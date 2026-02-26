@@ -166,11 +166,13 @@ async def get_my_profile(
         "rahbariyat": "Rahbariyat",
         "admin": "Admin",
         "staff": "Xodim",
-        "owner": "Tizim Egasi"
+        "owner": "Tizim Egasi",
+        "yetakchi": "Yetakchi"
     }
     
     raw_role = student.hemis_role or "student"
     data['role'] = role_map.get(raw_role, "Foydalanuvchi")
+    data['role_code'] = raw_role # Important for frontend conditional logic
     
     # Override for specific cases if needed
     if raw_role == "student":

@@ -688,7 +688,11 @@ async def login_via_hemis(
         # student.hemis_password = creds.password # DISABLED
         if full_name_db: student.full_name = full_name_db
         if h_id: student.hemis_id = h_id
-        student.hemis_role = role_code # Update role
+        
+        # Do not overwrite custom roles
+        custom_roles = ['yetakchi', 'owner', 'admin', 'developer']
+        if student.hemis_role not in custom_roles:
+            student.hemis_role = role_code # Update role
         
         # Update Profile
         student.university_name = uni_name
@@ -760,7 +764,24 @@ async def login_via_hemis(
     # Prepare response data specifically
     profile_data = StudentProfileSchema.model_validate(student).model_dump()
     profile_data['first_name'] = first_name # Explicitly add first_name to response
-    profile_data['role'] = student.hemis_role or "student" # Populate role for Mobile UI
+    
+    raw_role = student.hemis_role or "student"
+    role_map_auth = {
+        "student": "Talaba",
+        "teacher": "O'qituvchi", 
+        "tyutor": "Tyutor",
+        "rahbariyat": "Rahbariyat",
+        "admin": "Admin",
+        "staff": "Xodim",
+        "owner": "Tizim Egasi",
+        "yetakchi": "Yetakchi"
+    }
+    
+    profile_data['role'] = role_map_auth.get(raw_role, "Foydalanuvchi")
+    profile_data['role_code'] = raw_role # Important for frontend conditional logic
+    
+    if raw_role == "student":
+        profile_data['role'] = "Talaba"
     
     # [NEW] Prefetch Data in Background
     import asyncio
