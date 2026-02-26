@@ -39,32 +39,66 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> {
     return DefaultTabController(
       length: tabCount,
       child: Scaffold(
-        backgroundColor: AppTheme.backgroundWhite,
+        backgroundColor: const Color(0xFFF5F6FA),
         appBar: AppBar(
-          title: Text(widget.club['name'] ?? 'Klub', style: const TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold)),
-          backgroundColor: Colors.white,
+          backgroundColor: Colors.transparent,
           elevation: 0,
-          iconTheme: const IconThemeData(color: Colors.black),
-          bottom: TabBar(
-            isScrollable: true,
-            labelColor: AppTheme.primaryBlue,
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: AppTheme.primaryBlue,
-            indicatorWeight: 3,
-            tabs: [
-              const Tab(text: "Ma'lumot"),
-              if (isLeader) const Tab(text: "A'zolar"),
-              const Tab(text: "E'lonlar"),
-              const Tab(text: "Tadbirlar"),
-            ],
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.black),
+            onPressed: () => Navigator.pop(context),
           ),
         ),
-        body: TabBarView(
+        body: Column(
           children: [
-            _InfoTab(club: widget.club, dataService: _dataService, onJoin: _handleJoin),
-            if (isLeader) _MembersTab(clubId: widget.club['id'], dataService: _dataService),
-            _AnnouncementsTab(clubId: widget.club['id'], isLeader: isLeader, dataService: _dataService),
-            _EventsTab(clubId: widget.club['id'], isLeader: isLeader, isJoined: isJoined, dataService: _dataService),
+            Text(
+              widget.club['name'] ?? 'Klub', 
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black)
+            ),
+            const SizedBox(height: 4),
+            Text(
+              "${widget.club['members_count'] ?? 0} ta a'zo • 2024 yilda tashkil topgan", 
+              style: const TextStyle(color: Color(0xFF8E8E93), fontSize: 13)
+            ),
+            const SizedBox(height: 24),
+            Container(
+              height: 44,
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(22),
+              ),
+              child: TabBar(
+                isScrollable: true,
+                dividerColor: Colors.transparent,
+                indicatorSize: TabBarIndicatorSize.tab,
+                indicatorPadding: const EdgeInsets.all(4),
+                indicator: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
+                ),
+                labelColor: Colors.black,
+                labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+                unselectedLabelColor: Colors.grey[600],
+                tabs: [
+                  const Tab(text: "Ma'lumot"),
+                  if (isLeader) const Tab(text: "A'zolar"),
+                  const Tab(text: "E'lonlar"),
+                  const Tab(text: "Tadbirlar"),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  _InfoTab(club: widget.club, dataService: _dataService, onJoin: _handleJoin),
+                  if (isLeader) _MembersTab(clubId: widget.club['id'], dataService: _dataService),
+                  _AnnouncementsTab(clubId: widget.club['id'], isLeader: isLeader, dataService: _dataService),
+                  _EventsTab(clubId: widget.club['id'], isLeader: isLeader, isJoined: isJoined, dataService: _dataService),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -188,33 +222,74 @@ class _InfoTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isJoined = club['is_joined'] == true;
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Center(
-            child: Text(club['name'] ?? '', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
-          ),
-          const SizedBox(height: 8),
-          Center(
-            child: Text("${club['members_count'] ?? 0} ta ishtirokchi", style: TextStyle(color: Colors.grey[500], fontSize: 14)),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4))],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 20,
+                      backgroundColor: AppTheme.primaryBlue,
+                      child: Text(
+                        (club['name'] as String?)?.isNotEmpty == true ? club['name'][0].toUpperCase() : '?',
+                        style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(club['name'] ?? '', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(8)),
+                            child: const Text("Universitet Klubi", style: TextStyle(fontSize: 10, color: Colors.blueGrey, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                const Row(
+                  children: [
+                    Icon(Icons.flag, color: AppTheme.primaryBlue, size: 20),
+                    SizedBox(width: 8),
+                    Text("Klub maqsadi", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(club['description'] ?? 'Tavsif yo\'q', style: TextStyle(color: Colors.grey[700], fontSize: 14, height: 1.5)),
+              ],
+            ),
           ),
           const SizedBox(height: 24),
-          const Text("Klub haqida", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          const SizedBox(height: 8),
-          Text(club['description'] ?? 'Tavsif yo\'q', style: TextStyle(color: Colors.grey[700], fontSize: 15, height: 1.5)),
-          const SizedBox(height: 30),
           if (!isJoined && club['is_leader'] != true)
              SizedBox(
                width: double.infinity,
-               height: 50,
+               height: 54,
                child: ElevatedButton(
                  onPressed: onJoin,
                  style: ElevatedButton.styleFrom(
                    backgroundColor: AppTheme.primaryBlue,
-                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                   elevation: 0,
                  ),
-                 child: const Text("A'zo bo'lish", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                 child: const Text("A'zo bo'lish", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                ),
              )
         ],
@@ -262,37 +337,51 @@ class _MembersTabState extends State<_MembersTab> {
 
     return ListView.builder(
       itemCount: members.length,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       itemBuilder: (context, index) {
         final m = members[index];
         final isActive = m['status'] == 'active';
         final int studentId = m['student_id'] ?? 0;
         
-        return Card(
-          elevation: 0,
+        return Container(
           margin: const EdgeInsets.only(bottom: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey[200]!)),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
+          ),
           child: ListTile(
-            title: Text(m['full_name'] ?? 'Noma\'lum', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            leading: CircleAvatar(
+              backgroundColor: AppTheme.primaryBlue.withOpacity(0.1),
+              child: const Icon(Icons.person, color: AppTheme.primaryBlue),
+            ),
+            title: Text(m['full_name'] ?? 'Noma\'lum', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 4),
-                Text("${m['faculty_name'] ?? ''} - ${m['group_number'] ?? ''}", style: const TextStyle(fontSize: 12)),
-                if (m['telegram_username'] != null)
-                   Text("@${m['telegram_username']}", style: const TextStyle(fontSize: 12, color: AppTheme.primaryBlue)),
+                Text("${m['faculty_name'] ?? ''} - ${m['group_number'] ?? ''}", style: const TextStyle(fontSize: 13, color: Colors.grey)),
               ],
             ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (m['telegram_username'] != null)
+                   IconButton(
+                     icon: const Icon(Icons.telegram, color: Colors.blue),
+                     onPressed: () async {
+                       final url = Uri.parse("https://t.me/${m['telegram_username']}");
+                       if (await canLaunchUrl(url)) await launchUrl(url, mode: LaunchMode.externalApplication);
+                     },
+                   ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: isActive ? Colors.green.withValues(alpha: 0.1) : Colors.red.withValues(alpha: 0.1),
+                    color: Colors.blue.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Text(isActive ? "Active" : "Kanalda emas", style: TextStyle(color: isActive ? Colors.green : Colors.red, fontSize: 10, fontWeight: FontWeight.bold)),
+                  child: const Text("🔹 A'zo", style: TextStyle(color: Colors.blue, fontSize: 12, fontWeight: FontWeight.bold)),
                 ),
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.more_vert, color: Colors.grey),
@@ -451,46 +540,45 @@ class _AnnouncementsTabState extends State<_AnnouncementsTab> {
              ? const Center(child: Text("Hech narsa yo'q"))
              : ListView.builder(
                  itemCount: items.length,
-                 padding: const EdgeInsets.all(16),
+                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                  itemBuilder: (context, index) {
                    final a = items[index];
-                   return Card(
-                     elevation: 0,
+                   return Container(
                      margin: const EdgeInsets.only(bottom: 12),
-                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey[200]!)),
-                     child: Padding(
-                       padding: const EdgeInsets.all(16),
-                       child: Column(
-                         crossAxisAlignment: CrossAxisAlignment.start,
-                         children: [
-                           Row(
-                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                             children: [
-                               Expanded(
-                                 child: Text(
-                                   a['author_name'] ?? 'Sardor',
-                                   style: const TextStyle(fontWeight: FontWeight.bold),
-                                   maxLines: 1,
-                                   overflow: TextOverflow.ellipsis,
-                                 ),
-                               ),
-                               const SizedBox(width: 8),
-                               Text(a['created_at']?.toString().substring(0, 10) ?? '', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                             ],
-                           ),
-                           const SizedBox(height: 8),
-                           Text(a['content'] ?? '', style: const TextStyle(height: 1.4)),
-                           const SizedBox(height: 8),
-                           Row(
-                             mainAxisAlignment: MainAxisAlignment.end,
+                     padding: const EdgeInsets.all(16),
+                     decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
+                     ),
+                     child: Column(
+                       crossAxisAlignment: CrossAxisAlignment.start,
+                       children: [
+                         Row(
+                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                           children: [
+                             Text(
+                               a['author_name'] ?? 'Sardor',
+                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                             ),
+                             Text(a['created_at']?.toString().substring(0, 10) ?? '', style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                           ],
+                         ),
+                         const SizedBox(height: 12),
+                         Text(a['content'] ?? '', style: const TextStyle(fontSize: 15, height: 1.4, color: Colors.black87)),
+                         const SizedBox(height: 12),
+                         Align(
+                           alignment: Alignment.bottomRight,
+                           child: Row(
+                             mainAxisSize: MainAxisSize.min,
                              children: [
                                const Icon(Icons.remove_red_eye, size: 14, color: Colors.grey),
                                const SizedBox(width: 4),
                                Text("${a['views_count'] ?? 0}", style: const TextStyle(color: Colors.grey, fontSize: 12)),
                              ],
                            )
-                         ],
-                       ),
+                         )
+                       ],
                      ),
                    );
                  },
@@ -499,8 +587,9 @@ class _AnnouncementsTabState extends State<_AnnouncementsTab> {
           ? FloatingActionButton.extended(
               onPressed: _showAddDialog,
               backgroundColor: AppTheme.primaryBlue,
-              icon: const Icon(Icons.add),
-              label: const Text("Yangi e'lon"),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              icon: const Icon(Icons.add, color: Colors.white),
+              label: const Text("Yangi e'lon", style: TextStyle(color: Colors.white)),
             )
           : null,
     );
@@ -629,66 +718,99 @@ class _EventsTabState extends State<_EventsTab> {
              ? const Center(child: Text("Hozircha tadbirlar yo'q"))
              : ListView.builder(
                  itemCount: items.length,
-                 padding: const EdgeInsets.all(16),
+                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                  itemBuilder: (context, index) {
                    final a = items[index];
                    final isPart = a['is_participating'] == true;
-                   return Card(
-                     elevation: 0,
+
+                   String dateDay = "00";
+                   String dateMonth = "Noma'lum";
+                   if (a['event_date'] != null) {
+                       try {
+                           final dt = DateTime.parse(a['event_date']);
+                           dateDay = dt.day.toString().padLeft(2, '0');
+                           final monthNames = ["", "Yan", "Fev", "Mar", "Apr", "May", "Iyun", "Iyul", "Avg", "Sen", "Okt", "Noy", "Dek"];
+                           dateMonth = monthNames[dt.month];
+                       } catch (_) {}
+                   }
+
+                   return Container(
                      margin: const EdgeInsets.only(bottom: 12),
-                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey[200]!)),
-                     child: Padding(
-                       padding: const EdgeInsets.all(16),
-                       child: Column(
-                         crossAxisAlignment: CrossAxisAlignment.start,
-                         children: [
-                           Row(
-                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                             crossAxisAlignment: CrossAxisAlignment.start,
-                             children: [
-                               Expanded(
-                                 child: Text(a['title'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), maxLines: 2, overflow: TextOverflow.ellipsis),
-                               ),
-                               const SizedBox(width: 8),
-                               Container(
-                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                 decoration: BoxDecoration(
-                                    color: (a['status'] == "O'tkazildi") ? Colors.grey.shade200 : Colors.green.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(8)
-                                 ),
-                                 child: Text(a['status'] ?? "O'tkaziladi", style: TextStyle(
-                                    fontSize: 10, fontWeight: FontWeight.bold,
-                                    color: (a['status'] == "O'tkazildi") ? Colors.grey : Colors.green
-                                 )),
-                               )
-                             ],
+                     padding: const EdgeInsets.all(16),
+                     decoration: BoxDecoration(
+                       color: Colors.white,
+                       borderRadius: BorderRadius.circular(16),
+                       boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
+                     ),
+                     child: Row(
+                       crossAxisAlignment: CrossAxisAlignment.start,
+                       children: [
+                         // Date Block
+                         Container(
+                           width: 60,
+                           height: 60,
+                           decoration: BoxDecoration(
+                             color: AppTheme.primaryBlue.withOpacity(0.1),
+                             borderRadius: BorderRadius.circular(12),
                            ),
-                           if (a['description'] != null && a['description'].toString().trim().isNotEmpty) ...[
-                             const SizedBox(height: 8),
-                             Text(a['description'], style: TextStyle(color: Colors.grey.shade700, fontSize: 13, height: 1.4)),
-                           ],
-                           const SizedBox(height: 12),
-                           Row(
+                           child: Column(
+                             mainAxisAlignment: MainAxisAlignment.center,
                              children: [
-                               const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
-                               const SizedBox(width: 4),
-                               Text(a['event_date']?.toString().substring(0, 16).replaceAll("T", " ") ?? '', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                             ],
-                           ),
-                           const SizedBox(height: 16),
-                           Row(
-                             mainAxisAlignment: MainAxisAlignment.end,
-                             children: [
-                               if (widget.isLeader && a['status'] == "O'tkazildi")
-                                 OutlinedButton(
-                                   onPressed: () => _viewParticipants(a['id'], true),
-                                   child: const Text("Ishtirokchilar"),
-                                 )
+                               Text(dateDay, style: const TextStyle(color: AppTheme.primaryBlue, fontSize: 18, fontWeight: FontWeight.bold)),
+                               Text(dateMonth, style: const TextStyle(color: AppTheme.primaryBlue, fontSize: 12, fontWeight: FontWeight.bold)),
                              ],
                            )
-                         ],
-                       ),
-                     ),
+                         ),
+                         const SizedBox(width: 16),
+                         Expanded(
+                           child: Column(
+                             crossAxisAlignment: CrossAxisAlignment.start,
+                             children: [
+                               Row(
+                                 children: [
+                                   Expanded(child: Text(a['title'] ?? 'Nomsiz', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), maxLines: 2, overflow: TextOverflow.ellipsis)),
+                                   const SizedBox(width: 8),
+                                   Container(
+                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                     decoration: BoxDecoration(
+                                       color: (a['status'] == "O'tkazildi" ? Colors.grey : Colors.green).withOpacity(0.1),
+                                       borderRadius: BorderRadius.circular(8),
+                                     ),
+                                     child: Text(a['status'] ?? '', style: TextStyle(color: a['status'] == "O'tkazildi" ? Colors.grey : Colors.green, fontSize: 10, fontWeight: FontWeight.bold)),
+                                   )
+                                 ]
+                               ),
+                               const SizedBox(height: 8),
+                               if (a['description'] != null && a['description'].toString().trim().isNotEmpty) ...[
+                                 Text(a['description'], style: const TextStyle(fontSize: 13, color: Colors.black87), maxLines: 2, overflow: TextOverflow.ellipsis),
+                                 const SizedBox(height: 8),
+                               ],
+                               Row(
+                                  children: [
+                                     const Icon(Icons.location_on, size: 14, color: Colors.grey),
+                                     const SizedBox(width: 4),
+                                     const Text("Tadbir manzili / vaqti kiritilmagan", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                                  ]
+                               ),
+                               
+                               if (widget.isLeader && a['status'] == "O'tkazildi") ...[
+                                 const SizedBox(height: 12),
+                                 Align(
+                                   alignment: Alignment.centerRight,
+                                   child: OutlinedButton(
+                                     onPressed: () => _viewParticipants(a['id'], true),
+                                     style: OutlinedButton.styleFrom(
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                     ),
+                                     child: const Text("Ishtirokchilar"),
+                                   ),
+                                 )
+                               ]
+                             ]
+                           )
+                         )
+                       ]
+                     )
                    );
                  },
                ),
@@ -696,6 +818,7 @@ class _EventsTabState extends State<_EventsTab> {
           ? FloatingActionButton.extended(
               onPressed: _showAddDialog,
               backgroundColor: AppTheme.primaryBlue,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               icon: const Icon(Icons.add, color: Colors.white),
               label: const Text("Yangi tadbir", style: TextStyle(color: Colors.white)),
             )
