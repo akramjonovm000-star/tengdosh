@@ -42,7 +42,7 @@ async def set_bot_state(user_id: int, state):
 @router.get("/")
 @router.get("")
 async def get_my_activities(
-    student: Student = Depends(get_premium_student),
+    student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
 ):
     """List all activities for the current student."""
