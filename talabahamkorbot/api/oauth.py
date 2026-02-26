@@ -272,11 +272,10 @@ async def authlog_callback(request: Request, code: Optional[str] = None, error: 
                  staff.university_id = 1
              
              image_url = me.get("picture") or me.get("picture_full") or me.get("image") or me.get("image_url")
-             # Only update image if the payload specifically describes an employee, or staff image is totally empty
-             is_student_payload = me.get("type", "employee") == "student" or h_id == str(me.get("id"))
              if image_url and not (staff.image_url and "static/uploads" in staff.image_url):
-                 if not is_student_payload or not staff.image_url:
-                     staff.image_url = image_url
+                 import time
+                 sep = "&" if "?" in image_url else "?"
+                 staff.image_url = f"{image_url}{sep}t={int(time.time())}"
                  
              await db.commit()
              await db.refresh(staff)

@@ -643,7 +643,7 @@ async def complete_event_activity(
             select(UserActivity).where(
                 UserActivity.student_id == p.student_id,
                 UserActivity.name == ev.title[:255],
-                UserActivity.category == "Tadbir"
+                UserActivity.category == "togarak"
             )
         )
         if existing:
@@ -652,7 +652,7 @@ async def complete_event_activity(
         desc = ev.description or ''
         activity = UserActivity(
             student_id=p.student_id,
-            category="Tadbir",
+            category="togarak",
             name=ev.title[:255],
             description=f"Klub tadbirida faol ishtirok etildi. {desc[:100]}",
             date=ev.event_date.strftime("%Y-%m-%d") if ev.event_date else datetime.utcnow().strftime("%Y-%m-%d"),
