@@ -32,8 +32,11 @@ class HemisService:
         [FIX] Remap hemis.jmcu.uz to student.jmcu.uz for internal network reachability.
         """
         if "hemis.jmcu.uz" in url:
-            url = url.replace("hemis.jmcu.uz", "student.jmcu.uz")
-            logger.info(f"INTERNAL REMAP: {url}")
+            url = url.replace("hemis.jmcu.uz", "172.30.0.22")
+            if "headers" not in kwargs or kwargs["headers"] is None:
+                kwargs["headers"] = {}
+            kwargs["headers"]["Host"] = "hemis.jmcu.uz"
+            logger.info(f"INTERNAL IP REMAP: {url} with Host=hemis.jmcu.uz")
 
         tries = 3
         last_exception = None
@@ -306,8 +309,7 @@ class HemisService:
             if domain.endswith("/rest/v1"): domain = domain.replace("/rest/v1", "")
             # [FIX] Remap hemis.jmcu.uz to student.jmcu.uz for internal network reachability
             # This is required because hemis.jmcu.uz is not resolvable/reachable from inside the container
-            if "hemis.jmcu.uz" in domain:
-                 domain = domain.replace("hemis.jmcu.uz", "student.jmcu.uz")
+            # removed domain hack logic
             token_url = f"{domain}/oauth/access-token"
 
         try:
@@ -353,9 +355,7 @@ class HemisService:
         # Ensure rest_url uses the correct base
         rest_base = base_url or HemisService.BASE_URL
         # [FIX] Internal Remap for Profile
-        if rest_base and "hemis.jmcu.uz" in rest_base:
-             rest_base = rest_base.replace("hemis.jmcu.uz", "student.jmcu.uz")
-             domain = domain.replace("hemis.jmcu.uz", "student.jmcu.uz")
+        # removed domain hack logic
              
         rest_url = f"{rest_base}/account/me"
         # Updated fields per user suggestion and GitHub Guide
