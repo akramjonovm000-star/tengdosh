@@ -952,6 +952,7 @@ class Club(Base):
     color: Mapped[str | None] = mapped_column(String(16), nullable=True) # Hex color (e.g. '#FF5733')
     statute_link: Mapped[str | None] = mapped_column(String(500), nullable=True)
     channel_link: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    telegram_channel_id: Mapped[str | None] = mapped_column(String(64), nullable=True) # For sync
     spreadsheet_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     leader_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("staff.id", ondelete="SET NULL"), nullable=True)
     
@@ -985,11 +986,55 @@ class ClubMembership(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     student_id: Mapped[int] = mapped_column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
     club_id: Mapped[int] = mapped_column(Integer, ForeignKey("clubs.id", ondelete="CASCADE"), nullable=False)
+    telegram_id: Mapped[str | None] = mapped_column(String(64), nullable=True) # Sync from TgAccount when joining
+    status: Mapped[str] = mapped_column(String(20), default="active") # active / inactive
     joined_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
     
     student: Mapped["Student"] = relationship("Student")
     club: Mapped["Club"] = relationship("Club", back_populates="memberships")
 
+class ClubAnnouncement(Base):
+    __tablename__ = "club_announcements"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    club_id: Mapped[int] = mapped_column(Integer, ForeignKey("clubs.id", ondelete="CASCADE"), nullable=False)
+    created_by: Mapped[int] = mapped_column(Integer, ForeignKey("students.id", ondelete="SET NULL"), nullable=True)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    media_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
+    views_count: Mapped[int] = mapped_column(Integer, default=0)
+
+    club: Mapped["Club"] = relationship("Club")
+    author: Mapped["Student"] = relationship("Student")
+
+class ClubEvent(Base):
+    __tablename__ = "club_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    club_id: Mapped[int] = mapped_column(Integer, ForeignKey("clubs.id", ondelete="CASCADE"), nullable=False)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    location: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    event_date: Mapped[datetime] = mapped_column(DateTime(), nullable=False)
+    created_by: Mapped[int] = mapped_column(Integer, ForeignKey("students.id", ondelete="SET NULL"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
+
+    club: Mapped["Club"] = relationship("Club")
+    author: Mapped["Student"] = relationship("Student")
+    participants: Mapped[list["ClubEventParticipant"]] = relationship("ClubEventParticipant", back_populates="event", cascade="all, delete-orphan")
+
+class ClubEventParticipant(Base):
+    __tablename__ = "club_event_participants"
+    __table_args__ = (UniqueConstraint('event_id', 'student_id', name='_user_event_participant_uc'),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    event_id: Mapped[int] = mapped_column(Integer, ForeignKey("club_events.id", ondelete="CASCADE"), nullable=False)
+    student_id: Mapped[int] = mapped_column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    attendance_status: Mapped[str] = mapped_column(String(20), default="registered") # registered, attended, missed
+    registered_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
+
+    event: Mapped["ClubEvent"] = relationship("ClubEvent", back_populates="participants")
+    student: Mapped["Student"] = relationship("Student")
 
 # ============================================================
 # AI SUHBAT LOGLARI

@@ -1,13 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from typing import List
+from typing import List, Optional
 from sqlalchemy.orm import selectinload
 from pydantic import BaseModel
 
-from api.dependencies import get_current_student, get_db
-from api.schemas import ClubSchema, ClubMembershipSchema
-from database.models import Student, Club, ClubMembership
+from api.dependencies import get_current_student, get_db, get_club_leader
+from api.schemas import (
+    ClubSchema, ClubMembershipSchema, ClubMemberSchema, 
+    ClubAnnouncementSchema, ClubEventSchema, ClubEventParticipantSchema
+)
+from database.models import (
+    Student, Club, ClubMembership, ClubAnnouncement, 
+    ClubEvent, ClubEventParticipant
+)
 
 router = APIRouter()
 
@@ -25,7 +31,14 @@ async def get_my_clubs(
         .where(ClubMembership.student_id == student.id)
         .options(selectinload(ClubMembership.club))
     )
-    return memberships.all()
+    result = []
+    for m in memberships.all():
+        data = ClubMembershipSchema.from_orm(m)
+        if m.club.leader_student_id == student.id:
+            data.club.is_leader = True
+            data.role = "leader"
+        result.append(data)
+    return result
 
 @router.get("/all", response_model=List[ClubSchema])
 async def get_all_clubs(
@@ -66,6 +79,8 @@ async def get_all_clubs(
         data = ClubSchema.from_orm(club)
         data.members_count = members_count
         data.is_joined = is_joined
+        if club.leader_student_id == student.id:
+            data.is_leader = True
         clubs_data.append(data)
         
     return clubs_data
@@ -156,3 +171,249 @@ async def join_club(
     # ----------------------------
     
     return {"status": "success", "message": "Muvaffaqiyatli a'zo bo'ldingiz"}
+
+@router.get("/{club_id}/members", response_model=List[ClubMemberSchema])
+async def get_club_members(
+    club_id: int,
+    club: Club = Depends(get_club_leader),
+    db: AsyncSession = Depends(get_db)
+):
+    """(Leader) Get all members of a club."""
+    from sqlalchemy.orm import joinedload
+    
+    memberships = await db.execute(
+        select(ClubMembership)
+        .where(ClubMembership.club_id == club_id)
+        .options(joinedload(ClubMembership.student))
+    )
+    
+    ms = memberships.scalars().all()
+    res = []
+    for m in ms:
+        # To avoid N+1, ideally we join faculty. For simplicity we use relations.
+        # Ensure relationships are loaded or handle None
+        faculty_name = m.student.faculty.name if getattr(m.student, 'faculty', None) else None
+        
+        # Try to find telegram username from TgAccount
+        from database.models import TgAccount
+        tg_acc = await db.scalar(select(TgAccount).where(TgAccount.student_id == m.student_id))
+        username = tg_acc.username if tg_acc else None
+        
+        res.append({
+            "student_id": m.student_id,
+            "full_name": m.student.full_name,
+            "faculty_name": faculty_name,
+            "group_number": m.student.group_number,
+            "telegram_username": username,
+            "joined_at": m.joined_at,
+            "status": getattr(m, 'status', 'active')
+        })
+    return res
+
+class AnnouncementCreateSchema(BaseModel):
+    content: str
+    media_url: Optional[str] = None
+    send_to_telegram: bool = False
+
+@router.post("/{club_id}/announcements")
+async def create_club_announcement(
+    club_id: int,
+    req: AnnouncementCreateSchema,
+    student: Student = Depends(get_current_student),
+    club: Club = Depends(get_club_leader),
+    db: AsyncSession = Depends(get_db)
+):
+    """(Leader) Create announcement, optionally send to Telegram."""
+    ann = ClubAnnouncement(
+        club_id=club_id,
+        created_by=student.id,
+        content=req.content,
+        media_url=req.media_url
+    )
+    db.add(ann)
+    await db.commit()
+    await db.refresh(ann)
+    
+    # Send to TG logic
+    if req.send_to_telegram and getattr(club, 'telegram_channel_id', None):
+        try:
+            from bot import bot
+            channel_id = club.telegram_channel_id
+            
+            # Very basic handling (in real scenario handled properly)
+            msg = f"<b>📣 YANGLIK:</b>\n\n{req.content}"
+            if req.media_url:
+                await bot.send_photo(channel_id, req.media_url, caption=msg, parse_mode="HTML")
+            else:
+                await bot.send_message(channel_id, msg, parse_mode="HTML")
+        except Exception as e:
+            print(f"Failed to post to telegram channel: {e}")
+            
+    return {"status": "success", "id": ann.id}
+
+@router.get("/{club_id}/announcements", response_model=List[ClubAnnouncementSchema])
+async def get_club_announcements(
+    club_id: int,
+    student: Student = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get announcements for a club."""
+    from sqlalchemy import desc
+    anns = await db.scalars(
+        select(ClubAnnouncement)
+        .where(ClubAnnouncement.club_id == club_id)
+        .order_by(desc(ClubAnnouncement.created_at))
+        .options(selectinload(ClubAnnouncement.author))
+        .limit(50)
+    )
+    
+    res = []
+    for a in anns.all():
+        data = ClubAnnouncementSchema.from_orm(a)
+        if a.author:
+            data.author_name = a.author.full_name
+        res.append(data)
+    return res
+
+class EventCreateSchema(BaseModel):
+    title: str
+    description: Optional[str] = None
+    location: Optional[str] = None
+    event_date: str # ISO format
+
+@router.post("/{club_id}/events")
+async def create_club_event(
+    club_id: int,
+    req: EventCreateSchema,
+    student: Student = Depends(get_current_student),
+    club: Club = Depends(get_club_leader),
+    db: AsyncSession = Depends(get_db)
+):
+    from datetime import datetime
+    dt = datetime.fromisoformat(req.event_date.replace("Z", "+00:00"))
+    
+    ev = ClubEvent(
+        club_id=club_id,
+        title=req.title,
+        description=req.description,
+        location=req.location,
+        event_date=dt,
+        created_by=student.id
+    )
+    db.add(ev)
+    await db.commit()
+    return {"status": "success", "id": ev.id}
+
+@router.get("/{club_id}/events", response_model=List[ClubEventSchema])
+async def get_club_events(
+    club_id: int,
+    student: Student = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    from sqlalchemy import desc, func
+    
+    evs = await db.scalars(
+        select(ClubEvent)
+        .where(ClubEvent.club_id == club_id)
+        .order_by(desc(ClubEvent.event_date))
+    )
+    
+    res = []
+    events_list = evs.all()
+    if events_list:
+        event_ids = [e.id for e in events_list]
+        
+        # Get pariticpants counts
+        c_subq = await db.execute(
+            select(
+                ClubEventParticipant.event_id,
+                func.count(ClubEventParticipant.id)
+            )
+            .where(ClubEventParticipant.event_id.in_(event_ids))
+            .group_by(ClubEventParticipant.event_id)
+        )
+        counts = {row[0]: row[1] for row in c_subq.all()}
+        
+        # Get my participations
+        m_subq = await db.scalars(
+            select(ClubEventParticipant.event_id)
+            .where(
+                ClubEventParticipant.event_id.in_(event_ids),
+                ClubEventParticipant.student_id == student.id
+            )
+        )
+        my_part_ids = set(m_subq.all())
+        
+        for e in events_list:
+            schema = ClubEventSchema.from_orm(e)
+            schema.participants_count = counts.get(e.id, 0)
+            schema.is_participating = e.id in my_part_ids
+            res.append(schema)
+            
+    return res
+
+@router.post("/events/{event_id}/participate")
+async def participate_club_event(
+    event_id: int,
+    student: Student = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    ev = await db.get(ClubEvent, event_id)
+    if not ev:
+        raise HTTPException(status_code=404, detail="Event not found")
+        
+    part = await db.scalar(
+        select(ClubEventParticipant)
+        .where(
+            ClubEventParticipant.event_id == event_id,
+            ClubEventParticipant.student_id == student.id
+        )
+    )
+    if part:
+        # Unsubscribe if already participating
+        await db.delete(part)
+        await db.commit()
+        return {"status": "success", "action": "removed"}
+        
+    # Subscribe
+    part = ClubEventParticipant(
+        event_id=event_id,
+        student_id=student.id
+    )
+    db.add(part)
+    await db.commit()
+    return {"status": "success", "action": "added"}
+
+@router.get("/events/{event_id}/participants", response_model=List[ClubEventParticipantSchema])
+async def get_event_participants(
+    event_id: int,
+    student: Student = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    # Verify leader scope
+    ev = await db.get(ClubEvent, event_id)
+    if not ev:
+         raise HTTPException(status_code=404, detail="Event not found")
+         
+    club = await db.get(Club, ev.club_id)
+    if getattr(club, 'leader_student_id', None) != student.id:
+        raise HTTPException(status_code=403, detail="Buning uchun siz shu klub sardori bo'lishingiz kerak.")
+        
+    from sqlalchemy.orm import joinedload
+    parts = await db.scalars(
+        select(ClubEventParticipant)
+        .where(ClubEventParticipant.event_id == event_id)
+        .options(joinedload(ClubEventParticipant.student))
+    )
+    
+    res = []
+    for p in parts.all():
+        faculty_name = p.student.faculty.name if getattr(p.student, 'faculty', None) else None
+        res.append({
+            "student_id": p.student_id,
+            "full_name": p.student.full_name,
+            "faculty_name": faculty_name,
+            "group_number": p.student.group_number,
+            "attendance_status": p.attendance_status
+        })
+    return res

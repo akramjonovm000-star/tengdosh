@@ -101,9 +101,11 @@ class ClubSchema(BaseModel):
     color: Optional[str] = None
     members_count: int = 0
     is_joined: bool = False
+    is_leader: bool = False # NEW
     image_file_id: Optional[str] = None
     statute_link: Optional[str] = None
     channel_link: Optional[str] = None
+    telegram_channel_id: Optional[str] = None # NEW
 
     class Config:
         from_attributes = True
@@ -112,6 +114,53 @@ class ClubMembershipSchema(BaseModel):
     club: ClubSchema
     role: str
     joined_at: datetime
+    status: str = "active"
+
+    class Config:
+        from_attributes = True
+
+class ClubMemberSchema(BaseModel):
+    student_id: int
+    full_name: str
+    faculty_name: Optional[str] = None
+    group_number: Optional[str] = None
+    telegram_username: Optional[str] = None
+    joined_at: datetime
+    status: str
+
+    class Config:
+        from_attributes = True
+
+class ClubAnnouncementSchema(BaseModel):
+    id: int
+    content: str
+    media_url: Optional[str] = None
+    created_at: datetime
+    views_count: int
+    author_name: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class ClubEventSchema(BaseModel):
+    id: int
+    title: str
+    description: Optional[str] = None
+    location: Optional[str] = None
+    event_date: datetime
+    created_at: datetime
+    participants_count: int = 0
+    is_participating: bool = False
+
+    class Config:
+        from_attributes = True
+
+class ClubEventParticipantSchema(BaseModel):
+    student_id: int
+    full_name: str
+    faculty_name: Optional[str] = None
+    group_number: Optional[str] = None
+    attendance_status: str
 
     class Config:
         from_attributes = True

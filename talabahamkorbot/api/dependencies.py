@@ -274,3 +274,18 @@ async def require_action_token(
          raise HTTPException(status_code=403, detail="Yaroqsiz yoki ishlatilgan shifr (Invalid Action Token)")
          
     return action_token
+
+async def get_club_leader(club_id: int, student: Student = Depends(get_current_student), db: AsyncSession = Depends(get_db)):
+    """
+    Dependency to ensure the user is the leader of the specified club.
+    """
+    from database.models import Club
+    club = await db.scalar(select(Club).where(Club.id == club_id))
+    
+    if not club:
+        raise HTTPException(status_code=404, detail="Club not found")
+        
+    if getattr(club, 'leader_student_id', None) != student.id:
+        raise HTTPException(status_code=403, detail="Kechirasiz, siz ushbu klub sardori emassiz.")
+        
+    return club
