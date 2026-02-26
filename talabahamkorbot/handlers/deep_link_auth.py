@@ -115,12 +115,16 @@ async def cmd_start_deep_link(message: Message, command: CommandObject, session:
         await state.update_data(club_event_id=event_id, uploaded_photos=[])
         await state.set_state(ClubEventActivityState.waiting_for_photo)
         
-        from keyboards.reply_kb import cancel_kb
+        from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+        markup = ReplyKeyboardMarkup(
+            keyboard=[[KeyboardButton(text="✅ Yakunlash")]],
+            resize_keyboard=True
+        )
         await message.answer(
             f"📸 <b>{ev.title}</b> tadbiri uchun rasmlarni (maksimal 5 ta rasm) yuboring.\n"
             f"Barcha rasmlarni bittadan yuborgach, \"✅ Yakunlash\" tugmasini bosing.",
             parse_mode="HTML",
-            reply_markup=cancel_kb()
+            reply_markup=markup
         )
         return
 
