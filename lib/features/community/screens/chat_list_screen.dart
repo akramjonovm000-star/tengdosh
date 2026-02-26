@@ -153,10 +153,14 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   ],
                 ),
                 title: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      chat.formattedName,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    Flexible(
+                      child: Text(
+                        chat.formattedName,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                     if (chat.partnerIsPremium) ...[
                       const SizedBox(width: 4),

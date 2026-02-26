@@ -633,16 +633,20 @@ class _AnnouncementsTabState extends State<_AnnouncementsTab> {
                      child: Column(
                        crossAxisAlignment: CrossAxisAlignment.start,
                        children: [
-                         Row(
-                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                           children: [
-                             Text(
-                               a['author_name'] ?? 'Sardor',
-                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                             ),
-                             Text(a['created_at']?.toString().substring(0, 10) ?? '', style: const TextStyle(color: Colors.grey, fontSize: 13)),
-                           ],
-                         ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  widget.club['name'] ?? a['author_name'] ?? 'Klub E\'loni',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(a['created_at']?.toString().substring(0, 10) ?? '', style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                            ],
+                          ),
                          const SizedBox(height: 12),
                          Text(a['content'] ?? '', style: const TextStyle(fontSize: 15, height: 1.4, color: Colors.black87)),
                          const SizedBox(height: 12),
