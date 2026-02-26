@@ -499,13 +499,13 @@ async def login_via_hemis(
         # --- STAFF / TUTOR LOGIC ---
         from database.models import Staff
         
-        # Identify via ID or PINFL
-        h_id = me.get("id")
+        # Identify via Employee ID or PINFL
+        emp_id = me.get("employee_id_number")
         pinfl = me.get("pinfl") or me.get("jshshir")
         
         staff = None
-        if h_id:
-            staff = await db.scalar(select(Staff).where(Staff.hemis_id == int(h_id)))
+        if emp_id:
+            staff = await db.scalar(select(Staff).where(Staff.employee_id_number == emp_id))
             
         if not staff and pinfl:
             staff = await db.scalar(select(Staff).where(Staff.jshshir == pinfl))
@@ -513,7 +513,7 @@ async def login_via_hemis(
         if not staff:
              # Auto-register Staff? Currently restricted to imported staff.
              # But for Tutors, we assume they are imported.
-             logger.warning(f"Login attempted by Staff {creds.login} (ID={h_id}) but not found in DB.")
+             logger.warning(f"Login attempted by Staff {creds.login} (EmpID={emp_id}, PINFL={pinfl}) but not found in DB.")
              raise HTTPException(status_code=403, detail="Siz tizimda xodim sifatida topilmadingiz")
              
         # [NEW] Gating for Tutor Module Development
@@ -532,11 +532,7 @@ async def login_via_hemis(
              # Unless we add a whitelist mechanism later
              logger.info(f"Blocking Tutor Login: {staff.full_name} ({staff.id})")
              raise HTTPException(status_code=403, detail="Tyutorlar moduli bo'yicha texnik ishlar olib borilmoqda. Tizim tez orada ishga tushadi.")
-
-        # Update Staff info
-        if h_id and not staff.hemis_id:
-            staff.hemis_id = int(h_id)
-            
+             
         # Determine Role directly from DB or Hemis?
         # Ideally, we trust our DB role (e.g. 'tyutor')
         # But we can update if needed.
