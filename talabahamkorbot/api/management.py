@@ -95,9 +95,11 @@ async def get_management_dashboard(
         ) or 0
 
         # 5. Calculate Active Platform Users (Exact Scope)
-        # Active means they have a hemis_token (logged into the app)
+        # Active means they have a hemis_token (logged into the app) in the User table
         platform_users = await db.scalar(
-            select(func.count(Student.id)).where(and_(*base_filters, Student.hemis_token != None))
+            select(func.count(Student.id))
+            .join(User, Student.hemis_login == User.hemis_login)
+            .where(and_(*base_filters, User.hemis_token != None))
         ) or 0
 
         # 6. Calculate Total Staff (Fallback logic)
