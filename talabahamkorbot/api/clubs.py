@@ -632,7 +632,9 @@ async def complete_event_activity(
     parts_list = parts.all()
     
     if not parts_list:
-        return {"success": False, "message": "No attended participants"}
+        ev.is_processed = True
+        await db.commit()
+        return {"success": True, "message": "No attended participants"}
         
     # Get uploaded photos
     photos = await db.scalars(select(ClubEventImage).where(ClubEventImage.event_id == event_id))
@@ -677,7 +679,7 @@ async def complete_event_activity(
     else:
         ev.is_processed = True
         await db.commit()
-        return {"success": False, "message": "All already recorded"}
+        return {"success": True, "message": "All already recorded"}
 
 @router.put("/{club_id}")
 async def update_club(
