@@ -1279,16 +1279,17 @@ async def download_student_document(
     if not is_mgmt:
         raise HTTPException(status_code=403, detail="Faqat rahbariyat uchun")
 
-    # 2. Get Document
+    # 2. Get Document and Student
     doc = await db.get(StudentDocument, doc_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Hujjat topilmadi")
 
+    from database.models import Student
+    student = await db.get(Student, doc.student_id)
+
     # [OPTIONAL] Scoping check: Ensure Dean only downloads from their faculty
     if staff_role in dean_level_roles:
         # Check student faculty
-        from database.models import Student
-        student = await db.get(Student, doc.student_id)
         if not student or student.faculty_id != staff.faculty_id:
              raise HTTPException(status_code=403, detail="Sizga ushbu hujjatni ko'rishga ruxsat yo'q")
 
@@ -1305,7 +1306,9 @@ async def download_student_document(
                         yield chunk
 
         # Sanitize filename
-        safe_filename = doc.file_name.replace(" ", "_").replace("/", "_")
+        clean_name = student.full_name.replace(" ", "_").replace("'", "").replace("\"", "") if student else "Nomalum_Talaba"
+        clean_title = doc.file_name.replace(" ", "_").replace("/", "_")
+        safe_filename = f"{clean_name}_{clean_title}"
         if "." not in safe_filename:
             # Try to guess extension from mime_type or path
             ext = file_path.split(".")[-1] if "." in file_path else "bin"
