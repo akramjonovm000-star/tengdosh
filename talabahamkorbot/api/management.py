@@ -1562,8 +1562,17 @@ async def export_mgmt_documents_zip(
                         if resp.status == 200:
                             file_bytes = await resp.read()
                             
-                            # Determine Extension
-                            ext = file_path.split(".")[-1] if "." in file_path else "bin"
+                            # Determine Extension intelligently
+                            ext = "pdf" # Default fallback
+                            if doc.file_name and "." in doc.file_name:
+                                ext = doc.file_name.split(".")[-1]
+                            elif file_path and "." in file_path:
+                                ext = file_path.split(".")[-1]
+                            elif doc.mime_type:
+                                if "pdf" in doc.mime_type: ext = "pdf"
+                                elif "jpeg" in doc.mime_type or "jpg" in doc.mime_type: ext = "jpg"
+                                elif "png" in doc.mime_type: ext = "png"
+                                elif "word" in doc.mime_type or "doc" in doc.mime_type: ext = "docx"
                             
                             # Filename: StudentName_DocTitle_ID.ext
                             clean_name = student.full_name.replace(" ", "_").replace("'", "").replace("\"", "")
