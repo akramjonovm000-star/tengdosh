@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/providers/locale_provider.dart' as core_providers;
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/api_constants.dart';
+import '../../../core/localization/app_dictionary.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -94,6 +96,30 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundWhite,
+      appBar: AppBar(
+         backgroundColor: Colors.transparent,
+         elevation: 0,
+         actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 16.0),
+              child: Consumer<core_providers.LocaleProvider>(
+                 builder: (context, localeProvider, _) {
+                    final isUz = localeProvider.locale.languageCode == 'uz';
+                    return TextButton.icon(
+                      onPressed: () {
+                         localeProvider.toggleLocale();
+                      },
+                      icon: const Icon(Icons.language, color: AppTheme.primaryBlue),
+                      label: Text(
+                        isUz ? "O'zbekcha" : "Русский",
+                        style: const TextStyle(color: AppTheme.primaryBlue, fontWeight: FontWeight.bold),
+                      ),
+                    );
+                 }
+              ),
+            ),
+         ],
+      ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -128,7 +154,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    "HEMIS tizimidan kirish",
+                    AppDictionary.tr(context, 'hemis_login_subtitle'),
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.grey[600], fontSize: 16),
                   ),
@@ -142,9 +168,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         color: const Color(0xFFFFD54F), // Amber 300 as the yellow banner
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: const Text(
-                        "Parol yoki login noto'g'ri ko'rsatilgan. Qaytadan urinib ko'ring.",
-                        style: TextStyle(
+                      child: Text(
+                        AppDictionary.tr(context, 'login_error_banner'),
+                        style: const TextStyle(
                           color: Colors.black87,
                           fontSize: 14,
                         ),
@@ -158,7 +184,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                     style: const TextStyle(fontSize: 16),
                     decoration: InputDecoration(
-                      labelText: "Login / Talaba ID",
+                      labelText: AppDictionary.tr(context, 'login_input_label'),
                       prefixIcon: const Icon(Icons.person_outline, color: AppTheme.primaryBlue),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       enabledBorder: OutlineInputBorder(
@@ -166,7 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderSide: BorderSide(color: Colors.grey[300]!),
                       ),
                     ),
-                    validator: (v) => v!.isEmpty ? "Iltimos loginni kiriting" : null,
+                    validator: (v) => v!.isEmpty ? AppDictionary.tr(context, 'login_input_error') : null,
                   ),
                   const SizedBox(height: 16),
                   
@@ -179,7 +205,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     obscureText: _isObscure,
                     style: const TextStyle(fontSize: 16),
                     decoration: InputDecoration(
-                      labelText: "Parol",
+                      labelText: AppDictionary.tr(context, 'password_input_label'),
                       prefixIcon: const Icon(Icons.lock_outline, color: AppTheme.primaryBlue),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       enabledBorder: OutlineInputBorder(
@@ -191,7 +217,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         onPressed: () => setState(() => _isObscure = !_isObscure),
                       ),
                     ),
-                    validator: (v) => v!.isEmpty ? "Iltimos parolni kiriting" : null,
+                    validator: (v) => v!.isEmpty ? AppDictionary.tr(context, 'password_input_error') : null,
                   ),
                   const SizedBox(height: 16),
                   
@@ -223,15 +249,15 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: Wrap(
                             crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
-                              Text(
-                                "Men ",
+                               Text(
+                                AppDictionary.tr(context, 'policy_agree_1'),
                                 style: TextStyle(color: Colors.grey[700], fontSize: 13),
                               ),
                               GestureDetector(
                                 onTap: _showPrivacyPolicy,
-                                child: const Text(
-                                  "Maxfiylik siyosati",
-                                  style: TextStyle(
+                                child: Text(
+                                  AppDictionary.tr(context, 'policy_link'),
+                                  style: const TextStyle(
                                     color: AppTheme.primaryBlue,
                                     fontWeight: FontWeight.bold,
                                     decoration: TextDecoration.underline,
@@ -240,7 +266,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                               Text(
-                                " bilan tanishib chiqdim va qabul qilaman.",
+                                AppDictionary.tr(context, 'policy_agree_2'),
                                 style: TextStyle(color: Colors.grey[700], fontSize: 13),
                               ),
                             ],
@@ -269,27 +295,20 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             child: auth.isLoading
                                 ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
-                                : const Text("Tizimga kirish", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                : Text(AppDictionary.tr(context, 'login_btn'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                           ),
                           const SizedBox(height: 16),
                           OutlinedButton.icon(
                             onPressed: (_isPolicyAccepted && !auth.isLoading) ? () => _launchHemisLogin(isStaff: true) : null,
-                            icon: Icon(
-                              Icons.badge_outlined, 
-                              color: _isPolicyAccepted ? AppTheme.primaryBlue : Colors.grey, 
-                              size: 20
-                            ),
+                            icon: const Icon(Icons.badge, color: AppTheme.primaryBlue),
                             label: Text(
-                              "OneID orqali kirish (xodimlar uchun)", 
-                              style: TextStyle(
-                                color: _isPolicyAccepted ? AppTheme.primaryBlue : Colors.grey, 
-                                fontSize: 13, 
-                                fontWeight: FontWeight.bold
-                              )
+                              AppDictionary.tr(context, 'login_staff_btn'),
+                              style: const TextStyle(fontWeight: FontWeight.bold),
                             ),
                             style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              side: BorderSide(color: _isPolicyAccepted ? AppTheme.primaryBlue : Colors.grey[300]!),
+                              foregroundColor: AppTheme.primaryBlue,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              side: const BorderSide(color: AppTheme.primaryBlue, width: 1.5),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                           ),
@@ -320,9 +339,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 16),
                   
                   Text(
-                    "Agarda login yoki parolni unutgan bo'lsangiz, talabalar bo'limiga murojaat qiling.",
+                    AppDictionary.tr(context, 'login_footer_help'),
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
                   ),
                 ],
               ),
@@ -347,27 +366,27 @@ class _LoginScreenState extends State<LoginScreen> {
           minChildSize: 0.5,
           maxChildSize: 0.95,
           expand: false,
-          builder: (context, scrollController) {
-            return Column(
+          shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24.0)),
+        ),
+        builder: (context) {
+          return Container(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                // Handle bar
-                Center(
-                  child: Container(
-                    margin: const EdgeInsets.only(top: 12, bottom: 12),
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2),
-                    ),
+                Container(
+                  width: 50,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8),
-                  child: Text(
-                    "Maxfiylik Siyosati",
-                    style: AppTheme.lightTheme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-                  ),
+                const SizedBox(height: 16),
+                Text(
+                  AppDictionary.tr(context, 'policy_sheet_title'),
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const Divider(),
                 Expanded(
@@ -439,22 +458,24 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryBlue,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: const Text("Tushunarli & Qabul qilaman", style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _isPolicyAccepted = true;
+                      });
+                      Navigator.pop(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryBlue,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
+                    child: Text(AppDictionary.tr(context, 'policy_accept_btn'), style: const TextStyle(fontSize: 16, color: Colors.white)),
                   ),
-                ),
+                )
               ],
             );
           },

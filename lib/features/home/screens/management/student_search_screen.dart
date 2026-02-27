@@ -105,7 +105,7 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text("Talabalar"),
+        title: const Text(AppDictionary.tr(context, 'tab_students')),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
@@ -399,7 +399,7 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
     }
 
     if (_isSearching) return const Center(child: CircularProgressIndicator());
-    if (_searchResults.isEmpty) return const Center(child: Text("Ma'lumot topilmadi"));
+    if (_searchResults.isEmpty) return const Center(child: Text(AppDictionary.tr(context, 'msg_info_not_found')));
 
     return ListView.builder(
       itemCount: _searchResults.length,

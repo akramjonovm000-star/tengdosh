@@ -96,7 +96,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
         },
         backgroundColor: AppTheme.primaryBlue,
         icon: const Icon(Icons.add),
-        label: const Text("Yangi Faollik"),
+        label: const Text(AppDictionary.tr(context, 'btn_new_activity')),
       ),
     );
   }

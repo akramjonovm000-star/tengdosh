@@ -121,7 +121,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   final amount = int.tryParse(amountText) ?? 0;
                   if (amount <= 0) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Summa xato kiritildi")),
+                      const SnackBar(content: Text(AppDictionary.tr(context, 'msg_invalid_amount'))),
                     );
                     return;
                   }
@@ -221,7 +221,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text("Tasdiqlash"),
+        title: const Text(AppDictionary.tr(context, 'btn_confirm')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -550,12 +550,12 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                 showDialog(
                   context: context,
                   builder: (ctx) => AlertDialog(
-                    title: const Text("Tasdiqlash"),
+                    title: const Text(AppDictionary.tr(context, 'btn_confirm')),
                     content: const Text(
                       "Ushbu imkoniyatdan faqat bir marta foydalana olasiz. Davom etasizmi?"
                     ),
                     actions: [
-                      TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Yo'q")),
+                      TextButton(onPressed: () => Navigator.pop(ctx), child: const Text(AppDictionary.tr(context, 'btn_no'))),
                       ElevatedButton(
                         onPressed: () {
                           Navigator.pop(ctx);

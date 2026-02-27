@@ -51,7 +51,7 @@ class _ClubMemberProfileScreenState extends State<ClubMemberProfileScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (!snapshot.hasData || snapshot.data == null) {
-            return const Center(child: Text("Ma'lumot topilmadi"));
+            return const Center(child: Text(AppDictionary.tr(context, 'msg_info_not_found')));
           }
           final data = snapshot.data!;
           final List acts = data['activities'] ?? [];

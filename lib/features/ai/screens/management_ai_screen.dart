@@ -84,7 +84,7 @@ class _ManagementAiScreenState extends State<ManagementAiScreen> {
                 _generateReport(); // Regenerate
               }, 
               icon: const Icon(Icons.refresh), 
-              label: const Text("Qayta shakllantirish"),
+              label: const Text(AppDictionary.tr(context, 'btn_regenerate')),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryBlue,
                 foregroundColor: Colors.white,
@@ -153,7 +153,7 @@ class _ManagementAiScreenState extends State<ManagementAiScreen> {
       case "Rahbariyat uchun AI hisobot":
          return const SizedBox(); 
       default:
-        return const Center(child: Text("Ma'lumot yo'q"));
+        return const Center(child: Text(AppDictionary.tr(context, 'msg_no_data')));
     }
   }
 
@@ -174,7 +174,7 @@ class _ManagementAiScreenState extends State<ManagementAiScreen> {
   }
 
   Widget _buildListContent(List<dynamic> items, IconData icon, Color color) {
-    if (items == null || items.isEmpty) return const Center(child: Text("Ma'lumot yo'q"));
+    if (items == null || items.isEmpty) return const Center(child: Text(AppDictionary.tr(context, 'msg_no_data')));
     return ListView.separated(
       itemCount: items.length,
       separatorBuilder: (_, __) => const Divider(),

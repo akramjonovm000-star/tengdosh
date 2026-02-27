@@ -160,7 +160,7 @@ class _ActivityReviewScreenState extends State<ActivityReviewScreen> {
             maxLines: 3,
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Bekor qilish")),
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text(AppDictionary.tr(context, 'btn_cancel'))),
             ElevatedButton(
               onPressed: () {
                 comment = controller.text;
@@ -567,7 +567,7 @@ class _ActivityReviewScreenState extends State<ActivityReviewScreen> {
                     children: [
                       TextButton(onPressed: () => _reject(id), child: const Text("Rad etish", style: TextStyle(color: Colors.red))),
                       const SizedBox(width: 8),
-                      ElevatedButton(onPressed: () => _approve(id), child: const Text("Tasdiqlash")),
+                      ElevatedButton(onPressed: () => _approve(id), child: const Text(AppDictionary.tr(context, 'btn_confirm'))),
                     ],
                   ),
               ],

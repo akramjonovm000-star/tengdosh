@@ -273,7 +273,7 @@ class _ActivityMonitoringScreenState extends State<ActivityMonitoringScreen> {
             maxLines: 3,
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Bekor qilish")),
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text(AppDictionary.tr(context, 'btn_cancel'))),
             ElevatedButton(
               onPressed: () {
                 comment = controller.text;
@@ -428,7 +428,7 @@ class _ActivityMonitoringScreenState extends State<ActivityMonitoringScreen> {
                                 Navigator.pop(context);
                                 _approve(item['id']);
                               },
-                              child: const Text("Tasdiqlash"),
+                              child: const Text(AppDictionary.tr(context, 'btn_confirm')),
                             ),
                           ),
                         ],

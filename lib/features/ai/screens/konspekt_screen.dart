@@ -51,7 +51,7 @@ class _KonspektScreenState extends State<KonspektScreen> {
     
     if (text.isEmpty && _selectedFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Iltimos, matn yozing yoki fayl tanlang.")),
+        const SnackBar(content: Text(AppDictionary.tr(context, 'msg_write_or_select_file'))),
       );
       return;
     }
@@ -196,7 +196,7 @@ class _KonspektScreenState extends State<KonspektScreen> {
                   child: OutlinedButton.icon(
                     onPressed: _selectedFile == null ? _pickFile : null, // Disable if file already selected
                     icon: const Icon(Icons.upload_file),
-                    label: const Text("Fayl tanlash"),
+                    label: const Text(AppDictionary.tr(context, 'btn_select_file')),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -260,7 +260,7 @@ class _KonspektScreenState extends State<KonspektScreen> {
                        child: TextButton.icon(
                          onPressed: _copyToClipboard, 
                          icon: const Icon(Icons.copy, size: 18), 
-                         label: const Text("Nusxa olish")
+                         label: const Text(AppDictionary.tr(context, 'btn_copy'))
                        ),
                      )
                    ],

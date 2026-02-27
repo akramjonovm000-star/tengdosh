@@ -89,14 +89,14 @@ class _LibraryFilterSheetState extends State<LibraryFilterSheet> {
           const Text("Holati", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text("Faqat mavjud kitoblar"),
+            title: const Text(AppDictionary.tr(context, 'lib_available_only')),
             value: _availableOnly,
             onChanged: (val) => setState(() => _availableOnly = val),
             activeColor: AppTheme.primaryBlue,
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text("Elektron variant bor"),
+            title: const Text(AppDictionary.tr(context, 'lib_has_ebook')),
             value: _ebookOnly,
             onChanged: (val) => setState(() => _ebookOnly = val),
             activeColor: AppTheme.primaryBlue,

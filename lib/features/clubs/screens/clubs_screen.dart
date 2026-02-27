@@ -37,7 +37,7 @@ class _ClubsScreenState extends State<ClubsScreen> {
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Klublarni yuklashda xatolik yuz berdi")),
+          const SnackBar(content: Text(AppDictionary.tr(context, 'msg_clubs_load_error'))),
         );
       }
     }
@@ -233,7 +233,7 @@ class _ClubsScreenState extends State<ClubsScreen> {
                            children: [
                              Icon(Icons.edit, size: 20, color: Colors.blue),
                              SizedBox(width: 8),
-                             Text("Tahrirlash"),
+                             Text(AppDictionary.tr(context, 'btn_edit')),
                            ],
                          ),
                        ),
@@ -336,7 +336,7 @@ class _ClubsScreenState extends State<ClubsScreen> {
                           
                           if (success) {
                             Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("O'zgarishlar saqlandi"), backgroundColor: Colors.green));
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_changes_saved')), backgroundColor: Colors.green));
                             _loadClubs();
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Xatolik yuz berdi. Sardor topilmagan bo'lishi mumkin."), backgroundColor: Colors.red));

@@ -89,11 +89,11 @@ class _ElectionScreenState extends State<ElectionScreen> {
         title: const Text("Ovoz berishni tasdiqlaysizmi?"),
         content: Text("Sizning tanlovingiz: $name\n\nBu amalni qaytarib bo'lmaydi."),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Bekor qilish")),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text(AppDictionary.tr(context, 'btn_cancel'))),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true), 
             style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue, foregroundColor: Colors.white),
-            child: const Text("Tasdiqlash"),
+            child: const Text(AppDictionary.tr(context, 'btn_confirm')),
           ),
         ],
       ),

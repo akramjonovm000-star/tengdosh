@@ -451,7 +451,7 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Bekor qilish")),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text(AppDictionary.tr(context, 'btn_cancel'))),
           ElevatedButton(
             onPressed: () async {
               final text = controller.text.trim();
@@ -460,7 +460,7 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
               Navigator.pop(context);
               await _replyToAppeal(id, text);
             },
-            child: const Text("Yuborish"),
+            child: const Text(AppDictionary.tr(context, 'btn_submit')),
           ),
         ],
       ),

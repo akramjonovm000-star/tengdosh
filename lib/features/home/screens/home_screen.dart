@@ -28,6 +28,7 @@ import '../../appeals/screens/appeals_screen.dart';
 import '../../library/screens/library_screen.dart';
 import 'package:talabahamkor_mobile/features/notifications/screens/notifications_screen.dart';
 import 'package:talabahamkor_mobile/core/providers/notification_provider.dart';
+import '../../core/localization/app_dictionary.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:async';
 
@@ -197,7 +198,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ScaffoldMessenger.of(context).hideCurrentSnackBar();
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text("Bozor bo'limi tez kunda ishga tushadi"),
+                          content: Text(AppDictionary.tr(context, 'msg_market_soon')),
                           duration: Duration(seconds: 2),
                           behavior: SnackBarBehavior.floating,
                         ),
@@ -212,12 +213,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     }
                     setState(() => _currentIndex = index);
                   },
-                  items: const [
-                    BottomNavigationBarItem(icon: Icon(Icons.grid_view_rounded), label: "Asosiy"),
-                    BottomNavigationBarItem(icon: Icon(Icons.shopping_bag_rounded), label: "Bozor"),
-                    BottomNavigationBarItem(icon: Icon(Icons.smart_toy_rounded), label: "AI"),
-                    BottomNavigationBarItem(icon: Icon(Icons.forum_rounded), label: "Choyxona"),
-                    BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: "Profil"),
+                  items: [
+                    BottomNavigationBarItem(icon: const Icon(Icons.grid_view_rounded), label: AppDictionary.tr(context, 'home_tab_main')),
+                    const BottomNavigationBarItem(icon: Icon(Icons.shopping_bag_rounded), label: "Bozor"),
+                    const BottomNavigationBarItem(icon: Icon(Icons.smart_toy_rounded), label: "AI"),
+                    const BottomNavigationBarItem(icon: Icon(Icons.forum_rounded), label: "Choyxona"),
+                    BottomNavigationBarItem(icon: const Icon(Icons.person_rounded), label: AppDictionary.tr(context, 'home_tab_profile')),
                   ],
                 ),
               ),
@@ -282,7 +283,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           Flexible(
                             child: Text(
-                              "Salom, ${() {
+                              "${AppDictionary.tr(context, 'home_greeting')}, ${() {
                                 if (student == null) return "Foydalanuvchi";
                                 
                                 final fullName = student.fullName;
@@ -445,16 +446,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       elevation: 0,
                     ),
-                    child: const Text("Ovoz berish"),
+                    child: const Text(AppDictionary.tr(context, 'btn_vote')),
                   )
                 ],
               ),
             ),
 
             // 3. Module Grid (Dashboard)
-            const Text(
-              "Xizmatlar",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+            Text(
+              AppDictionary.tr(context, 'module_study'), // Mapping general services
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
             ),
             const SizedBox(height: 16),
             GridView.count(
@@ -466,13 +467,13 @@ class _HomeScreenState extends State<HomeScreen> {
               childAspectRatio: 1.1,
               children: [
                 DashboardCard(
-                  title: "Akademik bo'lim",
+                  title: AppDictionary.tr(context, 'module_study'),
                   icon: Icons.school_rounded,
                   color: Colors.green,
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AcademicScreen())),
                 ),
                 DashboardCard(
-                  title: "Ijtimoiy Faollik",
+                  title: AppDictionary.tr(context, 'module_social'),
                   icon: Icons.star_rounded,
                   color: Colors.orange,
                   onTap: () {
@@ -485,38 +486,38 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
                 DashboardCard(
-                  title: "Hujjatlar",
+                  title: AppDictionary.tr(context, 'module_documents'),
                   icon: Icons.folder_copy_rounded,
                   color: Colors.blue,
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DocumentsScreen())),
                 ),
                 DashboardCard(
-                  title: "Sertifikatlar",
+                  title: AppDictionary.tr(context, 'home_tab_main'), // placeholder
                   icon: Icons.workspace_premium_rounded,
                   color: Colors.orange,
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CertificatesScreen())),
                 ),
                 DashboardCard(
-                  title: "Klublar",
+                  title: AppDictionary.tr(context, 'module_clubs'),
                   icon: Icons.groups_rounded,
                   color: Colors.teal,
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ClubsScreen())),
                 ),
                 DashboardCard(
-                  title: "Murojaatlar",
+                  title: AppDictionary.tr(context, 'module_requests'),
                   icon: Icons.chat_bubble_outline_rounded,
                   color: Colors.redAccent,
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AppealsScreen())),
                 ),
                 DashboardCard(
-                  title: "Kutubxona",
+                  title: AppDictionary.tr(context, 'module_community'),
                   icon: Icons.local_library_rounded,
                   color: Colors.indigo,
                   onTap: () {
                     ScaffoldMessenger.of(context).hideCurrentSnackBar();
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text("Kutubxona tez orada ishga tushadi"),
+                        content: Text(AppDictionary.tr(context, 'msg_library_soon')),
                         duration: Duration(seconds: 2),
                         behavior: SnackBarBehavior.floating,
                       ),
@@ -762,7 +763,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Icon(Icons.workspace_premium, color: Colors.amber),
             SizedBox(width: 10),
-            Text("Premium kerak"),
+            Text(AppDictionary.tr(context, 'msg_premium_required')),
           ],
         ),
         content: const Text(

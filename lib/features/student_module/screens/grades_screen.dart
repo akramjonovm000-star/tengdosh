@@ -115,7 +115,7 @@ class _GradesScreenState extends State<GradesScreen> {
                 ? const Center(
                     child: SingleChildScrollView(
                       physics: AlwaysScrollableScrollPhysics(),
-                      child: Text("Ma'lumot topilmadi"),
+                      child: Text(AppDictionary.tr(context, 'msg_info_not_found')),
                     ),
                   )
                 : ListView.builder(

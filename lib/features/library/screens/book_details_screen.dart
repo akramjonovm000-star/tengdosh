@@ -113,7 +113,7 @@ class BookDetailsScreen extends StatelessWidget {
                           );
                         },
                         icon: const Icon(Icons.menu_book),
-                        label: const Text("Elektron o'qish"),
+                        label: const Text(AppDictionary.tr(context, 'btn_read_ebook')),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTheme.primaryBlue,
                           foregroundColor: Colors.white,

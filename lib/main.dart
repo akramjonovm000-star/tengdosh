@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/notification_provider.dart';
+import 'core/providers/locale_provider.dart';
 import 'core/services/data_service.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/home/screens/home_screen.dart';
@@ -40,6 +41,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
+        ChangeNotifierProvider(create: (_) => LocaleProvider()),
         Provider(create: (_) => DataService()),
       ],
       child: const TalabaHamkorApp(),
@@ -125,24 +127,28 @@ class _TalabaHamkorAppState extends State<TalabaHamkorApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: _navigatorKey,
-      title: 'tengdosh',
-      theme: AppTheme.lightTheme,
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [
-        Locale('uz', 'UZ'), 
-        Locale('ru', 'RU'),
-        Locale('en', 'US'),
-      ],
-      // Force Uzbek as default if system is not supported or mixed
-      locale: const Locale('uz', 'UZ'),
-      home: Consumer<AuthProvider>(
-        builder: (context, auth, _) {
+    return Consumer<LocaleProvider>(
+      builder: (context, localeProvider, _) {
+        if (!localeProvider.isLoaded) {
+           return const MaterialApp(home: Scaffold(body: Center(child: CircularProgressIndicator())));
+        }
+        return MaterialApp(
+          navigatorKey: _navigatorKey,
+          title: 'tengdosh',
+          theme: AppTheme.lightTheme,
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('uz', 'UZ'), 
+            Locale('ru', 'RU'),
+            Locale('en', 'US'),
+          ],
+          locale: localeProvider.locale,
+          home: Consumer<AuthProvider>(
+            builder: (context, auth, _) {
           if (auth.isStaffOAuthLoading) {
              return Scaffold(
                backgroundColor: AppTheme.backgroundWhite,
@@ -175,6 +181,8 @@ class _TalabaHamkorAppState extends State<TalabaHamkorApp> {
         },
       ),
       debugShowCheckedModeBanner: false,
+    );
+      },
     );
   }
 }

@@ -57,7 +57,7 @@ class _GroupAppealsScreenState extends State<GroupAppealsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Bekor qilish"),
+            child: const Text(AppDictionary.tr(context, 'btn_cancel')),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -65,7 +65,7 @@ class _GroupAppealsScreenState extends State<GroupAppealsScreen> {
               Navigator.pop(context); // Close dialog
               await _sendReply(appealId, _replyController.text.trim());
             },
-            child: const Text("Yuborish"),
+            child: const Text(AppDictionary.tr(context, 'btn_submit')),
           ),
         ],
       ),

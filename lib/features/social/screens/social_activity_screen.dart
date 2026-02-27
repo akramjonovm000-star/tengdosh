@@ -13,7 +13,7 @@ import 'package:talabahamkor_mobile/core/theme/app_theme.dart';
 import 'package:talabahamkor_mobile/features/social/screens/social_activity_detail_screen.dart';
 
 import 'package:talabahamkor_mobile/core/constants/api_constants.dart';
-
+import 'package:talabahamkor_mobile/core/localization/app_dictionary.dart';
 import 'package:talabahamkor_mobile/features/social/models/social_activity.dart';
 
 class AddActivitySheet extends StatefulWidget {
@@ -135,7 +135,7 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
     } catch (e) {
       debugPrint("Upload Init Error: $e");
       setState(() => _isUploading = false);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Xatolik: $e")));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("${AppDictionary.tr(context, 'error_prefix')}: $e")));
     }
   }
   
@@ -196,8 +196,8 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
                 Expanded(
                   child: Text(
                     isEdit 
-                      ? "Faollikni tahrirlash"
-                      : (_step == 1 ? "Kategoriyani tanlang" : "Ma'lumotlarni kiriting"),
+                      ? AppDictionary.tr(context, 'social_form_edit_title')
+                      : (_step == 1 ? AppDictionary.tr(context, 'social_form_step1_title') : AppDictionary.tr(context, 'social_form_step2_title')),
                     style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -268,53 +268,53 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
   }
 
   Widget _buildFormStep(bool isEdit) {
-    String titleLabel = "Faollik nomi";
-    String titleHint = "Nomini kiriting...";
-    String descLabel = "Faollik tavsifi";
-    String descHint = "Batafsil ma'lumot...";
+    String titleLabel = AppDictionary.tr(context, 'social_base_name');
+    String titleHint = AppDictionary.tr(context, 'social_base_hint');
+    String descLabel = AppDictionary.tr(context, 'social_base_desc');
+    String descHint = AppDictionary.tr(context, 'social_base_desc_hint');
 
     switch (_selectedCategory) {
       case "Ma'rifat darslari":
-        titleLabel = "Ma'rifat darsi mavzusi";
-        titleHint = "Mavzuni kiriting (masalan: Odob-axloq)";
-        descLabel = "Ma'rifat darsi tavsifi";
-        descHint = "Dars haqida qisqacha yozing...";
+        titleLabel = AppDictionary.tr(context, 'social_marifat_name');
+        titleHint = AppDictionary.tr(context, 'social_marifat_hint');
+        descLabel = AppDictionary.tr(context, 'social_marifat_desc');
+        descHint = AppDictionary.tr(context, 'social_marifat_desc_hint');
         break;
       case "To'garak":
-        titleLabel = "To'garak nomi";
-        titleHint = "Qaysi to'garakka qatnashdingiz?";
-        descLabel = "To'garak tavsifi";
-        descHint = "Mashg'ulot haqida ma'lumot...";
+        titleLabel = AppDictionary.tr(context, 'social_togarak_name');
+        titleHint = AppDictionary.tr(context, 'social_togarak_hint');
+        descLabel = AppDictionary.tr(context, 'social_togarak_desc');
+        descHint = AppDictionary.tr(context, 'social_togarak_desc_hint');
         break;
       case "Yutuqlar":
-        titleLabel = "Yutuq nomi";
-        titleHint = "Qanday yutuqqa erishdingiz?";
-        descLabel = "Yutuq tavsifi";
-        descHint = "Musobaqa yoki tadbir haqida...";
+        titleLabel = AppDictionary.tr(context, 'social_yutuq_name');
+        titleHint = AppDictionary.tr(context, 'social_yutuq_hint');
+        descLabel = AppDictionary.tr(context, 'social_yutuq_desc');
+        descHint = AppDictionary.tr(context, 'social_yutuq_desc_hint');
         break;
       case "Volontyorlik":
-        titleLabel = "Volontyorlik nomi";
-        titleHint = "Qanday ishda yordam berdingiz?";
-        descLabel = "Volontyorlik tavsifi";
-        descHint = "Bajarilgan ishlar haqida...";
+        titleLabel = AppDictionary.tr(context, 'social_volont_name');
+        titleHint = AppDictionary.tr(context, 'social_volont_hint');
+        descLabel = AppDictionary.tr(context, 'social_volont_desc');
+        descHint = AppDictionary.tr(context, 'social_volont_desc_hint');
         break;
       case "Madaniy tashriflar":
-        titleLabel = "Tashrif nomi";
-        titleHint = "Qayerga tashrif buyurdingiz?";
-        descLabel = "Tashrif tavsifi";
-        descHint = "Tashrifdan olgan taassurotlaringiz...";
+        titleLabel = AppDictionary.tr(context, 'social_madaniy_name');
+        titleHint = AppDictionary.tr(context, 'social_madaniy_hint');
+        descLabel = AppDictionary.tr(context, 'social_madaniy_desc');
+        descHint = AppDictionary.tr(context, 'social_madaniy_desc_hint');
         break;
       case "Sport":
-        titleLabel = "Sport turi / Musobaqa nomi";
-        titleHint = "Futbol, Shaxmat yoki musobaqa nomi...";
-        descLabel = "Faollik tavsifi";
-        descHint = "Musobaqa natijalari...";
+        titleLabel = AppDictionary.tr(context, 'social_sport_name');
+        titleHint = AppDictionary.tr(context, 'social_sport_hint');
+        descLabel = AppDictionary.tr(context, 'social_sport_desc');
+        descHint = AppDictionary.tr(context, 'social_sport_desc_hint');
         break;
       default:
-        titleLabel = "Faollik nomi";
-        titleHint = "Faollik nomini kiriting...";
-        descLabel = "Faollik tavsifi";
-        descHint = "Faollik haqida ma'lumot...";
+        titleLabel = AppDictionary.tr(context, 'social_base_name');
+        titleHint = AppDictionary.tr(context, 'social_base_hint');
+        descLabel = AppDictionary.tr(context, 'social_base_desc');
+        descHint = AppDictionary.tr(context, 'social_base_desc_hint');
     }
 
     return Column(
@@ -390,7 +390,7 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
                          const SizedBox(width: 12),
                          Text(
                            _selectedDate == null 
-                             ? "Sana, Oy, Yilni tanlang" 
+                             ? AppDictionary.tr(context, 'social_select_date') 
                              : DateFormat('dd.MM.yyyy').format(_selectedDate!),
                            style: TextStyle(
                              color: _selectedDate == null ? Colors.grey[600] : Colors.black, 
@@ -426,7 +426,7 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
                   backgroundColor: AppTheme.primaryBlue,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
-                child: Text(isEdit ? "Yangilash" : "Saqlash", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                child: Text(isEdit ? AppDictionary.tr(context, 'social_btn_update') : AppDictionary.tr(context, 'save'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
               ),
             ),
           ),
@@ -1039,7 +1039,7 @@ class _SocialActivityScreenState extends State<SocialActivityScreen> {
              
              if (!mounted) return;
              ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Faollik muvaffaqiyatli yuborildi! Xodim tasdiqlashini kuting. ⏳')),
+              SnackBar(content: Text(AppDictionary.tr(context, 'social_msg_success_submit'))),
              );
              
              if (newActivity != null) {
@@ -1082,7 +1082,7 @@ class _SocialActivityScreenState extends State<SocialActivityScreen> {
              
              if (!mounted) return;
              if (res != null) {
-               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Faollik yangilandi!')));
+               ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppDictionary.tr(context, 'social_msg_updated'))));
                // Update locally
                setState(() {
                  final index = _activities.indexWhere((a) => a.id == updatedActivity.id);
@@ -1123,7 +1123,7 @@ class _SocialActivityScreenState extends State<SocialActivityScreen> {
            });
            if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("O'chirildi!")));
         } else {
-           if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Xatolik yuz berdi")));
+           if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_error_occurred'))));
         }
       } catch (e) {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Xatolik: $e")));
@@ -1202,17 +1202,17 @@ class _ActivityCardState extends State<ActivityCard> {
     switch(widget.activity.status) {
       case "approved":
         statusColor = Colors.green;
-        statusText = "Tasdiqlangan";
+        statusText = AppDictionary.tr(context, 'social_status_approved');
         statusIcon = Icons.check_circle_rounded;
         break;
       case "rejected":
         statusColor = Colors.red;
-        statusText = "Rad etilgan";
+        statusText = AppDictionary.tr(context, 'social_status_rejected');
         statusIcon = Icons.cancel_rounded;
         break;
       default:
         statusColor = Colors.orange;
-        statusText = "Kutilayotgan";
+        statusText = AppDictionary.tr(context, 'social_status_pending');
         statusIcon = Icons.access_time_rounded;
     }
 
@@ -1365,23 +1365,23 @@ class _ActivityCardState extends State<ActivityCard> {
                                 }
                               },
                               itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                                const PopupMenuItem<String>(
+                                PopupMenuItem<String>(
                                   value: 'edit',
                                   child: Row(
                                     children: [
-                                      Icon(Icons.edit, color: Colors.blue, size: 20),
-                                      SizedBox(width: 8),
-                                      Text('Tahrirlash'),
+                                      const Icon(Icons.edit, color: Colors.blue, size: 20),
+                                      const SizedBox(width: 8),
+                                      Text(AppDictionary.tr(context, 'social_btn_edit')),
                                     ],
                                   ),
                                 ),
-                                const PopupMenuItem<String>(
+                                PopupMenuItem<String>(
                                   value: 'delete',
                                   child: Row(
                                     children: [
-                                      Icon(Icons.delete, color: Colors.red, size: 20),
-                                      SizedBox(width: 8),
-                                      Text("O'chirish"),
+                                      const Icon(Icons.delete, color: Colors.red, size: 20),
+                                      const SizedBox(width: 8),
+                                      Text(AppDictionary.tr(context, 'social_btn_delete')),
                                     ],
                                   ),
                                 ),

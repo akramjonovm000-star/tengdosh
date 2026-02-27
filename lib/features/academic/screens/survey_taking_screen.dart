@@ -198,8 +198,8 @@ class _SurveyTakingScreenState extends State<SurveyTakingScreen> {
            title: const Text("Diqqat"),
            content: const Text("Barcha savollarga javob berilmadi. Davom ettirmoqchimisiz?"),
            actions: [
-             TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Yo'q")),
-             TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Ha")),
+             TextButton(onPressed: () => Navigator.pop(context, false), child: const Text(AppDictionary.tr(context, 'btn_no'))),
+             TextButton(onPressed: () => Navigator.pop(context, true), child: const Text(AppDictionary.tr(context, 'btn_yes'))),
            ],
          )
        );

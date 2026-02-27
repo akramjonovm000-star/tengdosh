@@ -214,10 +214,10 @@ class _AiChatScreenState extends State<AiChatScreen> {
                showDialog(
                  context: context,
                  builder: (ctx) => AlertDialog(
-                   title: const Text("Yangi Suhbat"),
+                   title: const Text(AppDictionary.tr(context, 'btn_new_chat')),
                    content: const Text("Chat tarixini o'chirib, yangi suhbat boshlamoqchimisiz?"),
                    actions: [
-                     TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Bekor qilish")),
+                     TextButton(onPressed: () => Navigator.pop(ctx), child: const Text(AppDictionary.tr(context, 'btn_cancel'))),
                      TextButton(
                        onPressed: () {
                          Navigator.pop(ctx);

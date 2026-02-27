@@ -24,11 +24,11 @@ class AppDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.settings),
-            title: const Text("Sozlamalar"),
+            title: const Text(AppDictionary.tr(context, 'menu_settings')),
           ),
           ListTile(
             leading: const Icon(Icons.message_outlined),
-            title: const Text("Murojaatlar"),
+            title: const Text(AppDictionary.tr(context, 'menu_appeals')),
             onTap: () {
                Navigator.pop(context);
                Navigator.push(context, MaterialPageRoute(builder: (_) => const AppealsScreen()));
@@ -36,7 +36,7 @@ class AppDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.file_copy_outlined),
-            title: const Text("Hujjatlar"),
+            title: const Text(AppDictionary.tr(context, 'menu_documents')),
             onTap: () {
                Navigator.pop(context);
                Navigator.push(context, MaterialPageRoute(builder: (_) => const DocumentsScreen()));
@@ -44,7 +44,7 @@ class AppDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.help_outline),
-            title: const Text("Yordam"),
+            title: const Text(AppDictionary.tr(context, 'menu_help')),
             onTap: () {},
           ),
           const Spacer(),

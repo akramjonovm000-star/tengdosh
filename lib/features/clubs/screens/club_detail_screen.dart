@@ -162,7 +162,7 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> {
       // Success (fastapi didn't explicitly return {status: error...} so it reached end of join_club logic).
       if (mounted) {
         setState(() => isJoined = true);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("A'zo bo'ldingiz"), backgroundColor: Colors.green));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_joined_club')), backgroundColor: Colors.green));
       }
     }
   }
@@ -370,7 +370,7 @@ class _MembersTabState extends State<_MembersTab> {
   @override
   Widget build(BuildContext context) {
     if (isLoading) return const Center(child: CircularProgressIndicator());
-    if (members.isEmpty) return const Center(child: Text("Hozircha a'zolar yo'q"));
+    if (members.isEmpty) return const Center(child: Text(AppDictionary.tr(context, 'msg_no_members_yet')));
 
     return ListView.builder(
       itemCount: members.length,
@@ -490,10 +490,10 @@ class _MembersTabState extends State<_MembersTab> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("Chiqarish"),
+        title: const Text(AppDictionary.tr(context, 'btn_kick')),
         content: Text("Rostdan ham $name ismli talabani klubdan o'chirmoqchimisiz?"),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Bekor qilish")),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text(AppDictionary.tr(context, 'btn_cancel'))),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text("O'chirish", style: TextStyle(color: Colors.red)),
@@ -510,10 +510,10 @@ class _MembersTabState extends State<_MembersTab> {
       Navigator.pop(context); // loading
 
       if (ok) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Talaba chiqarib yuborildi"), backgroundColor: Colors.green));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_student_kicked')), backgroundColor: Colors.green));
         _loadMembers();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Xatolik yuz berdi"), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_error_occurred')), backgroundColor: Colors.red));
       }
     }
   }
@@ -581,7 +581,7 @@ class _AnnouncementsTabState extends State<_AnnouncementsTab> {
                 ),
                 const SizedBox(height: 16),
                 SwitchListTile(
-                  title: const Text("Telegram kanalga ham yuborish"),
+                  title: const Text(AppDictionary.tr(context, 'btn_send_to_telegram')),
                   value: sendToTelegram,
                   onChanged: (val) => setModalState(() => sendToTelegram = val),
                   activeColor: AppTheme.primaryBlue,
@@ -618,7 +618,7 @@ class _AnnouncementsTabState extends State<_AnnouncementsTab> {
       body: isLoading 
          ? const Center(child: CircularProgressIndicator())
          : items.isEmpty
-             ? const Center(child: Text("Hech narsa yo'q"))
+             ? const Center(child: Text(AppDictionary.tr(context, 'msg_nothing_here')))
              : ListView.builder(
                  itemCount: items.length,
                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -800,7 +800,7 @@ class _EventsTabState extends State<_EventsTab> {
       body: isLoading 
          ? const Center(child: CircularProgressIndicator())
          : items.isEmpty
-             ? const Center(child: Text("Hozircha tadbirlar yo'q"))
+             ? const Center(child: Text(AppDictionary.tr(context, 'msg_no_events_yet')))
              : ListView.builder(
                  itemCount: items.length,
                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -919,7 +919,7 @@ class _EventsTabState extends State<_EventsTab> {
                                      style: OutlinedButton.styleFrom(
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                      ),
-                                     child: const Text("Qo'shimcha yoki Tahrirlash"),
+                                     child: const Text(AppDictionary.tr(context, 'btn_add_or_edit')),
                                    ),
                                  )
                                ]
@@ -1014,7 +1014,7 @@ class _EventsTabState extends State<_EventsTab> {
                   const SizedBox(height: 8),
                   Expanded(
                     child: parts.isEmpty
-                      ? const Center(child: Text("Hozircha ra'yxat bo'sh"))
+                      ? const Center(child: Text(AppDictionary.tr(context, 'msg_list_empty')))
                       : ListView.builder(
                           itemCount: parts.length,
                           itemBuilder: (ctx, i) {
@@ -1083,7 +1083,7 @@ class _EventsTabState extends State<_EventsTab> {
                         Navigator.pop(context);
                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Faollik qilib tasdiqlandi!")));
                       } else {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Bajarilmadi. Barcha ma'lumotlar to'g'riligini tekshiring.")));
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_action_failed_check_data'))));
                       }
                     },
                     child: isSaving ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Text("3. Saqlash", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),

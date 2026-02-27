@@ -226,7 +226,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
         title: const Text("Hujjatni o'chirish"),
         content: Text("Rostdan ham '$title' hujjatini o'chirmoqchimisiz?"),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Bekor qilish")),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text(AppDictionary.tr(context, 'btn_cancel'))),
           TextButton(
             onPressed: () => Navigator.pop(context, true), 
             style: TextButton.styleFrom(foregroundColor: Colors.red),

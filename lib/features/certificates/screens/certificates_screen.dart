@@ -54,7 +54,7 @@ class _CertificatesScreenState extends State<CertificatesScreen> {
         title: const Text("Sertifikatni o'chirish"),
         content: Text("Rostdan ham '$title' sertifikatini o'chirmoqchimisiz?"),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Bekor qilish")),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text(AppDictionary.tr(context, 'btn_cancel'))),
           TextButton(
             onPressed: () => Navigator.pop(context, true), 
             style: TextButton.styleFrom(foregroundColor: Colors.red),

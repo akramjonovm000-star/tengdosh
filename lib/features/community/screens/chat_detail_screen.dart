@@ -331,7 +331,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             children: [
               ListTile(
                 leading: const Icon(Icons.edit, color: Colors.blue),
-                title: const Text("Tahrirlash"),
+                title: const Text(AppDictionary.tr(context, 'btn_edit')),
                 onTap: () {
                   Navigator.pop(context);
                   _showEditDialog(msg);
@@ -386,11 +386,11 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                     });
                     _loadMessages(silent: true); // Refresh just in case
                   } else {
-                    if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Xatolik yuz berdi")));
+                    if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_error_occurred'))));
                   }
                 }
               },
-              child: const Text("Saqlash"),
+              child: const Text(AppDictionary.tr(context, 'btn_save')),
             )
           ],
         );

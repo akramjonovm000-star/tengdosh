@@ -115,7 +115,7 @@ class UserSearchDelegate extends SearchDelegate {
           return const Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError) {
-           return const Center(child: Text("Xatolik yuz berdi"));
+           return const Center(child: Text(AppDictionary.tr(context, 'msg_error_occurred')));
         }
         
         final students = snapshot.data ?? [];

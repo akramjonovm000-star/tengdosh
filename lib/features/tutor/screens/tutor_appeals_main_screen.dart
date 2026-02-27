@@ -15,7 +15,7 @@ class TutorAppealsMainScreen extends StatelessWidget {
       child: Scaffold(
         backgroundColor: AppTheme.backgroundWhite,
         appBar: AppBar(
-          title: const Text("Murojaatlar"),
+          title: const Text(AppDictionary.tr(context, 'menu_appeals')),
           bottom: const TabBar(
             labelColor: AppTheme.primaryBlue,
             unselectedLabelColor: Colors.grey,

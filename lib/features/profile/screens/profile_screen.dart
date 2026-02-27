@@ -11,6 +11,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/models/student.dart';
 import '../../../../core/services/data_service.dart';
 import '../../../../core/utils/role_mapper.dart';
+import '../../../../core/localization/app_dictionary.dart';
 import 'subscription_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -90,7 +91,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final student = auth.currentUser;
 
     if (student == null) {
-      return const Center(child: Text("Ma'lumot topilmadi"));
+      return const Center(child: Text(AppDictionary.tr(context, 'msg_info_not_found')));
     }
 
     // Initialize controller only once if not editing or empty
@@ -461,19 +462,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const Divider(height: 1),
                 _buildInfoRow(
                   Icons.school_rounded,
-                  student.role == 'rahbariyat' ? "Bo'lim" : "Fakultet",
+                  student.role == 'rahbariyat' ? "Bo'lim" : AppDictionary.tr(context, 'profile_faculty'),
                   student.facultyName ?? "-",
                 ),
                 const Divider(height: 1),
                 _buildInfoRow(
                   Icons.menu_book_rounded,
-                  student.role == 'rahbariyat' ? "Lavozim" : "Yo'nalish",
+                  student.role == 'rahbariyat' ? "Lavozim" : AppDictionary.tr(context, 'profile_direction'),
                   student.specialtyName ?? "-",
                 ),
                 const Divider(height: 1),
                 _buildInfoRow(
                   Icons.groups_rounded,
-                  student.role == 'rahbariyat' ? "Telefon" : "Guruh",
+                  student.role == 'rahbariyat' ? "Telefon" : AppDictionary.tr(context, 'profile_group'),
                   (student.role != 'rahbariyat' &&
                           student.groupNumber != null &&
                           student.groupNumber!.length > 5)
@@ -483,7 +484,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const Divider(height: 1),
                 _buildInfoRow(
                   Icons.calendar_today_rounded,
-                  student.role == 'rahbariyat' ? "Tug'ilgan sana" : "Semestr",
+                  student.role == 'rahbariyat' ? "Tug'ilgan sana" : AppDictionary.tr(context, 'profile_semester'),
                   student.semesterName ?? "-",
                 ),
               ],
@@ -513,7 +514,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: ElevatedButton.icon(
               onPressed: () => _logout(context),
               icon: const Icon(Icons.logout_rounded, color: Colors.white),
-              label: const Text("Tizimdan Chiqish", style: TextStyle(color: Colors.white, fontSize: 16)),
+              label: Text(AppDictionary.tr(context, 'profile_logout_btn'), style: const TextStyle(color: Colors.white, fontSize: 16)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.redAccent,
                 padding: const EdgeInsets.symmetric(vertical: 16),
@@ -581,19 +582,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("Chiqish"),
-        content: const Text("Rostdan ham tizimdan chiqmoqchimisiz?"),
+        title: Text(AppDictionary.tr(context, 'profile_logout_btn')),
+        content: Text(AppDictionary.tr(context, 'profile_logout_confirm')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text("Yo'q"),
+            child: Text(AppDictionary.tr(context, 'no')),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
               Provider.of<AuthProvider>(context, listen: false).logout();
             },
-            child: const Text("Ha", style: TextStyle(color: Colors.red)),
+            child: Text(AppDictionary.tr(context, 'yes'), style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -776,7 +777,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     }
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Belgi o'zgartirildi: $emoji")));
                   } else if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Xatolik yuz berdi")));
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_error_occurred'))));
                   }
                 },
                 child: Container(
@@ -847,7 +848,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text("Bekor qilish"),
+                child: const Text(AppDictionary.tr(context, 'btn_cancel')),
               ),
               ElevatedButton(
                 onPressed: isLoading ? null : () async {

@@ -203,7 +203,7 @@ class _PostCardState extends State<PostCard> {
         title: const Text("O'chirish"),
         content: const Text("Haqiqatan ham bu postni o'chirmoqchimisiz?"),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Yo'q")),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text(AppDictionary.tr(context, 'btn_no'))),
           TextButton(
             child: const Text("Ha, o'chirish", style: TextStyle(color: Colors.red)),
             onPressed: () async {
@@ -412,7 +412,7 @@ class _PostCardState extends State<PostCard> {
                     if (val == 'delete') _showDeleteDialog();
                   },
                   itemBuilder: (context) => [
-                    const PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit, size: 20), SizedBox(width: 8), Text("Tahrirlash")])),
+                    const PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit, size: 20), SizedBox(width: 8), Text(AppDictionary.tr(context, 'btn_edit'))])),
                     const PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete, color: Colors.red, size: 20), SizedBox(width: 8), Text("O'chirish", style: TextStyle(color: Colors.red))])),
                   ],
                 )

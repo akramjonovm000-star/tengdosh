@@ -1133,7 +1133,7 @@ class _AppealDetailScreenState extends State<AppealDetailScreen> {
               _loadDetail(); // Refresh
           } else {
               ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Xatolik yuz berdi"))
+                  const SnackBar(content: Text(AppDictionary.tr(context, 'msg_error_occurred')))
               );
           }
       }

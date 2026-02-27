@@ -47,7 +47,7 @@ class CommentItem extends StatelessWidget {
               title: const Text("O'chirish"),
               content: const Text("Ushbu sharhni o'chirmoqchimisiz?"),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Yo'q")),
+                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text(AppDictionary.tr(context, 'btn_no'))),
                 TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Ha", style: TextStyle(color: Colors.red))),
               ],
             ),
@@ -115,7 +115,7 @@ class CommentItem extends StatelessWidget {
                     children: [
                       ListTile(
                         leading: const Icon(Icons.edit, color: Colors.blue),
-                        title: const Text("Tahrirlash"),
+                        title: const Text(AppDictionary.tr(context, 'btn_edit')),
                         onTap: () {
                           Navigator.pop(ctx);
                           _showEditDialog(context);
@@ -302,7 +302,7 @@ class CommentItem extends StatelessWidget {
           decoration: const InputDecoration(border: OutlineInputBorder()),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Bekor qilish")),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text(AppDictionary.tr(context, 'btn_cancel'))),
           TextButton(
             onPressed: () {
               if (controller.text.trim().isNotEmpty) {
@@ -310,7 +310,7 @@ class CommentItem extends StatelessWidget {
                  Navigator.pop(ctx);
               }
             }, 
-            child: const Text("Saqlash")
+            child: const Text(AppDictionary.tr(context, 'btn_save'))
           ),
         ],
       ),

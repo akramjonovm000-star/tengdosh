@@ -88,7 +88,7 @@ class _GroupActivitiesScreenState extends State<GroupActivitiesScreen> with Sing
       _loadActivities(showLoading: false); 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Xatolik yuz berdi"), backgroundColor: Colors.red)
+          const SnackBar(content: Text(AppDictionary.tr(context, 'msg_error_occurred')), backgroundColor: Colors.red)
         );
       }
     }
@@ -212,7 +212,7 @@ class _GroupActivitiesScreenState extends State<GroupActivitiesScreen> with Sing
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             elevation: 0
                           ),
-                          child: const Text("Tasdiqlash"),
+                          child: const Text(AppDictionary.tr(context, 'btn_confirm')),
                         ),
                       ),
                     ],

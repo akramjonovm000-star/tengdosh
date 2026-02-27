@@ -578,8 +578,8 @@ class _ManagementArchiveScreenState extends State<ManagementArchiveScreen> {
         title: const Text("ZIP Export"),
         content: Text("Tanlangan filtrlar bo'yicha hujjatlarni ZIP arxiv ko'rinishida Telegramingizga yuborilsinmi?\n\nFiltr: $_selectedTitle"),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Bekor qilish")),
-          ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text("Yuborish")),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text(AppDictionary.tr(context, 'btn_cancel'))),
+          ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text(AppDictionary.tr(context, 'btn_submit'))),
         ],
       ),
     );

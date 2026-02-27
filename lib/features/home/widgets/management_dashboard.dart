@@ -151,7 +151,7 @@ class ManagementDashboard extends StatelessWidget {
                     ScaffoldMessenger.of(context).hideCurrentSnackBar();
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text("Kutubxona tez orada ishga tushadi"),
+                        content: Text(AppDictionary.tr(context, 'msg_library_soon')),
                         duration: Duration(seconds: 2),
                         behavior: SnackBarBehavior.floating,
                       ),

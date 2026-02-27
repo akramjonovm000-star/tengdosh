@@ -61,7 +61,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Xatolik yuz berdi")),
+            const SnackBar(content: Text(AppDictionary.tr(context, 'msg_error_occurred'))),
           );
         }
       }

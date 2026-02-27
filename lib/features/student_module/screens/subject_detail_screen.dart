@@ -63,7 +63,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _details == null
-              ? const Center(child: Text("Ma'lumot topilmadi"))
+              ? const Center(child: Text(AppDictionary.tr(context, 'msg_info_not_found')))
               : SingleChildScrollView(
                   padding: const EdgeInsets.all(20),
                   child: Column(

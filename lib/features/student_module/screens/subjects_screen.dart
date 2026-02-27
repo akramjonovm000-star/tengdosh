@@ -90,7 +90,7 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                       child: Container(
                         height: MediaQuery.of(context).size.height * 0.7,
                         alignment: Alignment.center,
-                        child: const Text("Ma'lumot topilmadi"),
+                        child: const Text(AppDictionary.tr(context, 'msg_info_not_found')),
                       ),
                     )
                   : ListView.builder(

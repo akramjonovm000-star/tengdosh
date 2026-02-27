@@ -52,7 +52,7 @@ class _TutorGroupStudentsScreenState extends State<TutorGroupStudentsScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _students.isEmpty
-              ? const Center(child: Text("Talabalar topilmadi"))
+              ? const Center(child: Text(AppDictionary.tr(context, 'msg_students_not_found')))
               : Column(
                   children: [
                     // --- STATISTICS HEADER ---

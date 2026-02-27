@@ -113,13 +113,13 @@ class _GroupDocumentsScreenState extends State<GroupDocumentsScreen> {
                         : "$catName yuklamagan barcha talabalarga eslatma yuborilsinmi?",
                   ),
                   actions: [
-                    TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Bekor qilish")),
+                    TextButton(onPressed: () => Navigator.pop(ctx), child: const Text(AppDictionary.tr(context, 'btn_cancel'))),
                     ElevatedButton(
                       onPressed: () {
                         Navigator.pop(ctx);
                         _requestFromAll();
                       },
-                      child: const Text("Yuborish"),
+                      child: const Text(AppDictionary.tr(context, 'btn_submit')),
                     ),
                   ],
                 ),

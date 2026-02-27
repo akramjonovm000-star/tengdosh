@@ -51,7 +51,7 @@ class _TutorStudentsScreenState extends State<TutorStudentsScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _students.isEmpty
-              ? const Center(child: Text("Talabalar topilmadi"))
+              ? const Center(child: Text(AppDictionary.tr(context, 'msg_students_not_found')))
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: _students.length,
