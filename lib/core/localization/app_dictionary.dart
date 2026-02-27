@@ -68,8 +68,8 @@ class AppDictionary {
 
     // --- HOME SCREEN ---
     'home_greeting': {
-      'uz': 'Assalomu alaykum',
-      'ru': 'Здравствуйте',
+      'uz': 'Salom',
+      'ru': 'Привет',
     },
     'home_tab_main': {
       'uz': 'Asosiy',
