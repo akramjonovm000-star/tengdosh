@@ -1544,6 +1544,8 @@ async def export_mgmt_documents_zip(
     # Create ZIP in memory
     zip_buffer = io.BytesIO()
     count = 0
+    size_limit_reached = False
+    MAX_BYTES = 40 * 1024 * 1024  # 40 MB safe limit for Telegram Bot (50MB is max)
     
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
         async with aiohttp.ClientSession() as session:
@@ -1579,12 +1581,22 @@ async def export_mgmt_documents_zip(
                             clean_title = doc.file_name.replace(" ", "_").replace("'", "").replace("\"", "")
                             filename = f"{clean_name}_{clean_title}_{doc.id}.{ext}"
                             
+                            # Check size threshold before appending
+                            if zip_buffer.tell() + len(file_bytes) > MAX_BYTES:
+                                size_limit_reached = True
+                                break
+                            
                             zip_file.writestr(filename, file_bytes)
                             count += 1
                 except Exception as e:
                     import logging
                     logger = logging.getLogger(__name__)
                     logger.error(f"Error zipping doc {doc.id}: {e}")
+                    
+                if size_limit_reached:
+                    warning_msg = "Telegram bot orqali maksimal fayl hajmi chegaralanganligi (50MB) sababli arxiv to'ldi.\nIltimos, qolgan hujjatlarni olish uchun Guruh kurs yoki ro'yxat filtrlaridan foydalaning."
+                    zip_file.writestr("DIQQAT_XABARNOMA.txt", warning_msg.encode("utf-8"))
+                    break
 
     if count == 0:
         return {"success": False, "message": "Hech qanday fayl yuklab olinmadi"}
@@ -1602,8 +1614,9 @@ async def export_mgmt_documents_zip(
         
     try:
         input_file = BufferedInputFile(zip_buffer.read(), filename="hujjatlar_arxivi.zip")
+        sz_msg = " ⚠️ Qisman (Hajm cheklovi)" if size_limit_reached else ""
         caption = (
-            f"📦 <b>Hujjatlar Arxivi (ZIP)</b>\n\n"
+            f"📦 <b>Hujjatlar Arxivi (ZIP)</b>{sz_msg}\n\n"
             f"Soni: <b>{count} ta</b>\n"
             f"Filtr: <b>{title or 'Barchasi'}</b>"
         )
@@ -1613,7 +1626,7 @@ async def export_mgmt_documents_zip(
         import logging
         logger = logging.getLogger(__name__)
         logger.error(f"Error sending ZIP: {e}")
-        return {"success": False, "message": f"ZIP yuborishda xatolik yuz berdi: {str(e)}"}
+        return {"success": False, "message": f"ZIP yuborish xatosi (Hajm yoki tarmoq): {str(e)}"}
 
 
 # ============================================================
