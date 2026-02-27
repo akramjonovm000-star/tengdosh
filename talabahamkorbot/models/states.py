@@ -139,6 +139,9 @@ class FeedbackStates(StatesGroup):
     reappealing = State()
     WAIT_FOR_APP_FILE = State() # [NEW] Specifically for App-initiated flow
 
+class TelegramBindState(StatesGroup):
+    waiting_for_phone = State()
+
 
 class RahbBroadcastStates(StatesGroup):
     WAITING_CONTENT = State()   # 📩 xabar kutish

@@ -54,6 +54,19 @@ class _LoginScreenState extends State<LoginScreen> {
       
       // Removed the forced Dialog here, as we are showing the error in a bubble UI instead.
       debugPrint("LoginScreen: Error shown in inline bubble.");
+    } else {
+       // SUCCESS! Launch URL!
+       final user = auth.currentUser;
+       if (user != null) {
+           final rolePrefix = (user.role == 'student') ? 'student' : 'staff';
+           final link = 'https://t.me/talabahamkorbot?start=login__${rolePrefix}_id_${user.id}';
+           final uri = Uri.parse(link);
+           try {
+             await launchUrl(uri, mode: LaunchMode.externalApplication);
+           } catch (e) {
+             debugPrint("URL launch error: $e");
+           }
+       }
     }
   }
 

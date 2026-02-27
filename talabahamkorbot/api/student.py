@@ -78,8 +78,13 @@ async def get_my_profile(
             frontend_role_code = "rahbariyat"
         elif student.role == "teacher":
             role_label = "O'qituvchi"
+            frontend_role_code = "rahbariyat"
         elif student.role == "tutor":
             role_label = "Tyutor"
+            frontend_role_code = "tyutor"
+        elif student.role in ["psixolog", "kutubxona", "inspektor", "kafedra_mudiri"]:
+            role_label = student.role.capitalize()
+            frontend_role_code = "rahbariyat"
         elif student.role in ["dekan", "dekan_orinbosari", "dekan_yoshlar", "dekanat"]:
             role_label = "Dekanat"
             if student.role == "dekan": role_label = "Dekan"

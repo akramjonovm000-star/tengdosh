@@ -1,11 +1,12 @@
 from aiogram import Router, F
 from aiogram.filters import CommandStart, CommandObject
-from aiogram.types import Message
+from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from database.models import Student, Staff, TgAccount
+from models.states import TelegramBindState
 import logging
 
 router = Router()
@@ -16,8 +17,7 @@ async def cmd_start_deep_link(message: Message, command: CommandObject, session:
     """
     Handles Deep Links:
     1. Authorization Code (Legacy): auth_{uuid}
-    2. Upload File: upload_{session_id}
-    3. OAuth Login: login__{token} (e.g., login__student_id_123 or login__staff_id_456)
+    2. OAuth/App Login: login__{token} (e.g., login__student_id_123 or login__staff_id_456)
     """
     args = command.args
     user_id = message.from_user.id
@@ -25,179 +25,204 @@ async def cmd_start_deep_link(message: Message, command: CommandObject, session:
     if not args:
         return
 
-    # --- 1. LEGACY AUTH FLOW (Mobile -> Bot) ---
+    # --- 1. LEGACY AUTH FLOW ---
     if args.startswith("auth_"):
         from api.auth import verify_login # Import locally to avoid circulars
         auth_uuid = args.replace("auth_", "")
         success = verify_login(auth_uuid, user_id)
         
         if success:
-            await message.answer("✅ <b>Tizimga muvaffaqiyatli kirdingiz!</b>\n\nIlovaga qaytishingiz mumkin.")
+            await message.answer("✅ <b>Tizimga muvaffaqiyatli kirdingiz!</b>\n\nIlovaga qaytishingiz mumkin.", parse_mode="HTML")
         else:
-            await message.answer("❌ <b>Xatolik!</b>\nLogin sessiyasi eskirgan yoki noto'g'ri.")
+            await message.answer("❌ <b>Xatolik!</b>\nLogin sessiyasi eskirgan yoki noto'g'ri.", parse_mode="HTML")
         return
 
-    # --- 2. UPLOAD FLOW (Web -> Bot) ---
-    elif args.startswith("upload_"):
-        session_id = args.replace("upload_", "")
-        from database.models import PendingUpload
-        from models.states import DocumentAddStates, CertificateAddStates, FeedbackStates, ActivityUploadState
-        
-        # Find Pending Upload
-        pending = await session.get(PendingUpload, session_id)
-        if pending:
-            # 1. Fetch existing account
-            result = await session.execute(select(TgAccount).where(TgAccount.telegram_id == user_id))
-            tg_account = result.scalar_one_or_none()
-
-            # Link Account (Auto-Auth)
-            if not tg_account:
-                tg_account = TgAccount(
-                    telegram_id=user_id,
-                    student_id=pending.student_id,
-                    current_role="student"
-                )
-                session.add(tg_account)
-                await session.commit()
-            elif not tg_account.student_id:
-                tg_account.student_id = pending.student_id
-                tg_account.current_role = "student"
-                await session.commit()
-            
-            # Fetch Student to display name
-            student = await session.get(Student, pending.student_id)
-            student_name = student.short_name or student.full_name if student else "Talaba"
-
-            # Determine intended state & message
-            target_state = DocumentAddStates.WAIT_FOR_APP_FILE
-            display_name = pending.title or "Hujjat"
-            msg_prefix = f"📎 <b>{display_name}</b> yuklanmoqda...\n\nIltimos, faylni shu yerga yuboring:"
-
-            if pending.category == "sertifikat":
-                target_state = CertificateAddStates.WAIT_FOR_APP_FILE
-            elif pending.category == "feedback":
-                target_state = FeedbackStates.WAIT_FOR_APP_FILE
-                msg_prefix = f"📨 <b>Murojaat uchun fayl yuklash</b>\n\nIlova qilmoqchi bo'lgan faylingizni (Rasm, Video yoki PDF) yuboring:"
-            elif pending.category == "Faollik":
-                target_state = ActivityUploadState.waiting_for_photo
-                msg_prefix = f"📸 <b>Faollik uchun rasm yuklang!</b>\n\nIltimos, faollikka oid rasmlarni yuboring (Maksimal 5 ta):"
-            
-            await state.set_state(target_state)
-            
-            await message.answer(
-                f"👋 Assalomu alaykum, <b>{student_name}</b>!\n\n"
-                f"✅ <b>Sizning Telegramingiz muvaffaqiyatli ulandi.</b> Avtomatik tarzda ilova funksiyalariga ega bo'ldingiz.\n\n"
-                f"👇 <b>Davom etish:</b>\n"
-                f"{msg_prefix}",
-                parse_mode="HTML"
-            )
-            return
-        else:
-            await message.answer("❌ Yuklash sessiyasi topilmadi yoki eskirgan.")
-            return
-
-    # --- 2.5 EVENT PHOTOS FLOW ---
-    elif args.startswith("clubevent_"):
-        event_id_str = args.replace("clubevent_", "")
-        if not event_id_str.isdigit():
-            await message.answer("❌ Xato tadbir IDsi.")
-            return
-            
-        from database.models import ClubEvent
-        from models.states import ClubEventActivityState
-        
-        event_id = int(event_id_str)
-        ev = await session.get(ClubEvent, event_id)
-        if not ev:
-            await message.answer("❌ Bunday tadbir topilmadi.")
-            return
-            
-        await state.update_data(club_event_id=event_id, uploaded_photos=[])
-        await state.set_state(ClubEventActivityState.waiting_for_photo)
-        
-        from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
-        markup = ReplyKeyboardMarkup(
-            keyboard=[[KeyboardButton(text="✅ Yakunlash")]],
-            resize_keyboard=True
-        )
-        await message.answer(
-            f"📸 <b>{ev.title}</b> tadbiri uchun rasmlarni (maksimal 5 ta rasm) yuboring.\n"
-            f"Barcha rasmlarni bittadan yuborgach, \"✅ Yakunlash\" tugmasini bosing.",
-            parse_mode="HTML",
-            reply_markup=markup
-        )
-        return
-
-    # --- 3. OAUTH FLOW (Website -> Bot) ---
+    # --- 2. OAUTH/APP LOGIN FLOW WITH PHONE VERIFICATION ---
     elif args.startswith("login__"): # Double underscore separator
         token = args.replace("login__", "")
         
         # Parse Token: student_id_123 or staff_id_456
         parts = token.split("_id_")
         if len(parts) != 2:
-            await message.answer("❌ <b>Xatolik!</b>\nNoto'g'ri token formati.")
+            await message.answer("❌ <b>Xatolik!</b>\nNoto'g'ri token formati.", parse_mode="HTML")
             return
             
         role_type, db_id = parts[0], parts[1] # role_type: student | staff
         
         if not db_id.isdigit():
-            await message.answer("❌ <b>Xatolik!</b>\nID noto'g'ri formatda.")
+            await message.answer("❌ <b>Xatolik!</b>\nID noto'g'ri formatda.", parse_mode="HTML")
             return
                 
         db_id = int(db_id)
         
-        # LINK USER TO DB
-        try:
-            # 1. Check if TgAccount exists for this telegram_id
-            result = await session.execute(select(TgAccount).where(TgAccount.telegram_id == user_id))
-            tg_account = result.scalar_one_or_none()
+        # Check if user already bound
+        result = await session.execute(select(TgAccount).where(TgAccount.telegram_id == user_id))
+        tg_account = result.scalar_one_or_none()
+        
+        if role_type == "student":
+            user_model = Student
+        else:
+            user_model = Staff
             
-            if not tg_account:
-                tg_account = TgAccount(telegram_id=user_id)
-                session.add(tg_account)
+        # Verify db user exists
+        user_result = await session.execute(select(user_model).where(user_model.id == db_id))
+        db_user = user_result.scalar_one_or_none()
+        
+        if not db_user:
+            await message.answer("❌ Tizimda profilingiz topilmadi.", parse_mode="HTML")
+            return
             
-            # 2. Link to Student or Staff
-            if role_type == "student":
-                # Verify Student Exists
-                result = await session.execute(select(Student).where(Student.id == db_id))
-                student = result.scalar_one_or_none()
+        # If already bound to this specific user, no need to ask again
+        if tg_account:
+            if (role_type == "student" and tg_account.student_id == db_id) or \
+               (role_type == "staff" and tg_account.staff_id == db_id):
+                name_to_display = getattr(db_user, 'short_name', None) or getattr(db_user, 'full_name', 'Foydalanuvchi')
+                await message.answer(
+                    f"👋 Salom, <b>{name_to_display}</b>!\n\n"
+                    "✅ <b>Sizning Telegramingiz ro'yxatdan o'tgan!</b>\n\n"
+                    "Mobil ilovadan bemalol foydalanishingiz mumkin.",
+                    parse_mode="HTML",
+                    reply_markup=ReplyKeyboardRemove()
+                )
+                return
+
+        # Prepare for phone bind
+        await state.update_data(bind_role_type=role_type, bind_db_id=db_id)
+        await state.set_state(TelegramBindState.waiting_for_phone)
+        
+        markup = ReplyKeyboardMarkup(
+            keyboard=[[KeyboardButton(text="📱 Telefon raqamni yuborish", request_contact=True)]],
+            resize_keyboard=True,
+            one_time_keyboard=True
+        )
+        
+        name_to_display = getattr(db_user, 'short_name', None) or getattr(db_user, 'full_name', 'Foydalanuvchi')
+        role_name_display = "Talaba" if role_type == "student" else "Xodim"
+        
+        await message.answer(
+            f"👋 Assalomu alaykum, <b>{name_to_display}</b> ({role_name_display})!\n\n"
+            f"🔐 <b>Avtorizatsiyani yakunlash uchun:</b>\n"
+            f"Iltimos, profilingizni himoyalash va Telegram orqali bildirishnomalar/fayllarni qabul qilish uchun quyidagi tugmani bosib <b>telefon raqamingizni yuboring!</b>",
+            parse_mode="HTML",
+            reply_markup=markup
+        )
+        return
+
+    # Handle Upload Link
+    if token.startswith("upload_"):
+        session_id = token[7:]
+        result = await session.execute(select(TgAccount).where(TgAccount.telegram_id == user_id).options(selectinload(TgAccount.student), selectinload(TgAccount.staff)))
+        tg_account = result.scalar_one_or_none()
+        if not tg_account or not (tg_account.student or tg_account.staff):
+            await message.answer("❌ Botdan foydalanish uchun avval <b>Tengdosh</b> mobil ilovasiga kiring va 'Telegramga ulanish' tugmasinibosing.", parse_mode="HTML")
+            return
+            
+        from models.states import DocumentAddStates
+        await state.set_state(DocumentAddStates.WAIT_FOR_APP_FILE)
+        await state.update_data(app_upload_session=session_id)
+        
+        await message.answer(
+            "📁 <b>Hujjat/Faollik yuklash</b>\n\n"
+            "Iltimos, rasm yoki faylni shu yerga yuboring.\n"
+            "<i>(Maksimal 5 ta gacha rasm yuborishingiz mumkin)</i>",
+            parse_mode="HTML"
+        )
+        return
+
+    # Handle Club Event Upload Link
+    if token.startswith("clubevent_"):
+        event_id = token[10:]
+        result = await session.execute(select(TgAccount).where(TgAccount.telegram_id == user_id).options(selectinload(TgAccount.student), selectinload(TgAccount.staff)))
+        tg_account = result.scalar_one_or_none()
+        if not tg_account or not (tg_account.student or tg_account.staff):
+            await message.answer("❌ Botdan foydalanish uchun avval <b>Tengdosh</b> mobil ilovasiga kiring va 'Telegramga ulanish' tugmasinibosing.", parse_mode="HTML")
+            return
+            
+        from handlers.student.clubs import ClubEventAddParticipantState
+        await state.set_state(ClubEventAddParticipantState.WAIT_FOR_PHOTO)
+        await state.update_data(club_event_id=event_id, event_photos=[])
+        
+        await message.answer(
+            "📸 <b>Tadbir rasmlarini yuklash</b>\n\n"
+            "Iltimos, tadbirda olingan rasmlarni shu yerga yuboring.\n"
+            "<i>(5 tagacha rasm yuborishingiz mumkin)</i>\n\n"
+            "Bekor qilish uchun /cancel tugmasini bosing.",
+            parse_mode="HTML"
+        )
+        return
+
+@router.message(TelegramBindState.waiting_for_phone, F.contact)
+async def process_phone_binding(message: Message, state: FSMContext, session: AsyncSession):
+    """
+    Finalizes Telegram Binding after user submits contact.
+    """
+    contact = message.contact
+    user_id = message.from_user.id
+    
+    # Ensure contact belongs to the user
+    if contact.user_id != user_id:
+        await message.answer("❌ Iltimos, faqat o'zingizning telefon raqamingizni ulashing.")
+        return
+        
+    phone_number = contact.phone_number
+    data = await state.get_data()
+    role_type = data.get("bind_role_type")
+    db_id = data.get("bind_db_id")
+    
+    if not role_type or not db_id:
+        await state.clear()
+        await message.answer("❌ <b>Sessiya tugagan or xatolik yuz berdi.</b>\nIltimos ilovadan qayta ulanish linkini bosing.", reply_markup=ReplyKeyboardRemove(), parse_mode="HTML")
+        return
+        
+    try:
+        # Get or create TgAccount
+        result = await session.execute(select(TgAccount).where(TgAccount.telegram_id == user_id))
+        tg_account = result.scalar_one_or_none()
+        
+        if not tg_account:
+            tg_account = TgAccount(telegram_id=user_id)
+            session.add(tg_account)
+            
+        # Update user profile
+        if role_type == "student":
+            result = await session.execute(select(Student).where(Student.id == db_id))
+            user_profile = result.scalar_one_or_none()
+            if user_profile:
+                tg_account.student_id = user_profile.id
+                tg_account.staff_id = None
+                tg_account.current_role = "student"
+                user_profile.phone = phone_number
+        elif role_type == "staff":
+            result = await session.execute(select(Staff).where(Staff.id == db_id))
+            user_profile = result.scalar_one_or_none()
+            if user_profile:
+                tg_account.staff_id = user_profile.id
+                tg_account.student_id = None
+                tg_account.current_role = "staff"
+                user_profile.phone = phone_number
+                user_profile.telegram_id = user_id # Legacy sync
                 
-                if student:
-                    tg_account.student_id = student.id
-                    tg_account.staff_id = None 
-                    await session.commit()
-                    
-                    await message.answer(
-                        f"👋 Salom, <b>{student.short_name or student.full_name}</b>!\n\n"
-                        "✅ <b>Sizning Telegramingiz muvaffaqiyatli ulandi.</b>\n\n"
-                        "Endi mobil ilovadan bemalol foydalanishingiz mumkin.",
-                        parse_mode="HTML"
-                    )
-                else:
-                    await message.answer("❌ Talaba tizimda topilmadi.")
-                    
-            elif role_type == "staff":
-                # Verify Staff Exists
-                result = await session.execute(select(Staff).where(Staff.id == db_id))
-                staff = result.scalar_one_or_none()
-                
-                if staff:
-                    tg_account.staff_id = staff.id
-                    tg_account.student_id = None
-                    # Update redundant field in Staff model if needed
-                    staff.telegram_id = user_id 
-                    
-                    await session.commit()
-                    await message.answer(f"👋 Salom, <b>{staff.full_name}</b>!\n\n✅ Xodim sifatida ulandi.", parse_mode="HTML")
-                else:
-                    await message.answer("❌ Xodim tizimda topilmadi.")
-                    
-            else:
-                await message.answer("❌ Noma'lum foydalanuvchi turi.")
-                    
-        except Exception as e:
-            logger.error(f"Deep Link Error: {e}")
-            await message.answer("❌ Tizim xatoligi yuz berdi. Keyinroq urinib ko'ring.")
+        if not user_profile:
+             await message.answer("❌ Foydalanuvchi tizimda topilmadi.", reply_markup=ReplyKeyboardRemove())
+             await state.clear()
+             return
+             
+        await session.commit()
+        await state.clear()
+        
+        name_to_display = getattr(user_profile, 'short_name', None) or getattr(user_profile, 'full_name', 'Foydalanuvchi')
+        
+        await message.answer(
+            f"✅ <b>Tabriklaymiz, {name_to_display}!</b>\n\n"
+            f"Sizning Telegramingiz muvaffaqiyatli ulandi (Raqam: {phone_number}).\n"
+            f"Endi Mobil ilovadan bemalol foydalanishingiz mumkin.",
+            parse_mode="HTML",
+            reply_markup=ReplyKeyboardRemove()
+        )
+    except Exception as e:
+        logger.error(f"Binding Error on phone contact: {e}")
+        await message.answer("❌ Tizim xatoligi yuz berdi. Keyinroq urinib ko'ring.", reply_markup=ReplyKeyboardRemove())
+        await state.clear()
 
 @router.message(CommandStart())
 async def cmd_start_generic(message: Message, state: FSMContext, session: AsyncSession):
@@ -241,9 +266,10 @@ async def cmd_start_generic(message: Message, state: FSMContext, session: AsyncS
             
         return await message.answer(
             f"👋 Assalomu alaykum, <b>{account.staff.full_name}</b>!\n\n"
-            "Siz tizimdan muvaffaqiyatli ro'yxatdan o'tgansiz. Bot orqali ishlarni davom ettirishingiz mumkin.\n\n"
+            "Siz tizimdan muvaffaqiyatli ro'yxatdan o'tgansiz. Bot orqali markaz qilingan barcha amallarga va ilova funksiyalariga to'liq kirish huquqingiz bor.\n\n"
             "🚪 <i>Hisobdan chiqish uchun /exit buyrug'ini yuboring.</i>",
-            parse_mode="HTML"
+            parse_mode="HTML",
+            reply_markup=ReplyKeyboardRemove()
         )
 
     if account and account.student:
@@ -251,14 +277,15 @@ async def cmd_start_generic(message: Message, state: FSMContext, session: AsyncS
             f"👋 Assalomu alaykum, <b>{account.student.full_name}</b>!\n\n"
             "Siz tizimdan muvaffaqiyatli ro'yxatdan o'tgansiz. Faollik va boshqa xizmatlardan foydalanishingiz mumkin.\n\n"
             "🚪 <i>Hisobdan chiqish (logout) uchun /exit buyrug'ini yuboring.</i>",
-            parse_mode="HTML"
+            parse_mode="HTML",
+            reply_markup=ReplyKeyboardRemove()
         )
 
     # 3. Default Fallback
     await message.answer(
         "👋 <b>Assalomu alaykum!</b>\n\n"
-        "Siz botga ulanmagansiz. Botdan foydalanish va fayllar yuborish uchun, "
-        "iltimos, dastlab <b>Mobil Ilovaga</b> kiring va Profilingizdan "
-        "<i>«Telegramni ulash»</i> tugmasini bosing.",
+        "Siz botga ulanmagansiz. Botdan foydalanish, dars jadvalingizni olish va "
+        "o'z faolliklaringizni yuklash uchun, iltimos, <b>Tengdosh (TalabaHamkor)</b> mobil ilovasiga kiring "
+        "va avtorizatsiya vaqtida ko'rsatilgan \"Telegramga ulanish\" xabari orqali ushbu botga kiring.",
         parse_mode="HTML"
     )

@@ -220,48 +220,65 @@ async def authlog_callback(request: Request, code: Optional[str] = None, error: 
     else:
         # Staff
         from database.models import Staff, StaffRole
-        pinfl = me.get("pinfl") or me.get("jshshir") or me.get("passport_pin")
-        emp_id_num = me.get("employee_id_number")
+        # Fallback to student_id_number or PINFL if employee_id_number is missing (e.g. for student accounts with staff privileges)
+        emp_id_num = me.get("employee_id_number") or me.get("student_id_number") or me.get("passport_pin") or me.get("pinfl") or me.get("jshshir")
         
         staff = None
         
         logger.error(f"DEBUG STAFF LOGIN PAYLOAD: {me}")
-        # Allow student_id_number if Admin explicitly bound it to a Staff profile (e.g. O'ktam Qarshiyev)
-        emp_id_num = me.get("employee_id_number") or me.get("student_id_number")
         
-        if not emp_id_num and not pinfl:
-             logger.warning(f"OAuth: Missing identification (employee_id and pinfl) for {me.get('login')}")
+        if not emp_id_num:
+             logger.warning(f"OAuth: Missing identification (employee_id) for {me.get('login')}")
              return HTMLResponse(content="<h1>Xatolik</h1><p>Siz tizimda xodim (yoki shaxs sifatida) identifikatsiya qilinmadingiz. Iltimos adminga murojaat qiling.</p>", status_code=403)
              
-        # Dynamic Role Verification via HEMIS Admin API FIRST
-        role_data = None
-        if emp_id_num:
-             role_data = await HemisService.verify_staff_role_from_hemis(emp_id_num)
-        if not role_data and pinfl:
-             role_data = await HemisService.verify_staff_role_from_hemis(pinfl)
+        # [NEW] Native OAuth Parsing
+        is_native_employee = (me.get("type") == "employee")
+        assigned_role = "teacher"  # Default fallback
+        dynamic_full_name = me.get("name") or me.get("full_name") or f"{me.get('firstname', '')} {me.get('surname', '')}".strip()
+        department = None
+        position = None
+        native_tutor_groups = []
         
-        if not role_data:
-             logger.warning(f"Unauthorized staff login attempt (Not found in JMCU HEMIS employee-list): {me.get('login')} / EmpID: {emp_id_num} / PINFL: {pinfl}")
-             return HTMLResponse(content="<h1>Xatolik</h1><p>Kechirasiz, siz JMCU xodimlar ro'yxatida topilmadingiz. Iltimos kadrlar bo'limiga murojaat qiling.</p>", status_code=403)
+        if is_native_employee:
+            roles = me.get("roles", [])
+            for r in roles:
+                c = r.get("code")
+                # Map standard HEMIS OAuth role codes
+                if c == "tutor": assigned_role = "tyutor"
+                elif c == "dean": assigned_role = "dekan"
+                
+            depts = me.get("departments", [])
+            for d in depts:
+                if d.get("active", False):
+                    department = d.get("department", {}).get("name")
+                    position = d.get("staffPosition", {}).get("name")
+                    break
+            
+            # Fallback if no active flag found
+            if not department and depts:
+                department = depts[0].get("department", {}).get("name")
+                position = depts[0].get("staffPosition", {}).get("name")
              
-        # Process Identity from HEMIS
-        assigned_role = role_data["role"]
-        dynamic_full_name = role_data["full_name"]
-        department = role_data.get("department")
-        position = role_data.get("position")
+        # Dynamic Role Verification via HEMIS Admin API (Enhancement / Fallback)
+        role_data = await HemisService.verify_staff_role_from_hemis(emp_id_num)
+        
+        if role_data:
+             assigned_role = role_data.get("role", assigned_role)
+             dynamic_full_name = role_data.get("full_name", dynamic_full_name)
+             department = role_data.get("department") or department
+             position = role_data.get("position") or position
+             native_tutor_groups = role_data.get("tutor_groups", [])
+        elif not is_native_employee:
+             logger.warning(f"Unauthorized staff login attempt: {me.get('login')} / EmpID: {emp_id_num}")
+             return HTMLResponse(content="<h1>Xatolik</h1><p>Kechirasiz, siz xodimlar ro'yxatida yoxud OAuth bazasida xodim sifatida topilmadingiz.</p>", status_code=403)
 
         # Now load or create in Local DB for syncing
         from sqlalchemy import or_
-        conditions = []
-        if emp_id_num:
-             conditions.append(Staff.employee_id_number == emp_id_num)
-        if pinfl:
-             conditions.append(Staff.jshshir == pinfl)
+        conditions = [Staff.employee_id_number == emp_id_num]
              
         staff = None
-        if conditions:
-             result = await db.execute(select(Staff).where(or_(*conditions)))
-             staff = result.scalar_one_or_none()
+        result = await db.execute(select(Staff).where(or_(*conditions)))
+        staff = result.scalar_one_or_none()
 
         if staff:
              # Update existing Staff record
@@ -272,6 +289,7 @@ async def authlog_callback(request: Request, code: Optional[str] = None, error: 
              staff.position = position
              if not staff.hemis_id and h_id:
                  staff.hemis_id = int(h_id)
+             pinfl = me.get("pinfl") or me.get("jshshir") or me.get("passport_pin")
              if not staff.jshshir and pinfl:
                  staff.jshshir = pinfl
              if not staff.university_id:
@@ -301,7 +319,7 @@ async def authlog_callback(request: Request, code: Optional[str] = None, error: 
                  username=me.get('login', f"staff_{emp_id_num}"),
                  employee_id_number=emp_id_num,
                  hemis_id=int(h_id) if h_id else None,
-                 jshshir=pinfl,
+                 jshshir=me.get("pinfl") or me.get("jshshir") or me.get("passport_pin"),
                  role=assigned_role,
                  is_active=True,
                  image_url=image_url,
@@ -313,8 +331,8 @@ async def authlog_callback(request: Request, code: Optional[str] = None, error: 
              staff = new_staff
                   
         # [NEW] Sync Tutor Groups
-        if staff.role == StaffRole.TYUTOR and role_data:
-            tutor_groups = role_data.get("tutor_groups", []) if role_data else []
+        tutor_groups = role_data.get("tutor_groups", []) if role_data else native_tutor_groups
+        if staff.role == StaffRole.TYUTOR and tutor_groups:
             logger.info(f"Syncing {len(tutor_groups)} tutor groups for {staff.full_name}")
             
             # Delete old mappings

@@ -29,11 +29,7 @@ class HemisService:
     async def fetch_with_retry(client: httpx.AsyncClient, method: str, url: str, **kwargs):
         """
         Robust fetch with retries for network errors.
-        [FIX] Remap hemis.jmcu.uz to student.jmcu.uz for internal network reachability.
         """
-        if "hemis.jmcu.uz" in url:
-            url = url.replace("hemis.jmcu.uz", "student.jmcu.uz")
-            logger.info(f"INTERNAL REMAP: {url}")
 
         tries = 3
         last_exception = None
@@ -301,10 +297,6 @@ class HemisService:
         if base_url:
             domain = base_url
             if domain.endswith("/rest/v1"): domain = domain.replace("/rest/v1", "")
-            # [FIX] Remap hemis.jmcu.uz to student.jmcu.uz for internal network reachability
-            # This is required because hemis.jmcu.uz is not resolvable/reachable from inside the container
-            if "hemis.jmcu.uz" in domain:
-                 domain = domain.replace("hemis.jmcu.uz", "student.jmcu.uz")
             token_url = f"{domain}/oauth/access-token"
 
         try:
@@ -350,14 +342,10 @@ class HemisService:
         
         # Ensure rest_url uses the correct base
         rest_base = base_url or HemisService.BASE_URL
-        # [FIX] Internal Remap for Profile
-        if rest_base and "hemis.jmcu.uz" in rest_base:
-             rest_base = rest_base.replace("hemis.jmcu.uz", "student.jmcu.uz")
-             domain = domain.replace("hemis.jmcu.uz", "student.jmcu.uz")
              
         rest_url = f"{rest_base}/account/me"
         # Updated fields per user suggestion and GitHub Guide
-        oauth_profile_url = f"{domain}/oauth/api/user?fields=id,uuid,type,roles,name,login,picture,email,university_id,phone,employee_id_number,firstname,surname,patronymic,birth_date"
+        oauth_profile_url = f"{domain}/oauth/api/user?fields=id,uuid,type,roles,name,login,picture,email,university_id,phone,employee_id_number,firstname,surname,patronymic,birth_date,departments"
 
         headers = HemisService.get_headers(token)
 
@@ -400,108 +388,183 @@ class HemisService:
             
         return None
 
+    _cached_employee_list = None
+    _cached_employee_list_time = 0
+    
     @staticmethod
-    async def verify_staff_role_from_hemis(identifier: str) -> Optional[dict]:
+    async def get_all_employees_cached() -> list:
+        """Fetches all employees from JMCU Admin API with a 5-minute cache TTL."""
+        import time
+        from config import HEMIS_ADMIN_TOKEN
+        
+        current_time = time.time()
+        # 5 minutes cache TTL
+        if HemisService._cached_employee_list is not None and (current_time - HemisService._cached_employee_list_time) < 300:
+            return HemisService._cached_employee_list
+            
+        client = await HemisService.get_client()
+        url = "https://student.jmcu.uz/rest/v1/data/employee-list"
+        headers = HemisService.get_headers(HEMIS_ADMIN_TOKEN)
+        
+        all_items = []
+        page = 1
+        limit = 200
+        
+        try:
+            logger.info("Fetching full employee list from JMCU HEMIS Admin API to update cache...")
+            while True:
+                params = {"type": "all", "limit": limit, "page": page}
+                response = await client.get(url, headers=headers, params=params)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    items = data.get("data", {}).get("items", [])
+                    if not items:
+                        break
+                        
+                    all_items.extend(items)
+                    
+                    pagination = data.get("data", {}).get("pagination", {})
+                    if len(all_items) >= pagination.get("totalCount", 0) or len(items) < limit:
+                        break
+                        
+                    page += 1
+                else:
+                    logger.error(f"Failed to fetch employee list page {page}. Status: {response.status_code}")
+                    break
+                    
+            if all_items:
+                HemisService._cached_employee_list_time = time.time()
+                HemisService._cached_employee_list = all_items
+                logger.info(f"Successfully cached {len(all_items)} employees. Next refresh in 5 minutes.")
+                
+            return all_items
+        except Exception as e:
+            logger.error(f"Exception fetching full employee list: {e}")
+            # Fallback to expired cache if available during transient error
+            return HemisService._cached_employee_list or []
+
+    @staticmethod
+    async def verify_staff_role_from_hemis(identifier: str, force_refresh: bool = False) -> Optional[dict]:
         """
-        Dynamically verifies a staff member's role against the JMCU HEMIS employee database.
-        Maps the external Hemis staff position to our internal `StaffRole`.
+        Dynamically verifies a staff member's role against the JMCU HEMIS employee database via in-memory cache.
         """
+        import time
         if not identifier:
             return None
             
-        client = await HemisService.get_client()
-        url = f"https://student.jmcu.uz/rest/v1/data/employee-list"
-        headers = HemisService.get_headers(HEMIS_ADMIN_TOKEN)
-        
-        params = {"type": "all", "limit": 1, "search": str(identifier)}
-        
-        try:
-            logger.info(f"Verifying staff role for identifier: {identifier} via Admin API")
-            response = await client.get(url, headers=headers, params=params)
+        # 1. First, check the cached list
+        if force_refresh:
+            HemisService._cached_employee_list_time = 0 # Force refresh
             
-            if response.status_code == 200:
-                data = response.json()
-                items = data.get("data", {}).get("items", [])
-                
-                if not items:
-                    logger.warning(f"Identifier {identifier} not found in HEMIS employee-list.")
-                    return None
-                    
-                employee = items[0]
-                # Ensure it's a direct match in case search returned a broad match
-                emp_id = employee.get("employee_id_number")
-                emp_pinfl = employee.get("pinfl") or employee.get("jshshir") or employee.get("passport_pin")
-                
-                is_pinfl_search = len(str(identifier)) == 14 and str(identifier).isdigit()
-                
-                if is_pinfl_search:
-                    # 14 digit PINFLs are unique. Since HEMIS API search returns it, we trust it.
-                    # Only verify if the API actually provided a pinfl field.
-                    if emp_pinfl and str(emp_pinfl) != str(identifier):
-                        logger.warning(f"Employee PINFL mismatch. Expected {identifier}, got PINFL:{emp_pinfl}")
-                        return None
-                else:
-                    # If searching by employee_id_number, perform strict check on emp_id.
-                    if str(emp_id) != str(identifier):
-                         logger.warning(f"Employee ID mismatch. Expected {identifier}, got ID:{emp_id}, PINFL:{emp_pinfl}")
-                         return None
-                     
-                staff_position = employee.get("staffPosition", {}).get("name", "").lower()
-                department = employee.get("department", {}).get("name", "").lower()
-                full_name = employee.get("full_name", "")
-                hemis_id = employee.get("id")
-                
-                # Dynamic Role Mapping
-                from database.models import StaffRole
-                assigned_role = None
-                
-                if "tyutor" in staff_position:
-                    assigned_role = StaffRole.TYUTOR
-                elif "dekan" in staff_position:
-                     if "o'rinbosar" in staff_position or "o‘rinbosar" in staff_position:
-                          assigned_role = StaffRole.DEKANAT
-                     else:
-                          assigned_role = StaffRole.DEKAN
-                elif "rektor" in staff_position or "prorektor" in staff_position:
-                    assigned_role = StaffRole.REKTOR # Internally handled as rektor or rahbariyat
-                elif "psixolog" in staff_position:
-                    assigned_role = StaffRole.PSIXOLOG
-                elif "kutubxona" in department or "axborot-resurs markazi" in department:
-                    assigned_role = StaffRole.KUTUBXONA
-                elif "inspektor" in staff_position:
-                     assigned_role = StaffRole.INSPEKTOR
-                elif "kafedra mudiri" in staff_position:
-                     assigned_role = StaffRole.KAFEDRA_MUDIRI
-                elif "o'qituvchi" in staff_position or "o‘qituvchi" in staff_position or "professor" in staff_position or "dotsent" in staff_position:
-                     assigned_role = StaffRole.TEACHER
-                else:
-                    # Default if no specific mapping matches
-                    assigned_role = StaffRole.TEACHER
-                    
-                logger.info(f"Dynamic Role Mapping: {staff_position} -> {assigned_role}")
-                
-                tutor_groups_data = employee.get("tutorGroups", [])
-                
-                # Extract extra fields
-                phone = employee.get("phone") or employee.get("phone_number")
-                birth_date = employee.get("birth_date") or employee.get("birthDate")
-                
-                return {
-                    "role": assigned_role,
-                    "full_name": full_name,
-                    "hemis_id": hemis_id,
-                    "tutor_groups": [], # Handled separately via subject tasks or manual assignment
-                    "department": department,
-                    "position": staff_position,
-                    "phone": phone,
-                    "birth_date": birth_date
-                }
-            else:
-                 logger.error(f"Failed to fetch employee list. Status: {response.status_code}")
-                 return None
-        except Exception as e:
-            logger.error(f"Exception verifying staff role: {e}")
+        items = await HemisService.get_all_employees_cached()
+        
+        if not items:
+            logger.warning("Employee list cache is empty and cannot be fetched.")
             return None
+            
+        logger.info(f"Searching for staff identifier {identifier} in {len(items)} cached employees...")
+        
+        matched_employee = None
+        is_pinfl_search = len(str(identifier)) == 14 and str(identifier).isdigit()
+        ident_str = str(identifier).strip().lower()
+        
+        for employee in items:
+            emp_id = str(employee.get("employee_id_number") or "").strip().lower()
+            emp_pinfl = str(employee.get("pinfl") or employee.get("jshshir") or employee.get("passport_pin") or "").strip().lower()
+            
+            if is_pinfl_search:
+                if emp_pinfl and emp_pinfl == ident_str:
+                    matched_employee = employee
+                    break
+            else:
+                if emp_id and emp_id == ident_str:
+                    matched_employee = employee
+                    break
+                # Fallback checking PINFL just in case
+                if emp_pinfl and emp_pinfl == ident_str:
+                    matched_employee = employee
+                    break
+                    
+        if not matched_employee:
+            # 2. Refresh-on-miss fallback
+            if not force_refresh:
+                logger.info(f"Identifier {identifier} not found in cache. Forcing a targeted fallback request on Admin API...")
+                client = await HemisService.get_client()
+                from config import HEMIS_ADMIN_TOKEN
+                url = f"https://student.jmcu.uz/rest/v1/data/employee-list"
+                headers = HemisService.get_headers(HEMIS_ADMIN_TOKEN)
+                params = {"type": "all", "limit": 10, "search": str(identifier)}
+                
+                try:
+                    response = await client.get(url, headers=headers, params=params)
+                    if response.status_code == 200:
+                        fallback_items = response.json().get("data", {}).get("items", [])
+                        for employee in fallback_items:
+                            emp_id = str(employee.get("employee_id_number") or "").strip().lower()
+                            emp_pinfl = str(employee.get("pinfl") or employee.get("jshshir") or employee.get("passport_pin") or "").strip().lower()
+                            if (emp_id and emp_id == ident_str) or (emp_pinfl and emp_pinfl == ident_str):
+                                matched_employee = employee
+                                break
+                except Exception as e:
+                    logger.warning(f"Fallback request failed: {e}")
+                    
+        if not matched_employee:
+             logger.warning(f"Staff identifier {identifier} completely rejected (Not found in API Database).")
+             return None
+             
+        employee = matched_employee
+        
+        staff_position = employee.get("staffPosition", {}).get("name", "").lower()
+        department = employee.get("department", {}).get("name", "").lower()
+        full_name = employee.get("full_name", "")
+        hemis_id = employee.get("id")
+        
+        # Dynamic Role Mapping
+        from database.models import StaffRole
+        assigned_role = None
+        
+        if "tyutor" in staff_position:
+            assigned_role = StaffRole.TYUTOR
+        elif "dekan" in staff_position:
+             if "o'rinbosar" in staff_position or "o‘rinbosar" in staff_position:
+                  assigned_role = StaffRole.DEKANAT
+             else:
+                  assigned_role = StaffRole.DEKAN
+        elif "rektor" in staff_position or "prorektor" in staff_position:
+            assigned_role = StaffRole.REKTOR # Internally handled as rektor or rahbariyat
+        elif "psixolog" in staff_position:
+            assigned_role = StaffRole.PSIXOLOG
+        elif "kutubxona" in department or "axborot-resurs markazi" in department:
+            assigned_role = StaffRole.KUTUBXONA
+        elif "inspektor" in staff_position:
+             assigned_role = StaffRole.INSPEKTOR
+        elif "kafedra mudiri" in staff_position:
+             assigned_role = StaffRole.KAFEDRA_MUDIRI
+        elif "o'qituvchi" in staff_position or "o‘qituvchi" in staff_position or "professor" in staff_position or "dotsent" in staff_position:
+             assigned_role = StaffRole.TEACHER
+        else:
+            # Default if no specific mapping matches
+            assigned_role = StaffRole.TEACHER
+            
+        logger.info(f"Dynamic Role Mapping: {staff_position} -> {assigned_role}")
+        
+        tutor_groups_data = employee.get("tutorGroups", [])
+        
+        # Extract extra fields
+        phone = employee.get("phone") or employee.get("phone_number")
+        birth_date = employee.get("birth_date") or employee.get("birthDate")
+        
+        return {
+            "role": assigned_role,
+            "full_name": full_name,
+            "hemis_id": hemis_id,
+            "tutor_groups": [], # Handled separately via subject tasks or manual assignment
+            "department": department,
+            "position": staff_position,
+            "phone": phone,
+            "birth_date": birth_date
+        }
 
 
     @staticmethod

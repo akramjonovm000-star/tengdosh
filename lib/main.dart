@@ -13,6 +13,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'features/tutor/screens/tutor_home_screen.dart'; // [NEW]
 
 import 'package:app_links/app_links.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -93,9 +94,22 @@ class _TalabaHamkorAppState extends State<TalabaHamkorApp> {
       final token = uri.queryParameters['token'];
       if (token != null) {
         if (mounted) {
-           Provider.of<AuthProvider>(context, listen: false).loginWithToken(token).then((error) {
+           final auth = Provider.of<AuthProvider>(context, listen: false);
+           auth.loginWithToken(token).then((error) async {
              if (error != null) {
                 debugPrint("Login Error: $error");
+             } else {
+                final user = auth.currentUser;
+                if (user != null) {
+                  final rolePrefix = (user.role == 'student') ? 'student' : 'staff';
+                  final link = 'https://t.me/talabahamkorbot?start=login__${rolePrefix}_id_${user.id}';
+                  final uri = Uri.parse(link);
+                  try {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  } catch (e) {
+                    debugPrint("URL launch error: $e");
+                  }
+                }
              }
            });
         }
