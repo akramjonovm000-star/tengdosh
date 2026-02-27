@@ -396,61 +396,32 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildSectionHeader("1. UMUMIY QOIDALAR"),
-                        _buildSectionText(
-                          "Ushbu Maxfiylik Siyosati \"PRIMEWAY GROUP\" MChJ (keyingi o'rinlarda \"Kompaniya\") tomonidan ishlab chiqilgan \"Tengdosh\" platformasi foydalanuvchilarining shaxsiy ma'lumotlarini himoya qilish tartibini belgilaydi.\n\n"
-                          "1.1. Platforma maqsadi: \"Tengdosh\" – bu talabalar, o'qituvchilar va ma'muriyat o'rtasidagi o'quv jarayonini raqamlashtirish va OTM HEMIS tizimi bilan integratsiya qilishga qaratilgan innovatsion ekotizimdir.\n\n"
-                          "1.2. Ilovadan ro'yxatdan o'tish orqali Siz ushbu Siyosat shartlarini to'liq qabul qilgan hisoblanasiz."
-                        ),
+                        _buildSectionHeader(AppDictionary.tr(context, 'policy_sec1_title')),
+                        _buildSectionText(AppDictionary.tr(context, 'policy_sec1_desc')),
 
-                        _buildSectionHeader("2. YIG'ILADIGAN MA'LUMOTLAR"),
-                        _buildSectionText(
-                          "Biz Sizga xizmat ko'rsatish sifatini oshirish maqsadida quyidagi ma'lumotlarni yig'amiz:\n"
-                          "• Shaxsiy ma'lumotlar: Ism-familiya, telefon raqami, talaba ID (HEMIS ID).\n"
-                          "• Ta'lim ma'lumotlari: Baholar, davomat, dars jadvallari (HEMIS orqali).\n"
-                          "• Texnik ma'lumotlar: IP-manzil, qurilma modeli (xavfsizlik va analitika uchun)."
-                        ),
+                        _buildSectionHeader(AppDictionary.tr(context, 'policy_sec2_title')),
+                        _buildSectionText(AppDictionary.tr(context, 'policy_sec2_desc')),
 
-                        _buildSectionHeader("3. PREMIUM XIZMATLAR VA TO'LOVLAR"),
-                        _buildSectionText(
-                          "3.1. Platforma ba'zi qo'shimcha imkoniyatlarni (reklamasiz rejim, statistika) \"Premium\" obuna sifatida taklif qilishi mumkin.\n"
-                          "3.2. To'lovlar uchinchi tomon to'lov tizimlari (Payme, Click) orqali amalga oshiriladi. Biz Sizning bank karta ma'lumotlaringizni saqlamaymiz.\n"
-                          "3.3. Qaytarish siyosati: Raqamli xizmatlar ko'rsatilgan hisoblanganligi sababli, Premium obuna uchun to'langan mablag'lar qoida tariqasida qaytarilmaydi."
-                        ),
+                        _buildSectionHeader(AppDictionary.tr(context, 'policy_sec3_title')),
+                        _buildSectionText(AppDictionary.tr(context, 'policy_sec3_desc')),
 
-                        _buildSectionHeader("4. XAVFSIZLIK PROTOKOLLARI"),
-                        _buildSectionText(
-                          "Biz Sizning ma'lumotlaringizni himoya qilish uchun ilg'or xalqaro standartlarni qo'llaymiz:\n"
-                          "• Mijoz Tomonida Shifrlash (Client-Side Encryption): Sizning HEMIS parolingiz va sessiya tokenlaringiz bizning serverlarimizda emas, balki faqat Sizning qurilmangiz xotirasida kuchli shifrlangan holda saqlanadi. Serverda faqat vaqtinchalik va shifrlangan ma'lumotlar aylanadi.\n"
-                          "• Action Token System (ATS): Ilova orqali amalga oshiriladigan har bir muhim so'rov (POST) maxsus kriptografik shifr (\"Action Token\") bilan imzolanadi. Bu shifr faqat Sizning qurilmangizda shakllanadi.\n"
-                          "• O'g'rilikdan Himoya: Agar Sizning sessiya kalitingiz (token) o'g'irlangan taqdirda ham, tajovuzkor Sizning nomingizdan biron bir ma'lumotni o'zgartira olmaydi yoki yubora olmaydi, chunki unda qurilmangizga bog'langan maxsus shifr (\"Action Token\") mavjud bo'lmaydi.\n"
-                          "• Security Watchdog: Tizim 24/7 rejimda shubhali harakatlarni kuzatib boradi."
-                        ),
+                        _buildSectionHeader(AppDictionary.tr(context, 'policy_sec4_title')),
+                        _buildSectionText(AppDictionary.tr(context, 'policy_sec4_desc')),
 
-                        _buildSectionHeader("5. NIZOLARNI HAL QILISH"),
-                        _buildSectionText(
-                          "5.1. Foydalanuvchi va Kompaniya o'rtasidagi nizolar dastlab muzokaralar yo'li bilan hal qilinadi.\n"
-                          "5.2. Agar nizoni 30 kun ichida hal qilish imkoni bo'lmasa, nizo \"PRIMEWAY GROUP\" MChJ joylashgan hududdagi (O'zbekiston Respublikasi) tegishli sudida ko'rib chiqiladi."
-                        ),
+                        _buildSectionHeader(AppDictionary.tr(context, 'policy_sec5_title')),
+                        _buildSectionText(AppDictionary.tr(context, 'policy_sec5_desc')),
 
-                        _buildSectionHeader("6. MA'SULIYATNI CHEKLASH"),
-                        _buildSectionText(
-                          "6.1. Kompaniya HEMIS tizimidagi texnik nosozliklar yoki internet provayderlarining aybi bilan yuzaga kelgan uzilishlar uchun javobgar emas.\n"
-                          "6.2. Foydalanuvchi o'z login va paroli xavfsizligi uchun shaxsan javobgardir."
-                        ),
+                        _buildSectionHeader(AppDictionary.tr(context, 'policy_sec6_title')),
+                        _buildSectionText(AppDictionary.tr(context, 'policy_sec6_desc')),
 
-                        _buildSectionHeader("7. BOG'LANISH"),
-                        _buildSectionText(
-                          "Savollar va takliflar uchun:\n"
-                          "\"PRIMEWAY GROUP\" MChJ\n"
-                          "Email: support@tengdosh.uz (yoki ilova ichidagi 'Yordam' bo'limi)"
-                        ),
+                        _buildSectionHeader(AppDictionary.tr(context, 'policy_sec7_title')),
+                        _buildSectionText(AppDictionary.tr(context, 'policy_sec7_desc')),
                         
                         const SizedBox(height: 30),
-                        const Center(
+                        Center(
                            child: Text(
-                             "So'nggi yangilanish: 16-Fevral, 2026-yil",
-                             style: TextStyle(color: Colors.grey, fontSize: 12),
+                             AppDictionary.tr(context, 'policy_last_update'),
+                             style: const TextStyle(color: Colors.grey, fontSize: 12),
                            ),
                         ),
                         const SizedBox(height: 40),

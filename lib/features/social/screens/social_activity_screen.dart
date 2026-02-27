@@ -516,7 +516,7 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
                   try {
                     setState(() => _isUploading = true);
                     await Provider.of<DataService>(context, listen: false).unlinkTelegram();
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Eski hisob uzildi. Yangi hisob ulang.")));
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_old_account_disconnected_new'))));
                     await _initUpload();
                   } catch (e) {
                     setState(() => _isUploading = false);
@@ -586,13 +586,13 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
 
   void _saveActivity() {
     if (_titleController.text.isEmpty || _descController.text.isEmpty || _selectedDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Barcha maydonlarni to'ldiring")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_fill_all_fields'))));
       return;
     }
     
     // Check if image uploaded (ONLY FOR NEW)
     if (widget.activity == null && _uploadedCount == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Iltimos, avval rasm yuklang!")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_please_upload_image_first'))));
       return;
     }
 
@@ -865,7 +865,7 @@ class _SocialActivityScreenState extends State<SocialActivityScreen> {
               isSelected: _selectedCategory != "Barchasi",
               icon: Icons.category_outlined,
               onTap: () => _showFilterSheet(
-                title: "Kategoriyani tanlang",
+                title: AppDictionary.tr(context, 'btn_select_category'),
                 options: _categories,
                 selected: _selectedCategory,
                 onSelect: (val) => setState(() => _selectedCategory = val),
@@ -879,7 +879,7 @@ class _SocialActivityScreenState extends State<SocialActivityScreen> {
               isSelected: _selectedStatus != "Barchasi",
               icon: Icons.filter_list_rounded,
               onTap: () => _showFilterSheet(
-                title: "Statusni tanlang",
+                title: AppDictionary.tr(context, 'hint_select_status'),
                 options: _statuses,
                 selected: _selectedStatus,
                 onSelect: (val) => setState(() => _selectedStatus = val),
@@ -1349,45 +1349,46 @@ class _ActivityCardState extends State<ActivityCard> {
                           ),
                           const SizedBox(width: 8),
                           
-                          // 3-DOT MENU
-                          Container(
-                            width: 32,
-                            height: 32,
-                            margin: const EdgeInsets.only(left: 4),
-                            child: PopupMenuButton<String>(
-                              padding: EdgeInsets.zero,
-                              icon: const Icon(Icons.more_vert, size: 22, color: Colors.black),
-                              onSelected: (value) {
-                                if (value == 'edit') {
-                                  widget.onEdit(widget.activity);
-                                } else if (value == 'delete') {
-                                  widget.onDelete(widget.activity);
-                                }
-                              },
-                              itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                                PopupMenuItem<String>(
-                                  value: 'edit',
-                                  child: Row(
-                                    children: [
-                                      const Icon(Icons.edit, color: Colors.blue, size: 20),
-                                      const SizedBox(width: 8),
-                                      Text(AppDictionary.tr(context, 'social_btn_edit')),
-                                    ],
+                          // 3-DOT MENU (Only visible if status is 'kutilmoqda')
+                          if (widget.activity.status == 'kutilmoqda')
+                            Container(
+                              width: 32,
+                              height: 32,
+                              margin: const EdgeInsets.only(left: 4),
+                              child: PopupMenuButton<String>(
+                                padding: EdgeInsets.zero,
+                                icon: const Icon(Icons.more_vert, size: 22, color: Colors.black),
+                                onSelected: (value) {
+                                  if (value == 'edit') {
+                                    widget.onEdit(widget.activity);
+                                  } else if (value == 'delete') {
+                                    widget.onDelete(widget.activity);
+                                  }
+                                },
+                                itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                                  PopupMenuItem<String>(
+                                    value: 'edit',
+                                    child: Row(
+                                      children: [
+                                        const Icon(Icons.edit, color: Colors.blue, size: 20),
+                                        const SizedBox(width: 8),
+                                        Text(AppDictionary.tr(context, 'social_btn_edit')),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                PopupMenuItem<String>(
-                                  value: 'delete',
-                                  child: Row(
-                                    children: [
-                                      const Icon(Icons.delete, color: Colors.red, size: 20),
-                                      const SizedBox(width: 8),
-                                      Text(AppDictionary.tr(context, 'social_btn_delete')),
-                                    ],
+                                  PopupMenuItem<String>(
+                                    value: 'delete',
+                                    child: Row(
+                                      children: [
+                                        const Icon(Icons.delete, color: Colors.red, size: 20),
+                                        const SizedBox(width: 8),
+                                        Text(AppDictionary.tr(context, 'social_btn_delete')),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          )
+                                ],
+                              ),
+                            )
                         ],
                       ),
                     ],

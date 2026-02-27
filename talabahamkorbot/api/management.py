@@ -1572,7 +1572,14 @@ async def export_mgmt_documents_zip(
     zip_buffer.seek(0)
     
     # Send ZIP via Bot
-    # Use TEST ID: 7476703866
+    # Dynamic Lookup for current Staff User TG Account
+    tg_acc = await db.scalar(select(TgAccount).where(
+        (TgAccount.student_id == staff.id) | (TgAccount.staff_id == staff.id)
+    ))
+    
+    if not tg_acc:
+        return {"success": False, "message": "Sizning Telegram hisobingiz ulanmagan. Iltimos, Avval botga kiring."}
+        
     try:
         input_file = BufferedInputFile(zip_buffer.read(), filename="hujjatlar_arxivi.zip")
         caption = (
@@ -1580,8 +1587,8 @@ async def export_mgmt_documents_zip(
             f"Soni: <b>{count} ta</b>\n"
             f"Filtr: <b>{title or 'Barchasi'}</b>"
         )
-        await bot.send_document(7476703866, input_file, caption=caption)
-        return {"success": True, "message": f"ZIP fayl yuborildi ({count} ta hujjat). TEST ID: 7476703866"}
+        await bot.send_document(tg_acc.telegram_id, input_file, caption=caption, parse_mode="HTML")
+        return {"success": True, "message": f"ZIP fayl yuborildi ({count} ta hujjat)."}
     except Exception as e:
         import logging
         logger = logging.getLogger(__name__)

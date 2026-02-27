@@ -927,6 +927,67 @@ class AppDictionary {
       'ru': "Книга, автор, жанр...",
     },
 
+        'policy_sec1_title': {
+      'uz': "1. UMUMIY QOIDALAR",
+      'ru': "1. ОБЩИЕ ПОЛОЖЕНИЯ",
+    },
+    'policy_sec1_desc': {
+      'uz': "Ushbu Maxfiylik Siyosati \"PRIMEWAY GROUP\" MChJ (keyingi o'rinlarda \"Kompaniya\") tomonidan ishlab chiqilgan \"Tengdosh\" platformasi foydalanuvchilarining shaxsiy ma'lumotlarini himoya qilish tartibini belgilaydi.\n\n1.1. Platforma maqsadi: \"Tengdosh\" – bu talabalar, o'qituvchilar va ma'muriyat o'rtasidagi o'quv jarayonini raqamlashtirish va OTM HEMIS tizimi bilan integratsiya qilishga qaratilgan innovatsion ekotizimdir.\n\n1.2. Ilovadan ro'yxatdan o'tish orqali Siz ushbu Siyosat shartlarini to'liq qabul qilgan hisoblanasiz.",
+      'ru': "Данная Политика Конфиденциальности определяет порядок защиты персональных данных пользователей платформы «Tengdosh», разработанной ООО «PRIMEWAY GROUP» (далее «Компания»).\n\n1.1. Цель платформы: «Tengdosh» — это инновационная экосистема, направленная на цифровизацию учебного процесса между студентами, преподавателями и администрацией, а также на интеграцию с системой HEMIS вуза.\n\n1.2. Регистрируясь в приложении, вы считаетесь полностью принявшими условия этой Политики.",
+    },
+    'policy_sec2_title': {
+      'uz': "2. YIG'ILADIGAN MA'LUMOTLAR",
+      'ru': "2. СОБИРАЕМЫЕ ДАННЫЕ",
+    },
+    'policy_sec2_desc': {
+      'uz': "Biz Sizga xizmat ko'rsatish sifatini oshirish maqsadida quyidagi ma'lumotlarni yig'amiz:\n• Shaxsiy ma'lumotlar: Ism-familiya, telefon raqami, talaba ID (HEMIS ID).\n• Ta'lim ma'lumotlari: Baholar, davomat, dars jadvallari (HEMIS orqali).\n• Texnik ma'lumotlar: IP-manzil, qurilma modeli (xavfsizlik va analitika uchun).",
+      'ru': "В целях повышения качества обслуживания мы собираем следующие данные:\n• Личные данные: ФИО, номер телефона, студенческий ID (HEMIS ID).\n• Образовательные данные: Оценки, посещаемость, расписание занятий (через HEMIS).\n• Технические данные: IP-адрес, модель устройства (для безопасности и аналитики).",
+    },
+    'policy_sec3_title': {
+      'uz': "3. PREMIUM XIZMATLAR VA TO'LOVLAR",
+      'ru': "3. ПРЕМИУМ УСЛУГИ И ПЛАТЕЖИ",
+    },
+    'policy_sec3_desc': {
+      'uz': "3.1. Platforma ba'zi qo'shimcha imkoniyatlarni (reklamasiz rejim, statistika) \"Premium\" obuna sifatida taklif qilishi mumkin.\n3.2. To'lovlar uchinchi tomon to'lov tizimlari (Payme, Click) orqali amalga oshiriladi. Biz Sizning bank karta ma'lumotlaringizni saqlamaymiz.\n3.3. Qaytarish siyosati: Raqamli xizmatlar ko'rsatilgan hisoblanganligi sababli, Premium obuna uchun to'langan mablag'lar qoida tariqasida qaytarilmaydi.",
+      'ru': "3.1. Платформа может предлагать некоторые дополнительные функции (режим без рекламы, статистика) в качестве подписки «Premium».\n3.2. Платежи осуществляются через сторонние платежные системы (Payme, Click). Мы не сохраняем данные вашей банковской карты.\n3.3. Политика возврата: Поскольку электронные услуги считаются оказанными, средства, уплаченные за премиум-подписку, как правило, не подлежат возврату.",
+    },
+    'policy_sec4_title': {
+      'uz': "4. XAVFSIZLIK PROTOKOLLARI",
+      'ru': "4. ПРОТОКОЛЫ БЕЗОПАСНОСТИ",
+    },
+    'policy_sec4_desc': {
+      'uz': "Biz Sizning ma'lumotlaringizni himoya qilish uchun ilg'or xalqaro standartlarni qo'llaymiz:\n• Mijoz Tomonida Shifrlash (Client-Side Encryption): Sizning HEMIS parolingiz va sessiya tokenlaringiz bizning serverlarimizda emas, balki faqat Sizning qurilmangiz xotirasida kuchli shifrlangan holda saqlanadi. Serverda faqat vaqtinchalik va shifrlangan ma'lumotlar aylanadi.\n• Action Token System (ATS): Ilova orqali amalga oshiriladigan har bir muhim so'rov (POST) maxsus kriptografik shifr (\"Action Token\") bilan imzolanadi. Bu shifr faqat Sizning qurilmangizda shakllanadi.\n• O'g'rilikdan Himoya: Agar Sizning sessiya kalitingiz (token) o'g'irlangan taqdirda ham, tajovuzkor Sizning nomingizdan biron bir ma'lumotni o'zgartira olmaydi yoki yubora olmaydi, chunki unda qurilmangizga bog'langan maxsus shifr (\"Action Token\") mavjud bo'lmaydi.\n• Security Watchdog: Tizim 24/7 rejimda shubhali harakatlarni kuzatib boradi.",
+      'ru': "Мы применяем передовые международные стандарты для защиты ваших данных:\n• Шифрование на стороне клиента (Client-Side Encryption): Ваш пароль HEMIS и токены сессий не хранятся на наших серверах, а сохраняются только в памяти вашего устройства в надежно зашифрованном виде. На сервере циркулируют только временные и зашифрованные данные.\n• Action Token System (ATS): Каждый важный запрос (POST), отправляемый через приложение, подписывается специальным криптографическим шифром («Action Token»). Этот шифр формируется только на вашем устройстве.\n• Защита от кражи: Даже если ваш ключ сессии (токен) украден, злоумышленник не сможет изменить или отправить какие-либо данные от вашего имени, так как у него не будет специального шифра («Action Token»), привязанного к вашему устройству.\n• Security Watchdog: Система в режиме 24/7 контролирует подозрительные действия.",
+    },
+    'policy_sec5_title': {
+      'uz': "5. NIZOLARNI HAL QILISH",
+      'ru': "5. РАЗРЕШЕНИЕ СПОРОВ",
+    },
+    'policy_sec5_desc': {
+      'uz': "5.1. Foydalanuvchi va Kompaniya o'rtasidagi nizolar dastlab muzokaralar yo'li bilan hal qilinadi.\n5.2. Agar nizoni 30 kun ichida hal qilish imkoni bo'lmasa, nizo \"PRIMEWAY GROUP\" MChJ joylashgan hududdagi (O'zbekiston Respublikasi) tegishli sudida ko'rib chiqiladi.",
+      'ru': "5.1. Споры между Пользователем и Компанией первоначально решаются путем переговоров.\n5.2. Если спор невозможно решить в течение 30 дней, он рассматривается в соответствующем суде на территории (Республика Узбекистан) места нахождения ООО «PRIMEWAY GROUP».",
+    },
+    'policy_sec6_title': {
+      'uz': "6. MA'SULIYATNI CHEKLASH",
+      'ru': "6. ОГРАНИЧЕНИЕ ОТВЕТСТВЕННОСТИ",
+    },
+    'policy_sec6_desc': {
+      'uz': "6.1. Kompaniya HEMIS tizimidagi texnik nosozliklar yoki internet provayderlarining aybi bilan yuzaga kelgan uzilishlar uchun javobgar emas.\n6.2. Foydalanuvchi o'z login va paroli xavfsizligi uchun shaxsan javobgardir.",
+      'ru': "6.1. Компания не несет ответственности за технические сбои в системе HEMIS или перебои, вызванные по вине интернет-провайдеров.\n6.2. Пользователь лично несет ответственность за безопасность своего логина и пароля.",
+    },
+    'policy_sec7_title': {
+      'uz': "7. BOG'LANISH",
+      'ru': "7. КОНТАКТЫ",
+    },
+    'policy_sec7_desc': {
+      'uz': "Savollar va takliflar uchun:\n\"PRIMEWAY GROUP\" MChJ\nEmail: support@tengdosh.uz (yoki ilova ichidagi 'Yordam' bo'limi)",
+      'ru': "Для вопросов и предложений:\nООО «PRIMEWAY GROUP»\nEmail: support@tengdosh.uz (или раздел 'Помощь' в приложении)",
+    },
+    'policy_last_update': {
+      'uz': "So'nggi yangilanish: 16-Fevral, 2026-yil",
+      'ru': "Последнее обновление: 16 февраля 2026 года",
+    },
+
     // Default Fallbacks
     'error': {
       'uz': 'Xatolik',
