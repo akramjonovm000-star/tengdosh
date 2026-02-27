@@ -65,7 +65,13 @@ post_install do |installer|
 
       # [FIX] Force removal of simulator architectures for Release/Archive to fix "Invalid Executable"
       if config.name == 'Release'
-        config.build_settings['EXCLUDED_ARCHS[sdk=iphoneos*]'] = 'x86_64 i386'
+        config.build_settings['EXCLUDED_ARCHS[sdk=iphoneos*]'] = 'x86_64 i386 arm64-simulator'
+      end
+
+      # [FIX] Specific patch for objective_c package App Store Rejection
+      if target.name == 'objective_c'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+        config.build_settings['SUPPORTED_PLATFORMS'] = 'iphoneos'
       end
 
       # Fix Xcode 15+ DT_TOOLCHAIN_DIR Error in xcconfigs
