@@ -295,7 +295,7 @@ class CommentItem extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         scrollable: true,
-        title: const Text("Sharhni tahrirlash"),
+        title: const Text(AppDictionary.tr(context, 'lbl_edit_comment')),
         content: TextField(
           controller: controller,
           maxLines: 3,

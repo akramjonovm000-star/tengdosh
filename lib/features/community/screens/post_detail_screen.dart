@@ -254,7 +254,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             icon: const Icon(Icons.arrow_back, color: Colors.black),
             onPressed: () => Navigator.pop(context, _post), 
           ),
-          title: const Text("Muhokama", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          title: const Text(AppDictionary.tr(context, 'lbl_discussion'), style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         ),
         body: Column(
           children: [
@@ -342,7 +342,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                          child: TextField(
                            controller: _commentController,
                            decoration: InputDecoration(
-                             hintText: "Fikringizni yozing...",
+                             hintText: AppDictionary.tr(context, 'hint_write_opinion'),
                              border: InputBorder.none,
                              contentPadding: const EdgeInsets.symmetric(vertical: 10),
                            ),

@@ -72,7 +72,7 @@ class _SurveyTakingScreenState extends State<SurveyTakingScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text("Yuklanmoqda...")),
+        appBar: AppBar(title: const Text(AppDictionary.tr(context, 'lbl_loading'))),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -164,7 +164,7 @@ class _SurveyTakingScreenState extends State<SurveyTakingScreen> {
                 controller: _controllers[question.id],
                 onChanged: (val) => _saveAnswer(question, val),
                 decoration: const InputDecoration(
-                  hintText: "Javobingizni kiriting...",
+                  hintText: AppDictionary.tr(context, 'hint_enter_your_answer'),
                   border: OutlineInputBorder(),
                 ),
               )
@@ -195,8 +195,8 @@ class _SurveyTakingScreenState extends State<SurveyTakingScreen> {
        bool? confirm = await showDialog<bool>(
          context: context,
          builder: (context) => AlertDialog(
-           title: const Text("Diqqat"),
-           content: const Text("Barcha savollarga javob berilmadi. Davom ettirmoqchimisiz?"),
+           title: const Text(AppDictionary.tr(context, 'lbl_attention')),
+           content: const Text(AppDictionary.tr(context, 'msg_unanswered_questions')),
            actions: [
              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text(AppDictionary.tr(context, 'btn_no'))),
              TextButton(onPressed: () => Navigator.pop(context, true), child: const Text(AppDictionary.tr(context, 'btn_yes'))),
@@ -212,7 +212,7 @@ class _SurveyTakingScreenState extends State<SurveyTakingScreen> {
       if (success) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("So'rovnoma muvaffaqiyatli yakunlandi!")),
+            const SnackBar(content: Text(AppDictionary.tr(context, 'msg_survey_success'))),
           );
           Navigator.pop(context, true);
         }

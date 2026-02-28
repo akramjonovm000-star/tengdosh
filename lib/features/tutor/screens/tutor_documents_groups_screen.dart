@@ -43,12 +43,12 @@ class _TutorDocumentsGroupsScreenState extends State<TutorDocumentsGroupsScreen>
     return Scaffold(
       backgroundColor: AppTheme.backgroundWhite,
       appBar: AppBar(
-        title: const Text("Hujjatlar Statistikasi"),
+        title: const Text(AppDictionary.tr(context, 'lbl_docs_stats')),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _stats.isEmpty
-              ? const Center(child: Text("Sizga biriktirilgan guruhlar yo'q"))
+              ? const Center(child: Text(AppDictionary.tr(context, 'msg_no_assigned_groups')))
               : RefreshIndicator(
                   onRefresh: _loadStats,
                   child: ListView.builder(

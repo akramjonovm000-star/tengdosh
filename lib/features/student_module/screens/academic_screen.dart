@@ -310,7 +310,7 @@ class _AcademicScreenState extends State<AcademicScreen> {
                         controller: phoneCtrl,
                         readOnly: true,
                         decoration: const InputDecoration(
-                          labelText: "Telefon raqam",
+                          labelText: AppDictionary.tr(context, 'lbl_phone_number'),
                           border: OutlineInputBorder(),
                           prefixIcon: Icon(Icons.phone),
                           filled: true,
@@ -322,7 +322,7 @@ class _AcademicScreenState extends State<AcademicScreen> {
                         controller: emailCtrl,
                         readOnly: true,
                         decoration: const InputDecoration(
-                          labelText: "Email",
+                          labelText: AppDictionary.tr(context, 'lbl_email'),
                           border: OutlineInputBorder(),
                           prefixIcon: Icon(Icons.email),
                           filled: true,
@@ -341,7 +341,7 @@ class _AcademicScreenState extends State<AcademicScreen> {
                       TextField(
                         controller: passCtrl,
                         decoration: const InputDecoration(
-                          labelText: "Yangi parol",
+                          labelText: AppDictionary.tr(context, 'hint_new_password'),
                           hintText: "O'zgartirish uchun kiriting",
                           border: OutlineInputBorder(),
                           prefixIcon: Icon(Icons.lock),
@@ -351,8 +351,8 @@ class _AcademicScreenState extends State<AcademicScreen> {
                       TextField(
                         controller: confirmPassCtrl,
                         decoration: const InputDecoration(
-                          labelText: "Parolni tasdiqlash",
-                          hintText: "Parolni qayta kiriting",
+                          labelText: AppDictionary.tr(context, 'hint_confirm_password'),
+                          hintText: AppDictionary.tr(context, 'hint_reenter_password'),
                           border: OutlineInputBorder(),
                           prefixIcon: Icon(Icons.lock_outline),
                         ),
@@ -376,13 +376,13 @@ class _AcademicScreenState extends State<AcademicScreen> {
                       if (passCtrl.text.isNotEmpty) {
                         if (passCtrl.text != confirmPassCtrl.text) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Parollar mos kelmadi"), backgroundColor: Colors.red),
+                            const SnackBar(content: Text(AppDictionary.tr(context, 'msg_passwords_mismatch')), backgroundColor: Colors.red),
                           );
                           return;
                         }
                         if (passCtrl.text.length < 6) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Parol kamida 6 belgidan iborat bo'lishi kerak"), backgroundColor: Colors.red),
+                            const SnackBar(content: Text(AppDictionary.tr(context, 'msg_pwd_length_err')), backgroundColor: Colors.red),
                           );
                           return;
                         }

@@ -49,7 +49,7 @@ class TutorDashboardScreen extends StatelessWidget {
                         },
                         borderRadius: BorderRadius.circular(16),
                         child: _StatCard(
-                          title: "Talabalarim",
+                          title: AppDictionary.tr(context, 'lbl_my_students'),
                           value: "$studentCount",
                           icon: Icons.people_alt_rounded,
                           color: Colors.blue,
@@ -64,7 +64,7 @@ class TutorDashboardScreen extends StatelessWidget {
                         },
                         borderRadius: BorderRadius.circular(16),
                         child: _StatCard(
-                          title: "Guruhlarim",
+                          title: AppDictionary.tr(context, 'lbl_my_groups'),
                           value: "$groupCount",
                           icon: Icons.class_rounded,
                           color: Colors.orange,
@@ -90,7 +90,7 @@ class TutorDashboardScreen extends StatelessWidget {
                   childAspectRatio: 1.1,
                   children: [
                     DashboardCard(
-                      title: "Murojaatlar",
+                      title: AppDictionary.tr(context, 'lbl_appeals_2'),
                       icon: Icons.mark_chat_unread_rounded,
                       color: Colors.indigo,
                       onTap: () {
@@ -98,7 +98,7 @@ class TutorDashboardScreen extends StatelessWidget {
                       },
                     ),
                     DashboardCard(
-                      title: "Faolliklar",
+                      title: AppDictionary.tr(context, 'lbl_activities'),
                       icon: Icons.accessibility_new_rounded,
                       color: Colors.deepPurple,
                       onTap: () {
@@ -114,7 +114,7 @@ class TutorDashboardScreen extends StatelessWidget {
                       },
                     ),
                     DashboardCard(
-                      title: "Sertifikatlar",
+                      title: AppDictionary.tr(context, 'lbl_certs_2'),
                       icon: Icons.workspace_premium_rounded,
                       color: Colors.amber,
                       onTap: () {
@@ -122,19 +122,19 @@ class TutorDashboardScreen extends StatelessWidget {
                       },
                     ),
                     DashboardCard(
-                      title: "Klublar",
+                      title: AppDictionary.tr(context, 'lbl_clubs_2'),
                       icon: Icons.groups_rounded, 
                       color: Colors.teal,
                       onTap: () => _showNotImplemented(context, "Klublar (Guruh)"),
                     ),
                     DashboardCard(
-                      title: "Davomat",
+                      title: AppDictionary.tr(context, 'lbl_attendance'),
                       icon: Icons.verified_user_rounded,
                       color: Colors.redAccent,
                       onTap: () => _showNotImplemented(context, "Davomat"),
                     ),
                     DashboardCard(
-                      title: "Kutubxona",
+                      title: AppDictionary.tr(context, 'lbl_library_2'),
                       icon: Icons.local_library_rounded,
                       color: Colors.blueAccent,
                       onTap: () {
@@ -233,7 +233,7 @@ class TutorDashboardScreen extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("Faol Talabalar", style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)),
+                  Text(AppDictionary.tr(context, 'lbl_active_students'), style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)),
                   const SizedBox(height: 4),
                   Text("$activeStudentCount", style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
                 ],

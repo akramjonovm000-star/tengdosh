@@ -86,7 +86,7 @@ class _ElectionScreenState extends State<ElectionScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("Ovoz berishni tasdiqlaysizmi?"),
+        title: const Text(AppDictionary.tr(context, 'msg_confirm_vote')),
         content: Text("Sizning tanlovingiz: $name\n\nBu amalni qaytarib bo'lmaydi."),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text(AppDictionary.tr(context, 'btn_cancel'))),
@@ -104,7 +104,7 @@ class _ElectionScreenState extends State<ElectionScreen> {
     try {
       await _service.voteInElection(widget.electionId, _selectedCandidateId!);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Ovozingiz muvaffaqiyatli qabul qilindi!")));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_vote_accepted'))));
         _loadElection();
       }
     } catch (e) {
@@ -156,7 +156,7 @@ class _ElectionScreenState extends State<ElectionScreen> {
               ],
             ),
             const SizedBox(height: 24),
-            const Text("Nomzod dasturi", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text(AppDictionary.tr(context, 'lbl_candidate_program'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(16),
@@ -229,7 +229,7 @@ class _ElectionScreenState extends State<ElectionScreen> {
                 const Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text("Nomzodlar ro'yxati", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text(AppDictionary.tr(context, 'lbl_candidates_list'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     Icon(Icons.format_list_bulleted, color: Colors.grey),
                   ],
                 ),
@@ -403,7 +403,7 @@ class _ElectionScreenState extends State<ElectionScreen> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           side: BorderSide(color: Colors.grey[300]!),
                         ),
-                        child: const Text("Dastur bilan tanishish"),
+                        child: const Text(AppDictionary.tr(context, 'lbl_app_intro')),
                       ),
                     ),
                   ],

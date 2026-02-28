@@ -201,7 +201,7 @@ class _PostCardState extends State<PostCard> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text("O'chirish"),
-        content: const Text("Haqiqatan ham bu postni o'chirmoqchimisiz?"),
+        content: const Text(AppDictionary.tr(context, 'msg_confirm_delete_post')),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text(AppDictionary.tr(context, 'btn_no'))),
           TextButton(
@@ -247,14 +247,14 @@ class _PostCardState extends State<PostCard> {
                   decoration: BoxDecoration(color: Colors.grey[100], shape: BoxShape.circle),
                   child: const Icon(Icons.copy, color: Colors.blueAccent),
                 ),
-                title: const Text("Linkdan nusxa olish", style: TextStyle(fontWeight: FontWeight.w500)),
+                title: const Text(AppDictionary.tr(context, 'btn_copy_link'), style: TextStyle(fontWeight: FontWeight.w500)),
                 onTap: () async {
                   await Clipboard.setData(ClipboardData(text: link));
                   if (mounted) {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text("Link buferga nusxalandi!", style: TextStyle(color: Colors.white)), 
+                        content: Text(AppDictionary.tr(context, 'msg_link_copied'), style: TextStyle(color: Colors.white)), 
                         backgroundColor: Colors.black87, 
                         behavior: SnackBarBehavior.floating,
                         duration: Duration(seconds: 1)
@@ -270,7 +270,7 @@ class _PostCardState extends State<PostCard> {
                   child: const Icon(Icons.share, color: Colors.green),
                 ),
                 title: const Text("Boshqa ilovalar orqali...", style: TextStyle(fontWeight: FontWeight.w500)),
-                subtitle: const Text("Telegram, Instagram, SMS va boshqalar"),
+                subtitle: const Text(AppDictionary.tr(context, 'hint_share_options')),
                 onTap: () {
                    Navigator.pop(context);
                    Share.share("Talaba Hamkor ilovasidagi qiziqarli postni ko'ring:\n\n$link");
@@ -646,7 +646,7 @@ class _PostCardState extends State<PostCard> {
                onTap: () => setState(() => _isExpanded = false),
                child: Padding(
                  padding: const EdgeInsets.only(top: 4),
-                 child: Text("Kamroq o'qish", style: TextStyle(color: Colors.grey[600], fontSize: 13, fontWeight: FontWeight.bold)),
+                 child: Text(AppDictionary.tr(context, 'btn_read_less'), style: TextStyle(color: Colors.grey[600], fontSize: 13, fontWeight: FontWeight.bold)),
                ),
              )
          ],
@@ -675,7 +675,7 @@ class _PostCardState extends State<PostCard> {
              onTap: () => setState(() => _isExpanded = true),
              child: Padding(
                padding: const EdgeInsets.only(top: 4),
-               child: Text("Davomi", style: TextStyle(color: Colors.grey[600], fontSize: 13, fontWeight: FontWeight.bold)),
+               child: Text(AppDictionary.tr(context, 'btn_read_more'), style: TextStyle(color: Colors.grey[600], fontSize: 13, fontWeight: FontWeight.bold)),
              ),
            )
         ],

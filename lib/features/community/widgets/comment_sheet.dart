@@ -170,7 +170,7 @@ class _CommentSheetState extends State<CommentSheet> {
     final success = await _service.deleteComment(commentId);
     if (!success && mounted) {
       setState(() => _comments.add(deletedComment)); // Restore
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("O'chirishda xatolik bo'ldi")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_del_err_2'))));
     }
   }
 
@@ -190,7 +190,7 @@ class _CommentSheetState extends State<CommentSheet> {
        setState(() {
          _comments[index] = comment.copyWith(content: oldContent);
        });
-       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Tahrirlashda xatolik bo'ldi")));
+       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_edit_err'))));
     } else if (updatedComment != null && mounted) {
        // Update with server response (optional, but good for sync)
        setState(() {

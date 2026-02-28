@@ -53,12 +53,12 @@ class _CreateMarketItemScreenState extends State<CreateMarketItemScreen> {
 
     if (success) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("E'lon muvaffaqiyatli qo'shildi!")));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_ad_added_successfully'))));
         Navigator.pop(context, true);
       }
     } else {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Xatolik yuz berdi.")));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_error_occurred_2'))));
       }
     }
   }

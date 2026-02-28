@@ -60,7 +60,7 @@ class _TutorCertificatesStudentsScreenState extends State<TutorCertificatesStude
             child: TextField(
               onChanged: (v) => setState(() => _searchQuery = v),
               decoration: InputDecoration(
-                hintText: "Talaba ismini qidiring...",
+                hintText: AppDictionary.tr(context, 'hint_search_student_name'),
                 prefixIcon: const Icon(Icons.search, color: Colors.grey),
                 filled: true,
                 fillColor: Colors.white,

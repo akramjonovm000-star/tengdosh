@@ -27,7 +27,7 @@ class HemisDashboardScreen extends StatelessWidget {
           children: [
             _buildHemisCard(
               context,
-              title: "HEMIS Monitoring",
+              title: AppDictionary.tr(context, 'lbl_hemis_monitoring'),
               icon: Icons.military_tech_rounded,
               color: Colors.amber,
               onTap: () => _showNotImplemented(context, "HEMIS Monitoring"),
@@ -35,7 +35,7 @@ class HemisDashboardScreen extends StatelessWidget {
             const SizedBox(height: 16),
             _buildHemisCard(
               context,
-              title: "Moliyaviy Holat",
+              title: AppDictionary.tr(context, 'lbl_financial_status_2'),
               icon: Icons.account_balance_wallet_rounded,
               color: Colors.cyan,
               onTap: () => _showNotImplemented(context, "Moliya"),
@@ -43,7 +43,7 @@ class HemisDashboardScreen extends StatelessWidget {
             const SizedBox(height: 16),
             _buildHemisCard(
               context,
-              title: "Turarjoy",
+              title: AppDictionary.tr(context, 'lbl_dormitory_2'),
               icon: Icons.bedroom_parent_rounded,
               color: Colors.blue,
               onTap: () {

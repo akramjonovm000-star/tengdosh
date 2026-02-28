@@ -66,7 +66,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _saveUsername() async {
     final value = _usernameController.text.trim();
     if (value.length < 2 || value.length > 25) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Username 2-25 belgi bo'lishi kerak")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_username_length_err'))));
       return;
     }
     if (_usernameError != null) return;
@@ -79,7 +79,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() {
         _isEditingUsername = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Username saqlandi!")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_username_saved'))));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result['message'] ?? "Xatolik")));
     }
@@ -233,7 +233,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           decoration: InputDecoration(
                             isDense: true,
                             contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                            hintText: "Foydalanuvchi nomi",
+                            hintText: AppDictionary.tr(context, 'lbl_username'),
                             hintStyle: TextStyle(color: Colors.grey.withOpacity(0.6), fontWeight: FontWeight.normal), // Lighter hint
                             prefixIcon: const Padding(
                               padding: EdgeInsets.only(left: 0, top: 10, bottom: 10, right: 4), // Align better
@@ -499,7 +499,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: TextButton.icon(
               onPressed: () => _showDeleteAccountDialog(context),
               icon: const Icon(Icons.delete_forever_rounded, color: Colors.red),
-              label: const Text("Hisobni o'chirish", style: TextStyle(color: Colors.red, fontSize: 16)),
+              label: const Text(AppDictionary.tr(context, 'btn_delete_account'), style: TextStyle(color: Colors.red, fontSize: 16)),
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: Colors.red.withOpacity(0.3))),
@@ -609,7 +609,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (image != null) {
       // Show loading
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Rasm tayyorlanmoqda...")),
+        const SnackBar(content: Text(AppDictionary.tr(context, 'msg_preparing_image'))),
       );
 
       File originalFile = File(image.path);
@@ -624,12 +624,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
 
       if (compressedFile == null) {
-         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Rasmni qayta ishlashda xatolik")));
+         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_image_process_error'))));
          return;
       }
 
       // Upload
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Rasm yuklanmoqda...")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_uploading_image'))));
       
       final DataService dataService = DataService();
       final newUrl = await dataService.uploadAvatar(compressedFile);
@@ -643,7 +643,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
          );
       } else if (context.mounted) {
          ScaffoldMessenger.of(context).showSnackBar(
-           const SnackBar(content: Text("Rasm yuklashda xatolik!")),
+           const SnackBar(content: Text(AppDictionary.tr(context, 'msg_image_upload_error'))),
          );
       }
       
@@ -720,7 +720,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             ListTile(
               leading: const Icon(Icons.photo_library, color: AppTheme.primaryBlue),
-              title: const Text("Galereyadan tanlash"),
+              title: const Text(AppDictionary.tr(context, 'btn_select_gallery')),
               onTap: () {
                 Navigator.pop(ctx);
                 _pickAndUploadImage(context);
@@ -754,7 +754,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("Status Belgisini Tanlang", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text(AppDictionary.tr(context, 'lbl_choose_status_icon'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 15),
             Wrap(
               spacing: 15,
@@ -811,7 +811,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
-            title: const Text("Hisobni o'chirish", style: TextStyle(color: Colors.red)),
+            title: const Text(AppDictionary.tr(context, 'btn_delete_account'), style: TextStyle(color: Colors.red)),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -823,7 +823,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 TextField(
                   controller: loginController,
                   decoration: const InputDecoration(
-                    labelText: "HEMIS Login",
+                    labelText: AppDictionary.tr(context, 'lbl_hemis_login'),
                     border: OutlineInputBorder(),
                     contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                   ),
@@ -832,7 +832,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 TextField(
                   controller: passwordController,
                   decoration: const InputDecoration(
-                    labelText: "HEMIS Parol",
+                    labelText: AppDictionary.tr(context, 'lbl_hemis_password'),
                     border: OutlineInputBorder(),
                     contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                   ),
@@ -876,7 +876,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Navigator.pop(ctx); // Close dialog
                       auth.logout(); // Logout locally
                       ScaffoldMessenger.of(context).showSnackBar(
-                         const SnackBar(content: Text("Hisobingiz muvaffaqiyatli o'chirildi"), backgroundColor: Colors.red),
+                         const SnackBar(content: Text(AppDictionary.tr(context, 'msg_account_deleted_success')), backgroundColor: Colors.red),
                       );
                     }
                   } else {

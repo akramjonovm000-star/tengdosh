@@ -97,7 +97,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Xabarnomalar"),
+        title: const Text(AppDictionary.tr(context, 'lbl_notifications')),
         centerTitle: true,
         actions: [
           if (_isRefreshingProfile)
@@ -139,8 +139,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         children: [
           Icon(Icons.notifications_off_outlined, size: 60, color: Colors.grey[400]),
           const SizedBox(height: 16),
-          Text(
-            "Xabarlar yo'q",
+          Text(AppDictionary.tr(context, 'msg_no_messages'),
             style: TextStyle(color: Colors.grey[600], fontSize: 16),
           ),
         ],
@@ -258,7 +257,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         ),
                         onPressed: _isRefreshingProfile ? null : _refreshProfile,
                         icon: const Icon(Icons.sync_rounded, size: 18),
-                        label: const Text("Premium-ni faollashtirish", style: TextStyle(fontSize: 13)),
+                        label: const Text(AppDictionary.tr(context, 'btn_activate_premium'), style: TextStyle(fontSize: 13)),
                       ),
                     ),
                   ],

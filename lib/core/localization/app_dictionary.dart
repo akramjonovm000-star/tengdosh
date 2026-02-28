@@ -988,6 +988,379 @@ class AppDictionary {
       'ru': "Последнее обновление: 16 февраля 2026 года",
     },
 
+        'lbl_general_status': {
+      'uz': "Umumiy Holat",
+      'ru': "Общее состояние",
+    },
+    'lbl_appeal_lowercase': {
+      'uz': "murojaat",
+      'ru': "обращение",
+    },
+    'msg_no_ads_yet': {
+      'uz': "Hozircha e'lonlar yo'q",
+      'ru': "Пока нет объявлений",
+    },
+    'lbl_books_clothes_tech': {
+      'uz': "Kitoblar, kiyimlar va texnikalar",
+      'ru': "Книги, одежда и техника",
+    },
+    'msg_soon_launch': {
+      'uz': "Tez orada ishga tushadi",
+      'ru': "Скоро будет запущено",
+    },
+    'msg_ad_added_successfully': {
+      'uz': "E'lon muvaffaqiyatli qo'shildi!",
+      'ru': "Объявление успешно добавлено!",
+    },
+    'msg_no_certs': {
+      'uz': "Sertifikatlar yo'q",
+      'ru': "Нет сертификатов",
+    },
+    'msg_cannot_open_tg': {
+      'uz': "Telegramni ochib bo'lmadi",
+      'ru': "Не удалось открыть Telegram",
+    },
+    'msg_my_tg_is_new': {
+      'uz': "Telegramim yangi",
+      'ru': "Мой Telegram новый",
+    },
+    'lbl_groups_list': {
+      'uz': "Guruhlar ro'yxati",
+      'ru': "Список групп",
+    },
+    'msg_no_assigned_groups': {
+      'uz': "Sizga biriktirilgan guruhlar yo'q",
+      'ru': "У вас нет прикрепленных групп",
+    },
+    'lbl_active_students': {
+      'uz': "Faol Talabalar",
+      'ru': "Активные студенты",
+    },
+    'lbl_not_uploaded': {
+      'uz': "Yuklamagan",
+      'ru': "Не загружено",
+    },
+    'lbl_uploaded': {
+      'uz': "Yuklagan",
+      'ru': "Загружено",
+    },
+    'lbl_status': {
+      'uz': "Holati",
+      'ru': "Статус",
+    },
+    'msg_no_new_appeals': {
+      'uz': "Yangi murojaatlar yo'q",
+      'ru': "Нет новых обращений",
+    },
+    'lbl_image_available': {
+      'uz': "Rasm mavjud",
+      'ru': "Есть фото",
+    },
+    'lbl_discussion': {
+      'uz': "Muhokama",
+      'ru': "Обсуждение",
+    },
+    'btn_delete_chat': {
+      'uz': "Chatni o'chirish",
+      'ru': "Удалить чат",
+    },
+    'msg_no_messages': {
+      'uz': "Xabarlar yo'q",
+      'ru': "Нет сообщений",
+    },
+    'lbl_teahouse': {
+      'uz': "Choyxona",
+      'ru': "Чайхана",
+    },
+    'lbl_my_direction': {
+      'uz': "Mening yo'nalishim",
+      'ru': "Мое направление",
+    },
+    'lbl_all_directions': {
+      'uz': "Barcha yo'nalishlar",
+      'ru': "Все направления",
+    },
+    'msg_username_length_err': {
+      'uz': "Username 2-25 belgi bo'lishi kerak",
+      'ru': "Username должен содержать от 2 до 25 символов",
+    },
+    'btn_write_message': {
+      'uz': "Xabar yozish",
+      'ru': "Написать сообщение",
+    },
+    'msg_no_posts': {
+      'uz': "Postlar yo'q",
+      'ru': "Нет постов",
+    },
+    'msg_no_reposts': {
+      'uz': "Repostlar yo'q",
+      'ru': "Нет репостов",
+    },
+    'btn_delete_message': {
+      'uz': "Xabarni o'chirish",
+      'ru': "Удалить сообщение",
+    },
+    'lbl_replying': {
+      'uz': "Javob berilmoqda",
+      'ru': "Отвечает",
+    },
+    'msg_del_error': {
+      'uz': "O'chirishda xatolik",
+      'ru': "Ошибка при удалении",
+    },
+    'btn_publish': {
+      'uz': "CHOP ETISH",
+      'ru': "ОПУБЛИКОВАТЬ",
+    },
+    'btn_add_variant': {
+      'uz': "Variant qo'shish",
+      'ru': "Добавить вариант",
+    },
+    'msg_confirm_delete_post': {
+      'uz': "Haqiqatan ham bu postni o'chirmoqchimisiz?",
+      'ru': "Вы действительно хотите удалить этот пост?",
+    },
+    'btn_copy_link': {
+      'uz': "Linkdan nusxa olish",
+      'ru': "Скопировать ссылку",
+    },
+    'msg_link_copied': {
+      'uz': "Link buferga nusxalandi!",
+      'ru': "Ссылка скопирована в буфер обмена!",
+    },
+    'btn_read_less': {
+      'uz': "Kamroq o'qish",
+      'ru': "Читать меньше",
+    },
+    'btn_read_more': {
+      'uz': "Davomi",
+      'ru': "Продолжение",
+    },
+    'msg_search_hint_user': {
+      'uz': "Username yoki ism kiriting\n(kamida 2 ta harf)",
+      'ru': "Введите Username или имя\n(минимум 2 буквы)",
+    },
+    'msg_edit_err': {
+      'uz': "Tahrirlashda xatolik bo'ldi",
+      'ru': "Ошибка при редактировании",
+    },
+    'msg_del_err_2': {
+      'uz': "O'chirishda xatolik bo'ldi",
+      'ru': "Ошибка при удалении",
+    },
+    'msg_unsaved_changes': {
+      'uz': "Saqlanmagan o'zgarishlar",
+      'ru': "Несохраненные изменения",
+    },
+    'btn_stay': {
+      'uz': "Qolish",
+      'ru': "Остаться",
+    },
+    'msg_format_menu_soon': {
+      'uz': "Formatlash menyusi (Tez orada)",
+      'ru': "Меню форматирования (Скоро)",
+    },
+    'msg_waiting_for_reply': {
+      'uz': "Javob kutilmoqda...",
+      'ru': "Ожидание ответа...",
+    },
+    'msg_name_kept_secret': {
+      'uz': "Ismingiz sir saqlanadi",
+      'ru': "Ваше имя будет скрыто",
+    },
+    'btn_attach_file_tg': {
+      'uz': "Fayl biriktirish (Telegram)",
+      'ru': "Прикрепить файл (Telegram)",
+    },
+    'lbl_send_media': {
+      'uz': "Rasm, video yoki PDF yuborish",
+      'ru': "Отправить фото, видео или PDF",
+    },
+    'msg_survey_success': {
+      'uz': "So'rovnoma muvaffaqiyatli yakunlandi!",
+      'ru': "Опрос успешно завершен!",
+    },
+    'msg_pwd_length_err': {
+      'uz': "Parol kamida 6 belgidan iborat bo'lishi kerak",
+      'ru': "Пароль должен состоять минимум из 6 символов",
+    },
+    'lbl_subject_data': {
+      'uz': "Fan Ma'lumotlari",
+      'ru': "Данные предмета",
+    },
+    'lbl_candidate_program': {
+      'uz': "Nomzod dasturi",
+      'ru': "Программа кандидата",
+    },
+    'lbl_candidates_list': {
+      'uz': "Nomzodlar ro'yxati",
+      'ru': "Список кандидатов",
+    },
+    'msg_contract_data_not_found': {
+      'uz': "Shartnoma ma'lumotlari topilmadi",
+      'ru': "Данные договора не найдены",
+    },
+    'lbl_status_colon': {
+      'uz': "Holat:",
+      'ru': "Статус:",
+    },
+    'lbl_finance_summary': {
+      'uz': "Moliya xulosasi",
+      'ru': "Финансовый отчет",
+    },
+    'lbl_income': {
+      'uz': "Kirim",
+      'ru': "Приход",
+    },
+    'lbl_subjects_and_resources': {
+      'uz': "Fanlar va Resurslar",
+      'ru': "Предметы и ресурсы",
+    },
+    'lbl_rent_subsidy': {
+      'uz': "Ijara Subsidiyasi",
+      'ru': "Субсидия на аренду",
+    },
+    'btn_delete_doc': {
+      'uz': "Hujjatni o'chirish",
+      'ru': "Удалить документ",
+    },
+    'msg_buy_plan_confirm': {
+      'uz': "Siz quyidagi tarifni sotib olmoqchimisiz?",
+      'ru': "Вы хотите купить следующий тариф?",
+    },
+    'lbl_premium_subscription': {
+      'uz': "Premium obuna",
+      'ru': "Премиум подписка",
+    },
+    'lbl_tariffs': {
+      'uz': "Tariflar:",
+      'ru': "Тарифы:",
+    },
+    'lbl_use_all_features_unlimited': {
+      'uz': "Barcha imkoniyatlardan cheklovsiz foydalaning",
+      'ru': "Пользуйтесь всеми возможностями без ограничений",
+    },
+    'lbl_your_balance': {
+      'uz': "Sizning balansingiz",
+      'ru': "Ваш баланс",
+    },
+    'msg_one_week_trial': {
+      'uz': "Bir haftalik bepul sinov davri!",
+      'ru': "Недельный бесплатный пробный период!",
+    },
+    'btn_start_now': {
+      'uz': "Hozir boshlash",
+      'ru': "Начать сейчас",
+    },
+    'msg_student_data_not_found': {
+      'uz': "Talaba ma'lumotlari topilmadi",
+      'ru': "Данные студента не найдены",
+    },
+    'lbl_choose_status_icon': {
+      'uz': "Status Belgisini Tanlang",
+      'ru': "Выберите значок статуса",
+    },
+    'btn_delete_account': {
+      'uz': "Hisobni o'chirish",
+      'ru': "Удалить аккаунт",
+    },
+    'msg_account_deleted_success': {
+      'uz': "Hisobingiz muvaffaqiyatli o'chirildi",
+      'ru': "Ваш аккаунт успешно удален",
+    },
+    'lbl_active_election': {
+      'uz': "Faol saylov!",
+      'ru': "Активные выборы!",
+    },
+    'msg_no_staff_found': {
+      'uz': "Xodimlar topilmadi",
+      'ru': "Сотрудники не найдены",
+    },
+    'lbl_student_data': {
+      'uz': "Talaba ma'lumotlari",
+      'ru': "Данные студента",
+    },
+    'lbl_living': {
+      'uz': "Yashamoqda",
+      'ru': "Проживает",
+    },
+    'lbl_platform_activity': {
+      'uz': "Platforma aktivligi",
+      'ru': "Активность платформы",
+    },
+    'msg_u_can_upload_more_bot': {
+      'uz': "Yana yuklashingiz mumkin (Bot orqali)",
+      'ru': "Вы можете загрузить еще (через Бот)",
+    },
+    'msg_press_btn_send_img': {
+      'uz': "Tugmani bosing va Botga rasm yuboring",
+      'ru': "Нажмите кнопку и отправьте фото в Бот",
+    },
+    'lbl_social_activity': {
+      'uz': "Ijtimoiy Faollik",
+      'ru': "Социальная активность",
+    },
+    'btn_add_activity': {
+      'uz': "Faollik qo'shish",
+      'ru': "Добавить активность",
+    },
+    'msg_confirm_delete_activity': {
+      'uz': "Haqiqatan ham ushbu faollikni o'chirmoqchimisiz?",
+      'ru': "Вы действительно хотите удалить эту активность?",
+    },
+    'msg_deleted': {
+      'uz': "O'chirildi!",
+      'ru': "Удалено!",
+    },
+    'lbl_club_activities_events': {
+      'uz': "Klubdagi faolliklari (Tadbirlar)",
+      'ru': "Активности в клубе (Мероприятия)",
+    },
+    'msg_no_activities_yet': {
+      'uz': "Hozircha faollik yo'q",
+      'ru': "Пока нет активностей",
+    },
+    'btn_add_club': {
+      'uz': "Klub qo'shish",
+      'ru': "Добавить клуб",
+    },
+    'btn_edit_club': {
+      'uz': "Klubni tahrirlash",
+      'ru': "Редактировать клуб",
+    },
+    'btn_join_club': {
+      'uz': "Klubga a'zo bo'lish",
+      'ru': "Вступить в клуб",
+    },
+    'lbl_university_club': {
+      'uz': "Universitet Klubi",
+      'ru': "Университетский клуб",
+    },
+    'msg_event_loc_time_not_entered': {
+      'uz': "Tadbir manzili / vaqti kiritilmagan",
+      'ru': "Адрес / время мероприятия не указаны",
+    },
+    'msg_club_created_success': {
+      'uz': "Klub muvaffaqiyatli yaratildi!",
+      'ru': "Клуб успешно создан!",
+    },
+    'btn_activate_premium': {
+      'uz': "Premium-ni faollashtirish",
+      'ru': "Активировать Премиум",
+    },
+    'msg_all_copies_busy': {
+      'uz': "Hozirda barcha nusxalar band. Navbatga yozilsangiz, kitob qaytishi bilan sizga habar beramiz.",
+      'ru': "На данный момент все экземпляры заняты. Если вы запишетесь в очередь, мы сообщим, как только книга вернется.",
+    },
+    'lbl_sorting': {
+      'uz': "Saralash",
+      'ru': "Сортировка",
+    },
+    'lbl_filter': {
+      'uz': "Filtr",
+      'ru': "Фильтр",
+    },
+
     // Default Fallbacks
     'error': {
       'uz': 'Xatolik',

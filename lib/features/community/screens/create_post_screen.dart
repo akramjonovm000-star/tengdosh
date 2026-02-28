@@ -79,7 +79,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     final content = _contentController.text.trim();
 
     if (content.isEmpty) {
-       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Iltimos, matn yozing!")));
+       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_please_write_text'))));
        return;
     }
 
@@ -138,7 +138,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         actions: [
           TextButton(
             onPressed: _publish, 
-            child: const Text("CHOP ETISH", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))
+            child: const Text(AppDictionary.tr(context, 'btn_publish'), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))
           )
         ],
       ),
@@ -159,8 +159,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   value: _selectedScope,
                   isExpanded: true,
                   items: const [
-                    DropdownMenuItem(value: 'university', child: Text("🏛️  Universitet (Barchaga)")),
-                    DropdownMenuItem(value: 'faculty', child: Text("🎓  Fakultet (Dekanat)")),
+                    DropdownMenuItem(value: 'university', child: Text(AppDictionary.tr(context, 'lbl_university_all'))),
+                    DropdownMenuItem(value: 'faculty', child: Text(AppDictionary.tr(context, 'lbl_faculty_dean'))),
                     DropdownMenuItem(value: 'specialty', child: Text("🎯  Yo'nalish (Guruhga)")),
                   ],
                   onChanged: (val) => setState(() => _selectedScope = val!),
@@ -179,7 +179,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             TextField(
               controller: _titleController,
               decoration: const InputDecoration(
-                hintText: "Sarlavha (Ixtiyoriy)",
+                hintText: AppDictionary.tr(context, 'hint_title_opt'),
                 border: InputBorder.none,
                 hintStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey),
               ),
@@ -193,7 +193,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               maxLines: null,
               minLines: 5,
               decoration: const InputDecoration(
-                hintText: "Bu yerga yozing...",
+                hintText: AppDictionary.tr(context, 'hint_type_here'),
                 border: InputBorder.none,
               ),
             ),
@@ -241,7 +241,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               TextButton.icon(
                 onPressed: _addPollOption,
                 icon: const Icon(Icons.add),
-                label: const Text("Variant qo'shish"),
+                label: const Text(AppDictionary.tr(context, 'btn_add_variant')),
               )
             ]
           ],
@@ -261,7 +261,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           DropdownButton<int?>(
             value: _selectedTargetFacultyId,
             isExpanded: true,
-             hint: const Text("Fakultetni tanlang (Ixtiyoriy)"),
+             hint: const Text(AppDictionary.tr(context, 'hint_select_faculty_opt')),
             items: [
               const DropdownMenuItem<int?>(value: null, child: Text("📌 O'z fakultetim")),
               ..._faculties.map((f) => DropdownMenuItem<int?>(

@@ -85,7 +85,7 @@ class _StaffSearchScreenState extends State<StaffSearchScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text("Xodimlar monitoringi"),
+        title: const Text(AppDictionary.tr(context, 'lbl_staff_monitoring')),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
@@ -168,7 +168,7 @@ class _StaffSearchScreenState extends State<StaffSearchScreen> {
                       children: [
                         Icon(Icons.person_off_rounded, size: 64, color: Colors.grey),
                         SizedBox(height: 16),
-                        Text("Xodimlar topilmadi", style: TextStyle(color: Colors.grey, fontSize: 16)),
+                        Text(AppDictionary.tr(context, 'msg_no_staff_found'), style: TextStyle(color: Colors.grey, fontSize: 16)),
                       ],
                     ),
                   )

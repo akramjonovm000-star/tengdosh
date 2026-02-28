@@ -113,7 +113,7 @@ class _TutorGroupStudentsScreenState extends State<TutorGroupStudentsScreen> {
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text("Faol Talabalar", style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12)),
+                                  Text(AppDictionary.tr(context, 'lbl_active_students'), style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12)),
                                   Text("$registeredCount", style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
                                 ],
                               ),

@@ -104,8 +104,7 @@ class _FacultyAppealsScreenState extends State<FacultyAppealsScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          "Umumiy Holat",
+                        Text(AppDictionary.tr(context, 'lbl_general_status'),
                           style: TextStyle(fontSize: 13, color: Colors.grey[500], fontWeight: FontWeight.w500),
                         ),
                         const SizedBox(height: 4),
@@ -116,8 +115,7 @@ class _FacultyAppealsScreenState extends State<FacultyAppealsScreen> {
                               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black),
                             ),
                             const SizedBox(width: 6),
-                             Text(
-                              "murojaat",
+                             Text(AppDictionary.tr(context, 'lbl_appeal_lowercase'),
                               style: TextStyle(fontSize: 14, color: Colors.grey[600], height: 1.5),
                             ),
                             const SizedBox(width: 12),

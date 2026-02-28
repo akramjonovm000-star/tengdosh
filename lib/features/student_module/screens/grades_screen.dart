@@ -172,7 +172,7 @@ class _GradesScreenState extends State<GradesScreen> {
                 ),
               );
             } else {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Fan ID topilmadi")));
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_subject_id_not_found'))));
             }
           },
           child: Padding(

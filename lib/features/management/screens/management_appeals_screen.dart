@@ -426,7 +426,7 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
               if (appeal.status == 'pending' || appeal.status == 'processing')
                 TextButton(
                   onPressed: () => _showReplyDialog(appeal.id),
-                  child: const Text("Javob berish"),
+                  child: const Text(AppDictionary.tr(context, 'btn_reply')),
                 )
             ],
           ),
@@ -441,12 +441,12 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Murojaatga javob"),
+        title: const Text(AppDictionary.tr(context, 'lbl_appeal_answer')),
         content: TextField(
           controller: controller,
           maxLines: 3,
           decoration: const InputDecoration(
-            hintText: "Javob matnini kiriting...",
+            hintText: AppDictionary.tr(context, 'hint_enter_answer_text'),
             border: OutlineInputBorder(),
           ),
         ),
@@ -473,7 +473,7 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
       _loadData(); // Refresh
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Javob muvaffaqiyatli yuborildi"), backgroundColor: Colors.green)
+          const SnackBar(content: Text(AppDictionary.tr(context, 'msg_answer_sent_success')), backgroundColor: Colors.green)
         );
       }
     } catch (e) {
@@ -489,7 +489,7 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
     try {
       await _service.resolveAppeal(id);
       _loadData(); // Refresh
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Murojaat yopildi"), backgroundColor: Colors.green));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_appeal_closed_2')), backgroundColor: Colors.green));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Xatolik: $e"), backgroundColor: Colors.red));
     }

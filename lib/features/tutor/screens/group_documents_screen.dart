@@ -165,12 +165,12 @@ class _GroupDocumentsScreenState extends State<GroupDocumentsScreen> {
                   flex: 2,
                   child: _buildFilterDropdown(
                     value: _selectedStatus,
-                    label: "Holati",
+                    label: AppDictionary.tr(context, 'lbl_status'),
                     icon: Icons.filter_list_rounded,
                     items: const [
                       DropdownMenuItem(value: "all", child: Text("Barchasi", style: TextStyle(fontSize: 12))),
-                      DropdownMenuItem(value: "missing", child: Text("Yuklamagan", style: TextStyle(fontSize: 12))),
-                      DropdownMenuItem(value: "uploaded", child: Text("Yuklagan", style: TextStyle(fontSize: 12))),
+                      DropdownMenuItem(value: "missing", child: Text(AppDictionary.tr(context, 'lbl_not_uploaded'), style: TextStyle(fontSize: 12))),
+                      DropdownMenuItem(value: "uploaded", child: Text(AppDictionary.tr(context, 'lbl_uploaded'), style: TextStyle(fontSize: 12))),
                     ],
                     onChanged: (v) => setState(() => _selectedStatus = v!),
                   ),

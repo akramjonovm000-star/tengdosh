@@ -245,7 +245,7 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
     return Scaffold(
         backgroundColor: AppTheme.backgroundWhite,
         appBar: AppBar(
-          title: const Text("Choyxona", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          title: const Text(AppDictionary.tr(context, 'lbl_teahouse'), style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
           backgroundColor: Colors.white,
           elevation: 0,
           centerTitle: false,
@@ -417,9 +417,9 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
      final myValue = user?.universityId ?? 0;
      
      final items = [
-        PopupMenuItem<int>(value: allValue, child: const Text("Barcha universitetlar")),
+        PopupMenuItem<int>(value: allValue, child: const Text(AppDictionary.tr(context, 'lbl_all_universities'))),
         if (myValue != 0)
-           PopupMenuItem<int>(value: myValue, child: const Text("Mening universitetim")),
+           PopupMenuItem<int>(value: myValue, child: const Text(AppDictionary.tr(context, 'lbl_my_university'))),
      ];
      
      // Note: We don't have _selectedUniversityId state yet, assuming 'university' scope relies on backend user context mostly.
@@ -433,9 +433,9 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
     final myValue = user?.facultyId ?? 0;
     
     final menuItems = [
-       PopupMenuItem<int>(value: allValue, child: const Text("Barcha fakultetlar")),
+       PopupMenuItem<int>(value: allValue, child: const Text(AppDictionary.tr(context, 'lbl_all_faculties'))),
        if (myValue != 0)
-         PopupMenuItem<int>(value: myValue, child: const Text("Mening fakultetim")),
+         PopupMenuItem<int>(value: myValue, child: const Text(AppDictionary.tr(context, 'lbl_my_faculty'))),
     ];
 
     showMenu<int>(
@@ -458,9 +458,9 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
     final myValue = user?.specialtyName;
     
     final items = [
-      const PopupMenuItem<String>(value: "ALL", child: Text("Barcha yo'nalishlar")),
+      const PopupMenuItem<String>(value: "ALL", child: Text(AppDictionary.tr(context, 'lbl_all_directions'))),
       if (myValue != null)
-        PopupMenuItem<String>(value: myValue, child: const Text("Mening yo'nalishim")),
+        PopupMenuItem<String>(value: myValue, child: const Text(AppDictionary.tr(context, 'lbl_my_direction'))),
     ];
     
     showMenu<String>(

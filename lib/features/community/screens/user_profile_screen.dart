@@ -114,7 +114,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   Future<void> _toggleFollow() async {
     if (widget.authorId == "0" || widget.authorId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Foydalanuvchi topilmadi")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_user_not_found'))));
       return;
     }
 
@@ -206,7 +206,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   Future<void> _saveUsername() async {
      final value = _usernameController.text.trim();
      if (value.length < 2 || value.length > 25) {
-       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Username 2-25 belgi bo'lishi kerak")));
+       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_username_length_err'))));
        return;
      }
      
@@ -221,7 +221,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
          _currentUsername = result['username'];
          _isEditingUsername = false;
        });
-       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Username saqlandi!")));
+       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_username_saved'))));
      } else {
        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result['message'] ?? "Xatolik")));
      }
@@ -532,7 +532,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                             side: const BorderSide(color: Colors.black12),
                             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                           ),
-                          child: const Text("Xabar yozish", style: TextStyle(color: Colors.black)),
+                          child: const Text(AppDictionary.tr(context, 'btn_write_message'), style: TextStyle(color: Colors.black)),
                         )
                       ],
                     ),
@@ -563,7 +563,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               _isLoading 
                  ? const Center(child: CircularProgressIndicator()) 
                  : _posts.isEmpty 
-                    ? const Center(child: Text("Postlar yo'q", style: TextStyle(color: Colors.grey)))
+                    ? const Center(child: Text(AppDictionary.tr(context, 'msg_no_posts'), style: TextStyle(color: Colors.grey)))
                     : ListView.builder(
                         padding: EdgeInsets.zero,
                         itemCount: _posts.length,
@@ -594,7 +594,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                             children: [
                               Icon(Icons.repeat, size: 48, color: Colors.grey),
                               SizedBox(height: 8),
-                              Text("Repostlar yo'q", style: TextStyle(color: Colors.grey)),
+                              Text(AppDictionary.tr(context, 'msg_no_reposts'), style: TextStyle(color: Colors.grey)),
                             ],
                           ),
                         )

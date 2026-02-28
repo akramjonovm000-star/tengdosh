@@ -83,7 +83,7 @@ class _ManagementAppealDetailScreenState extends State<ManagementAppealDetailScr
 
     if (_error != null || _detail == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text("Xatolik")),
+        appBar: AppBar(title: const Text(AppDictionary.tr(context, 'msg_error'))),
         body: Center(child: Text(_error ?? "Murojaat topilmadi")),
       );
     }
@@ -199,7 +199,7 @@ class _ManagementAppealDetailScreenState extends State<ManagementAppealDetailScr
                 controller: _replyController,
                 enabled: !_isReplying,
                 decoration: InputDecoration(
-                  hintText: "Javob yozish...",
+                  hintText: AppDictionary.tr(context, 'hint_writing_answer'),
                   filled: true,
                   fillColor: Colors.grey[100],
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),

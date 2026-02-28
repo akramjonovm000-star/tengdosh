@@ -99,7 +99,7 @@ class _ContractScreenState extends State<ContractScreen> {
                 backgroundColor: AppTheme.primaryBlue,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text("Qayta urinish"),
+              child: const Text(AppDictionary.tr(context, 'btn_retry')),
             ),
           ],
         ),
@@ -116,8 +116,7 @@ class _ContractScreenState extends State<ContractScreen> {
           children: [
             Icon(Icons.inventory_2_outlined, size: 80, color: Colors.grey),
             SizedBox(height: 16),
-            Text(
-              "Shartnoma ma'lumotlari topilmadi",
+            Text(AppDictionary.tr(context, 'msg_contract_data_not_found'),
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 8),
@@ -166,8 +165,7 @@ class _ContractScreenState extends State<ContractScreen> {
                 children: [
                   const Icon(Icons.info_outline, color: AppTheme.primaryBlue),
                   const SizedBox(width: 12),
-                  const Text(
-                    "Holat:",
+                  const Text(AppDictionary.tr(context, 'lbl_status_colon'),
                     style: TextStyle(fontWeight: FontWeight.w600, color: AppTheme.primaryBlue),
                   ),
                   const Spacer(),
@@ -181,8 +179,7 @@ class _ContractScreenState extends State<ContractScreen> {
             const SizedBox(height: 24),
 
             // Financial Summary
-            const Text(
-              "Moliya xulosasi",
+            const Text(AppDictionary.tr(context, 'lbl_finance_summary'),
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
@@ -327,8 +324,7 @@ class _ContractScreenState extends State<ContractScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  "Kirim", // Most items in history are payments (kirim)
+                const Text(AppDictionary.tr(context, 'lbl_income'), // Most items in history are payments (kirim)
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 const SizedBox(height: 4),

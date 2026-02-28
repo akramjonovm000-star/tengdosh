@@ -79,7 +79,7 @@ class _MarketScreenState extends State<MarketScreen> {
           if (_isLoading)
             const SliverFillRemaining(child: Center(child: CircularProgressIndicator()))
           else if (_featuredItems.isEmpty && _newItems.isEmpty)
-            const SliverFillRemaining(child: Center(child: Text("Hozircha e'lonlar yo'q")))
+            const SliverFillRemaining(child: Center(child: Text(AppDictionary.tr(context, 'msg_no_ads_yet'))))
           else ...[
             _buildHeroSection(),
             if (_featuredItems.isNotEmpty) ...[
@@ -122,7 +122,7 @@ class _MarketScreenState extends State<MarketScreen> {
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
           child: TextField(
             decoration: InputDecoration(
-              hintText: "Kitob, texnika yoki ish qidiring...",
+              hintText: AppDictionary.tr(context, 'hint_market_search'),
               prefixIcon: const Icon(Icons.search, color: Colors.grey),
               filled: true,
               fillColor: Colors.grey[100],
@@ -161,8 +161,7 @@ class _MarketScreenState extends State<MarketScreen> {
                 style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Serif'),
               ),
               SizedBox(height: 8),
-              Text(
-                "Kitoblar, kiyimlar va texnikalar",
+              Text(AppDictionary.tr(context, 'lbl_books_clothes_tech'),
                 style: TextStyle(color: Colors.white70, fontSize: 14),
               ),
             ],

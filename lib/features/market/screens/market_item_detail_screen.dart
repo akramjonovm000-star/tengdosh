@@ -110,7 +110,7 @@ class MarketItemDetailScreen extends StatelessWidget {
                 child: ElevatedButton.icon(
                   onPressed: () => _launchTelegram(item.telegramUsername!),
                   icon: const Icon(Icons.send), // Telegram icon substitute
-                  label: const Text("Telegram"),
+                  label: const Text(AppDictionary.tr(context, 'lbl_telegram')),
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, padding: const EdgeInsets.symmetric(vertical: 12)),
                 ),
               ),

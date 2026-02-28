@@ -62,7 +62,7 @@ class UserSearchDelegate extends SearchDelegate {
                       children: [
                         Icon(Icons.search, size: 64, color: Colors.grey),
                         SizedBox(height: 16),
-                        Text("Username yoki ism kiriting\n(kamida 2 ta harf)", textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
+                        Text(AppDictionary.tr(context, 'msg_search_hint_user'), textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
                       ],
                     ),
                   ),
@@ -121,7 +121,7 @@ class UserSearchDelegate extends SearchDelegate {
         final students = snapshot.data ?? [];
         
         if (students.isEmpty) {
-           return const Center(child: Text("Hech kim topilmadi"));
+           return const Center(child: Text(AppDictionary.tr(context, 'msg_no_one_found')));
         }
 
         return ListView.separated(

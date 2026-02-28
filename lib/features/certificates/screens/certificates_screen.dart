@@ -83,7 +83,7 @@ class _CertificatesScreenState extends State<CertificatesScreen> {
 
   Future<void> _sendToBot(int certId) async {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Sertifikat botga yuborilmoqda...")),
+      const SnackBar(content: Text(AppDictionary.tr(context, 'msg_sending_cert_to_bot'))),
     );
     
     final msg = await _dataService.sendCertificateToBot(certId);
@@ -129,8 +129,7 @@ class _CertificatesScreenState extends State<CertificatesScreen> {
               children: [
                 Icon(Icons.workspace_premium_outlined, size: 80, color: Colors.grey[200]),
                 const SizedBox(height: 16),
-                Text(
-                  "Sertifikatlar yo'q",
+                Text(AppDictionary.tr(context, 'msg_no_certs'),
                   style: TextStyle(color: Colors.grey[400], fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 8),

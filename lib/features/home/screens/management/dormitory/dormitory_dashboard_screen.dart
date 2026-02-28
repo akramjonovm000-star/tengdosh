@@ -152,8 +152,7 @@ class DormitoryDashboardScreen extends StatelessWidget {
                           color: Colors.green.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: const Text(
-                          "Yashamoqda",
+                        child: const Text(AppDictionary.tr(context, 'lbl_living'),
                           style: TextStyle(fontSize: 11, color: Colors.green, fontWeight: FontWeight.bold),
                         ),
                       ),

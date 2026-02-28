@@ -327,7 +327,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
               child: TextField(
                 controller: _controller,
                 decoration: InputDecoration(
-                  hintText: "Xabar yozing...",
+                  hintText: AppDictionary.tr(context, 'hint_write_message'),
                   hintStyle: const TextStyle(color: Colors.grey),
                   filled: true,
                   fillColor: AppTheme.backgroundWhite,

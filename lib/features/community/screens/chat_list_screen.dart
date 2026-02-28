@@ -33,7 +33,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("Chatni o'chirish"),
+        title: const Text(AppDictionary.tr(context, 'btn_delete_chat')),
         content: Text("Haqiqatan ham ${chat.formattedName} bilan suhbatni o'chirib yubormoqchimisiz?"),
         actions: [
           TextButton(
@@ -55,7 +55,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
         _refreshChats();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Chat muvaffaqiyatli o'chirildi")),
+            const SnackBar(content: Text(AppDictionary.tr(context, 'msg_chat_deleted'))),
           );
         }
       } else {
@@ -244,8 +244,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
         children: [
           Icon(Icons.mark_chat_unread_outlined, size: 64, color: Colors.grey[300]),
           const SizedBox(height: 16),
-          Text(
-            "Xabarlar yo'q",
+          Text(AppDictionary.tr(context, 'msg_no_messages'),
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey[600]),
           ),
           const SizedBox(height: 8),

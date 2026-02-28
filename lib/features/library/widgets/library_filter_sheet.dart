@@ -61,8 +61,7 @@ class _LibraryFilterSheetState extends State<LibraryFilterSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            "Filtr",
+          const Text(AppDictionary.tr(context, 'lbl_filter'),
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 24),
@@ -86,7 +85,7 @@ class _LibraryFilterSheetState extends State<LibraryFilterSheet> {
             }).toList(),
           ),
           const SizedBox(height: 24),
-          const Text("Holati", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+          const Text(AppDictionary.tr(context, 'lbl_status'), style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text(AppDictionary.tr(context, 'lib_available_only')),
@@ -102,7 +101,7 @@ class _LibraryFilterSheetState extends State<LibraryFilterSheet> {
             activeColor: AppTheme.primaryBlue,
           ),
           const SizedBox(height: 24),
-          const Text("Saralash", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+          const Text(AppDictionary.tr(context, 'lbl_sorting'), style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [

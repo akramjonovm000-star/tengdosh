@@ -89,7 +89,7 @@ class _EditPostSheetState extends State<EditPostSheet> {
     
     // Validate
     if (_contentController.text.trim().isEmpty) {
-       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Iltimos, matn yozing!")));
+       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_please_write_text'))));
        return;
     }
 
@@ -107,7 +107,7 @@ class _EditPostSheetState extends State<EditPostSheet> {
     // The parent widget (PostCard) will handle the background API call.
     Navigator.pop(context, finalContent);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Post saqlanmoqda... ⏳"), duration: Duration(milliseconds: 1000)),
+      const SnackBar(content: Text(AppDictionary.tr(context, 'msg_saving_post')), duration: Duration(milliseconds: 1000)),
     );
   }
 
@@ -117,12 +117,12 @@ class _EditPostSheetState extends State<EditPostSheet> {
     final shouldPop = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("Saqlanmagan o'zgarishlar"),
+        title: const Text(AppDictionary.tr(context, 'msg_unsaved_changes')),
         content: const Text("Chiqib ketsangiz o'zgarishlaringiz yo'qoladi."),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text("Qolish", style: TextStyle(color: Colors.blue)),
+            child: const Text(AppDictionary.tr(context, 'btn_stay'), style: TextStyle(color: Colors.blue)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -184,7 +184,7 @@ class _EditPostSheetState extends State<EditPostSheet> {
                     TextField(
                       controller: _titleController,
                       decoration: const InputDecoration(
-                        hintText: "Sarlavha (Ixtiyoriy)",
+                        hintText: AppDictionary.tr(context, 'hint_title_opt'),
                         border: InputBorder.none,
                         hintStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey),
                         contentPadding: EdgeInsets.symmetric(horizontal: 12),
@@ -214,7 +214,7 @@ class _EditPostSheetState extends State<EditPostSheet> {
                               expands: true,
                               textAlignVertical: TextAlignVertical.top,
                               decoration: const InputDecoration(
-                                hintText: "Bu yerga yozing...",
+                                hintText: AppDictionary.tr(context, 'hint_type_here'),
                                 border: InputBorder.none,
                                 contentPadding: EdgeInsets.fromLTRB(16, 16, 16, 60), // Space for button at bottom
                               ),
@@ -234,7 +234,7 @@ class _EditPostSheetState extends State<EditPostSheet> {
                                 onTap: () {
                                   // Placeholder for formatting menu
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text("Formatlash menyusi (Tez orada)"), duration: Duration(seconds: 1)),
+                                    const SnackBar(content: Text(AppDictionary.tr(context, 'msg_format_menu_soon')), duration: Duration(seconds: 1)),
                                   );
                                 },
                                 borderRadius: BorderRadius.circular(50),

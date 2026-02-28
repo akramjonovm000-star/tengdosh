@@ -51,7 +51,7 @@ class _TutorHomeScreenState extends State<TutorHomeScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundWhite,
       appBar: AppBar(
-        title: const Text("Tyutor Kabineti"),
+        title: const Text(AppDictionary.tr(context, 'lbl_tutor_cabinet')),
         centerTitle: false,
         actions: [
           IconButton(
@@ -193,7 +193,7 @@ class _TutorHomeScreenState extends State<TutorHomeScreen> {
                       Colors.redAccent,
                       () {
                          ScaffoldMessenger.of(context).showSnackBar(
-                           const SnackBar(content: Text("Tez kunda ishga tushadi"))
+                           const SnackBar(content: Text(AppDictionary.tr(context, 'msg_coming_soon')))
                          );
                       },
                     ),

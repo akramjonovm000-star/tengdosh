@@ -44,7 +44,7 @@ class ManagementDashboard extends StatelessWidget {
                 },
                 borderRadius: BorderRadius.circular(16),
                 child: _StatCard(
-                  title: "Talabalar",
+                  title: AppDictionary.tr(context, 'lbl_students_2'),
                   value: studentCount.toString(),
                   icon: Icons.people_alt_rounded,
                   color: Colors.blue,
@@ -62,7 +62,7 @@ class ManagementDashboard extends StatelessWidget {
                 },
                 borderRadius: BorderRadius.circular(16),
                 child: _StatCard(
-                  title: "Xodimlar",
+                  title: AppDictionary.tr(context, 'lbl_staff_2'),
                   value: staffCount.toString(),
                   icon: Icons.business_center_rounded,
                   color: Colors.orange,
@@ -99,7 +99,7 @@ class ManagementDashboard extends StatelessWidget {
               },
             ),
             DashboardCard(
-              title: "Xodimlar monitoringi",
+              title: AppDictionary.tr(context, 'lbl_staff_monitoring'),
               icon: Icons.manage_accounts_rounded,
               color: Colors.deepPurple,
               onTap: () {
@@ -127,7 +127,7 @@ class ManagementDashboard extends StatelessWidget {
               },
             ),
             DashboardCard(
-              title: "Hujjatlar Arxivi",
+              title: AppDictionary.tr(context, 'lbl_docs_archive'),
               icon: Icons.inventory_2_rounded,
               color: Colors.blueGrey,
               onTap: () {
@@ -144,7 +144,7 @@ class ManagementDashboard extends StatelessWidget {
                   onTap: () => _showNotImplemented(context, "Analitika"),
                 ),
                 DashboardCard(
-                  title: "Kutubxona",
+                  title: AppDictionary.tr(context, 'lbl_library_2'),
                   icon: Icons.local_library_rounded,
                   color: Colors.blueAccent,
                   onTap: () {
@@ -159,7 +159,7 @@ class ManagementDashboard extends StatelessWidget {
                   },
                 ),
                 DashboardCard(
-                  title: "Faolliklar",
+                  title: AppDictionary.tr(context, 'lbl_activities'),
                   icon: Icons.analytics_rounded,
                   color: Colors.orange,
                   onTap: () {
@@ -201,8 +201,7 @@ class ManagementDashboard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                "Platforma aktivligi",
+              const Text(AppDictionary.tr(context, 'lbl_platform_activity'),
                 style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
               ),
               Container(
@@ -235,7 +234,7 @@ class ManagementDashboard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("Faol Talabalar", style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12)),
+                  Text(AppDictionary.tr(context, 'lbl_active_students'), style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12)),
                   const SizedBox(height: 4),
                   Text("$active", style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
                 ],
@@ -291,7 +290,7 @@ class ManagementDashboard extends StatelessWidget {
             const SizedBox(height: 24),
             _buildSubmenuItem(
               context,
-              title: "HEMIS Monitoring",
+              title: AppDictionary.tr(context, 'lbl_hemis_monitoring'),
               icon: Icons.military_tech_rounded,
               color: Colors.amber,
               onTap: () => _showNotImplemented(context, "HEMIS"),
@@ -299,7 +298,7 @@ class ManagementDashboard extends StatelessWidget {
             const SizedBox(height: 12),
             _buildSubmenuItem(
               context,
-              title: "Moliyaviy Holat",
+              title: AppDictionary.tr(context, 'lbl_financial_status_2'),
               icon: Icons.account_balance_wallet_rounded,
               color: Colors.cyan,
               onTap: () => _showNotImplemented(context, "Moliya"),

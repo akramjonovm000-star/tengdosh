@@ -223,7 +223,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Hujjatni o'chirish"),
+        title: const Text(AppDictionary.tr(context, 'btn_delete_doc')),
         content: Text("Rostdan ham '$title' hujjatini o'chirmoqchimisiz?"),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text(AppDictionary.tr(context, 'btn_cancel'))),
@@ -255,7 +255,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
 
   Future<void> _sendToBot(int docId) async {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Hujjat botga yuborilmoqda...")),
+      const SnackBar(content: Text(AppDictionary.tr(context, 'msg_sending_doc_to_bot'))),
     );
     
     final msg = await _dataService.sendDocumentToBot(docId);

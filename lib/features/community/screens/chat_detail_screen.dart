@@ -76,7 +76,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       });
     } else {
       // Error
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Xabar yuborishda xatolik")));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_msg_send_error'))));
     }
   }
 
@@ -359,10 +359,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       builder: (context) {
         return AlertDialog(
           scrollable: true,
-          title: const Text("Xabarni tahrirlash"),
+          title: const Text(AppDictionary.tr(context, 'lbl_edit_message')),
           content: TextField(
             controller: editController,
-            decoration: const InputDecoration(hintText: "Yangi matn..."),
+            decoration: const InputDecoration(hintText: AppDictionary.tr(context, 'hint_new_text')),
             minLines: 1,
             maxLines: 5,
           ),
@@ -403,7 +403,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text("Xabarni o'chirish"),
+          title: const Text(AppDictionary.tr(context, 'btn_delete_message')),
           content: const Text("Haqiqatan ham ushbu xabarni o'chirib yubormoqchimisiz?"),
           actions: [
             TextButton(
@@ -420,7 +420,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                     _messages.removeWhere((m) => m.id == msg.id);
                   });
                 } else {
-                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("O'chirishda xatolik")));
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_del_error'))));
                 }
               },
               child: const Text("O'chirish", style: TextStyle(color: Colors.white)),
@@ -447,8 +447,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        "Javob berilmoqda",
+                      const Text(AppDictionary.tr(context, 'lbl_replying'),
                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.primaryBlue),
                       ),
                       Text(

@@ -55,7 +55,7 @@ class _TutorCertificatesGroupsScreenState extends State<TutorCertificatesGroupsS
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text("Guruhlar ro'yxati", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(AppDictionary.tr(context, 'lbl_groups_list'), style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: Colors.black87,
@@ -99,7 +99,7 @@ class _TutorCertificatesGroupsScreenState extends State<TutorCertificatesGroupsS
             child: TextField(
               onChanged: (v) => setState(() => _searchQuery = v),
               decoration: InputDecoration(
-                hintText: "Guruhni qidiring...",
+                hintText: AppDictionary.tr(context, 'hint_search_group'),
                 prefixIcon: const Icon(Icons.search, color: Colors.grey),
                 filled: true,
                 fillColor: Colors.white,

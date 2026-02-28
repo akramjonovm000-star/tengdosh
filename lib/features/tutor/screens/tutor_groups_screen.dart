@@ -50,7 +50,7 @@ class _TutorGroupsScreenState extends State<TutorGroupsScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _groups.isEmpty
-              ? const Center(child: Text("Sizga biriktirilgan guruhlar yo'q"))
+              ? const Center(child: Text(AppDictionary.tr(context, 'msg_no_assigned_groups')))
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: _groups.length,

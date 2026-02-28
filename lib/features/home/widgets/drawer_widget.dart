@@ -15,8 +15,8 @@ class AppDrawer extends StatelessWidget {
         children: [
           const UserAccountsDrawerHeader(
             decoration: BoxDecoration(color: AppTheme.primaryBlue),
-            accountName: Text("Talaba"),
-            accountEmail: Text("Student Portal"),
+            accountName: Text(AppDictionary.tr(context, 'lbl_student')),
+            accountEmail: Text(AppDictionary.tr(context, 'lbl_student_portal')),
             currentAccountPicture: CircleAvatar(
               backgroundColor: Colors.white,
               child: Icon(Icons.person, color: AppTheme.primaryBlue),

@@ -44,7 +44,7 @@ class _ActivityMonitoringScreenState extends State<ActivityMonitoringScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text("Ijtimoiy Faolliklar"),
+        title: const Text(AppDictionary.tr(context, 'lbl_social_activities')),
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -123,21 +123,21 @@ class _ActivityMonitoringScreenState extends State<ActivityMonitoringScreen> {
             "${_dashboardStats!['pending_count']}", 
             Icons.hourglass_empty, 
             Colors.orange,
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ActivityReviewScreen(title: "Kutilayotgan Faolliklar", initialStatus: "pending"))),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ActivityReviewScreen(title: AppDictionary.tr(context, 'lbl_pending_activities'), initialStatus: "pending"))),
         ),
         _buildStatCard(
             "Tasdiqlangan", 
             "${_dashboardStats!['approved_count']}", 
             Icons.check_circle, 
             Colors.green,
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ActivityReviewScreen(title: "Tasdiqlangan Faolliklar", initialStatus: "approved"))),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ActivityReviewScreen(title: AppDictionary.tr(context, 'lbl_approved_activities'), initialStatus: "approved"))),
         ),
         _buildStatCard(
             "Bu Oy", 
             "${_dashboardStats!['activities_this_month']}", 
             Icons.calendar_today, 
             Colors.purple,
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ActivityReviewScreen(title: "Shu Oydagi Faolliklar", initialStatus: "Barchasi"))),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ActivityReviewScreen(title: AppDictionary.tr(context, 'lbl_activities_this_month'), initialStatus: "Barchasi"))),
         ),
       ],
     );
@@ -254,7 +254,7 @@ class _ActivityMonitoringScreenState extends State<ActivityMonitoringScreen> {
   Future<void> _approve(int id) async {
     final success = await DataService().approveActivity(id);
     if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Faollik tasdiqlandi")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_activity_approved'))));
       _loadData();
     }
   }
@@ -266,10 +266,10 @@ class _ActivityMonitoringScreenState extends State<ActivityMonitoringScreen> {
       builder: (context) {
         final controller = TextEditingController();
         return AlertDialog(
-          title: const Text("Rad etish"),
+          title: const Text(AppDictionary.tr(context, 'btn_reject')),
           content: TextField(
             controller: controller,
-            decoration: const InputDecoration(hintText: "Sababini kiriting (ixtiyoriy)"),
+            decoration: const InputDecoration(hintText: AppDictionary.tr(context, 'hint_enter_reason_opt')),
             maxLines: 3,
           ),
           actions: [
@@ -279,7 +279,7 @@ class _ActivityMonitoringScreenState extends State<ActivityMonitoringScreen> {
                 comment = controller.text;
                 Navigator.pop(context, true);
               },
-              child: const Text("Rad etish"),
+              child: const Text(AppDictionary.tr(context, 'btn_reject')),
             ),
           ],
         );
@@ -289,7 +289,7 @@ class _ActivityMonitoringScreenState extends State<ActivityMonitoringScreen> {
     if (confirmed == true) {
       final success = await DataService().rejectActivity(id, comment);
       if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Faollik rad etildi")));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_activity_rejected'))));
         _loadData();
       }
     }
@@ -414,7 +414,7 @@ class _ActivityMonitoringScreenState extends State<ActivityMonitoringScreen> {
                                 Navigator.pop(context);
                                 _reject(item['id']);
                               },
-                              child: const Text("Rad etish"),
+                              child: const Text(AppDictionary.tr(context, 'btn_reject')),
                             ),
                           ),
                           const SizedBox(width: 16),

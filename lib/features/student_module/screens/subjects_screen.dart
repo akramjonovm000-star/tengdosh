@@ -32,8 +32,7 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundWhite,
       appBar: AppBar(
-        title: const Text(
-          "Fanlar va Resurslar",
+        title: const Text(AppDictionary.tr(context, 'lbl_subjects_and_resources'),
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18),
         ),
         centerTitle: false,

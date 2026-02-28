@@ -87,7 +87,7 @@ class _KonspektScreenState extends State<KonspektScreen> {
     if (_result != null) {
       Clipboard.setData(ClipboardData(text: _result!));
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Nusxa olindi!")),
+        const SnackBar(content: Text(AppDictionary.tr(context, 'msg_copied'))),
       );
     }
   }
@@ -140,7 +140,7 @@ class _KonspektScreenState extends State<KonspektScreen> {
                 controller: _textController,
                 maxLines: 6,
                 decoration: InputDecoration(
-                  hintText: "Matnni shu yerga yozing yoki fayl yuklang...",
+                  hintText: AppDictionary.tr(context, 'hint_text_or_file'),
                   hintStyle: TextStyle(color: Colors.grey[400]),
                   filled: true,
                   fillColor: Colors.white,

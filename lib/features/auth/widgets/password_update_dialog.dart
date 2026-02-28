@@ -47,7 +47,7 @@ class _PasswordUpdateDialogState extends State<PasswordUpdateDialog> {
       if (mounted) {
          ScaffoldMessenger.of(context).showSnackBar(
            const SnackBar(
-             content: Text("✅ Parol muvaffaqiyatli yangilandi!"),
+             content: Text(AppDictionary.tr(context, 'msg_pass_updated_tick')),
              backgroundColor: Colors.green,
            )
          );
@@ -111,7 +111,7 @@ class _PasswordUpdateDialogState extends State<PasswordUpdateDialog> {
                 controller: _passwordController,
                 obscureText: true,
                 decoration: InputDecoration(
-                  hintText: "Yangi parol",
+                  hintText: AppDictionary.tr(context, 'hint_new_password'),
                   prefixIcon: const Icon(Icons.vpn_key_outlined),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),

@@ -146,7 +146,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   Future<void> _launchClickPay(int amount) async {
     final studentId = _student?.id;
     if (studentId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Talaba ma'lumotlari topilmadi")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_student_data_not_found'))));
       return;
     }
 
@@ -226,7 +226,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-             Text("Siz quyidagi tarifni sotib olmoqchimisiz?", style: TextStyle(color: Colors.grey[700])),
+             Text(AppDictionary.tr(context, 'msg_buy_plan_confirm'), style: TextStyle(color: Colors.grey[700])),
              const SizedBox(height: 10),
              Text("Tarif: ${plan.name}", style: const TextStyle(fontWeight: FontWeight.bold)),
              Text("Narxi: ${_formatMoney(plan.priceUzs)} so'm", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
@@ -264,14 +264,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     // [COMPLIANCE] Hide for Apple Reviewer
     if (_student?.hemisLogin == '395251101411') {
        return Scaffold(
-         appBar: AppBar(title: const Text("Hisob holati"), backgroundColor: Colors.white, elevation: 0, iconTheme: const IconThemeData(color: Colors.black)),
-         body: const Center(child: Text("Premium imkoniyatlari hozirda mavjud emas.")),
+         appBar: AppBar(title: const Text(AppDictionary.tr(context, 'lbl_account_status')), backgroundColor: Colors.white, elevation: 0, iconTheme: const IconThemeData(color: Colors.black)),
+         body: const Center(child: Text(AppDictionary.tr(context, 'msg_premium_unavailable'))),
        );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Premium obuna", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        title: const Text(AppDictionary.tr(context, 'lbl_premium_subscription'), style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
@@ -308,7 +308,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               const SizedBox(height: 30),
               
               // 5. Subscription Plans
-              const Text("Tariflar:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              const Text(AppDictionary.tr(context, 'lbl_tariffs'), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
               const SizedBox(height: 15),
               _buildPlansList(),
 
@@ -372,8 +372,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
             )
           else
-            const Text(
-              "Barcha imkoniyatlardan cheklovsiz foydalaning",
+            const Text(AppDictionary.tr(context, 'lbl_use_all_features_unlimited'),
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.white70, fontSize: 15),
             ),
@@ -401,7 +400,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Sizning balansingiz", style: TextStyle(color: Colors.grey[600], fontSize: 14)),
+              Text(AppDictionary.tr(context, 'lbl_your_balance'), style: TextStyle(color: Colors.grey[600], fontSize: 14)),
               const SizedBox(height: 4),
               Text(
                 "${_formatMoney(_student?.balance ?? 0)} so'm",
@@ -531,8 +530,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               const Icon(Icons.card_giftcard, color: Colors.amber),
               const SizedBox(width: 10),
               const Expanded(
-                child: Text(
-                  "Bir haftalik bepul sinov davri!",
+                child: Text(AppDictionary.tr(context, 'msg_one_week_trial'),
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.amber),
                 ),
               ),
@@ -551,9 +549,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   context: context,
                   builder: (ctx) => AlertDialog(
                     title: const Text(AppDictionary.tr(context, 'btn_confirm')),
-                    content: const Text(
-                      "Ushbu imkoniyatdan faqat bir marta foydalana olasiz. Davom etasizmi?"
-                    ),
+                    content: const Text(AppDictionary.tr(context, 'msg_one_time_use_continue')),
                     actions: [
                       TextButton(onPressed: () => Navigator.pop(ctx), child: const Text(AppDictionary.tr(context, 'btn_no'))),
                       ElevatedButton(
@@ -561,7 +557,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                           Navigator.pop(ctx);
                           _activateTrial();
                         },
-                        child: const Text("Ha, boshlash"),
+                        child: const Text(AppDictionary.tr(context, 'btn_yes_start')),
                       )
                     ],
                   )
@@ -574,7 +570,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               ),
               child: loading
                 ? const CircularProgressIndicator(color: Colors.white)
-                : const Text("Hozir boshlash", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                : const Text(AppDictionary.tr(context, 'btn_start_now'), style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
             ),
           )
         ],

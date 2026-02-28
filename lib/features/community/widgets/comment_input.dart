@@ -95,7 +95,7 @@ class _CommentInputState extends State<CommentInput> {
                      controller: _controller,
                      focusNode: widget.focusNode,
                      decoration: const InputDecoration(
-                       hintText: "Fikringizni yozing...",
+                       hintText: AppDictionary.tr(context, 'hint_write_opinion'),
                        border: InputBorder.none,
                        contentPadding: EdgeInsets.symmetric(vertical: 10),
                        isDense: true,

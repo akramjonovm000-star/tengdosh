@@ -217,7 +217,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     BottomNavigationBarItem(icon: const Icon(Icons.grid_view_rounded), label: AppDictionary.tr(context, 'home_tab_main')),
                     const BottomNavigationBarItem(icon: Icon(Icons.shopping_bag_rounded), label: "Bozor"),
                     const BottomNavigationBarItem(icon: Icon(Icons.smart_toy_rounded), label: "AI"),
-                    const BottomNavigationBarItem(icon: Icon(Icons.forum_rounded), label: "Choyxona"),
+                    const BottomNavigationBarItem(icon: Icon(Icons.forum_rounded), label: AppDictionary.tr(context, 'lbl_teahouse')),
                     BottomNavigationBarItem(icon: const Icon(Icons.person_rounded), label: AppDictionary.tr(context, 'home_tab_profile')),
                   ],
                 ),
@@ -418,8 +418,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            "Faol saylov!",
+                          const Text(AppDictionary.tr(context, 'lbl_active_election'),
                             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                           ),
                           Text(

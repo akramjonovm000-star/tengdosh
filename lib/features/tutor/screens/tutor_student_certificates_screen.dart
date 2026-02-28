@@ -39,7 +39,7 @@ class _TutorStudentCertificatesScreenState extends State<TutorStudentCertificate
 
   Future<void> _downloadViaTelegram(int certId) async {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Telegram botga yuborilmoqda...")),
+      const SnackBar(content: Text(AppDictionary.tr(context, 'msg_sending_to_tg_bot'))),
     );
     
     final msg = await _dataService.downloadStudentCertificateForTutor(certId);

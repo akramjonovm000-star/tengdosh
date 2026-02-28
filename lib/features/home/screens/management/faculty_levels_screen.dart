@@ -48,7 +48,7 @@ class _FacultyLevelsScreenState extends State<FacultyLevelsScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _levels.isEmpty
-              ? const Center(child: Text("Bosqichlar topilmadi"))
+              ? const Center(child: Text(AppDictionary.tr(context, 'msg_stages_not_found')))
               : ListView.builder(
                   itemCount: _levels.length,
                   padding: const EdgeInsets.all(16),

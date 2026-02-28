@@ -143,7 +143,7 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
                   controller: _searchController,
                   onChanged: (val) => _handleSearch(),
                   decoration: InputDecoration(
-                    hintText: "Ism yoki Hemis ID...",
+                    hintText: AppDictionary.tr(context, 'hint_name_or_hemis'),
                     prefixIcon: const Icon(Icons.search),
                     filled: true,
                     fillColor: Colors.grey[50],

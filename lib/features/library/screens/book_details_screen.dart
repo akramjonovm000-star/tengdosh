@@ -336,8 +336,7 @@ class _ReservationSheetState extends State<_ReservationSheet> {
              const SizedBox(height: 12),
              _buildInfoRow(Icons.update, "Qaytarish muddati", "14 kun"),
           ] else
-             const Text(
-               "Hozirda barcha nusxalar band. Navbatga yozilsangiz, kitob qaytishi bilan sizga habar beramiz.",
+             const Text(AppDictionary.tr(context, 'msg_all_copies_busy'),
                style: TextStyle(color: Colors.grey, height: 1.5),
              ),
           

@@ -41,12 +41,12 @@ class _TutorGroupsListScreenState extends State<TutorGroupsListScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundWhite,
       appBar: AppBar(
-        title: const Text("Guruhlarim"),
+        title: const Text(AppDictionary.tr(context, 'lbl_my_groups')),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _groups.isEmpty
-              ? const Center(child: Text("Sizga biriktirilgan guruhlar yo'q"))
+              ? const Center(child: Text(AppDictionary.tr(context, 'msg_no_assigned_groups')))
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: _groups.length,

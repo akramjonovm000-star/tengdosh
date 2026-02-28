@@ -53,7 +53,7 @@ class _SubsidyScreenState extends State<SubsidyScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundWhite,
       appBar: AppBar(
-        title: const Text("Ijara Subsidiyasi", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        title: const Text(AppDictionary.tr(context, 'lbl_rent_subsidy'), style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),

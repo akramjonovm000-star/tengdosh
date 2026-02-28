@@ -132,7 +132,7 @@ class _ActivityReviewScreenState extends State<ActivityReviewScreen> {
   Future<void> _approve(int id) async {
     final success = await _dataService.approveActivity(id);
     if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Faollik tasdiqlandi")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_activity_approved'))));
       setState(() {
         final index = _activities.indexWhere((a) => a['id'] == id);
         if (index != -1) {
@@ -153,10 +153,10 @@ class _ActivityReviewScreenState extends State<ActivityReviewScreen> {
       builder: (context) {
         final controller = TextEditingController();
         return AlertDialog(
-          title: const Text("Rad etish"),
+          title: const Text(AppDictionary.tr(context, 'btn_reject')),
           content: TextField(
             controller: controller,
-            decoration: const InputDecoration(hintText: "Sababini kiriting (ixtiyoriy)"),
+            decoration: const InputDecoration(hintText: AppDictionary.tr(context, 'hint_enter_reason_opt')),
             maxLines: 3,
           ),
           actions: [
@@ -166,7 +166,7 @@ class _ActivityReviewScreenState extends State<ActivityReviewScreen> {
                 comment = controller.text;
                 Navigator.pop(context, true);
               },
-              child: const Text("Rad etish"),
+              child: const Text(AppDictionary.tr(context, 'btn_reject')),
             ),
           ],
         );
@@ -176,7 +176,7 @@ class _ActivityReviewScreenState extends State<ActivityReviewScreen> {
     if (confirmed == true) {
       final success = await _dataService.rejectActivity(id, comment);
       if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Faollik rad etildi")));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_activity_rejected'))));
         setState(() {
           final index = _activities.indexWhere((a) => a['id'] == id);
           if (index != -1) {
@@ -230,7 +230,7 @@ class _ActivityReviewScreenState extends State<ActivityReviewScreen> {
               controller: _searchController,
               onChanged: (val) => _loadActivities(refresh: true),
               decoration: InputDecoration(
-                hintText: "Ism yoki Hemis ID...",
+                hintText: AppDictionary.tr(context, 'hint_name_or_hemis'),
                 prefixIcon: const Icon(Icons.search, color: Colors.grey),
                 filled: true,
                 fillColor: Colors.grey[100],

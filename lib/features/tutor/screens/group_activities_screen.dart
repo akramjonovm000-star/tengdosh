@@ -199,7 +199,7 @@ class _GroupActivitiesScreenState extends State<GroupActivitiesScreen> with Sing
                             side: const BorderSide(color: Colors.red),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))
                           ),
-                          child: const Text("Rad etish"),
+                          child: const Text(AppDictionary.tr(context, 'btn_reject')),
                         ),
                       ),
                       const SizedBox(width: 12),

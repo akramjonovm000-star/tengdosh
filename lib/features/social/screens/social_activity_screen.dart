@@ -121,7 +121,7 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
          if (await canLaunchUrl(Uri.parse(urlToLaunch))) {
            await launchUrl(Uri.parse(urlToLaunch), mode: LaunchMode.externalApplication);
          } else {
-            if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Telegramni ochib bo'lmadi")));
+            if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_cannot_open_tg'))));
          }
       }
       
@@ -456,7 +456,7 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
                   if (_uploadedCount < 5)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
-                      child: Text("Yana yuklashingiz mumkin (Bot orqali)", style: TextStyle(color: Colors.green[700], fontSize: 12)),
+                      child: Text(AppDictionary.tr(context, 'msg_u_can_upload_more_bot'), style: TextStyle(color: Colors.green[700], fontSize: 12)),
                     )
                ],
              ),
@@ -502,8 +502,7 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
                          style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)
                        ),
                        SizedBox(height: 4),
-                       Text(
-                         "Tugmani bosing va Botga rasm yuboring", 
+                       Text(AppDictionary.tr(context, 'msg_press_btn_send_img'), 
                          style: TextStyle(color: Colors.grey, fontSize: 12)
                        ),
                     ],
@@ -536,8 +535,7 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
                     children: [
                        Icon(Icons.refresh, color: Colors.grey, size: 18),
                        SizedBox(width: 8),
-                       Text(
-                         "Telegramim yangi", 
+                       Text(AppDictionary.tr(context, 'msg_my_tg_is_new'), 
                          style: TextStyle(color: Colors.black54, fontWeight: FontWeight.w600, fontSize: 13)
                        ),
                     ],
@@ -665,7 +663,7 @@ class _SocialActivityScreenState extends State<SocialActivityScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundWhite,
       appBar: AppBar(
-        title: const Text("Ijtimoiy Faollik", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        title: const Text(AppDictionary.tr(context, 'lbl_social_activity'), style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
@@ -728,8 +726,7 @@ class _SocialActivityScreenState extends State<SocialActivityScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               elevation: 0,
             ),
-            child: const Text(
-              "Faollik qo'shish",
+            child: const Text(AppDictionary.tr(context, 'btn_add_activity'),
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
             ),
           ),
@@ -1106,7 +1103,7 @@ class _SocialActivityScreenState extends State<SocialActivityScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text("O'chirish"),
-        content: const Text("Haqiqatan ham ushbu faollikni o'chirmoqchimisiz?"),
+        content: const Text(AppDictionary.tr(context, 'msg_confirm_delete_activity')),
         actions: [
            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Yo'q", style: TextStyle(color: Colors.grey))),
            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Ha, o'chirish", style: TextStyle(color: Colors.red))),
@@ -1121,7 +1118,7 @@ class _SocialActivityScreenState extends State<SocialActivityScreen> {
            setState(() {
              _activities.removeWhere((a) => a.id == activity.id);
            });
-           if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("O'chirildi!")));
+           if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_deleted'))));
         } else {
            if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_error_occurred'))));
         }

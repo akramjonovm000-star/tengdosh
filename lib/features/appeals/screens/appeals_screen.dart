@@ -193,7 +193,7 @@ class _AppealsScreenState extends State<AppealsScreen> with SingleTickerProvider
               isSelected: _selectedCategory != "Barchasi",
               icon: Icons.category_outlined,
               onTap: () => _showFilterSheet(
-                title: "Kategoriyani tanlang",
+                title: AppDictionary.tr(context, 'btn_select_category'),
                 options: _categories,
                 selected: _selectedCategory,
                 onSelect: (val) => setState(() => _selectedCategory = val),
@@ -207,7 +207,7 @@ class _AppealsScreenState extends State<AppealsScreen> with SingleTickerProvider
               isSelected: _selectedStatus != "Barchasi",
               icon: Icons.filter_list_rounded,
               onTap: () => _showFilterSheet(
-                title: "Statusni tanlang",
+                title: AppDictionary.tr(context, 'hint_select_status'),
                 options: _statuses,
                 selected: _selectedStatus,
                 onSelect: (val) => setState(() => _selectedStatus = val),
@@ -665,7 +665,7 @@ class _CreateAppealSheetState extends State<CreateAppealSheet> {
 
   Future<void> _submit() async {
       if (_textController.text.trim().isEmpty) {
-         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Iltimos, murojaat matnini yozing")));
+         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_please_write_appeal'))));
          return;
       }
       
@@ -708,7 +708,7 @@ class _CreateAppealSheetState extends State<CreateAppealSheet> {
            if (await canLaunchUrl(Uri.parse(urlToLaunch))) {
              await launchUrl(Uri.parse(urlToLaunch), mode: LaunchMode.externalApplication);
            } else {
-             if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Telegramni ochib bo'lmadi")));
+             if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_cannot_open_tg'))));
            }
           
           // Show instructions
@@ -717,13 +717,13 @@ class _CreateAppealSheetState extends State<CreateAppealSheet> {
                  context: context,
                  barrierDismissible: false,
                  builder: (ctx) => AlertDialog(
-                     title: const Text("Botga fayl yuklang"),
+                     title: const Text(AppDictionary.tr(context, 'msg_upload_file_to_bot')),
                      content: const Column(
                          mainAxisSize: MainAxisSize.min,
                          children: [
                              Icon(Icons.telegram, size: 50, color: Colors.blue),
                              SizedBox(height: 16),
-                             Text("Telegram bot ochildi. Iltimos, u yerda faylni (Rasm/PDF) yuklang."),
+                             Text(AppDictionary.tr(context, 'msg_bot_opened_upload_file')),
                              SizedBox(height: 16),
                              LinearProgressIndicator(),
                              SizedBox(height: 8),
@@ -747,12 +747,12 @@ class _CreateAppealSheetState extends State<CreateAppealSheet> {
                                  try {
                                      // Call unlink via data_service/appeal_service
                                      await Provider.of<DataService>(context, listen: false).unlinkTelegram();
-                                     if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Eski hisob uzildi. Qayta yuborishni bosing.")));
+                                     if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_old_account_disconnected_retry'))));
                                  } catch(e) {
                                      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Xatolik: \$e")));
                                  }
                              }, 
-                             child: const Text("Telegramim yangi", style: TextStyle(color: Colors.orange))
+                             child: const Text(AppDictionary.tr(context, 'msg_my_tg_is_new'), style: TextStyle(color: Colors.orange))
                          )
                      ],
                  )
@@ -801,11 +801,11 @@ class _CreateAppealSheetState extends State<CreateAppealSheet> {
             Navigator.pop(context); // Close sheet
             widget.onAppealCreated();
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Murojaat muvaffaqiyatli yuborildi!"), backgroundColor: Colors.green)
+              const SnackBar(content: Text(AppDictionary.tr(context, 'msg_appeal_sent_success')), backgroundColor: Colors.green)
             );
           } else {
              ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Xatolik yuz berdi."), backgroundColor: Colors.red)
+              const SnackBar(content: Text(AppDictionary.tr(context, 'msg_error_occurred_2')), backgroundColor: Colors.red)
             );
           }
       }
@@ -1017,7 +1017,7 @@ class _CreateAppealSheetState extends State<CreateAppealSheet> {
                     child: SwitchListTile(
                         contentPadding: EdgeInsets.zero,
                         title: const Text("Anonim yuborish", style: TextStyle(fontWeight: FontWeight.w600)),
-                        subtitle: const Text("Ismingiz sir saqlanadi", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                        subtitle: const Text(AppDictionary.tr(context, 'msg_name_kept_secret'), style: TextStyle(fontSize: 12, color: Colors.grey)),
                         value: _isAnonymous,
                         onChanged: (v) => setState(() => _isAnonymous = v),
                         activeColor: Colors.black,
@@ -1039,7 +1039,7 @@ class _CreateAppealSheetState extends State<CreateAppealSheet> {
                         maxLines: 10,
                         textAlignVertical: TextAlignVertical.top,
                         decoration: const InputDecoration(
-                            hintText: "Murojaatingizni batafsil yozing...",
+                            hintText: AppDictionary.tr(context, 'hint_appeal_details'),
                             border: InputBorder.none,
                             hintStyle: TextStyle(color: Colors.grey)
                         ),
@@ -1057,8 +1057,8 @@ class _CreateAppealSheetState extends State<CreateAppealSheet> {
                     ),
                     child: SwitchListTile(
                         contentPadding: EdgeInsets.zero,
-                        title: const Text("Fayl biriktirish (Telegram)", style: TextStyle(fontWeight: FontWeight.w600)), // Matches screenshot
-                        subtitle: const Text("Rasm, video yoki PDF yuborish", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                        title: const Text(AppDictionary.tr(context, 'btn_attach_file_tg'), style: TextStyle(fontWeight: FontWeight.w600)), // Matches screenshot
+                        subtitle: const Text(AppDictionary.tr(context, 'lbl_send_media'), style: TextStyle(fontSize: 12, color: Colors.grey)),
                         value: _isFileEnabled,
                         onChanged: (v) => setState(() => _isFileEnabled = v),
                         activeColor: Colors.black,
@@ -1153,7 +1153,7 @@ class _AppealDetailScreenState extends State<AppealDetailScreen> {
               _loadDetail(); // Refresh
           } else {
               ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Javob yuborishda xatolik yuz berdi"))
+                  const SnackBar(content: Text(AppDictionary.tr(context, 'msg_answer_send_error')))
               );
           }
       }
@@ -1171,8 +1171,8 @@ class _AppealDetailScreenState extends State<AppealDetailScreen> {
     if (_detail == null) {
         return Scaffold(
              backgroundColor: AppTheme.backgroundWhite,
-             appBar: AppBar(title: const Text("Xatolik")),
-             body: const Center(child: Text("Murojaat topilmadi"))
+             appBar: AppBar(title: const Text(AppDictionary.tr(context, 'msg_error'))),
+             body: const Center(child: Text(AppDictionary.tr(context, 'msg_appeal_not_found')))
         );
     }
     
@@ -1302,8 +1302,7 @@ class _AppealDetailScreenState extends State<AppealDetailScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
             alignment: Alignment.center,
-            child: const Text(
-              "Javob kutilmoqda...",
+            child: const Text(AppDictionary.tr(context, 'msg_waiting_for_reply'),
               style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600),
             ),
           ),
@@ -1353,7 +1352,7 @@ class _AppealDetailScreenState extends State<AppealDetailScreen> {
                     controller: _replyController,
                     enabled: !_isReplying,
                     decoration: InputDecoration(
-                      hintText: "Javob yozish...",
+                      hintText: AppDictionary.tr(context, 'hint_writing_answer'),
                       filled: true,
                       fillColor: Colors.grey[100],
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),

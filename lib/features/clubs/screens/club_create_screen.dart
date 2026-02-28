@@ -42,7 +42,7 @@ class _ClubCreateScreenState extends State<ClubCreateScreen> {
 
     if (result['success'] == true) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Klub muvaffaqiyatli yaratildi!", style: TextStyle(color: Colors.white)), backgroundColor: AppTheme.accentGreen),
+        const SnackBar(content: Text(AppDictionary.tr(context, 'msg_club_created_success'), style: TextStyle(color: Colors.white)), backgroundColor: AppTheme.accentGreen),
       );
       Navigator.pop(context, true);
     } else {

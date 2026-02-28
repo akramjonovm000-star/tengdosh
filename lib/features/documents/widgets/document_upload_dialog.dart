@@ -64,7 +64,7 @@ class _DocumentUploadDialogState extends State<DocumentUploadDialog> {
   Future<void> _initiateUpload() async {
     if (_selectedCategory == "boshqa" && _titleController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Iltimos, hujjat nomini kiriting")),
+        const SnackBar(content: Text(AppDictionary.tr(context, 'msg_enter_doc_name'))),
       );
       return;
     }
@@ -100,7 +100,7 @@ class _DocumentUploadDialogState extends State<DocumentUploadDialog> {
              await launchUrl(Uri.parse(urlToLaunch), mode: LaunchMode.externalApplication);
            } else {
              ScaffoldMessenger.of(context).showSnackBar(
-               const SnackBar(content: Text("Telegramni ochib bo'lmadi"), backgroundColor: Colors.orange),
+               const SnackBar(content: Text(AppDictionary.tr(context, 'msg_cannot_open_tg')), backgroundColor: Colors.orange),
              );
            }
            
@@ -154,7 +154,7 @@ class _DocumentUploadDialogState extends State<DocumentUploadDialog> {
         widget.onUploadSuccess();
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Hujjat muvaffaqiyatli saqlandi!"), backgroundColor: Colors.green),
+          const SnackBar(content: Text(AppDictionary.tr(context, 'msg_doc_saved_success')), backgroundColor: Colors.green),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -195,7 +195,7 @@ class _DocumentUploadDialogState extends State<DocumentUploadDialog> {
               TextField(
                 controller: _titleController,
                 decoration: InputDecoration(
-                  labelText: "Hujjat nomi",
+                  labelText: AppDictionary.tr(context, 'lbl_doc_name'),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   prefixIcon: const Icon(Icons.edit_note_rounded),
                 ),
@@ -214,7 +214,7 @@ class _DocumentUploadDialogState extends State<DocumentUploadDialog> {
                 try {
                   setState(() => _isLoading = true);
                   await _dataService.unlinkTelegram();
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Eski hisob uzildi. Yangi hisob ulang.")));
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_old_account_disconnected_new'))));
                   await _initiateUpload();
                 } catch (e) {
                   setState(() => _isLoading = false);
@@ -234,8 +234,7 @@ class _DocumentUploadDialogState extends State<DocumentUploadDialog> {
                   children: [
                      Icon(Icons.refresh, color: Colors.grey, size: 18),
                      SizedBox(width: 8),
-                     Text(
-                       "Telegramim yangi", 
+                     Text(AppDictionary.tr(context, 'msg_my_tg_is_new'), 
                        style: TextStyle(color: Colors.black54, fontWeight: FontWeight.w600, fontSize: 13)
                      ),
                   ],

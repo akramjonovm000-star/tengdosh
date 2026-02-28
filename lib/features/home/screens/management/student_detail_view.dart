@@ -34,14 +34,14 @@ class _StudentDetailViewState extends State<StudentDetailView> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text("Talaba ma'lumotlari")),
+        appBar: AppBar(title: const Text(AppDictionary.tr(context, 'lbl_student_data'))),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     if (_data == null || _data!['profile'] == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text("Xatolik")),
+        appBar: AppBar(title: const Text(AppDictionary.tr(context, 'msg_error'))),
         body: const Center(child: Text("Ma'lumotlarni yuklab bo'lmadi")),
       );
     }
@@ -51,7 +51,7 @@ class _StudentDetailViewState extends State<StudentDetailView> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text("Profil"),
+        title: const Text(AppDictionary.tr(context, 'lbl_profile')),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
@@ -79,7 +79,7 @@ class _StudentDetailViewState extends State<StudentDetailView> {
               childAspectRatio: 1.1,
               children: [
                 _buildCategoryCard(
-                  title: "Murojaatlar",
+                  title: AppDictionary.tr(context, 'lbl_appeals_2'),
                   count: (_data!['appeals'] as List).length,
                   icon: Icons.chat_bubble_outline_rounded,
                   color: Colors.blue,
@@ -91,7 +91,7 @@ class _StudentDetailViewState extends State<StudentDetailView> {
                   ),
                 ),
                 _buildCategoryCard(
-                  title: "Faolliklar",
+                  title: AppDictionary.tr(context, 'lbl_activities'),
                   count: (_data!['activities'] as List).length,
                   icon: Icons.local_activity_outlined,
                   color: Colors.orange,
@@ -103,7 +103,7 @@ class _StudentDetailViewState extends State<StudentDetailView> {
                   ),
                 ),
                 _buildCategoryCard(
-                  title: "Sertifikatlar",
+                  title: AppDictionary.tr(context, 'lbl_certs_2'),
                   count: (_data!['certificates'] as List).length,
                   icon: Icons.card_membership_rounded,
                   color: Colors.purple,

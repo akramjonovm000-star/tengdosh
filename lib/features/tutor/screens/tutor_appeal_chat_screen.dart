@@ -229,7 +229,7 @@ class _TutorAppealChatScreenState extends State<TutorAppealChatScreen> {
             child: TextField(
               controller: _replyController,
               decoration: InputDecoration(
-                hintText: "Javob yozing...",
+                hintText: AppDictionary.tr(context, 'hint_write_answer'),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
                   borderSide: BorderSide.none,

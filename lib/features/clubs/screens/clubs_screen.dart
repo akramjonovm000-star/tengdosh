@@ -77,7 +77,7 @@ class _ClubsScreenState extends State<ClubsScreen> {
               },
               backgroundColor: AppTheme.primaryBlue,
               icon: const Icon(Icons.add, color: Colors.white),
-              label: const Text("Klub qo'shish", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              label: const Text(AppDictionary.tr(context, 'btn_add_club'), style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             )
           : null,
       body: _isLoading 
@@ -283,12 +283,12 @@ class _ClubsScreenState extends State<ClubsScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    const Text("Klubni tahrirlash", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    const Text(AppDictionary.tr(context, 'btn_edit_club'), style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 16),
                     TextField(
                       controller: nameCtl,
                       decoration: InputDecoration(
-                        labelText: "Klub nomi", 
+                        labelText: AppDictionary.tr(context, 'lbl_club_name'), 
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         filled: true,
                         fillColor: Colors.grey[50],
@@ -308,7 +308,7 @@ class _ClubsScreenState extends State<ClubsScreen> {
                     TextField(
                       controller: channelCtl,
                       decoration: InputDecoration(
-                        labelText: "Telegram kanal linki (ixtiyoriy)", 
+                        labelText: AppDictionary.tr(context, 'hint_tg_channel_link_opt'), 
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         filled: true,
                         fillColor: Colors.grey[50],

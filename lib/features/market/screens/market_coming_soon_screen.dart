@@ -63,8 +63,7 @@ class MarketComingSoonScreen extends StatelessWidget {
                       color: Color(0xFF1B5E20),
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      "Tez orada ishga tushadi",
+                    Text(AppDictionary.tr(context, 'msg_soon_launch'),
                       style: GoogleFonts.inter(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,

@@ -37,7 +37,7 @@ class _CertificateUploadDialogState extends State<CertificateUploadDialog> {
   Future<void> _initiateUpload() async {
     if (_titleController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Iltimos, sertifikat nomini kiriting")),
+        const SnackBar(content: Text(AppDictionary.tr(context, 'msg_please_enter_cert_name'))),
       );
       return;
     }
@@ -68,7 +68,7 @@ class _CertificateUploadDialogState extends State<CertificateUploadDialog> {
              await launchUrl(Uri.parse(urlToLaunch), mode: LaunchMode.externalApplication);
            } else {
              ScaffoldMessenger.of(context).showSnackBar(
-               const SnackBar(content: Text("Telegramni ochib bo'lmadi"), backgroundColor: Colors.orange),
+               const SnackBar(content: Text(AppDictionary.tr(context, 'msg_cannot_open_tg')), backgroundColor: Colors.orange),
              );
            }
            
@@ -122,7 +122,7 @@ class _CertificateUploadDialogState extends State<CertificateUploadDialog> {
         widget.onUploadSuccess();
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Sertifikat muvaffaqiyatli saqlandi!"), backgroundColor: Colors.green),
+          const SnackBar(content: Text(AppDictionary.tr(context, 'msg_cert_saved_success')), backgroundColor: Colors.green),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -158,8 +158,8 @@ class _CertificateUploadDialogState extends State<CertificateUploadDialog> {
             TextField(
               controller: _titleController,
               decoration: InputDecoration(
-                labelText: "Sertifikat nomi",
-                hintText: "Masalan: IELTS, IT-Park va h.k.",
+                labelText: AppDictionary.tr(context, 'lbl_cert_name'),
+                hintText: AppDictionary.tr(context, 'hint_example_cert'),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 prefixIcon: const Icon(Icons.workspace_premium_rounded),
               ),
@@ -177,7 +177,7 @@ class _CertificateUploadDialogState extends State<CertificateUploadDialog> {
                 try {
                   setState(() => _isLoading = true);
                   await _dataService.unlinkTelegram();
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Eski hisob uzildi. Yangi hisob ulang.")));
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_old_account_disconnected_new'))));
                   await _initiateUpload();
                 } catch (e) {
                   setState(() => _isLoading = false);
@@ -197,8 +197,7 @@ class _CertificateUploadDialogState extends State<CertificateUploadDialog> {
                   children: [
                      Icon(Icons.refresh, color: Colors.grey, size: 18),
                      SizedBox(width: 8),
-                     Text(
-                       "Telegramim yangi", 
+                     Text(AppDictionary.tr(context, 'msg_my_tg_is_new'), 
                        style: TextStyle(color: Colors.black54, fontWeight: FontWeight.w600, fontSize: 13)
                      ),
                   ],

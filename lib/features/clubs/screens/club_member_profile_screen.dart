@@ -96,8 +96,7 @@ class _ClubMemberProfileScreenState extends State<ClubMemberProfileScreen> {
                 
                 const Align(
                   alignment: Alignment.centerLeft,
-                  child: Text(
-                    "Klubdagi faolliklari (Tadbirlar)", 
+                  child: Text(AppDictionary.tr(context, 'lbl_club_activities_events'), 
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
                   ),
                 ),
@@ -105,7 +104,7 @@ class _ClubMemberProfileScreenState extends State<ClubMemberProfileScreen> {
                 if (acts.isEmpty)
                   const Padding(
                     padding: EdgeInsets.all(20),
-                    child: Text("Hozircha faollik yo'q", style: TextStyle(color: Colors.grey)),
+                    child: Text(AppDictionary.tr(context, 'msg_no_activities_yet'), style: TextStyle(color: Colors.grey)),
                   ),
                 for (var act in acts)
                   Container(

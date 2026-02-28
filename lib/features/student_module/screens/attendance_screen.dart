@@ -130,7 +130,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                           const Icon(Icons.error_outline, size: 48, color: Colors.orange),
                           const SizedBox(height: 16),
                           Text("Ma'lumot topilmadi", style: TextStyle(color: Colors.grey[700])),
-                          TextButton(onPressed: () => _loadData(forceRefresh: true), child: const Text("Qayta urinish"))
+                          TextButton(onPressed: () => _loadData(forceRefresh: true), child: const Text(AppDictionary.tr(context, 'btn_retry')))
                         ],
                       ),
                     ),

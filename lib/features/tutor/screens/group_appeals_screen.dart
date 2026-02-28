@@ -50,7 +50,7 @@ class _GroupAppealsScreenState extends State<GroupAppealsScreen> {
           controller: _replyController,
           maxLines: 4,
           decoration: const InputDecoration(
-            hintText: "Javobingizni shu yerga yozing...",
+            hintText: AppDictionary.tr(context, 'hint_write_answer_here'),
             border: OutlineInputBorder(),
           ),
         ),
@@ -78,7 +78,7 @@ class _GroupAppealsScreenState extends State<GroupAppealsScreen> {
       await _dataService.replyToTutorAppeal(appealId, text);
       if (mounted) {
          ScaffoldMessenger.of(context).showSnackBar(
-           const SnackBar(content: Text("✅ Javob yuborildi")),
+           const SnackBar(content: Text(AppDictionary.tr(context, 'msg_answer_sent_tick'))),
          );
          _loadAppeals(); // Refresh
       }
@@ -139,8 +139,7 @@ class _GroupAppealsScreenState extends State<GroupAppealsScreen> {
         children: [
           Icon(Icons.mark_email_read_outlined, size: 80, color: Colors.grey[400]),
           const SizedBox(height: 16),
-          Text(
-            "Yangi murojaatlar yo'q",
+          Text(AppDictionary.tr(context, 'msg_no_new_appeals'),
             style: TextStyle(fontSize: 18, color: Colors.grey[600]),
           ),
         ],
@@ -246,7 +245,7 @@ class _GroupAppealsScreenState extends State<GroupAppealsScreen> {
                           children: [
                             Icon(Icons.broken_image_rounded, color: Colors.grey[400], size: 40),
                             const SizedBox(height: 8),
-                            Text("Rasm mavjud", style: TextStyle(color: Colors.grey[500], fontSize: 12)),
+                            Text(AppDictionary.tr(context, 'lbl_image_available'), style: TextStyle(color: Colors.grey[500], fontSize: 12)),
                           ],
                         ),
                       ),
@@ -307,7 +306,7 @@ class _GroupAppealsScreenState extends State<GroupAppealsScreen> {
                       elevation: 0,
                     ),
                     icon: const Icon(Icons.reply_rounded, size: 18),
-                    label: const Text("Javob berish"),
+                    label: const Text(AppDictionary.tr(context, 'btn_reply')),
                   ),
               ],
             ),

@@ -178,7 +178,7 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> {
           children: [
             const Icon(Icons.telegram, size: 60, color: Colors.blue),
             const SizedBox(height: 16),
-            const Text("Klubga a'zo bo'lish", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const Text(AppDictionary.tr(context, 'btn_join_club'), style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             const Text(
               "Klub tasdiqlangan bo'lishi uchun, iltimos avval telegram kanaliga a'zo bo'ling.",
@@ -294,7 +294,7 @@ class _InfoTab extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(8)),
-                            child: const Text("Universitet Klubi", style: TextStyle(fontSize: 10, color: Colors.blueGrey, fontWeight: FontWeight.bold)),
+                            child: const Text(AppDictionary.tr(context, 'lbl_university_club'), style: TextStyle(fontSize: 10, color: Colors.blueGrey, fontWeight: FontWeight.bold)),
                           ),
                         ],
                       ),
@@ -736,9 +736,9 @@ class _EventsTabState extends State<_EventsTab> {
               children: [
                 const Text("Yangi tadbir", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
-                TextField(controller: titleCtrl, decoration: InputDecoration(hintText: "Tadbir mavzusi", border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
+                TextField(controller: titleCtrl, decoration: InputDecoration(hintText: AppDictionary.tr(context, 'lbl_event_topic'), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
                 const SizedBox(height: 12),
-                TextField(controller: descCtrl, maxLines: 3, decoration: InputDecoration(hintText: "Tadbir haqida batafsil ma'lumot...", border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
+                TextField(controller: descCtrl, maxLines: 3, decoration: InputDecoration(hintText: AppDictionary.tr(context, 'hint_event_details'), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)))),
                 const SizedBox(height: 12),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
@@ -906,7 +906,7 @@ class _EventsTabState extends State<_EventsTab> {
                                   children: [
                                      const Icon(Icons.location_on, size: 14, color: Colors.grey),
                                      const SizedBox(width: 4),
-                                     const Text("Tadbir manzili / vaqti kiritilmagan", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                                     const Text(AppDictionary.tr(context, 'msg_event_loc_time_not_entered'), style: TextStyle(color: Colors.grey, fontSize: 12)),
                                   ]
                                ),
                                
@@ -1081,7 +1081,7 @@ class _EventsTabState extends State<_EventsTab> {
                       if (!context.mounted) return;
                       if (ok) {
                         Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Faollik qilib tasdiqlandi!")));
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_activity_confirmed'))));
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(AppDictionary.tr(context, 'msg_action_failed_check_data'))));
                       }

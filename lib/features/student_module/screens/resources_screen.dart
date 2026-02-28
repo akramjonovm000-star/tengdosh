@@ -60,7 +60,7 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
     
     // Show Loading Feedback
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Botga yuborilmoqda... ⏳"), duration: Duration(seconds: 1)),
+      const SnackBar(content: Text(AppDictionary.tr(context, 'msg_sending_to_bot')), duration: Duration(seconds: 1)),
     );
 
     final success = await _dataService.sendResourceToBot(url, name);
@@ -68,12 +68,12 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
     if (mounted) {
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Fayl Telegram botingizga yuborildi ✅"), backgroundColor: Colors.green),
+          const SnackBar(content: Text(AppDictionary.tr(context, 'msg_file_sent_to_tg')), backgroundColor: Colors.green),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
            SnackBar(
-             content: const Text("Xatolik: Bot ishga tushganligini tekshiring ❌"), 
+             content: const Text(AppDictionary.tr(context, 'msg_bot_start_error')), 
              backgroundColor: Colors.red,
              action: SnackBarAction(label: "Botni ochish", onPressed: () async {
                  final botUrl = Uri.parse("https://t.me/talabahamkorbot"); 
@@ -102,7 +102,7 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
                 if (_subjectDetails != null) _buildSubjectHeader(),
                 Expanded(
                   child: _topics.isEmpty
-                    ? const Center(child: Text("Mavzular topilmadi"))
+                    ? const Center(child: Text(AppDictionary.tr(context, 'msg_topics_not_found')))
                     : ListView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                         itemCount: _topics.length,
@@ -139,8 +139,7 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Fan Ma'lumotlari", 
+          const Text(AppDictionary.tr(context, 'lbl_subject_data'), 
             style: TextStyle(
               color: Colors.grey, 
               fontSize: 12, 
