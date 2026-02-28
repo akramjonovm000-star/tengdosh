@@ -163,7 +163,7 @@ class _StaffSearchScreenState extends State<StaffSearchScreen> {
             child: _isSearching 
               ? const Center(child: CircularProgressIndicator())
               : _searchResults.isEmpty 
-                ? const Center(
+                ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [

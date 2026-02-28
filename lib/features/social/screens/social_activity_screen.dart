@@ -493,7 +493,7 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.blue[200]!),
                   ),
-                  child: const Column(
+                  child: Column(
                     children: [
                        Icon(Icons.telegram, color: Colors.blue, size: 40),
                        SizedBox(height: 8),
@@ -530,7 +530,7 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: Colors.grey[300]!),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                        Icon(Icons.refresh, color: Colors.grey, size: 18),

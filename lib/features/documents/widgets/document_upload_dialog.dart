@@ -230,7 +230,7 @@ class _DocumentUploadDialogState extends State<DocumentUploadDialog> {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: Colors.grey[300]!),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                      Icon(Icons.refresh, color: Colors.grey, size: 18),

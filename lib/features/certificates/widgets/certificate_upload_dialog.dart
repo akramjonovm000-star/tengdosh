@@ -193,7 +193,7 @@ class _CertificateUploadDialogState extends State<CertificateUploadDialog> {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: Colors.grey[300]!),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                      Icon(Icons.refresh, color: Colors.grey, size: 18),

@@ -29,7 +29,7 @@ class ManagementDashboard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // 1. Platform Usage Card (NEW & PROMINENT)
-        _buildPlatformUsageCard(studentCount, platformUsers, usagePercentage),
+        _buildPlatformUsageCard(context, studentCount, platformUsers, usagePercentage),
         const SizedBox(height: 24),
 
         // 2. Small Stats Row
@@ -177,7 +177,7 @@ class ManagementDashboard extends StatelessWidget {
     );
   }
 
-  Widget _buildPlatformUsageCard(int total, int active, int percentage) {
+  Widget _buildPlatformUsageCard(BuildContext context, int total, int active, int percentage) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),

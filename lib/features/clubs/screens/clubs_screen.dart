@@ -228,7 +228,7 @@ class _ClubsScreenState extends State<ClubsScreen> {
                        }
                      },
                      itemBuilder: (ctx) => [
-                       const PopupMenuItem(
+                       PopupMenuItem(
                          value: 'edit',
                          child: Row(
                            children: [

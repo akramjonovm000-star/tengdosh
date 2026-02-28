@@ -719,7 +719,7 @@ class _CreateAppealSheetState extends State<CreateAppealSheet> {
                  barrierDismissible: false,
                  builder: (ctx) => AlertDialog(
                      title: Text(AppDictionary.tr(context, 'msg_upload_file_to_bot')),
-                     content: const Column(
+                     content: Column(
                          mainAxisSize: MainAxisSize.min,
                          children: [
                              Icon(Icons.telegram, size: 50, color: Colors.blue),

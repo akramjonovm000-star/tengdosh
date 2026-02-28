@@ -37,7 +37,7 @@ class TutorDashboardScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // 1. Big Feature Card (Replica of Platform Usage)
-                _buildGroupAttendanceCard(studentCount, groupCount),
+                _buildGroupAttendanceCard(context, studentCount, groupCount),
                 const SizedBox(height: 24),
 
                 // 2. Small Stats Row (Replica of Talabalar/Xodimlar)
@@ -161,7 +161,7 @@ class TutorDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildGroupAttendanceCard(int studentCount, int groupCount) { // Note: groupCount param is kept but unused if we use activeStudentCount from stats
+  Widget _buildGroupAttendanceCard(BuildContext context, int studentCount, int groupCount) { // Note: groupCount param is kept but unused if we use activeStudentCount from stats
     // Retrieve data from stats
     final int activeStudentCount = stats?['active_student_count'] ?? 0;
     final int totalStudentCount = percentageBase(studentCount); // Use helper or direct
