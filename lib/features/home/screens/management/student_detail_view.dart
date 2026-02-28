@@ -5,8 +5,19 @@ import 'package:talabahamkor_mobile/core/localization/app_dictionary.dart';
 
 class StudentDetailView extends StatefulWidget {
   final int studentId;
+  final String? initialName;
+  final String? initialAvatar;
+  final String? initialGroup;
+  final String? initialHemisId;
 
-  const StudentDetailView({super.key, required this.studentId});
+  const StudentDetailView({
+    super.key, 
+    required this.studentId,
+    this.initialName,
+    this.initialAvatar,
+    this.initialGroup,
+    this.initialHemisId,
+  });
 
   @override
   State<StudentDetailView> createState() => _StudentDetailViewState();
@@ -33,21 +44,29 @@ class _StudentDetailViewState extends State<StudentDetailView> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
+    if (_isLoading && widget.initialName == null) {
       return Scaffold(
         appBar: AppBar(title: Text(AppDictionary.tr(context, 'lbl_student_data'))),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
-    if (_data == null || _data!['profile'] == null) {
+    dynamic profile = _data?['profile'];
+    if (profile == null && widget.initialName != null) {
+      profile = {
+        'full_name': widget.initialName,
+        'image_url': widget.initialAvatar,
+        'group_number': widget.initialGroup,
+        'hemis_id': widget.initialHemisId,
+      };
+    }
+
+    if (!_isLoading && _data == null) {
       return Scaffold(
         appBar: AppBar(title: Text(AppDictionary.tr(context, 'msg_error'))),
         body: const Center(child: Text("Ma'lumotlarni yuklab bo'lmadi")),
       );
     }
-
-    final profile = _data!['profile'];
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -66,70 +85,74 @@ class _StudentDetailViewState extends State<StudentDetailView> {
             _buildCenteredProfile(profile),
             const SizedBox(height: 32),
 
-            // 2. GPA Card
-            _buildGPACard(profile['gpa']?.toString() ?? "0.00"),
-            const SizedBox(height: 32),
+            if (_isLoading)
+               const Center(child: CircularProgressIndicator())
+            else ...[
+              // 2. GPA Card
+              _buildGPACard(profile['gpa']?.toString() ?? "0.00"),
+              const SizedBox(height: 32),
 
-            // 3. Info Grid
-            GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 1.1,
-              children: [
-                _buildCategoryCard(
-                  title: AppDictionary.tr(context, 'lbl_appeals_2'),
-                  count: (_data!['appeals'] as List).length,
-                  icon: Icons.chat_bubble_outline_rounded,
-                  color: Colors.blue,
-                  onTap: () => _navigateToItems(
-                    context,
-                    _data!['appeals'],
-                    "Murojaatlar",
-                    "Murojaat",
+              // 3. Info Grid
+              GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 1.1,
+                children: [
+                  _buildCategoryCard(
+                    title: AppDictionary.tr(context, 'lbl_appeals_2'),
+                    count: (_data!['appeals'] as List).length,
+                    icon: Icons.chat_bubble_outline_rounded,
+                    color: Colors.blue,
+                    onTap: () => _navigateToItems(
+                      context,
+                      _data!['appeals'],
+                      "Murojaatlar",
+                      "Murojaat",
+                    ),
                   ),
-                ),
-                _buildCategoryCard(
-                  title: AppDictionary.tr(context, 'lbl_activities'),
-                  count: (_data!['activities'] as List).length,
-                  icon: Icons.local_activity_outlined,
-                  color: Colors.orange,
-                  onTap: () => _navigateToItems(
-                    context,
-                    _data!['activities'],
-                    "Faolliklar",
-                    "Faollik",
+                  _buildCategoryCard(
+                    title: AppDictionary.tr(context, 'lbl_activities'),
+                    count: (_data!['activities'] as List).length,
+                    icon: Icons.local_activity_outlined,
+                    color: Colors.orange,
+                    onTap: () => _navigateToItems(
+                      context,
+                      _data!['activities'],
+                      "Faolliklar",
+                      "Faollik",
+                    ),
                   ),
-                ),
-                _buildCategoryCard(
-                  title: AppDictionary.tr(context, 'lbl_certs_2'),
-                  count: (_data!['certificates'] as List).length,
-                  icon: Icons.card_membership_rounded,
-                  color: Colors.purple,
-                  onTap: () => _navigateToItems(
-                    context,
-                    _data!['certificates'],
-                    "Sertifikatlar",
-                    "Sertifikat",
+                  _buildCategoryCard(
+                    title: AppDictionary.tr(context, 'lbl_certs_2'),
+                    count: (_data!['certificates'] as List).length,
+                    icon: Icons.card_membership_rounded,
+                    color: Colors.purple,
+                    onTap: () => _navigateToItems(
+                      context,
+                      _data!['certificates'],
+                      "Sertifikatlar",
+                      "Sertifikat",
+                    ),
                   ),
-                ),
-                _buildCategoryCard(
-                  title: "Hujjatlar",
-                  count: (_data!['documents'] as List).length,
-                  icon: Icons.folder_copy_outlined,
-                  color: Colors.teal,
-                  onTap: () => _navigateToItems(
-                    context,
-                    _data!['documents'],
-                    "Hujjatlar",
-                    "Hujjat",
+                  _buildCategoryCard(
+                    title: "Hujjatlar",
+                    count: (_data!['documents'] as List).length,
+                    icon: Icons.folder_copy_outlined,
+                    color: Colors.teal,
+                    onTap: () => _navigateToItems(
+                      context,
+                      _data!['documents'],
+                      "Hujjatlar",
+                      "Hujjat",
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 32),
+                ],
+              ),
+              const SizedBox(height: 32),
+            ]
           ],
         ),
       ),

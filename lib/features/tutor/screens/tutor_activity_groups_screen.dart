@@ -221,6 +221,10 @@ class _TutorActivityGroupsScreenState extends State<TutorActivityGroupsScreen> w
                         studentId: item['student_id'] is int 
                             ? item['student_id'] 
                             : int.tryParse(item['student_id'].toString()) ?? 0,
+                        initialName: student['full_name'],
+                        initialAvatar: student['image'],
+                        initialGroup: student['group_number'],
+                        initialHemisId: student['hemis_id'],
                       ),
                     ),
                   );
