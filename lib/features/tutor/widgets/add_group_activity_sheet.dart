@@ -19,6 +19,9 @@ class AddGroupActivitySheet extends StatefulWidget {
 }
 
 class _AddGroupActivitySheetState extends State<AddGroupActivitySheet> {
+  final _pageController = PageController();
+  int _currentPage = 0;
+
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
@@ -43,7 +46,9 @@ class _AddGroupActivitySheetState extends State<AddGroupActivitySheet> {
   
   // Track selected students by their ID
   final Set<int> _selectedStudentIds = {};
-  final Set<String> _expandedGroups = {};
+  
+  // Track currently viewed group
+  String? _activeGroup;
 
   @override
   void initState() {
@@ -54,6 +59,7 @@ class _AddGroupActivitySheetState extends State<AddGroupActivitySheet> {
 
   @override
   void dispose() {
+    _pageController.dispose();
     _pollingTimer?.cancel();
     _titleController.dispose();
     _descController.dispose();
@@ -69,16 +75,6 @@ class _AddGroupActivitySheetState extends State<AddGroupActivitySheet> {
         _groups = groupsStats;
         for (var group in groupsStats) {
            String gName = group['group_number'].toString();
-           // Load students for this group using the existing management method or similar
-           // Actually, we can fetch from getGroupDocumentDetails or create a specific endpoint
-           // But since Tutor Activity Groups uses getTutorActivityStats which gives group names,
-           // wait, we need student lists. We have DataService.getTutorGroupDetails? Or dataService.getGroupDocumentDetails? 
-           // There is an endpoint /tutor/documents/group/{group_number}. Let's use it as a workaround, or create a simple list? 
-           // Alternatively, create a generic fetch method for students. 
-           // Let's use management API or existing tutor endpoints.
-           // getTutorGroupDetails endpoint is likely available. We'll use getTutorGroupDetails(gName).
-           // If we don't have it, we can use the backend proxy for students?
-           // I'll assume we can fetch students using API call to /tutor/documents/group/ as it returns all students.
            final res = await Provider.of<DataService>(context, listen: false).getGroupDocumentDetails(gName);
            if (res != null) {
              _groupStudents[gName] = res;
@@ -171,7 +167,6 @@ class _AddGroupActivitySheetState extends State<AddGroupActivitySheet> {
   }
 
   Future<void> _saveActivity() async {
-    if (!_formKey.currentState!.validate()) return;
     if (_selectedStudentIds.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Iltimos, kamida bitta talabani tanlang!"))
@@ -182,7 +177,7 @@ class _AddGroupActivitySheetState extends State<AddGroupActivitySheet> {
     setState(() => _isSaving = true);
     
     try {
-      await Provider.of<DataService>(context, listen: false).createTutorBulkActivities(
+      final res = await Provider.of<DataService>(context, listen: false).createTutorBulkActivities(
         category: _selectedCategory,
         name: _titleController.text,
         description: _descController.text,
@@ -192,9 +187,11 @@ class _AddGroupActivitySheetState extends State<AddGroupActivitySheet> {
       );
       
       if (mounted) {
+        // Assume created_count comes back in res['created_count'] or similar
+        final cnt = res['created_count'] ?? _selectedStudentIds.length;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("✅ ${_selectedStudentIds.length} ta talabaga faollik muvaffaqiyatli saqlandi!"),
+            content: Text("✅ $cnt ta talabaga faollik muvaffaqiyatli saqlandi!"),
             backgroundColor: Colors.green,
           )
         );
@@ -213,7 +210,166 @@ class _AddGroupActivitySheetState extends State<AddGroupActivitySheet> {
     }
   }
 
-  Widget _buildGroupSelection() {
+  void _nextPage() {
+    if (_currentPage == 0 && !_formKey.currentState!.validate()) return;
+    
+    _pageController.nextPage(
+      duration: const Duration(milliseconds: 300), 
+      curve: Curves.easeInOut
+    );
+    setState(() {
+      _currentPage++;
+    });
+  }
+
+  void _prevPage() {
+    if (_currentPage == 2) {
+      // Going back from specific group students to groups list
+      setState(() {
+        _currentPage = 1;
+        _activeGroup = null;
+      });
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 300), 
+        curve: Curves.easeInOut
+      );
+    } else {
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 300), 
+        curve: Curves.easeInOut
+      );
+      setState(() {
+        _currentPage--;
+      });
+    }
+  }
+
+  Widget _buildStepOneDetails() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("Faollik Kategoriyasi", style: TextStyle(fontWeight: FontWeight.w500)),
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey[300]!),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  isExpanded: true,
+                  value: _categories.contains(_selectedCategory) ? _selectedCategory : null,
+                  hint: const Text("Kategoriyani tanlang"),
+                  items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                  onChanged: (v) {
+                    if (v != null) setState(() => _selectedCategory = v);
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            TextFormField(
+              controller: _titleController,
+              decoration: InputDecoration(
+                labelText: "Faollik Nomi",
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+              validator: (v) => v!.isEmpty ? "Nomini kiriting" : null,
+            ),
+            const SizedBox(height: 16),
+            
+            TextFormField(
+              controller: _descController,
+              maxLines: 3,
+              decoration: InputDecoration(
+                labelText: "Faollik Tafsifi",
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+              validator: (v) => v!.isEmpty ? "Tafsif kiriting" : null,
+            ),
+            const SizedBox(height: 16),
+            
+            TextFormField(
+              controller: _dateController,
+              readOnly: true,
+              onTap: _pickDate,
+              decoration: InputDecoration(
+                labelText: "Sana",
+                suffixIcon: const Icon(Icons.calendar_today),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+            ),
+            const SizedBox(height: 20),
+            
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.05),
+                border: Border.all(color: Colors.blue.withOpacity(0.2)),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  const Icon(Icons.photo_library, size: 40, color: AppTheme.primaryBlue),
+                  const SizedBox(height: 8),
+                  if (_uploadedCount > 0)
+                    Text(
+                      "$_uploadedCount/5 ta rasm yuklandi",
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+                    )
+                  else if (_isUploading)
+                    const Column(
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 8),
+                        Text("TalabahamkorBot orqali rasm yuboring...", textAlign: TextAlign.center),
+                      ],
+                    )
+                  else
+                    const Text(
+                      "Suratlarni yuklash (5 tagacha)",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  const SizedBox(height: 12),
+                  if (_uploadedCount < 5)
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        if (_uploadSessionId == null) {
+                          _initUpload(const Uuid().v4());
+                        } else {
+                          _initUpload(_uploadSessionId!);
+                        }
+                      },
+                      icon: const Icon(Icons.telegram, color: Colors.white),
+                      label: Text(_isUploading ? "Botni ochish" : "Telegram orqali yuklash"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0088CC),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 80),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStepTwoGroupsList() {
     if (_isLoading) {
       return const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()));
     }
@@ -222,20 +378,18 @@ class _AddGroupActivitySheetState extends State<AddGroupActivitySheet> {
       return const Center(child: Padding(padding: EdgeInsets.all(20), child: Text("Guruhlar topilmadi.")));
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: _groups.map((g) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _groups.length,
+      itemBuilder: (context, index) {
+        final g = _groups[index];
         final gName = g['group_number'].toString();
-        final isExpanded = _expandedGroups.contains(gName);
         final students = _groupStudents[gName] ?? [];
         
-        // Calculate how many selected in this group
         int selectedInGroup = 0;
         for (var s in students) {
           if (_selectedStudentIds.contains(s['id'])) selectedInGroup++;
         }
-        
-        bool allSelected = students.isNotEmpty && selectedInGroup == students.length;
 
         return Card(
           margin: const EdgeInsets.only(bottom: 8),
@@ -244,78 +398,121 @@ class _AddGroupActivitySheetState extends State<AddGroupActivitySheet> {
             borderRadius: BorderRadius.circular(12),
             side: BorderSide(color: Colors.grey.withOpacity(0.2)),
           ),
-          child: Column(
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            leading: CircleAvatar(
+              backgroundColor: AppTheme.primaryBlue.withOpacity(0.1),
+              foregroundColor: AppTheme.primaryBlue,
+              radius: 20,
+              child: const Icon(Icons.group),
+            ),
+            title: Text(gName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            subtitle: Text("$selectedInGroup/${students.length} talaba tanlandi"),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              setState(() {
+                _activeGroup = gName;
+                _currentPage = 2; // Jump to specific group
+              });
+              _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStepThreeGroupStudents() {
+    if (_activeGroup == null) return const SizedBox();
+    
+    final students = _groupStudents[_activeGroup!] ?? [];
+    
+    int selectedInGroup = 0;
+    for (var s in students) {
+      if (_selectedStudentIds.contains(s['id'])) selectedInGroup++;
+    }
+    bool allSelected = students.isNotEmpty && selectedInGroup == students.length;
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              ListTile(
-                title: Text("Barchasini belgilash", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              Text("$_activeGroup Guruhi", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              TextButton.icon(
+                onPressed: () {
+                  setState(() {
+                    if (allSelected) {
+                      for (var s in students) _selectedStudentIds.remove(s['id']);
+                    } else {
+                      for (var s in students) _selectedStudentIds.add(s['id']);
+                    }
+                  });
+                },
+                icon: Icon(allSelected ? Icons.check_box : Icons.check_box_outline_blank, color: AppTheme.primaryBlue),
+                label: const Text("Barchasi"),
+              )
+            ],
+          ),
+        ),
+        const Divider(),
+        Expanded(
+          child: ListView.separated(
+            padding: const EdgeInsets.only(bottom: 80),
+            itemCount: students.length,
+            separatorBuilder: (context, index) => const Divider(height: 1),
+            itemBuilder: (context, index) {
+              final s = students[index];
+              final id = s['id'] as int;
+              final isSelected = _selectedStudentIds.contains(id);
+              
+              return ListTile(
+                onTap: () {
+                  setState(() {
+                    if (isSelected) _selectedStudentIds.remove(id);
+                    else _selectedStudentIds.add(id);
+                  });
+                },
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                leading: CircleAvatar(
+                  radius: 20,
+                  backgroundImage: s['image'] != null
+                      ? CachedNetworkImageProvider(s['image'].toString().startsWith('http') ? s['image'] : '${ApiConstants.backendUrl}/files/${s['image']}')
+                      : null,
+                  backgroundColor: Colors.grey[200],
+                  child: s['image'] == null ? const Icon(Icons.person, size: 20, color: Colors.grey) : null,
+                ),
+                title: Text(s['full_name'] ?? 'Noma\'lum', style: const TextStyle(fontWeight: FontWeight.w500)),
+                subtitle: Text((s['hemis_id'] ?? '').toString()),
                 trailing: Checkbox(
-                  value: allSelected,
+                  value: isSelected,
                   activeColor: AppTheme.primaryBlue,
                   onChanged: (val) {
                     setState(() {
-                      if (val == true) {
-                        for (var s in students) _selectedStudentIds.add(s['id']);
-                      } else {
-                        for (var s in students) _selectedStudentIds.remove(s['id']);
-                      }
+                      if (val == true) _selectedStudentIds.add(id);
+                      else _selectedStudentIds.remove(id);
                     });
                   },
                 ),
-                leading: CircleAvatar(
-                  backgroundColor: AppTheme.primaryBlue.withOpacity(0.1),
-                  child: Text(gName),
-                  radius: 18,
-                ),
-                subtitle: Text("$selectedInGroup/${students.length} tanlandi"),
-                onTap: () {
-                  setState(() {
-                    if (isExpanded) _expandedGroups.remove(gName);
-                    else _expandedGroups.add(gName);
-                  });
-                },
-              ),
-              if (isExpanded)
-                ...students.map((s) {
-                  final id = s['id'] as int;
-                  final isSelected = _selectedStudentIds.contains(id);
-                  return CheckboxListTile(
-                    value: isSelected,
-                    activeColor: AppTheme.primaryBlue,
-                    dense: true,
-                    title: Text(s['full_name'] ?? 'Noma\'lum'),
-                    subtitle: Text((s['hemis_id'] ?? '').toString()),
-                    secondary: CircleAvatar(
-                      radius: 15,
-                      backgroundImage: s['image'] != null
-                          ? CachedNetworkImageProvider(s['image'].toString().startsWith('http') ? s['image'] : '${ApiConstants.backendUrl}/files/${s['image']}')
-                          : null,
-                      backgroundColor: Colors.grey[200],
-                      child: s['image'] == null ? const Icon(Icons.person, size: 15, color: Colors.grey) : null,
-                    ),
-                    onChanged: (val) {
-                      setState(() {
-                        if (val == true) _selectedStudentIds.add(id);
-                        else _selectedStudentIds.remove(id);
-                      });
-                    },
-                  );
-                }).toList(),
-            ],
+              );
+            },
           ),
-        );
-      }).toList(),
+        ),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      height: MediaQuery.of(context).size.height * 0.9,
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         children: [
           // Handle
           Padding(
@@ -330,170 +527,83 @@ class _AddGroupActivitySheetState extends State<AddGroupActivitySheet> {
             ),
           ),
           
-          Text(
-            "Yangi Faollik Qo'shish (Ommaviy)",
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textBlack,
-            ),
-          ),
-          
-          Flexible(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Category
-                    const Text("Faollik Kategoriyasi", style: TextStyle(fontWeight: FontWeight.w500)),
-                    const SizedBox(height: 8),
-                    Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey[300]!),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          isExpanded: true,
-                          value: _categories.contains(_selectedCategory) ? _selectedCategory : null,
-                          hint: const Text("Kategoriyani tanlang"),
-                          items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                          onChanged: (v) {
-                            if (v != null) setState(() => _selectedCategory = v);
-                          },
-                        ),
-                      ),
+          // Header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Row(
+              children: [
+                if (_currentPage > 0)
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: _prevPage,
+                  )
+                else
+                  const SizedBox(width: 48), // Balance for back button space
+                  
+                Expanded(
+                  child: Text(
+                    _currentPage == 0 
+                      ? "Yangi Faollik Qo'shish" 
+                      : (_currentPage == 1 ? "Guruhlarni Tanlash" : "Talabalarni Tanlash"),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textBlack,
                     ),
-                    const SizedBox(height: 16),
-                    
-                    // Fields
-                    TextFormField(
-                      controller: _titleController,
-                      decoration: InputDecoration(
-                        labelText: "Faollik Nomi",
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      ),
-                      validator: (v) => v!.isEmpty ? "Nomini kiriting" : null,
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    TextFormField(
-                      controller: _descController,
-                      maxLines: 3,
-                      decoration: InputDecoration(
-                        labelText: "Faollik Tafsifi",
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      ),
-                      validator: (v) => v!.isEmpty ? "Tafsif kiriting" : null,
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    TextFormField(
-                      controller: _dateController,
-                      readOnly: true,
-                      onTap: _pickDate,
-                      decoration: InputDecoration(
-                        labelText: "Sana",
-                        suffixIcon: const Icon(Icons.calendar_today),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    
-                    // Image Upload
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.05),
-                        border: Border.all(color: Colors.blue.withOpacity(0.2)),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        children: [
-                          Icon(Icons.photo_library, size: 40, color: AppTheme.primaryBlue),
-                          const SizedBox(height: 8),
-                          if (_uploadedCount > 0)
-                            Text(
-                              "$_uploadedCount/5 ta rasm yuklandi",
-                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
-                            )
-                          else if (_isUploading)
-                            const Column(
-                              children: [
-                                CircularProgressIndicator(),
-                                SizedBox(height: 8),
-                                Text("TalabahamkorBot orqali rasm yuboring...", textAlign: TextAlign.center),
-                              ],
-                            )
-                          else
-                            const Text(
-                              "Suratlarni yuklash (5 tagacha)",
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                          const SizedBox(height: 12),
-                          if (_uploadedCount < 5)
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                if (_uploadSessionId == null) {
-                                  _initUpload(const Uuid().v4());
-                                } else {
-                                  _initUpload(_uploadSessionId!);
-                                }
-                              },
-                              icon: const Icon(Icons.telegram, color: Colors.white),
-                              label: Text(_isUploading ? "Botni ochish" : "Telegram orqali yuklash"),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF0088CC),
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    
-                    const Text("Qatnashgan Talabalar", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    const Text("Guruhni bosing ro'yxatni ko'rish uchhhn", style: TextStyle(color: Colors.grey, fontSize: 12)),
-                    const SizedBox(height: 8),
-                    
-                    _buildGroupSelection(),
-                    
-                    const SizedBox(height: 80), // padding for bottom button
-                  ],
+                  ),
                 ),
-              ),
+                
+                const SizedBox(width: 48), // Balance spacing
+              ],
             ),
           ),
           
+          const Divider(),
+          
+          // Pages
+          Expanded(
+            child: PageView(
+              controller: _pageController,
+              physics: const NeverScrollableScrollPhysics(), // Disable swipe to force button navigation
+              children: [
+                _buildStepOneDetails(),
+                _buildStepTwoGroupsList(),
+                _buildStepThreeGroupStudents(),
+              ],
+            ),
+          ),
+          
+          // Bottom Navigation Area
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isSaving ? null : _saveActivity,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryBlue,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: _isSaving
-                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : Text(
-                          "Saqlash (${_selectedStudentIds.length} ta)",
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                child: _currentPage == 0
+                    ? ElevatedButton(
+                        onPressed: _nextPage,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryBlue,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
-                ),
+                        child: const Text("Keyingisi", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      )
+                    : ElevatedButton(
+                        onPressed: _isSaving ? null : _saveActivity,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryBlue,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: _isSaving
+                            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : Text(
+                                "Saqlash (${_selectedStudentIds.length} ta)",
+                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                      ),
               ),
             ),
           ),
