@@ -215,8 +215,9 @@ class ClickHandler:
         
     @staticmethod
     def generate_url(amount: int, order_id: str) -> str:
-        # Click URL: https://my.click.uz/services/pay?service_id=...&merchant_id=...&amount=...&transaction_param=...
-        return f"https://my.click.uz/services/pay?service_id={CLICK_SERVICE_ID}&merchant_id={CLICK_MERCHANT_ID}&amount={amount}&transaction_param={order_id}"
+        # Click URL with mandatory return_url for Fiscalization
+        return_url = "https://t.me/talabahamkorbot"
+        return f"https://my.click.uz/services/pay?service_id={CLICK_SERVICE_ID}&merchant_id={CLICK_MERCHANT_ID}&amount={amount}&transaction_param={order_id}&return_url={return_url}"
 
     async def handle(self, params: dict):
         """
