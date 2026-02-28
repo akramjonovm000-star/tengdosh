@@ -31,23 +31,12 @@ class _AddGroupActivitySheetState extends State<AddGroupActivitySheet> {
   DateTime _selectedDate = DateTime.now();
   
   final List<String> _categories = [
-    "Ma'rifat darslari",
     "To'garak",
-    "Kitobxonlik",
+    "Yutuqlar",
+    "Ma'rifat darslari",
+    "Volontyorlik",
+    "Madaniy tashriflar",
     "Sport",
-    "Stipendiya sovrindori",
-    "Xalqaro tanlov va ko'rgazma ishtirokchisi",
-    "Respublika tanlov va ko'rgazma ishtirokchisi",
-    "Xalqaro olimpiada sovrindori",
-    "Respublika olimpiada sovrindori",
-    "Otm miqyosidagi tadbir g'olibi",
-    "Tashbebuskor yoshlar",
-    "Maqolalar (Vak, Respublika, Xalqaro)",
-    "Rektor nomiga tashakkurnoma",
-    "Xalqaro va Respublika darajasidagi sertifikat",
-    "Ko'ngilli volontyor",
-    "Jamoat ishlari",
-    "Sertifikat",
     "Boshqa"
   ];
 
