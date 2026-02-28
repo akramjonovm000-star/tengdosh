@@ -5,6 +5,7 @@ import 'package:talabahamkor_mobile/features/tutor/screens/group_activities_scre
 import 'package:talabahamkor_mobile/core/localization/app_dictionary.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:talabahamkor_mobile/core/constants/api_constants.dart';
+import 'package:talabahamkor_mobile/features/community/screens/user_profile_screen.dart';
 
 class TutorActivityGroupsScreen extends StatefulWidget {
   const TutorActivityGroupsScreen({super.key});
