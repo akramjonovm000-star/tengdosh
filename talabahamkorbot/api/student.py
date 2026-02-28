@@ -20,7 +20,7 @@ async def get_my_profile(
     logger = logging.getLogger(__name__)
     token = getattr(student, 'hemis_token', None)
     logger.warning(f"DEBUG: /student/me call. ID={student.id}, Type={type(student)}. Token Present? {bool(token)}")
-    if token and not hasattr(student, 'role') or getattr(student, 'role') == 'student':
+    if token and getattr(student, 'role', 'student') == 'student':
          logger.warning(f"DEBUG: Token Length: {len(token)}")
          # Check Validity
          from services.hemis_service import HemisService
