@@ -756,6 +756,7 @@ async def get_tutor_recent_activities(
             "description": act.description,
             "status": act.status,
             "created_at": act.created_at.isoformat() if act.created_at else None,
+            "student_id": act.student_id,
             "student": {
                 "full_name": act.student.full_name,
                 "image": act.student.image_url,
@@ -840,7 +841,8 @@ async def get_group_activities(
             "name": act.name,
             "description": act.description,
             "status": act.status,
-            "created_at": act.created_at.isoformat(),
+            "created_at": act.created_at.isoformat() if act.created_at else None,
+            "student_id": act.student_id,
             "student": {
                 "full_name": act.student.full_name,
                 "image": act.student.image_url,

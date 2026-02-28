@@ -5,7 +5,7 @@ import 'package:talabahamkor_mobile/features/tutor/screens/group_activities_scre
 import 'package:talabahamkor_mobile/core/localization/app_dictionary.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:talabahamkor_mobile/core/constants/api_constants.dart';
-import 'package:talabahamkor_mobile/features/community/screens/user_profile_screen.dart';
+import 'package:talabahamkor_mobile/features/home/screens/management/student_detail_view.dart';
 
 class TutorActivityGroupsScreen extends StatefulWidget {
   const TutorActivityGroupsScreen({super.key});
@@ -213,18 +213,18 @@ class _TutorActivityGroupsScreenState extends State<TutorActivityGroupsScreen> w
             // Header
             InkWell(
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => UserProfileScreen(
-                      authorId: item['student_id']?.toString() ?? "0", // if available
-                      authorName: student['full_name'] ?? "Talaba",
-                      authorUsername: "",
-                      authorAvatar: student['image'] ?? "",
-                      authorRole: "student",
+                if (item['student_id'] != null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => StudentDetailView(
+                        studentId: item['student_id'] is int 
+                            ? item['student_id'] 
+                            : int.tryParse(item['student_id'].toString()) ?? 0,
+                      ),
                     ),
-                  ),
-                );
+                  );
+                }
               },
               borderRadius: BorderRadius.circular(12),
               child: Padding(
