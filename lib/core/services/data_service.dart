@@ -2238,7 +2238,8 @@ class DataService {
   // 37. Get Group Document Details
   Future<List<dynamic>?> getGroupDocumentDetails(String groupNumber) async {
     try {
-      final response = await _get("${ApiConstants.backendUrl}/tutor/documents/group/$groupNumber");
+      String encodedGroup = Uri.encodeComponent(groupNumber);
+      final response = await _get("${ApiConstants.backendUrl}/tutor/documents/group/$encodedGroup");
       if (response.statusCode == 200) {
         final body = json.decode(response.body);
         if (body['success'] == true) {
@@ -2247,6 +2248,24 @@ class DataService {
       }
     } catch (e) {
       debugPrint("DataService: Error fetching group document details: $e");
+      return null;
+    }
+    return [];
+  }
+
+  // 37.1 Get Group Students
+  Future<List<dynamic>?> getTutorGroupStudents(String groupNumber) async {
+    try {
+      String encodedGroup = Uri.encodeComponent(groupNumber);
+      final response = await _get("${ApiConstants.tutorGroupStudents}/$encodedGroup");
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) {
+          return body['data'];
+        }
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching group students: $e");
       return null;
     }
     return [];

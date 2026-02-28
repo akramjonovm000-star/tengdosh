@@ -66,6 +66,46 @@ async def get_tutor_document_stats(
         
     return {"success": True, "data": data}
 
+@router.get("/students/group/{group_number}")
+async def get_tutor_group_students(
+    group_number: str,
+    db: AsyncSession = Depends(get_session),
+    tutor: Staff = Depends(get_current_staff)
+):
+    """
+    Get a flat list of students for a specific group.
+    """
+    # Verify access
+    access_check = await db.execute(
+        select(TutorGroup).where(
+            TutorGroup.tutor_id == tutor.id,
+            TutorGroup.group_number == group_number
+        )
+    )
+    if not access_check.scalar_one_or_none():
+        raise HTTPException(status_code=403, detail="Siz bu guruhga biriktirilmagansiz")
+
+    # Fetch students
+    stmt = (
+        select(Student)
+        .where(Student.group_number == group_number)
+        .order_by(Student.full_name)
+    )
+    
+    result = await db.execute(stmt)
+    students = result.scalars().all()
+    
+    data = []
+    for s in students:
+        data.append({
+            "id": s.id,
+            "full_name": s.full_name,
+            "hemis_id": s.hemis_id,
+            "image": s.image_url
+        })
+        
+    return {"success": True, "data": data}
+
 @router.get("/documents/group/{group_number}")
 async def get_group_document_details(
     group_number: str,

@@ -51,6 +51,7 @@ class ApiConstants {
   static const String tutorActivitiesUploadInit = '$backendUrl/tutor/activities/upload/init';
   static const String tutorActivitiesUploadStatus = '$backendUrl/tutor/activities/upload/status';
   static const String tutorActivitiesBulk = '$backendUrl/tutor/activities/bulk';
+  static const String tutorGroupStudents = '$backendUrl/tutor/students/group';
 
   static const String clubsMy = '$backendUrl/student/clubs/my';
   static const String feedback = '$backendUrl/student/feedback';

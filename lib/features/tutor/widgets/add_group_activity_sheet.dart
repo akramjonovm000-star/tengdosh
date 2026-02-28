@@ -81,7 +81,7 @@ class _AddGroupActivitySheetState extends State<AddGroupActivitySheet> {
         _groups = groupsStats;
         for (var group in groupsStats) {
            String gName = group['group_number'].toString();
-           final res = await Provider.of<DataService>(context, listen: false).getGroupDocumentDetails(gName);
+           final res = await Provider.of<DataService>(context, listen: false).getTutorGroupStudents(gName);
            if (res != null) {
              _groupStudents[gName] = res;
            }
