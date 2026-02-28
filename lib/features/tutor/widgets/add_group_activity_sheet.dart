@@ -27,11 +27,28 @@ class _AddGroupActivitySheetState extends State<AddGroupActivitySheet> {
   final _descController = TextEditingController();
   final _dateController = TextEditingController();
   
-  String _selectedCategory = "Faollik";
+  String? _selectedCategory;
   DateTime _selectedDate = DateTime.now();
   
   final List<String> _categories = [
-    "Faollik", "Sport", "Madaniyat", "Ma'naviyat", "Zakovot", "Ilmiy", "Boshqa"
+    "Ma'rifat darslari",
+    "To'garak",
+    "Kitobxonlik",
+    "Sport",
+    "Stipendiya sovrindori",
+    "Xalqaro tanlov va ko'rgazma ishtirokchisi",
+    "Respublika tanlov va ko'rgazma ishtirokchisi",
+    "Xalqaro olimpiada sovrindori",
+    "Respublika olimpiada sovrindori",
+    "Otm miqyosidagi tadbir g'olibi",
+    "Tashbebuskor yoshlar",
+    "Maqolalar (Vak, Respublika, Xalqaro)",
+    "Rektor nomiga tashakkurnoma",
+    "Xalqaro va Respublika darajasidagi sertifikat",
+    "Ko'ngilli volontyor",
+    "Jamoat ishlari",
+    "Sertifikat",
+    "Boshqa"
   ];
 
   String? _uploadSessionId;
@@ -178,7 +195,7 @@ class _AddGroupActivitySheetState extends State<AddGroupActivitySheet> {
     
     try {
       final res = await Provider.of<DataService>(context, listen: false).createTutorBulkActivities(
-        category: _selectedCategory,
+        category: _selectedCategory ?? "Boshqa",
         name: _titleController.text,
         description: _descController.text,
         date: _dateController.text,
@@ -251,25 +268,41 @@ class _AddGroupActivitySheetState extends State<AddGroupActivitySheet> {
       itemBuilder: (context, index) {
         final category = _categories[index];
         final isSelected = _selectedCategory == category;
-        return Card(
-          elevation: 0,
-          margin: const EdgeInsets.only(bottom: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(
-              color: isSelected ? AppTheme.primaryBlue : Colors.grey.withOpacity(0.2),
-              width: isSelected ? 2 : 1,
-            ),
-          ),
-          child: ListTile(
-            title: Text(category, style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
-            trailing: isSelected ? const Icon(Icons.check_circle, color: AppTheme.primaryBlue) : null,
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: InkWell(
             onTap: () {
               setState(() {
                 _selectedCategory = category;
               });
               _nextPage();
             },
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey[200]!),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryBlue.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.category, color: AppTheme.primaryBlue, size: 20),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Text(category, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  ),
+                  const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                ],
+              ),
+            ),
           ),
         );
       },
@@ -593,30 +626,32 @@ class _AddGroupActivitySheetState extends State<AddGroupActivitySheet> {
               padding: const EdgeInsets.all(16),
               child: SizedBox(
                 width: double.infinity,
-                child: _currentPage < 2
-                    ? ElevatedButton(
-                        onPressed: _nextPage,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primaryBlue,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: const Text("Keyingisi", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                      )
-                    : ElevatedButton(
-                        onPressed: _isSaving ? null : _saveActivity,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primaryBlue,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: _isSaving
-                            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                            : Text(
-                                "Saqlash (${_selectedStudentIds.length} ta)",
-                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                              ),
-                      ),
+                child: _currentPage == 0
+                    ? const SizedBox() // Hide button on Category Selection step
+                    : (_currentPage == 1
+                      ? ElevatedButton(
+                          onPressed: _nextPage,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primaryBlue,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: const Text("Keyingisi", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        )
+                      : ElevatedButton(
+                          onPressed: _isSaving ? null : _saveActivity,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primaryBlue,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: _isSaving
+                              ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                              : Text(
+                                  "Saqlash (${_selectedStudentIds.length} ta)",
+                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                ),
+                        )),
               ),
             ),
           ),
