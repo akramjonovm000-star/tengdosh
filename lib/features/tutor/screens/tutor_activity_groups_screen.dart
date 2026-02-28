@@ -210,26 +210,46 @@ class _TutorActivityGroupsScreenState extends State<TutorActivityGroupsScreen> w
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header
-            Row(
-              children: [
-                CircleAvatar(
-                  backgroundImage: student['image'] != null 
-                      ? CachedNetworkImageProvider(student['image'])
-                      : null,
-                  child: student['image'] == null ? const Icon(Icons.person) : null,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(student['full_name'] ?? "Talaba", style: const TextStyle(fontWeight: FontWeight.bold)),
-                      Text('${student['group_number'] ?? ""} • ${item['created_at'] != null ? item['created_at'].toString().split('T')[0] : ""}', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-                    ],
+            InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => UserProfileScreen(
+                      authorId: item['student_id']?.toString() ?? "0", // if available
+                      authorName: student['full_name'] ?? "Talaba",
+                      authorUsername: "",
+                      authorAvatar: student['image'] ?? "",
+                      authorRole: "student",
+                    ),
                   ),
+                );
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundImage: student['image'] != null 
+                          ? CachedNetworkImageProvider(student['image'])
+                          : null,
+                      child: student['image'] == null ? const Icon(Icons.person) : null,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(student['full_name'] ?? "Talaba", style: const TextStyle(fontWeight: FontWeight.bold)),
+                          Text('${student['group_number'] ?? ""} • ${item['created_at'] != null ? item['created_at'].toString().split('T')[0] : ""}', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                    _buildStatusChip(item['status']),
+                  ],
                 ),
-                _buildStatusChip(item['status']),
-              ],
+              ),
             ),
             const Divider(height: 24),
             

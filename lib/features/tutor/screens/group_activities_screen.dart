@@ -4,6 +4,7 @@ import 'package:talabahamkor_mobile/core/theme/app_theme.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:talabahamkor_mobile/core/localization/app_dictionary.dart';
 import 'package:talabahamkor_mobile/core/constants/api_constants.dart';
+import 'package:talabahamkor_mobile/features/community/screens/user_profile_screen.dart';
 
 class GroupActivitiesScreen extends StatefulWidget {
   final String groupNumber;
@@ -157,26 +158,49 @@ class _GroupActivitiesScreenState extends State<GroupActivitiesScreen> with Sing
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header
-                Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundImage: student['image'] != null 
-                          ? CachedNetworkImageProvider(student['image'])
-                          : null,
-                      child: student['image'] == null ? const Icon(Icons.person) : null,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(student['full_name'] ?? "Talaba", style: const TextStyle(fontWeight: FontWeight.bold)),
-                          Text(item['created_at'] != null ? item['created_at'].toString().split('T')[0] : "", style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-                        ],
+                InkWell(
+                  onTap: () {
+                    // Use student id or hemis_id as fallback? Wait, in Tutor mode we don't have user_id exposed?
+                    // Let's check if student has `id` from backend: backend gives `id` ? Let's parse `student_id` if available.
+                    // But we can just use UserProfileScreen, which can search by name if ID is "0".
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => UserProfileScreen(
+                          authorId: item['student_id']?.toString() ?? "0", // if available
+                          authorName: student['full_name'] ?? "Talaba",
+                          authorUsername: "",
+                          authorAvatar: student['image'] ?? "",
+                          authorRole: "student",
+                        ),
                       ),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          backgroundImage: student['image'] != null 
+                              ? CachedNetworkImageProvider(student['image'])
+                              : null,
+                          child: student['image'] == null ? const Icon(Icons.person) : null,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(student['full_name'] ?? "Talaba", style: const TextStyle(fontWeight: FontWeight.bold)),
+                              Text(item['created_at'] != null ? item['created_at'].toString().split('T')[0] : "", style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                        _buildStatusChip(item['status']),
+                      ],
                     ),
-                    _buildStatusChip(item['status']),
-                  ],
+                  ),
                 ),
                 const Divider(height: 24),
                 
