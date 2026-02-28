@@ -88,7 +88,7 @@ async def get_tutor_group_students(
     # Fetch students
     stmt = (
         select(Student)
-        .where(Student.group_number == group_number)
+        .where(Student.group_number.ilike(f"{group_number.strip()}%"))
         .order_by(Student.full_name)
     )
     
@@ -129,7 +129,7 @@ async def get_group_document_details(
     stmt = (
         select(Student)
         .options(joinedload(Student.all_documents))
-        .where(Student.group_number == group_number)
+        .where(Student.group_number.ilike(f"{group_number.strip()}%"))
         .order_by(Student.full_name)
     )
     
