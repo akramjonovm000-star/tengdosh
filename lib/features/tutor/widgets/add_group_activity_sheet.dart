@@ -156,7 +156,7 @@ class _AddGroupActivitySheetState extends State<AddGroupActivitySheet> {
       builder: (context, child) {
         return Theme(
           data: ThemeData.light().copyWith(
-            colorScheme: ColorScheme.light(primary: AppTheme.primary),
+            colorScheme: ColorScheme.light(primary: AppTheme.primaryBlue),
           ),
           child: child!,
         );
@@ -250,7 +250,7 @@ class _AddGroupActivitySheetState extends State<AddGroupActivitySheet> {
                 title: Text("Barchasini belgilash", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                 trailing: Checkbox(
                   value: allSelected,
-                  activeColor: AppTheme.primary,
+                  activeColor: AppTheme.primaryBlue,
                   onChanged: (val) {
                     setState(() {
                       if (val == true) {
@@ -262,7 +262,7 @@ class _AddGroupActivitySheetState extends State<AddGroupActivitySheet> {
                   },
                 ),
                 leading: CircleAvatar(
-                  backgroundColor: AppTheme.primary.withOpacity(0.1),
+                  backgroundColor: AppTheme.primaryBlue.withOpacity(0.1),
                   child: Text(gName),
                   radius: 18,
                 ),
@@ -280,7 +280,7 @@ class _AddGroupActivitySheetState extends State<AddGroupActivitySheet> {
                   final isSelected = _selectedStudentIds.contains(id);
                   return CheckboxListTile(
                     value: isSelected,
-                    activeColor: AppTheme.primary,
+                    activeColor: AppTheme.primaryBlue,
                     dense: true,
                     title: Text(s['full_name'] ?? 'Noma\'lum'),
                     subtitle: Text((s['hemis_id'] ?? '').toString()),
@@ -335,7 +335,7 @@ class _AddGroupActivitySheetState extends State<AddGroupActivitySheet> {
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: AppTheme.textDark,
+              color: AppTheme.textBlack,
             ),
           ),
           
@@ -418,7 +418,7 @@ class _AddGroupActivitySheetState extends State<AddGroupActivitySheet> {
                       ),
                       child: Column(
                         children: [
-                          Icon(Icons.photo_library, size: 40, color: AppTheme.primary),
+                          Icon(Icons.photo_library, size: 40, color: AppTheme.primaryBlue),
                           const SizedBox(height: 8),
                           if (_uploadedCount > 0)
                             Text(
@@ -483,7 +483,7 @@ class _AddGroupActivitySheetState extends State<AddGroupActivitySheet> {
                 child: ElevatedButton(
                   onPressed: _isSaving ? null : _saveActivity,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primary,
+                    backgroundColor: AppTheme.primaryBlue,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
