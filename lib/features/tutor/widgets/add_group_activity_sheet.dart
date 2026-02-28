@@ -115,7 +115,7 @@ class _AddGroupActivitySheetState extends State<AddGroupActivitySheet> {
     try {
       final res = await Provider.of<DataService>(context, listen: false).tutorInitUploadSession(
         sessionId,
-        _selectedCategory
+        _selectedCategory ?? "Boshqa"
       );
       
       if (res['success'] == true || res['requires_auth'] == true) {
