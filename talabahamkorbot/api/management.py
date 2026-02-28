@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 from api.dependencies import get_current_student, get_current_staff
 from database.db_connect import get_db
-from database.models import Student, Staff, TgAccount, UserActivity, TutorGroup, User, StudentDocument, StudentCertificate
+from database.models import Student, Staff, TgAccount, UserActivity, TutorGroup, User, StudentDocument, UserCertificate
 from database.models import StaffRole
 from services.analytics_service import get_management_analytics
 from services.ai_service import generate_answer_by_key
