@@ -374,26 +374,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                           ),
-                          if (_hasBiometrics)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 16.0),
-                              child: IconButton(
-                                icon: const Icon(Icons.fingerprint, size: 50, color: AppTheme.primaryBlue),
-                                onPressed: () async {
-                                  final authProv = Provider.of<AuthProvider>(context, listen: false);
-                                  final creds = await authProv.getSavedBiometricCredentials();
-                                  if (creds != null) {
-                                      _promptBiometric(creds['login']!, creds['password']!);
-                                  } else {
-                                      if (mounted) {
-                                         ScaffoldMessenger.of(context).showSnackBar(
-                                           const SnackBar(content: Text("Avval parol bilan kiring!")),
-                                         );
-                                      }
-                                  }
-                                },
-                              ),
-                            ),
+                          // Removed manual biometric trigger per user request
                         ],
                       );
                     },
