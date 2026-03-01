@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/data_service.dart';
 import 'package:talabahamkor_mobile/core/localization/app_dictionary.dart';
+import 'resources_screen.dart';
 
 class SubjectDetailScreen extends StatefulWidget {
   final String subjectId;
@@ -33,26 +34,11 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
   }
 
   Future<void> _loadDetails() async {
-    final futures = await Future.wait([
-      _dataService.getSubjectDetails(widget.subjectId, semesterId: widget.semesterId),
-      _dataService.getStudentPerformance(semesterId: widget.semesterId),
-    ]);
+    final details = await _dataService.getSubjectDetails(widget.subjectId, semesterId: widget.semesterId);
 
     if (mounted) {
       setState(() {
-        _details = futures[0] as Map<String, dynamic>?;
-        
-        // Filter daily grades for this specific subject
-        final allGrades = futures[1] as List<dynamic>;
-        _dailyGrades = allGrades.where((g) => strSubjectId(g) == widget.subjectId).toList();
-        
-        // Sort newest first
-        _dailyGrades.sort((a, b) {
-           int tA = a['items']?[0]?['date'] ?? 0;
-           int tB = b['items']?[0]?['date'] ?? 0;
-           return tB.compareTo(tA);
-        });
-        
+        _details = details as Map<String, dynamic>?;
         _isLoading = false;
       });
     }
@@ -107,11 +93,7 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                       _buildInfoCard(teachers, "$totalHours soat$hoursDetailStr", type),
                       const SizedBox(height: 20),
                       
-                      // 2. Grades Card (NEW)
-                      _buildGradesCard(subj['grades']),
-                      const SizedBox(height: 20),
-                      
-                      // 3. Attendance Stat Card
+                      // 2. Attendance Stat Card
                       _buildAttendanceCard(missed, percent, "$totalHours soat$hoursDetailStr"),
                       const SizedBox(height: 20),
                       
@@ -128,29 +110,34 @@ class _SubjectDetailScreenState extends State<SubjectDetailScreen> {
                         
                       const SizedBox(height: 20),
                       
-                      // 4. Daily Grades
-                      if (_dailyGrades.isNotEmpty) ...[
-                        const Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text("Kunlik baholar", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                        ),
-                        const SizedBox(height: 12),
-                        ..._dailyGrades.expand((g) => ((g['items'] as List?) ?? []).map((item) => _buildDailyGradeItem(item))).toList(),
-                      ] else
-                        const Align(
-                            alignment: Alignment.center,
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(vertical: 20),
-                              child: Column(
-                                children: [
-                                  Icon(Icons.assignment_outlined, size: 40, color: Colors.grey),
-                                  SizedBox(height: 10),
-                                  Text("Hozircha kunlik baholar yo'q", style: TextStyle(color: Colors.grey, fontSize: 14)),
-                                ],
+                      // 4. Resources Button (NEW)
+                      SizedBox(
+                        width: double.infinity,
+                        height: 54,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ResourcesScreen(
+                                  subjectId: widget.subjectId,
+                                  subjectName: widget.subjectName,
+                                ),
                               ),
-                            )
+                            );
+                          },
+                          icon: const Icon(Icons.folder_open_rounded, color: Colors.white),
+                          label: const Text(
+                            "Fan resurslari",
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.primaryBlue,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            elevation: 0,
+                          ),
                         ),
-
+                      ),
                       const SizedBox(height: 30),
                     ],
                   ),

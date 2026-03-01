@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/data_service.dart';
 import 'resources_screen.dart';
+import 'subject_detail_screen.dart';
 import 'package:talabahamkor_mobile/core/localization/app_dictionary.dart';
 
 class SubjectsScreen extends StatefulWidget {
@@ -157,7 +158,11 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => ResourcesScreen(subjectId: id, subjectName: name),
+                builder: (_) => SubjectDetailScreen(
+                  subjectId: id,
+                  subjectName: name,
+                  semesterId: _selectedSemesterId,
+                ),
               ),
             );
           },

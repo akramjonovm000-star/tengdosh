@@ -4,6 +4,7 @@ from api.dependencies import get_current_student, get_db, get_premium_student, g
 from api.schemas import StudentProfileSchema
 from database.models import Student, TgAccount
 from sqlalchemy import select
+from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
