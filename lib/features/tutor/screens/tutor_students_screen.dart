@@ -116,11 +116,26 @@ class _TutorStudentsScreenState extends State<TutorStudentsScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      UzbekNameFormatter.format(fullName),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            UzbekNameFormatter.format(fullName),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                          ),
+                                        ),
+                                        if (student['is_registered'] != null)
+                                          Padding(
+                                            padding: const EdgeInsets.only(left: 4.0),
+                                            child: Icon(
+                                              student['is_registered'] == true ? Icons.check_circle : Icons.cancel,
+                                              color: student['is_registered'] == true ? Colors.green : Colors.red,
+                                              size: 16,
+                                            ),
+                                          ),
+                                      ],
                                     ),
                                     const SizedBox(height: 4),
                                     Text(

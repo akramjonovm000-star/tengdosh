@@ -421,9 +421,23 @@ class _StudentSearchScreenState extends State<StudentSearchScreen> {
               backgroundImage: s['image_url'] != null ? NetworkImage(s['image_url']) : null,
               child: s['image_url'] == null ? const Icon(Icons.person, size: 30) : null,
             ),
-            title: Text(
-              s['full_name'] ?? "",
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            title: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    s['full_name'] ?? "",
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (s['is_registered'] != null)
+                  Icon(
+                    s['is_registered'] == true ? Icons.check_circle : Icons.cancel,
+                    color: s['is_registered'] == true ? Colors.green : Colors.red,
+                    size: 16,
+                  ),
+              ],
             ),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

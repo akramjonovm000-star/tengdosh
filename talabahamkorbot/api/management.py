@@ -681,9 +681,12 @@ async def search_mgmt_students(
     )
     app_users_count = (await db.execute(app_users_stmt)).scalar() or 0
 
-    # [NEW] Enrich with Activity Counts
+    # [NEW] Enrich with Activity Counts & Registration Status
     student_ids = [s.id for s in students if s.id]
+    hemis_logins = [s.hemis_login for s in students if s.hemis_login]
+    
     activity_counts = {}
+    registered_logins = set()
     
     if student_ids:
         # Aggregate counts for these students
@@ -694,6 +697,12 @@ async def search_mgmt_students(
         )
         count_res = await db.execute(count_stmt)
         activity_counts = {row[0]: row[1] for row in count_res.all()}
+        
+    if hemis_logins:
+        # Bulk find who is actually registered in the users table
+        reg_stmt = select(User.hemis_login).where(User.hemis_login.in_(hemis_logins), User.hemis_token != None)
+        reg_res = await db.execute(reg_stmt)
+        registered_logins = {row[0] for row in reg_res.all()}
         
     return {
         "success": True, 
@@ -711,7 +720,8 @@ async def search_mgmt_students(
                 "specialty_name": s.specialty_name,
                 "level_name": s.level_name,
                 "education_form": s.education_form,
-                "activities_count": activity_counts.get(s.id, 0) # [NEW]
+                "activities_count": activity_counts.get(s.id, 0),
+                "is_registered": s.hemis_login in registered_logins # [NEW]
             } for s in students
         ]
     }
