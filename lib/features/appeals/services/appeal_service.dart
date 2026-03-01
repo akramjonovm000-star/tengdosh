@@ -232,6 +232,29 @@ class AppealService {
     }
   }
 
+  // Edit Pending Appeal
+  Future<bool> editAppeal(int id, String text, String role) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    final url = Uri.parse("${ApiConstants.backendUrl}/student/feedback/$id");
+    
+    try {
+      final response = await http.patch(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: {'text': text, 'role': role},
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
   // Close Appeal
   Future<bool> closeAppeal(int id) async {
     final token = await _getToken();

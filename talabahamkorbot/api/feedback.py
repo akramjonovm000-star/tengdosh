@@ -425,6 +425,36 @@ async def create_feedback(
     await db.commit()
     return {"status": "success", "id": feedback.id}
 
+@router.patch("/{id}")
+async def update_feedback(
+    id: int,
+    text: str = Form(None),
+    role: str = Form(None),
+    token: str = Depends(require_action_token),
+    student: Student = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Update a pending feedback thread.
+    """
+    stmt = select(StudentFeedback).where(StudentFeedback.id == id, StudentFeedback.student_id == student.id)
+    appeal = await db.scalar(stmt)
+    
+    if not appeal:
+        raise HTTPException(status_code=404, detail="Appeal not found")
+        
+    if appeal.status != "pending":
+        raise HTTPException(status_code=400, detail="Faqat kutilayotgan murojaatni o'zgartirish mumkin")
+        
+    if text:
+        appeal.text = text
+    if role:
+        appeal.assigned_role = role
+        
+    await db.commit()
+    
+    return {"status": "success", "message": "Appeal updated"}
+
 @router.post("/{id}/reply")
 async def reply_feedback(
     id: int,

@@ -233,6 +233,9 @@ async def delete_activity(
     if act.student_id != student.id:
         raise HTTPException(status_code=403, detail="Not your activity")
         
+    if act.status != "pending":
+        raise HTTPException(status_code=400, detail="Faqat kutilayotgan faollikni o'chirish mumkin")
+        
     # Delete images from DB (Cascade should handle it if configured, but let's be safe)
     # SQLAlchemy relationship cascade="all, delete" usually handles this if model is set up right.
     # UserActivity model -> images = relationship(..., cascade="all, delete-orphan")
@@ -268,6 +271,9 @@ async def update_activity(
         
     if act.student_id != student.id:
         raise HTTPException(status_code=403, detail="Not your activity")
+
+    if act.status != "pending":
+        raise HTTPException(status_code=400, detail="Faqat kutilayotgan faollikni o'zgartirish mumkin")
         
     if category: act.category = category
     if name: act.name = name

@@ -1125,6 +1125,19 @@ class _AppealDetailScreenState extends State<AppealDetailScreen> {
   }
 
   Future<void> _closeAppeal() async {
+      final confirm = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+              title: const Text("Yopish"),
+              content: const Text("Murojaatni yopishni xohlaysizmi?"),
+              actions: [
+                  TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Yo'q")),
+                  TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Ha, Yopish", style: TextStyle(color: Colors.red))),
+              ]
+          )
+      );
+      if (confirm != true) return;
+
       setState(() => _isReplying = true);
       final success = await _service.closeAppeal(widget.appealId);
       
@@ -1138,6 +1151,80 @@ class _AppealDetailScreenState extends State<AppealDetailScreen> {
               );
           }
       }
+  }
+
+  Future<void> _editAppeal() async {
+      final rootText = _detail?.messages.firstWhere((m) => m.id == _detail!.id).text ?? "";
+      final TextEditingController tc = TextEditingController(text: rootText);
+      bool isSubmitting = false;
+
+      await showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (ctx) => StatefulBuilder(
+              builder: (ctx, setStateSheet) {
+                  return Padding(
+                      padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+                      child: Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: const BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.vertical(top: Radius.circular(24))
+                          ),
+                          child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                  const Text("Murojaatni o'zgartirish", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                  const SizedBox(height: 16),
+                                  TextField(
+                                      controller: tc,
+                                      minLines: 4,
+                                      maxLines: 8,
+                                      decoration: InputDecoration(
+                                          hintText: "Murojaat matni...",
+                                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                          filled: true,
+                                          fillColor: Colors.grey[50]
+                                      )
+                                  ),
+                                  const SizedBox(height: 24),
+                                  SizedBox(
+                                      width: double.infinity,
+                                      height: 50,
+                                      child: ElevatedButton(
+                                          onPressed: isSubmitting ? null : () async {
+                                              if (tc.text.trim().isEmpty) return;
+                                              setStateSheet(() => isSubmitting = true);
+                                              // We only update text in UI, role stays same (user can't change recipient here easily, which is fine)
+                                              final success = await _service.editAppeal(widget.appealId, tc.text.trim(), "");
+                                              if (mounted) {
+                                                  setStateSheet(() => isSubmitting = false);
+                                                  if (success) {
+                                                      Navigator.pop(ctx);
+                                                      _loadDetail();
+                                                  } else {
+                                                      ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text("Xatolik yuz berdi")));
+                                                  }
+                                              }
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                              backgroundColor: AppTheme.primaryBlue,
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
+                                          ),
+                                          child: isSubmitting 
+                                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                              : const Text("SAQLASH", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
+                                      )
+                                  )
+                              ]
+                          )
+                      )
+                  );
+              }
+          )
+      );
   }
 
   Future<void> _sendReply() async {
@@ -1295,18 +1382,35 @@ class _AppealDetailScreenState extends State<AppealDetailScreen> {
         padding: const EdgeInsets.all(16),
         color: Colors.white,
         child: SafeArea(
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(12),
-            ),
-            alignment: Alignment.center,
-            child: Text(AppDictionary.tr(context, 'msg_waiting_for_reply'),
-              style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600),
-            ),
-          ),
+          child: Row(
+            children: [
+               Expanded(
+                  child: OutlinedButton.icon(
+                      onPressed: _editAppeal, 
+                      icon: const Icon(Icons.edit, color: AppTheme.primaryBlue, size: 20),
+                      label: const Text("O'zgartirish", style: TextStyle(color: AppTheme.primaryBlue)),
+                      style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: AppTheme.primaryBlue),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 14)
+                      )
+                  )
+               ),
+               const SizedBox(width: 12),
+               Expanded(
+                 child: OutlinedButton.icon(
+                      onPressed: _closeAppeal, 
+                      icon: const Icon(Icons.cancel_outlined, color: Colors.red, size: 20),
+                      label: const Text("Yopish", style: TextStyle(color: Colors.red)),
+                      style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Colors.red),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 14)
+                      )
+                 )
+               )
+            ]
+          )
         ),
       );
     }

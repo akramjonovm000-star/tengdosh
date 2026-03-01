@@ -1346,8 +1346,8 @@ class _ActivityCardState extends State<ActivityCard> {
                           ),
                           const SizedBox(width: 8),
                           
-                          // 3-DOT MENU (Only visible if status is 'kutilmoqda')
-                          if (widget.activity.status == 'kutilmoqda')
+                          // 3-DOT MENU (Only visible if status is 'pending')
+                          if (widget.activity.status == 'pending')
                             Container(
                               width: 32,
                               height: 32,
