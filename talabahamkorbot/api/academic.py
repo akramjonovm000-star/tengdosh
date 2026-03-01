@@ -456,28 +456,22 @@ async def get_subject_details_endpoint(subject_id: str, semester: str = None, st
     
     subject_absence = [{"date": datetime.fromtimestamp(item.get("lesson_date")).strftime("%d.%m.%Y") if item.get("lesson_date") else "", "hours": item.get("absent_on", 0) + item.get("absent_off", 0) or item.get("hour", 2)} for item in absence_items if str(item.get("subject", {}).get("id")) == str(subject_id)]
     
-    # Clean exactly how attendance does it over the target subject curriculum
+    # Get schedule to build real active training class hours
     training_hours = {}
-    total_active_hours = 0
-    
-    cs = target_subject.get("curriculumSubject", {})
-    lecture = int(cs.get("lecture_hour") or 0)
-    practice = int(cs.get("practice_hour") or 0)
-    seminar = int(cs.get("seminar_hour") or 0)
-    laboratory = int(cs.get("laboratory_hour") or 0)
-    
-    total_active_hours = lecture + practice + seminar + laboratory
-    
-    if lecture > 0: training_hours["Ma'ruza"] = lecture
-    if practice > 0: training_hours["Amaliy"] = practice
-    if seminar > 0: training_hours["Seminar"] = seminar
-    if laboratory > 0: training_hours["Laboratoriya"] = laboratory
+    for item in schedule:
+        s_id = str(item.get("subject", {}).get("id"))
+        if s_id == str(subject_id):
+            t_type = item.get("trainingType", {}).get("name")
+            if t_type:
+                if t_type not in training_hours:
+                    training_hours[t_type] = 0
+                training_hours[t_type] += 2
+                
+    total_active_hours = sum(training_hours.values())
+    if total_active_hours == 0:
+        total_active_hours = int(target_subject.get("curriculumSubject", {}).get("total_acload") or 0)
         
     total_missed = sum(a['hours'] for a in subject_absence)
     percent = round((total_missed / total_active_hours) * 100, 1) if total_active_hours > 0 else 0.0
     
-    # Optional: fallback to total_acload if absolutely 0 active structural hours
-    if total_active_hours == 0:
-        total_active_hours = int(cs.get("total_acload") or 0)
-    
-    return {"success": True, "data": {"subject": {"name": target_subject.get("subject", {}).get("name") or cs.get("subject", {}).get("name"), "total_hours": total_active_hours, "training_hours": training_hours, "grades": {"overall": target_subject.get("overallScore", {}).get("grade", 0), "detailed": detailed_list}}, "teachers": list(teachers), "attendance": {"total_missed": total_missed, "percent": percent, "details": subject_absence}}}
+    return {"success": True, "data": {"subject": {"name": target_subject.get("subject", {}).get("name") or target_subject.get("curriculumSubject", {}).get("subject", {}).get("name"), "total_hours": total_active_hours, "training_hours": training_hours, "grades": {"overall": target_subject.get("overallScore", {}).get("grade", 0), "detailed": detailed_list}}, "teachers": list(teachers), "attendance": {"total_missed": total_missed, "percent": percent, "details": subject_absence}}}
