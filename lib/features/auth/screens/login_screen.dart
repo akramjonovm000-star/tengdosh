@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:local_auth/local_auth.dart';
 import '../../../core/providers/locale_provider.dart' as core_providers;
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/theme/app_theme.dart';
@@ -21,6 +22,67 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isObscure = true;
   bool _isPolicyAccepted = false; 
   String? _errorMessage; // NEW
+  
+  final LocalAuthentication _localAuth = LocalAuthentication();
+  bool _hasBiometrics = false;
+  bool _isAuthenticating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Use addPostFrameCallback to ensure context is fully built and Provider is accessible
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkBiometricsAndAutoLogin();
+    });
+  }
+
+  Future<void> _checkBiometricsAndAutoLogin() async {
+    try {
+      _hasBiometrics = await _localAuth.canCheckBiometrics;
+      final isDeviceSupported = await _localAuth.isDeviceSupported();
+      if (!_hasBiometrics || !isDeviceSupported) return;
+      
+      if (!mounted) return;
+      
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final creds = await auth.getSavedBiometricCredentials();
+      
+      if (creds != null) {
+         setState(() {
+            _isPolicyAccepted = true; // Auto accept policy if they logged in before
+         });
+         _promptBiometric(creds['login']!, creds['password']!);
+      } else {
+         setState(() {}); // refresh UI to show biometric button if needed later
+      }
+    } catch (e) {
+      debugPrint("Biometric check init error: $e");
+    }
+  }
+
+  Future<void> _promptBiometric(String login, String pwd) async {
+    if (_isAuthenticating || !mounted) return;
+    try {
+      setState(() => _isAuthenticating = true);
+      final bool didAuthenticate = await _localAuth.authenticate(
+        localizedReason: "Dasturga avtomatik kirish uchun tasdiqlang",
+        options: const AuthenticationOptions(
+          biometricOnly: true,
+          stickyAuth: true,
+        ),
+      );
+      if (mounted) setState(() => _isAuthenticating = false);
+
+      if (didAuthenticate) {
+        _loginController.text = login;
+        _passwordController.text = pwd;
+        _submit();
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isAuthenticating = false);
+      debugPrint("Biometric prompt error: $e");
+    }
+  }
 
   Future<void> _submit() async {
     // 1. Dismiss Keyboard immediately to ensure UI visibility
@@ -312,6 +374,26 @@ class _LoginScreenState extends State<LoginScreen> {
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                           ),
+                          if (_hasBiometrics)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 16.0),
+                              child: IconButton(
+                                icon: const Icon(Icons.fingerprint, size: 50, color: AppTheme.primaryBlue),
+                                onPressed: () async {
+                                  final authProv = Provider.of<AuthProvider>(context, listen: false);
+                                  final creds = await authProv.getSavedBiometricCredentials();
+                                  if (creds != null) {
+                                      _promptBiometric(creds['login']!, creds['password']!);
+                                  } else {
+                                      if (mounted) {
+                                         ScaffoldMessenger.of(context).showSnackBar(
+                                           const SnackBar(content: Text("Avval parol bilan kiring!")),
+                                         );
+                                      }
+                                  }
+                                },
+                              ),
+                            ),
                         ],
                       );
                     },

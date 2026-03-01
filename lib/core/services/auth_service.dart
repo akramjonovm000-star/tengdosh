@@ -1,12 +1,14 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/student.dart';
 import '../constants/api_constants.dart';
 
 class AuthService {
   
   SharedPreferences? _prefs;
+  final _secureStorage = const FlutterSecureStorage();
 
   Future<SharedPreferences> get _getPrefs async {
     _prefs ??= await SharedPreferences.getInstance();
@@ -21,6 +23,26 @@ class AuthService {
 
   Future<void> saveToken(String token) async {
     await _saveToken(token);
+  }
+
+  // --- Biometric Secure Storage ---
+  Future<void> saveBiometricCredentials(String login, String password) async {
+    await _secureStorage.write(key: 'bio_login', value: login);
+    await _secureStorage.write(key: 'bio_password', value: password);
+  }
+
+  Future<Map<String, String>?> getBiometricCredentials() async {
+    final login = await _secureStorage.read(key: 'bio_login');
+    final password = await _secureStorage.read(key: 'bio_password');
+    if (login != null && password != null && login.isNotEmpty && password.isNotEmpty) {
+      return {'login': login, 'password': password};
+    }
+    return null;
+  }
+
+  Future<void> clearBiometricCredentials() async {
+    await _secureStorage.delete(key: 'bio_login');
+    await _secureStorage.delete(key: 'bio_password');
   }
 
   // Telegram Login Stubs
@@ -67,6 +89,9 @@ class AuthService {
           
           await _saveToken(token);
           await _saveRole(role); 
+          
+          // Securely save credentials for FaceID auto-login
+          await saveBiometricCredentials(login, password);
           
           final profileMap = data?['profile'] ?? body['profile'];
           if (profileMap != null) {
@@ -233,6 +258,7 @@ class AuthService {
   Future<void> logout() async {
     final prefs = await _getPrefs;
     await prefs.clear();
+    await clearBiometricCredentials();
   }
 
   Future<Student?> loginWithOAuthToken(String token) async {

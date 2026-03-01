@@ -73,6 +73,10 @@ class AuthProvider with ChangeNotifier {
   // Alias for clearer intent in UI
   Future<void> checkLoginStatus() => loadUser();
 
+  Future<Map<String, String>?> getSavedBiometricCredentials() async {
+    return await _authService.getBiometricCredentials();
+  }
+
   Future<String?> login(String login, String password) async {
     debugPrint("AuthProvider: login initiated for $login");
     _isLoading = true;

@@ -58,6 +58,8 @@
 	<string>Profil rasmini olish uchun kameraga ruxsat bering.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Video yuklash uchun mikrofonga ruxsat bering.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Biometrik tasdiqlash (FaceID/TouchID) uchun ruxsat bering.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSAppTransportSecurity</key>
