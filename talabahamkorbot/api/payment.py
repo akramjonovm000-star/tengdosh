@@ -140,6 +140,9 @@ async def click_webhook(
        "sign_time": sign_time,
        "sign_string": sign_string
     }
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.warning(f"CLICK INCOMING PARAMS: {params}")
     
     handler = ClickHandler(session)
     result = await handler.handle(params)
@@ -148,6 +151,8 @@ async def click_webhook(
     result["click_trans_id"] = click_trans_id
     result["merchant_trans_id"] = merchant_trans_id
     # service_id?
+    
+    logger.warning(f"CLICK OUTGOING RESULT: {result}")
     
     return result
 
