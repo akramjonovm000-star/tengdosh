@@ -502,4 +502,4 @@ async def get_subject_details_endpoint(subject_id: str, semester: str = None, st
     total_missed = sum(a['hours'] for a in subject_absence)
     percent = round((total_missed / total_active_hours) * 100, 1) if total_active_hours > 0 else 0.0
     
-    return {"success": True, "data": {"subject": {"name": target_subject.get("subject", {}).get("name") or target_subject.get("curriculumSubject", {}).get("subject", {}).get("name"), "total_hours": total_active_hours, "training_hours": training_hours, "grades": {"overall": target_subject.get("overallScore", {}).get("grade", 0), "detailed": detailed_list}}, "teachers": list(teachers), "attendance": {"total_missed": total_missed, "percent": percent, "details": subject_absence}}}
+
