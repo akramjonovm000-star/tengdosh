@@ -150,10 +150,17 @@ async def click_webhook(
     result = await handler.handle(params)
     
     # Ensure required fields in response
+    # Click expects click_trans_id as integer in some docs, but large numbers might need string
     result["click_trans_id"] = int(click_trans_id)
-    result["merchant_trans_id"] = merchant_trans_id
-    # service_id?
+    result["merchant_trans_id"] = str(merchant_trans_id)
+    result["error"] = int(result.get("error", 0))
+    result["error_note"] = str(result.get("error_note", "Success"))
     
+    if "merchant_prepare_id" in result and result["merchant_prepare_id"] is not None:
+        result["merchant_prepare_id"] = int(result["merchant_prepare_id"])
+    if "merchant_confirm_id" in result and result["merchant_confirm_id"] is not None:
+        result["merchant_confirm_id"] = int(result["merchant_confirm_id"])
+        
     logger.warning(f"CLICK OUTGOING RESULT: {result}")
     
     return result
