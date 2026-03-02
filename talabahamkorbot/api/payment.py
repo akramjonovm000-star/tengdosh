@@ -120,7 +120,7 @@ async def click_webhook(
     service_id: str = Form(...),
     click_paydoc_id: str = Form(...),
     merchant_trans_id: str = Form(...),
-    amount: float = Form(...),
+    amount: str = Form(...),
     action: int = Form(...),
     error: int = Form(...),
     error_note: str = Form(""),
