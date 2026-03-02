@@ -243,7 +243,13 @@ class ClickHandler:
         # We need to strip '.0' if present, or just use the integer representation for exact match.
         amount_str = str(params.get("amount", "0"))
         
-        calc_str = f"{click_trans_id}{service_id}{CLICK_SECRET_KEY}{merchant_trans_id}{amount_str}{action}{sign_time}"
+        merchant_prepare_id = params.get("merchant_prepare_id")
+        
+        if merchant_prepare_id is not None and str(merchant_prepare_id).strip() != "" and action == 1:
+            calc_str = f"{click_trans_id}{service_id}{CLICK_SECRET_KEY}{merchant_trans_id}{merchant_prepare_id}{amount_str}{action}{sign_time}"
+        else:
+            calc_str = f"{click_trans_id}{service_id}{CLICK_SECRET_KEY}{merchant_trans_id}{amount_str}{action}{sign_time}"
+            
         my_sign = hashlib.md5(calc_str.encode("utf-8")).hexdigest()
         
         if my_sign != sign_string:

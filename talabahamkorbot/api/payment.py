@@ -126,6 +126,7 @@ async def click_webhook(
     error_note: str = Form(""),
     sign_time: str = Form(...),
     sign_string: str = Form(...),
+    merchant_prepare_id: str = Form(None),
     session: AsyncSession = Depends(get_db)
 ):
     params = {
@@ -138,7 +139,8 @@ async def click_webhook(
        "error": error,
        "error_note": error_note,
        "sign_time": sign_time,
-       "sign_string": sign_string
+       "sign_string": sign_string,
+       "merchant_prepare_id": merchant_prepare_id
     }
     import logging
     logger = logging.getLogger(__name__)
