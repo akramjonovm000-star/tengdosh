@@ -148,7 +148,7 @@ async def click_webhook(
     result = await handler.handle(params)
     
     # Ensure required fields in response
-    result["click_trans_id"] = click_trans_id
+    result["click_trans_id"] = int(click_trans_id)
     result["merchant_trans_id"] = merchant_trans_id
     # service_id?
     

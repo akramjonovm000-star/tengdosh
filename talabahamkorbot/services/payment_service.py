@@ -301,17 +301,7 @@ class ClickHandler:
             "merchant_trans_id": order_id,
             "merchant_prepare_id": merchant_prepare_id,
             "error": 0,
-            "error_note": "Success",
-            "items": [
-                {
-                    "title": "Tengdosh ilovasi xizmatlari",
-                    "price": float(amount),
-                    "count": 1,
-                    "code": "10302020000000000", # Maxsus axborot xizmatlari kodiga asosan (namuna)
-                    "package_code": "1203405", # Yoki UzKNF bo'yicha tizim kodi
-                    "vat_percent": 0
-                }
-            ]
+            "error_note": "Success"
         }
 
     async def complete(self, click_trans_id: str, order_id: str, amount: float):
@@ -348,17 +338,7 @@ class ClickHandler:
             "merchant_trans_id": order_id,
             "merchant_confirm_id": tx.id,
             "error": 0,
-            "error_note": "Success",
-            "items": [
-                {
-                    "title": "Tengdosh ilovasi xizmatlari",
-                    "price": float(amount),
-                    "count": 1,
-                    "code": "10302020000000000",
-                    "package_code": "1203405",
-                    "vat_percent": 0
-                }
-            ]
+            "error_note": "Success"
         }
 
 from config import UZUM_SERVICE_ID, UZUM_CHECKOUT_URL
