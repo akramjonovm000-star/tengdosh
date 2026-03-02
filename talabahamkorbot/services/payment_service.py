@@ -241,7 +241,7 @@ class ClickHandler:
         # Amount in signature must be exactly as passed if string, or float converted properly.
         # Click documentation implies amount might be integer-like "1000", but Python FastAPI parses it as "1000.0".
         # We need to strip '.0' if present, or just use the integer representation for exact match.
-        amount_str = str(int(amount)) if amount.is_integer() else str(amount)
+        amount_str = str(params.get("amount", "0"))
         
         calc_str = f"{click_trans_id}{service_id}{CLICK_SECRET_KEY}{merchant_trans_id}{amount_str}{action}{sign_time}"
         my_sign = hashlib.md5(calc_str.encode("utf-8")).hexdigest()

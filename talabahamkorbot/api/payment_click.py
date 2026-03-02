@@ -16,7 +16,7 @@ click_router = APIRouter(prefix="/payment/click", tags=["Payment Click"])
 CLICK_SECRET_KEY = os.getenv("CLICK_SECRET_KEY", "TEST_SECRET_KEY")
 
 def generate_sign_string(trans_id, service_id, secret, merchant_trans_id, amount, action, sign_time, merchant_prepare_id=None):
-    amount_str = f"{float(amount):.2f}".replace(".00", "") if float(amount).is_integer() else f"{float(amount):.2f}"
+    amount_str = str(amount)
     if merchant_prepare_id is not None:
         raw = f"{trans_id}{service_id}{secret}{merchant_trans_id}{merchant_prepare_id}{amount_str}{action}{sign_time}"
     else:
@@ -30,7 +30,7 @@ async def prepare_payment(
     service_id: int = Form(...),
     click_paydoc_id: int = Form(...),
     merchant_trans_id: str = Form(...),
-    amount: float = Form(...),
+    amount: str = Form(...),
     action: int = Form(...),
     error: int = Form(...),
     error_note: str = Form(""),
@@ -71,7 +71,7 @@ async def prepare_payment(
             click_trans_id=click_trans_id,
             click_paydoc_id=click_paydoc_id,
             merchant_trans_id=merchant_trans_id,
-            amount=amount,
+            amount=float(amount),
             action=action,
             error=0,
             sign_time=sign_time,
@@ -108,7 +108,7 @@ async def complete_payment(
     click_paydoc_id: int = Form(...),
     merchant_trans_id: str = Form(...),
     merchant_prepare_id: int = Form(...),
-    amount: float = Form(...),
+    amount: str = Form(...),
     action: int = Form(...),
     error: int = Form(...),
     error_note: str = Form(""),
@@ -179,7 +179,7 @@ async def complete_payment(
             student_result = await db.execute(select(Student).where(Student.id == student_id))
             student = student_result.scalar_one_or_none()
             if student:
-                student.balance += int(amount)
+                student.balance += int(float(amount))
                 logger.info(f"Topped up balance for Student ID {student.id} by {amount} via Click.")
                 
                 # Try sending a Telegram receipt
@@ -190,7 +190,7 @@ async def complete_payment(
                          receipt_msg = (
                              f"🧾 <b>To'lov qabul qilindi!</b>\n\n"
                              f"💳 <b>Tizim:</b> Click\n"
-                             f"💰 <b>Summa:</b> {int(amount):,} so'm\n"
+                             f"💰 <b>Summa:</b> {int(float(amount)):,} so'm\n"
                              f"🆔 <b>Tranzaksiya:</b> {click_trans_id}\n\n"
                              f"✅ <i>Sizning balansingiz muvaffaqiyatli to'ldirildi.</i>"
                          )
