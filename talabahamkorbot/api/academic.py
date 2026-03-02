@@ -464,7 +464,9 @@ async def get_subject_details_endpoint(subject_id: str, semester: str = None, st
     if not token or await HemisService.check_auth_status(token, base_url=base_url) == "AUTH_ERROR":
         raise HTTPException(status_code=401, detail="HEMIS_AUTH_ERROR")
 
-    subjects = await HemisService.get_student_subject_list(token, semester_code=semester, student_id=student.id, base_url=base_url)
+    sem_code = await resolve_semester(student, semester, refresh=False)
+
+    subjects = await HemisService.get_student_subject_list(token, semester_code=sem_code, student_id=student.id, base_url=base_url)
 
     target_subject = next((s for s in subjects if str(s.get("subject", {}).get("id") or s.get("curriculumSubject",{}).get("subject",{}).get("id")) == str(subject_id)), None)
     
@@ -475,9 +477,9 @@ async def get_subject_details_endpoint(subject_id: str, semester: str = None, st
     # Convert to list for frontend
     detailed_list = [v for k, v in detailed_dict.items() if k in ["JN", "ON", "YN"]]
     
-    schedule = await HemisService.get_student_schedule_cached(token, semester_code=semester, student_id=student.id, base_url=base_url)
+    schedule = await HemisService.get_student_schedule_cached(token, semester_code=sem_code, student_id=student.id, base_url=base_url)
     teachers = {item.get("employee", {}).get("name") for item in schedule if str(item.get("subject", {}).get("id")) == str(subject_id) if item.get("employee", {}).get("name")}
-    _, _, _, absence_items = await HemisService.get_student_absence(token, semester_code=semester, student_id=student.id, base_url=base_url)
+    _, _, _, absence_items = await HemisService.get_student_absence(token, semester_code=sem_code, student_id=student.id, base_url=base_url)
 
     
     subject_absence = [{"date": datetime.fromtimestamp(item.get("lesson_date")).strftime("%d.%m.%Y") if item.get("lesson_date") else "", "hours": item.get("absent_on", 0) + item.get("absent_off", 0) or item.get("hour", 2)} for item in absence_items if str(item.get("subject", {}).get("id")) == str(subject_id)]

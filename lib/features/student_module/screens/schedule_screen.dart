@@ -18,6 +18,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   List<Lesson> _allLessons = [];
   List<Attendance> _attendance = [];
   int _selectedDay = 1; // 1 = Monday, 6 = Saturday
+  late DateTime _currentWeekDate;
 
   final List<String> _weekDays = ["Dushanba", "Seshanba", "Chorshanba", "Payshanba", "Juma", "Shanba"];
   final List<String> _months = [
@@ -28,6 +29,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   @override
   void initState() {
     super.initState();
+    _currentWeekDate = DateTime.now();
     _autoSelectDay();
     _loadData();
   }
@@ -38,12 +40,25 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       _selectedDay = now;
     } else {
       _selectedDay = 1; // Default to Monday if Sunday
+      if (now == 7) {
+        _currentWeekDate = _currentWeekDate.add(const Duration(days: 1));
+      }
     }
+  }
+
+  void _changeWeek(int days) {
+    setState(() {
+      _currentWeekDate = _currentWeekDate.add(Duration(days: days));
+      _isLoading = true;
+      _allLessons = [];
+    });
+    _loadData();
   }
 
   Future<void> _loadData() async {
     try {
-      final Future<List<Lesson>> scheduleFuture = _dataService.getSchedule();
+      final targetDateStr = DateFormat('yyyy-MM-dd').format(_currentWeekDate);
+      final Future<List<Lesson>> scheduleFuture = _dataService.getSchedule(targetDate: targetDateStr);
       final Future<List<Attendance>> attendanceFuture = _dataService.getAttendanceList(); // Fetch all attendance for cross-ref
 
       final List<dynamic> results = await Future.wait([scheduleFuture, attendanceFuture]);
@@ -78,8 +93,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Widget build(BuildContext context) {
     final displayLessons = _getFilteredLessons();
 
-    final now = DateTime.now();
-    final firstDayOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    final firstDayOfWeek = _currentWeekDate.subtract(Duration(days: _currentWeekDate.weekday - 1));
     final selectedDate = firstDayOfWeek.add(Duration(days: _selectedDay - 1));
 
     return Scaffold(
@@ -100,9 +114,30 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  "${_weekDays[_selectedDay - 1]}, ${selectedDate.day} - ${_months[selectedDate.month - 1]}", 
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.chevron_left, size: 28, color: Colors.black87),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: () => _changeWeek(-7),
+                    ),
+                    Expanded(
+                      child: Text(
+                        "${_weekDays[_selectedDay - 1]}, ${selectedDate.day} - ${_months[selectedDate.month - 1]}", 
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.chevron_right, size: 28, color: Colors.black87),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: () => _changeWeek(7),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 Row(

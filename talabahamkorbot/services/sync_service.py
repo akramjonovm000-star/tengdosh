@@ -140,11 +140,11 @@ async def sync_student_data(session: AsyncSession, student_id: int):
     # 4. Update Performance (GPA) - Prioritize current semester
     gpa = 0.0
     if sem_code:
-        gpa = await HemisService.get_student_performance(student.hemis_token, student_id=student.id, semester_code=sem_code)
+        gpa = await HemisService.get_student_gpa(student.hemis_token, student_id=student.id, semester_code=sem_code)
     
     # Fallback to default if 0
     if gpa == 0.0:
-        gpa = await HemisService.get_student_performance(student.hemis_token, student_id=student.id, semester_code=None)
+        gpa = await HemisService.get_student_gpa(student.hemis_token, student_id=student.id, semester_code=None)
         
     # [DEEP FALLBACK] If still 0, try finding ANY recent semester with GPA > 0
     if gpa == 0.0 and semesters:
@@ -155,7 +155,7 @@ async def sync_student_data(session: AsyncSession, student_id: int):
             if not prev_code: continue
             
             logger.info(f"Sync: Fallback GPA check for {student.full_name}, sem: {prev_code}")
-            prev_gpa = await HemisService.get_student_performance(student.hemis_token, student_id=student.id, semester_code=prev_code)
+            prev_gpa = await HemisService.get_student_gpa(student.hemis_token, student_id=student.id, semester_code=prev_code)
             if prev_gpa > 0:
                 gpa = prev_gpa
                 logger.info(f"Sync: Found valid GPA {gpa} in semester {prev_code}")

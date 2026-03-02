@@ -1124,7 +1124,7 @@ class DataService {
   }
 
   // 11. Get Weekly Schedule
-  Future<List<Lesson>> getSchedule() async {
+  Future<List<Lesson>> getSchedule({String? targetDate}) async {
     final student = await _authService.getSavedUser();
     final studentId = student?.id ?? 0;
     
@@ -1136,7 +1136,7 @@ class DataService {
     //    return items.map((json) => Lesson.fromJson(json)).toList();
     // }
 
-    return await _backgroundRefreshSchedule(studentId);
+    return await _backgroundRefreshSchedule(studentId, targetDate: targetDate);
   }
 
   // 12. Get Rent Subsidy Report
@@ -1160,9 +1160,13 @@ class DataService {
     return [];
   }
 
-  Future<List<Lesson>> _backgroundRefreshSchedule(int studentId) async {
+  Future<List<Lesson>> _backgroundRefreshSchedule(int studentId, {String? targetDate}) async {
     try {
-      final response = await _get(ApiConstants.scheduleList);
+      String url = ApiConstants.scheduleList;
+      if (targetDate != null) {
+        url += "?target_date=$targetDate";
+      }
+      final response = await _get(url);
       if (response.statusCode == 200) {
         final body = json.decode(response.body);
         if (body['success'] == true) {
