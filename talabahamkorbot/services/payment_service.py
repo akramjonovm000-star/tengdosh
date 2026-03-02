@@ -274,6 +274,10 @@ class ClickHandler:
              except:
                  return {"error": -5, "error_note": "Invalid order_id"}
                  
+             student = await self.session.get(Student, student_id)
+             if not student:
+                 return {"error": -5, "error_note": "Faqat talabalar to'lov qila oladi (Xodimlar uchun to'lov yopilgan)."}
+                 
              # Check amount minimum
              if amount < 1000:
                   return {"error": -2, "error_note": "Minimum amount 1000 sum"}
