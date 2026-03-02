@@ -21,3 +21,14 @@ def format_uzbek_name(name: str) -> str:
     
     # Regex: Lookbehind for a letter, capture apostrophe, capture Uppercase letter
     return re.sub(r"(?<=[a-zA-Z])(['`’‘])([A-Z])", replacer, formatted)
+
+def extract_first_name(full_name: str) -> str:
+    if not full_name: return ""
+    parts = str(full_name).strip().split()
+    if not parts: return ""
+    if len(parts) == 1: return parts[0]
+    
+    first_last = parts[0].lower().endswith(('ov', 'ova', 'ev', 'eva', 'yev', 'yeva'))
+    if first_last:
+        return parts[1]
+    return parts[0]

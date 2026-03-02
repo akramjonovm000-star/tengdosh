@@ -593,6 +593,40 @@ async def get_student_contract_info(
         from fastapi import HTTPException
         raise HTTPException(status_code=500, detail="Shartnoma ma'lumotlarini olishda xatolik yuz berdi")
 
+@router.get("/performance")
+async def get_performance(
+    semester_id: Optional[str] = None,
+    force_refresh: bool = False,
+    student: Student = Depends(get_current_student),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Fetch daily grades (performance journal) for the student.
+    Can be filtered by semester_id.
+    """
+    from services.hemis_service import HemisService
+    from services.university_service import UniversityService
+    from fastapi import HTTPException
+    
+    if not student.hemis_token:
+        raise HTTPException(status_code=401, detail="Token topilmadi. Qayta kiring.")
+        
+    base_url = UniversityService.get_api_url(student.hemis_login)
+    
+    try:
+        data = await HemisService.get_student_performance(
+            student.hemis_token, 
+            semester_code=semester_id, 
+            student_id=student.id, 
+            force_refresh=force_refresh, 
+            base_url=base_url
+        )
+        return {"success": True, "data": data}
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Error fetching performance for student {student.id}: {e}")
+        raise HTTPException(status_code=500, detail="Baholarni olishda xatolik yuz berdi")
+
 @router.get("/{student_id}")
 async def get_student_public_profile(
     student_id: int,
@@ -740,39 +774,4 @@ async def unlink_telegram_account(
     # 2. Delete the account link
     await db.delete(tg_account)
     await db.commit()
-    
     return {"success": True, "message": "Telegram hisobi muvaffaqiyatli uzildi! Endi yangi hisobni ulashingiz mumkin."}
-
-@router.get("/performance")
-async def get_performance(
-    semester_id: Optional[str] = None,
-    force_refresh: bool = False,
-    student: Student = Depends(get_current_student),
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Fetch daily grades (performance journal) for the student.
-    Can be filtered by semester_id.
-    """
-    from services.hemis_service import HemisService
-    from services.university_service import UniversityService
-    from fastapi import HTTPException
-    
-    if not student.hemis_token:
-        raise HTTPException(status_code=401, detail="Token topilmadi. Qayta kiring.")
-        
-    base_url = UniversityService.get_api_url(student.hemis_login)
-    
-    try:
-        data = await HemisService.get_student_performance(
-            student.hemis_token, 
-            semester_code=semester_id, 
-            student_id=student.id, 
-            force_refresh=force_refresh, 
-            base_url=base_url
-        )
-        return {"success": True, "data": data}
-    except Exception as e:
-        import logging
-        logging.getLogger(__name__).error(f"Error fetching performance for student {student.id}: {e}")
-        raise HTTPException(status_code=500, detail="Baholarni olishda xatolik yuz berdi")

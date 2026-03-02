@@ -97,7 +97,7 @@ class _TutorHomeScreenState extends State<TutorHomeScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    user?.fullName ?? "Tyutor",
+                                    user?.firstName ?? user?.fullName ?? "Tyutor",
                                     style: const TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,

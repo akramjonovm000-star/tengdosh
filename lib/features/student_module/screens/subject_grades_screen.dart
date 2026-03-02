@@ -40,7 +40,10 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
     try {
       final dataService = DataService();
       // Fetch performance (all daily grades)
+      print("DEBUG: Requesting performance for semesterId = ${widget.semesterId}");
       final allGrades = await dataService.getStudentPerformance(semesterId: widget.semesterId);
+      print("DEBUG: Received ${allGrades.length} performance records.");
+      print("DEBUG: Target subjectId=${widget.subjectId}, subjectName=${widget.subjectName}");
       
       // Filter out grades strictly for this subject
       // In Hemis API, subject['id'] is what we compare
@@ -50,6 +53,10 @@ class _SubjectGradesScreenState extends State<SubjectGradesScreen> {
           // Compare as strings just in case Int/String parsing varies
           bool idMatch = s['id']?.toString() == widget.subjectId.toString();
           bool nameMatch = (s['name']?.toString().trim().toLowerCase() ?? "") == widget.subjectName.trim().toLowerCase();
+          
+          if (idMatch || nameMatch) {
+              print("DEBUG: Matched grade: ${item}");
+          }
           
           return idMatch || nameMatch;
       }).toList();

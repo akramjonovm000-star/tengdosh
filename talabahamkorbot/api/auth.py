@@ -172,6 +172,7 @@ async def login_via_hemis(
                     "profile": {
                          "id": demo_staff.id,
                          "full_name": demo_staff.full_name,
+                         "first_name": extract_first_name(demo_staff.full_name) if 'extract_first_name' in globals() else __import__('utils.text_utils', fromlist=['extract_first_name']).extract_first_name(demo_staff.full_name),
                          "role": "dekan",
                          "image": demo_staff.image_url,
                          "hemis_login": demo_login,
@@ -246,6 +247,7 @@ async def login_via_hemis(
                     "profile": {
                          "id": demo_staff.id,
                          "full_name": demo_staff.full_name,
+                         "first_name": extract_first_name(demo_staff.full_name) if 'extract_first_name' in globals() else __import__('utils.text_utils', fromlist=['extract_first_name']).extract_first_name(demo_staff.full_name),
                          "role": "yetakchi",
                          "image": demo_staff.image_url,
                          "hemis_login": demo_login,
@@ -340,6 +342,7 @@ async def login_via_hemis(
                     "profile": {
                          "id": demo_staff.id,
                          "full_name": demo_staff.full_name,
+                         "first_name": extract_first_name(demo_staff.full_name) if 'extract_first_name' in globals() else __import__('utils.text_utils', fromlist=['extract_first_name']).extract_first_name(demo_staff.full_name),
                          "role": role,
                          "image": f"https://ui-avatars.com/api/?name={full_name.replace(' ', '+')}&background=random"
                     }
@@ -585,6 +588,7 @@ async def login_via_hemis(
         await db.commit()
         await db.refresh(staff)
         
+        from utils.text_utils import extract_first_name
         return {
             "success": True,
             "data": {
@@ -593,6 +597,7 @@ async def login_via_hemis(
                 "profile": {
                     "id": staff.id,
                     "full_name": staff.full_name,
+                    "first_name": extract_first_name(staff.full_name),
                     "role": staff.role,
                     "image": effective_image,
                     "phone": staff.phone,

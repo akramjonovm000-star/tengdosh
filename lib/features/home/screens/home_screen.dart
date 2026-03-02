@@ -283,23 +283,27 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           Flexible(
                             child: Text(
-                              () {
-                                if (student == null) return "Foydalanuvchi";
-                                
-                                final fullName = student.fullName;
-                                if (fullName == "Talaba") return "Foydalanuvchi";
+                                () {
+                                  if (student == null) return "Foydalanuvchi";
+                                  
+                                  if (student.firstName != null && student.firstName!.isNotEmpty) {
+                                     return student.firstName!;
+                                  }
 
-                                final parts = fullName.split(' ');
-                                if (parts.length >= 2) {
-                                   String name = parts[1];
-                                   return UzbekNameFormatter.format(name);
-                                } else if (parts.isNotEmpty) {
-                                   String first = parts[0];
-                                   return UzbekNameFormatter.format(first);
-                                }
-                                
-                                return fullName;
-                              }(),
+                                  final fullName = student.fullName;
+                                  if (fullName == "Talaba") return "Foydalanuvchi";
+
+                                  final parts = fullName.split(' ');
+                                  if (parts.length >= 2) {
+                                     String name = parts[1];
+                                     return UzbekNameFormatter.format(name);
+                                  } else if (parts.isNotEmpty) {
+                                     String first = parts[0];
+                                     return UzbekNameFormatter.format(first);
+                                  }
+                                  
+                                  return fullName;
+                                }(),
                               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                               overflow: TextOverflow.ellipsis,
                               maxLines: 1,

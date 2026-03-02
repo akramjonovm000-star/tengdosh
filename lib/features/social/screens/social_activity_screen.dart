@@ -1348,42 +1348,44 @@ class _ActivityCardState extends State<ActivityCard> {
                           
                           // 3-DOT MENU (Only visible if status is 'pending')
                           if (widget.activity.status == 'pending')
-                            Container(
-                              width: 32,
-                              height: 32,
-                              margin: const EdgeInsets.only(left: 4),
-                              child: PopupMenuButton<String>(
-                                padding: EdgeInsets.zero,
-                                icon: const Icon(Icons.more_vert, size: 22, color: Colors.black),
-                                onSelected: (value) {
-                                  if (value == 'edit') {
-                                    widget.onEdit(widget.activity);
-                                  } else if (value == 'delete') {
-                                    widget.onDelete(widget.activity);
-                                  }
-                                },
-                                itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                                  PopupMenuItem<String>(
-                                    value: 'edit',
-                                    child: Row(
-                                      children: [
-                                        const Icon(Icons.edit, color: Colors.blue, size: 20),
-                                        const SizedBox(width: 8),
-                                        Text(AppDictionary.tr(context, 'social_btn_edit')),
-                                      ],
+                            Padding(
+                              padding: const EdgeInsets.only(left: 4),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: PopupMenuButton<String>(
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  padding: EdgeInsets.zero,
+                                  icon: const Icon(Icons.more_vert, size: 24, color: Colors.black),
+                                  onSelected: (value) {
+                                    if (value == 'edit') {
+                                      widget.onEdit(widget.activity);
+                                    } else if (value == 'delete') {
+                                      widget.onDelete(widget.activity);
+                                    }
+                                  },
+                                  itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                                    PopupMenuItem<String>(
+                                      value: 'edit',
+                                      child: Row(
+                                        children: [
+                                          const Icon(Icons.edit, color: Colors.blue, size: 20),
+                                          const SizedBox(width: 8),
+                                          Text(AppDictionary.tr(context, 'social_btn_edit')),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                  PopupMenuItem<String>(
-                                    value: 'delete',
-                                    child: Row(
-                                      children: [
-                                        const Icon(Icons.delete, color: Colors.red, size: 20),
-                                        const SizedBox(width: 8),
-                                        Text(AppDictionary.tr(context, 'social_btn_delete')),
-                                      ],
+                                    PopupMenuItem<String>(
+                                      value: 'delete',
+                                      child: Row(
+                                        children: [
+                                          const Icon(Icons.delete, color: Colors.red, size: 20),
+                                          const SizedBox(width: 8),
+                                          Text(AppDictionary.tr(context, 'social_btn_delete')),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             )
                         ],

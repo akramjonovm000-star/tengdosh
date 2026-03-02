@@ -761,6 +761,7 @@ class HemisService:
         client = await HemisService.get_client()
         try:
             params = {"semester": semester_code} if semester_code else {}
+            params["limit"] = 1000  # Ensure we fetch all daily grades for the semester
             response = await HemisService.fetch_with_retry(
                 client, "GET", 
                 f"{final_base}/education/performance",
@@ -806,6 +807,8 @@ class HemisService:
         client = await HemisService.get_client()
         try:
             params = {"semester": semester_code} if semester_code else {}
+            params["limit"] = 1000  # Explicitly require larger limit (e.g. 1000) so Hemis doesn't truncate the schedule
+            
             response = await HemisService.fetch_with_retry(
                 client, "GET", 
                 f"{final_base}/education/schedule",

@@ -19,6 +19,8 @@ class Student {
   final String? staffRole; // New field for Tutor/Staff roles
   final int? facultyId; // [NEW]
   final int? universityId; // [NEW]
+  final String? firstName; // [NEW]
+  final String? lastName;  // [NEW]
 
   Student({
     required this.id,
@@ -41,6 +43,8 @@ class Student {
     this.staffRole,
     this.facultyId,
     this.universityId,
+    this.firstName,
+    this.lastName,
   });
 
   factory Student.fromJson(Map<String, dynamic> json) {
@@ -124,6 +128,8 @@ class Student {
       staffRole: json['staff_role'] ?? json['role_code'] ?? json['role'], 
       facultyId: json['faculty_id'] is int ? json['faculty_id'] : int.tryParse(json['faculty_id']?.toString() ?? ""), // [NEW]
       universityId: json['university_id'] is int ? json['university_id'] : int.tryParse(json['university_id']?.toString() ?? ""), // [NEW]
+      firstName: firstName != null ? sentenceCase(firstName.trim()) : null,
+      lastName: lastName != null ? sentenceCase(lastName.trim()) : null,
     );
   }
 
@@ -149,6 +155,8 @@ class Student {
       'staff_role': staffRole,
       'faculty_id': facultyId, // [NEW]
       'university_id': universityId, // [NEW]
+      'first_name': firstName,
+      'last_name': lastName,
     };
   }
 
@@ -173,6 +181,8 @@ class Student {
     String? staffRole,
     int? facultyId,
     int? universityId,
+    String? firstName,
+    String? lastName,
   }) {
     return Student(
       id: id ?? this.id,
@@ -195,6 +205,8 @@ class Student {
       staffRole: staffRole ?? this.staffRole,
       facultyId: facultyId ?? this.facultyId,
       universityId: universityId ?? this.universityId,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
     );
   }
 }
