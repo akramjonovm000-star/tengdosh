@@ -228,20 +228,11 @@ class _ClubsScreenState extends State<ClubsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              club['name'] ?? 'Klub nomi',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (club['is_leader'] == true) ...[
-                            const SizedBox(width: 4),
-                            const Text("👑", style: TextStyle(fontSize: 14)),
-                          ]
-                        ],
+                      Text(
+                        club['name'] ?? 'Klub nomi',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       if (club['department'] != null && club['department'].toString().trim().isNotEmpty) ...[
                         const SizedBox(height: 2),
@@ -252,41 +243,48 @@ class _ClubsScreenState extends State<ClubsScreen> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
-                      const SizedBox(height: 4),
-                      Text(
-                        "${club['members_count'] ?? 0} a'zo",
-                        style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Text(
+                            "${club['members_count'] ?? 0} a'zo",
+                            style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                          ),
+                          if (club['is_leader'] == true) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryBlue.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                "👑 Sardor",
+                                style: TextStyle(color: AppTheme.primaryBlue, fontWeight: FontWeight.bold, fontSize: 11),
+                              ),
+                            )
+                          ] else if (isJoined) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.green.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                "A'zosiz",
+                                style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 11),
+                              ),
+                            )
+                          ]
+                        ],
                       ),
                     ],
                   ),
                 ),
 
-                // Action / Status
-                if (club['is_leader'] == true)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryBlue.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Text(
-                      "Boshqarish",
-                      style: TextStyle(color: AppTheme.primaryBlue, fontWeight: FontWeight.bold, fontSize: 12),
-                    ),
-                  )
-                else if (isJoined)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.green.withValues(alpha: 0.1), // [FIXED]
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Text(
-                      "A'zosiz",
-                      style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 12),
-                    ),
-                  )
-                else
+                const SizedBox(width: 8),
+                if (!Provider.of<AuthProvider>(context, listen: false).isYetakchi)
                   const Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey, size: 16),
                   
                 if (Provider.of<AuthProvider>(context, listen: false).isYetakchi) ...[

@@ -4,7 +4,10 @@ from sqlalchemy import select
 from database.db_connect import get_session
 from database.models import PendingUpload, Student, TgAccount, TutorPendingUpload
 from models.states import DocumentAddStates, CertificateAddStates, FeedbackStates, ActivityUploadState, TutorDocumentAddStates
-from bot import bot
+from bot import bot, redis
+
+# Async mutex timeout to prevent frozen deadlocks on concurrent media albums
+LOCK_TIMEOUT = 15
 
 router = Router()
 
@@ -40,9 +43,11 @@ async def handle_app_file_upload(message: types.Message, state):
              await message.answer("❌ Fayl aniqlanmadi. Iltimos qaytadan urining.")
              return
 
-        # 2. Find Pending Upload Session for this User
-        # We need to find which student corresponds to this TG ID
-        async for db in get_session():
+        # Acquire a Redis Distributed Lock for this user to queue parallel Album Webhook Requests
+        lock_key = f"lock:upload:student:{user_id}"
+        async with redis.lock(lock_key, timeout=LOCK_TIMEOUT):
+            # 2. Find Pending Upload Session for this User
+            async for db in get_session():
              # Find Student via TgAccount
              stmt = select(TgAccount).where(TgAccount.telegram_id == user_id)
              result = await db.execute(stmt)
@@ -57,11 +62,10 @@ async def handle_app_file_upload(message: types.Message, state):
              # We assume the Last Created Pending Upload is the target. 
              # Or we can check if there is *any* pending upload for this student.
              
-             # Better approach: Find pending upload where file_ids is EMPTY
+             # Find latest pending upload for this student
              stmt = select(PendingUpload).where(
-                 PendingUpload.student_id == tg_account.student_id,
-                 (PendingUpload.file_ids == "") | (PendingUpload.file_ids == None)
-             ).order_by(PendingUpload.created_at.desc())
+                 PendingUpload.student_id == tg_account.student_id
+             ).order_by(PendingUpload.created_at.desc()).with_for_update()
              
              result = await db.execute(stmt)
              pending = result.scalars().first()
@@ -126,8 +130,10 @@ async def handle_activity_photo(message: types.Message, state):
         photo = message.photo[-1]
         file_id = photo.file_id
         
-        # 2. Find Pending Upload
-        async for db in get_session():
+        # 2. Find Pending Upload using Lock
+        lock_key = f"lock:upload:activity:{user_id}"
+        async with redis.lock(lock_key, timeout=LOCK_TIMEOUT):
+            async for db in get_session():
              stmt = select(TgAccount).where(TgAccount.telegram_id == user_id)
              result = await db.execute(stmt)
              tg_account = result.scalars().first()
@@ -141,7 +147,7 @@ async def handle_activity_photo(message: types.Message, state):
              # because we are appending to it.
              stmt = select(PendingUpload).where(
                  PendingUpload.student_id == tg_account.student_id
-             ).order_by(PendingUpload.created_at.desc())
+             ).order_by(PendingUpload.created_at.desc()).with_for_update()
              
              result = await db.execute(stmt)
              pending = result.scalars().first()
@@ -205,7 +211,9 @@ async def handle_tutor_app_file_upload(message: types.Message, state):
              await message.answer("❌ Fayl aniqlanmadi. Iltimos qaytadan urining.")
              return
 
-        async for db in get_session():
+        lock_key = f"lock:upload:tutor:{user_id}"
+        async with redis.lock(lock_key, timeout=LOCK_TIMEOUT):
+            async for db in get_session():
              stmt = select(TgAccount).where(TgAccount.telegram_id == user_id)
              result = await db.execute(stmt)
              tg_account = result.scalars().first()
@@ -216,7 +224,7 @@ async def handle_tutor_app_file_upload(message: types.Message, state):
                  
              stmt = select(TutorPendingUpload).where(
                  TutorPendingUpload.tutor_id == tg_account.staff_id
-             ).order_by(TutorPendingUpload.created_at.desc())
+             ).order_by(TutorPendingUpload.created_at.desc()).with_for_update()
              
              result = await db.execute(stmt)
              pending = result.scalars().first()
