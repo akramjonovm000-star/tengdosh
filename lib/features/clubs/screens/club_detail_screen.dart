@@ -409,17 +409,23 @@ class _MembersTabState extends State<_MembersTab> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
                   children: [
-                    m['image_url'] != null
-                      ? CircleAvatar(
-                          radius: 22,
-                          backgroundColor: Colors.grey.shade200,
-                          backgroundImage: NetworkImage(m['image_url']),
-                        )
-                      : CircleAvatar(
-                          radius: 22,
-                          backgroundColor: AppTheme.primaryBlue.withOpacity(0.1),
-                          child: const Icon(Icons.person, color: AppTheme.primaryBlue),
-                        ),
+                    Builder(builder: (context) {
+                      String? profileUrl = m['image_url'];
+                      if (profileUrl != null && !profileUrl.startsWith('http')) {
+                         profileUrl = '${ApiConstants.backendUrl}/files/$profileUrl';
+                      }
+                      return profileUrl != null
+                        ? CircleAvatar(
+                            radius: 22,
+                            backgroundColor: Colors.grey.shade200,
+                            backgroundImage: NetworkImage(profileUrl),
+                          )
+                        : CircleAvatar(
+                            radius: 22,
+                            backgroundColor: AppTheme.primaryBlue.withOpacity(0.1),
+                            child: const Icon(Icons.person, color: AppTheme.primaryBlue),
+                          );
+                    }),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(
@@ -473,7 +479,7 @@ class _MembersTabState extends State<_MembersTab> {
                       itemBuilder: (context) => [
                         const PopupMenuItem(
                           value: 'remove',
-                          child: Text("Soniqdan chiqarish", style: TextStyle(color: Colors.red)),
+                          child: Text("Klubdan chiqarish", style: TextStyle(color: Colors.red)),
                         )
                       ],
                     ),

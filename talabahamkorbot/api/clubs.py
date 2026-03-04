@@ -340,6 +340,23 @@ async def remove_club_member(
     if not membership:
         raise HTTPException(status_code=404, detail="Membership not found.")
         
+    from database.models import TgAccount
+    telegram_id = membership.telegram_id
+    if not telegram_id:
+        tg_acc = await db.scalar(select(TgAccount).where(TgAccount.student_id == student_id))
+        if tg_acc:
+            telegram_id = str(tg_acc.telegram_id)
+            
+    if telegram_id and club.telegram_channel_id:
+        from bot import bot
+        import logging
+        try:
+            # Kick user and unban to allow future joining
+            await bot.ban_chat_member(chat_id=club.telegram_channel_id, user_id=int(telegram_id))
+            await bot.unban_chat_member(chat_id=club.telegram_channel_id, user_id=int(telegram_id))
+        except Exception as e:
+            logging.error(f"Error kicking user {telegram_id} from {club.telegram_channel_id}: {e}")
+
     await db.delete(membership)
     await db.commit()
     return {"status": "success", "message": "Talaba klub a'zolari safidan chiqarildi"}
