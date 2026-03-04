@@ -29,7 +29,6 @@ class _ClubCreateScreenState extends State<ClubCreateScreen> {
 
     final data = {
       'name': _name,
-      'department': _department,
       'description': _description,
       'channel_link': _channelLink,
       'icon': 'groups_rounded',
@@ -37,6 +36,9 @@ class _ClubCreateScreenState extends State<ClubCreateScreen> {
     };
     if (_leaderLogin.isNotEmpty) {
       data['leader_login'] = _leaderLogin;
+    }
+    if (_department.trim().isNotEmpty) {
+      data['department'] = _department.trim();
     }
 
     final result = await _dataService.createClub(data);
@@ -87,11 +89,10 @@ class _ClubCreateScreenState extends State<ClubCreateScreen> {
               ),
 
               _buildTextField(
-                label: "Qaysi bo'lim qoshida",
+                label: "Qaysi bo'lim qoshida (Ixtiyoriy)",
                 hint: "Masalan: Student Council",
                 icon: Icons.account_balance,
                 onSaved: (val) => _department = val ?? '',
-                validator: (val) => val != null && val.isEmpty ? "Bo'lim nomi kiritish majburiy" : null,
               ),
               
               _buildTextField(
