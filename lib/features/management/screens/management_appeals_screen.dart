@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:talabahamkor_mobile/core/providers/auth_provider.dart';
 import 'package:talabahamkor_mobile/core/theme/app_theme.dart';
 import '../models/appeal_model.dart';
 import '../services/appeal_service.dart';
