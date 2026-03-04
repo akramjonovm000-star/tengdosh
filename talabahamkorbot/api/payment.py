@@ -161,6 +161,9 @@ async def click_webhook(
     if "merchant_confirm_id" in result and result["merchant_confirm_id"] is not None:
         result["merchant_confirm_id"] = int(result["merchant_confirm_id"])
         
+    result["sign_time"] = str(sign_time)
+    result["sign_string"] = str(sign_string)
+        
     logger.warning(f"CLICK OUTGOING RESULT: {result}")
     
     return result
