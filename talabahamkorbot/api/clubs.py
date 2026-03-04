@@ -35,7 +35,12 @@ async def get_my_clubs(
     result = []
     for m in memberships.all():
         data = ClubMembershipSchema.from_orm(m)
-        if m.club.leader_student_id == student.id:
+        is_direct_leader = m.club.leader_student_id == student.id
+        is_student_council_admin = (
+            getattr(m.club, 'department', '') == 'Student Council' and 
+            (getattr(student, 'role', '') == 'student_council' or getattr(student, 'hemis_role', '') == 'student_council')
+        )
+        if is_direct_leader or is_student_council_admin:
             data.club.is_leader = True
             data.role = "leader"
         result.append(data)
@@ -125,8 +130,15 @@ async def get_all_clubs(
         data = ClubSchema.from_orm(club)
         data.members_count = members_count
         data.is_joined = is_joined
-        if club.leader_student_id == student.id:
+        
+        is_direct_leader = club.leader_student_id == student.id
+        is_student_council_admin = (
+            getattr(club, 'department', '') == 'Student Council' and 
+            (getattr(student, 'role', '') == 'student_council' or getattr(student, 'hemis_role', '') == 'student_council')
+        )
+        if is_direct_leader or is_student_council_admin:
             data.is_leader = True
+            
         clubs_data.append(data)
         
     return clubs_data
@@ -562,9 +574,7 @@ async def get_event_participants(
     if not ev:
          raise HTTPException(status_code=404, detail="Event not found")
          
-    club = await db.get(Club, ev.club_id)
-    if getattr(club, 'leader_student_id', None) != student.id:
-        raise HTTPException(status_code=403, detail="Buning uchun siz shu klub sardori bo'lishingiz kerak.")
+    club = await get_club_leader(ev.club_id, student, db)
         
     from sqlalchemy.orm import joinedload
     memberships = await db.scalars(
@@ -613,9 +623,7 @@ async def update_event_attendance(
     if not ev:
          raise HTTPException(status_code=404, detail="Event not found")
          
-    club = await db.get(Club, ev.club_id)
-    if getattr(club, 'leader_student_id', None) != student.id:
-        raise HTTPException(status_code=403, detail="Buning uchun siz shu klub sardori bo'lishingiz kerak.")
+    club = await get_club_leader(ev.club_id, student, db)
         
     part = await db.scalar(
         select(ClubEventParticipant)
