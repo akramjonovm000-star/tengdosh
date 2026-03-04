@@ -1384,7 +1384,7 @@ class AppDictionary {
     // We intentionally do NOT listen here if we plan to use it strictly in build methods
     // that already depend on LocaleProvider OR we can subscribe depending on usage.
     // The safest way is to watch LocaleProvider inside the widgets and pass to `tr`.
-    final localeProvider = Provider.of<LocaleProvider>(context);
+    final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
     final langCode = localeProvider.locale.languageCode;
     
     final node = strings[key];

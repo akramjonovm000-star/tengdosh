@@ -220,7 +220,10 @@ class _ClubsScreenState extends State<ClubsScreen> {
                   
                 if (Provider.of<AuthProvider>(context, listen: false).isYetakchi) ...[
                    const SizedBox(width: 8),
-                   PopupMenuButton<String>(
+                   Builder(builder: (menuCtx) {
+                     final editStr = AppDictionary.tr(context, 'btn_edit');
+                     return PopupMenuButton<String>(
+
                      icon: const Icon(Icons.more_vert, color: Colors.grey),
                      onSelected: (val) {
                        if (val == 'edit') {
@@ -236,7 +239,7 @@ class _ClubsScreenState extends State<ClubsScreen> {
                            children: [
                              Icon(Icons.edit, size: 20, color: Colors.blue),
                              SizedBox(width: 8),
-                             Text(AppDictionary.tr(context, 'btn_edit')),
+                             Text(editStr),
                            ],
                          ),
                        ),
@@ -251,7 +254,8 @@ class _ClubsScreenState extends State<ClubsScreen> {
                          ),
                        ),
                      ],
-                   ),
+                   );
+                 }),
                 ]
               ],
             ),
@@ -278,6 +282,10 @@ class _ClubsScreenState extends State<ClubsScreen> {
         initialChannel = initialChannel.substring(1);
     }
     final TextEditingController channelCtl = TextEditingController(text: initialChannel);
+
+    final editClubTitle = AppDictionary.tr(context, 'btn_edit_club');
+    final clubNameLabel = AppDictionary.tr(context, 'lbl_club_name');
+    final successMsg = AppDictionary.tr(context, 'msg_changes_saved');
 
     showModalBottomSheet(
       context: context,
@@ -308,12 +316,12 @@ class _ClubsScreenState extends State<ClubsScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    Text(AppDictionary.tr(context, 'btn_edit_club'), style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    Text(editClubTitle, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 16),
                     TextField(
                       controller: nameCtl,
                       decoration: InputDecoration(
-                        labelText: AppDictionary.tr(context, 'lbl_club_name'), 
+                        labelText: clubNameLabel, 
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         filled: true,
                         fillColor: Colors.grey[50],
@@ -382,7 +390,7 @@ class _ClubsScreenState extends State<ClubsScreen> {
                           
                           if (success) {
                             Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppDictionary.tr(context, 'msg_changes_saved')), backgroundColor: Colors.green));
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(successMsg), backgroundColor: Colors.green));
                             _loadClubs();
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Xatolik yuz berdi. Sardor topilmagan bo'lishi mumkin."), backgroundColor: Colors.red));
