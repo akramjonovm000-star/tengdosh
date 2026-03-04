@@ -43,6 +43,7 @@ class Student {
     this.staffRole,
     this.facultyId,
     this.universityId,
+    this.firstName,
     this.lastName,
   });
 

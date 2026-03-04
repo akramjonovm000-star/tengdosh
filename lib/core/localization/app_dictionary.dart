@@ -1460,10 +1460,6 @@ class AppDictionary {
       'uz': "Tugmani bosing va Botga rasm yuboring",
       'ru': "Нажмите кнопку и отправьте фото в Бот",
     },
-    'lbl_social_activity': {
-      'uz': "Ijtimoiy Faollik",
-      'ru': "Социальная активность",
-    },
     'btn_add_activity': {
       'uz': "Faollik qo'shish",
       'ru': "Добавить активность",
