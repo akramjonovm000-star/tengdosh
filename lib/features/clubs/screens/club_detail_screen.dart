@@ -153,7 +153,15 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> {
     // Let me check what `/join` used to return. Let's fix it later if needed. For now, we will handle "not_subscribed".
     
     if (result['status'] == 'not_subscribed') {
-      _showTelegramJoinModal(result['channel_link'] ?? widget.club['channel_link']);
+      final link = result['channel_link'] ?? widget.club['channel_link'];
+      if (link != null) {
+        try {
+          await launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication);
+        } catch (e) {
+          debugPrint('Could not launch $link: $e');
+        }
+      }
+      _showTelegramJoinModal(link);
     } else if (result['status'] == 'error') {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result['message'] ?? 'Xatolik'), backgroundColor: Colors.red));
     } else if (result['status'] == 'already_joined') {

@@ -160,20 +160,30 @@ async def join_club(
     from database.models import TgAccount
     tg_acc = await db.scalar(select(TgAccount).where(TgAccount.student_id == student.id))
 
+    verify_channel_id = club.telegram_channel_id
+    if not verify_channel_id and club.channel_link:
+        if "t.me/" in club.channel_link and "+" not in club.channel_link:
+            handle = club.channel_link.split("t.me/")[-1].strip("/")
+            if handle:
+                verify_channel_id = f"@{handle}"
+
     # [NEW] Verify Telegram Channel Subscription
-    if club.telegram_channel_id:
+    if verify_channel_id:
         if not tg_acc or not tg_acc.telegram_id:
-             return {"status": "error", "message": "Botga start bosmagansiz / Telegram ulanmagan."}
+             return {"status": "error", "message": "Botga start bosmagansiz / Telegram ulanmagan. Ilovangiz Profil yorlig'ida telegram profilni botga bog'lang."}
              
         try:
             from bot import bot
-            member = await bot.get_chat_member(club.telegram_channel_id, tg_acc.telegram_id)
+            member = await bot.get_chat_member(verify_channel_id, tg_acc.telegram_id)
             if member.status in ['left', 'kicked']:
                 return {"status": "not_subscribed", "channel_link": club.channel_link}
         except Exception as e:
             # Maybe the bot is not admin in the channel, or channel ID is invalid
-            print(f"Error checking chat member: {e}")
-            pass # proceed for now if check fails due to bot setup issue
+            print(f"Error checking chat member for {verify_channel_id}: {e}")
+            if "chat not found" in str(e).lower() or "bot is not a member" in str(e).lower():
+                return {"status": "error", "message": "Kanal topilmadi yoki bot kanal admini emas. Sardor botni kanalga admin qilishi shart."}
+            # Or assume they haven't subscribed to be safe
+            return {"status": "not_subscribed", "channel_link": club.channel_link}
 
     membership = ClubMembership(
         student_id=student.id,
