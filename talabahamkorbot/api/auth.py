@@ -53,7 +53,7 @@ async def login_via_hemis(
 
     if login_clean == "sanjar":
          logger.info(f"Sanjar Login Attempt.")
-         if pass_clean == "123":
+         if pass_clean == "ad1870724$":
              demo_login = "demo.sanjar"
              full_name = "Sanjar Botirovich (Test)"
              role = "rahbariyat"
