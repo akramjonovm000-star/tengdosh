@@ -140,6 +140,7 @@ class ClubMemberSchema(BaseModel):
     faculty_name: Optional[str] = None
     group_number: Optional[str] = None
     telegram_username: Optional[str] = None
+    image_url: Optional[str] = None
     joined_at: datetime
     status: str
 
