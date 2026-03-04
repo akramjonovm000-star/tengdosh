@@ -264,8 +264,20 @@ class _ClubsScreenState extends State<ClubsScreen> {
   // Replaced bottom sheet logic completely.
   void _showEditClubSheet(Map<String, dynamic> club) {
     final TextEditingController nameCtl = TextEditingController(text: club['name']);
+    final TextEditingController descCtl = TextEditingController(text: club['description'] ?? '');
     final TextEditingController leaderCtl = TextEditingController(text: club['leader_login'] ?? ''); // Not all clubs return leader_login but they might
-    final TextEditingController channelCtl = TextEditingController(text: club['channel_link'] ?? '');
+    
+    String initialChannel = club['channel_link'] ?? '';
+    if (initialChannel.startsWith('https://t.me/')) {
+        initialChannel = initialChannel.substring('https://t.me/'.length);
+    } else if (initialChannel.startsWith('http://t.me/')) {
+        initialChannel = initialChannel.substring('http://t.me/'.length);
+    } else if (initialChannel.startsWith('t.me/')) {
+        initialChannel = initialChannel.substring('t.me/'.length);
+    } else if (initialChannel.startsWith('@')) {
+        initialChannel = initialChannel.substring(1);
+    }
+    final TextEditingController channelCtl = TextEditingController(text: initialChannel);
 
     showModalBottomSheet(
       context: context,
@@ -309,6 +321,17 @@ class _ClubsScreenState extends State<ClubsScreen> {
                     ),
                     const SizedBox(height: 12),
                     TextField(
+                      controller: descCtl,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        labelText: "Klub tavsifi", 
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        filled: true,
+                        fillColor: Colors.grey[50],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
                       controller: leaderCtl,
                       decoration: InputDecoration(
                         labelText: "Sardorning HEMIS logini (O'zgartirish uchun)", 
@@ -321,7 +344,8 @@ class _ClubsScreenState extends State<ClubsScreen> {
                     TextField(
                       controller: channelCtl,
                       decoration: InputDecoration(
-                        labelText: AppDictionary.tr(context, 'hint_tg_channel_link_opt'), 
+                        labelText: "Telegram kanal linki yoki username", 
+                        prefixText: 'https://t.me/',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         filled: true,
                         fillColor: Colors.grey[50],
@@ -340,8 +364,17 @@ class _ClubsScreenState extends State<ClubsScreen> {
                           setModalState(() => isSaving = true);
                           final data = <String, dynamic>{};
                           if (nameCtl.text.isNotEmpty) data['name'] = nameCtl.text;
+                          if (descCtl.text.isNotEmpty) data['description'] = descCtl.text;
                           if (leaderCtl.text.isNotEmpty) data['leader_login'] = leaderCtl.text;
-                          if (channelCtl.text.isNotEmpty) data['channel_link'] = channelCtl.text;
+                          if (channelCtl.text.isNotEmpty) {
+                            String chLink = channelCtl.text.trim();
+                            if (chLink.startsWith('https://t.me/')) chLink = chLink.substring('https://t.me/'.length);
+                            else if (chLink.startsWith('http://t.me/')) chLink = chLink.substring('http://t.me/'.length);
+                            else if (chLink.startsWith('t.me/')) chLink = chLink.substring('t.me/'.length);
+                            else if (chLink.startsWith('@')) chLink = chLink.substring(1);
+                            
+                            data['channel_link'] = 'https://t.me/$chLink';
+                          }
 
                           final success = await _dataService.updateClub(club['id'], data);
                           setModalState(() => isSaving = false);

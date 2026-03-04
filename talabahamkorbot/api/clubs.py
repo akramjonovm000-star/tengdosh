@@ -697,6 +697,8 @@ async def update_club(
         
     if req.name is not None:
         club.name = req.name
+    if req.description is not None:
+        club.description = req.description
     if req.channel_link is not None:
         club.channel_link = req.channel_link
         
