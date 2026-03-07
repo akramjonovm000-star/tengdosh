@@ -60,6 +60,11 @@ class _TutorDocumentsGroupsScreenState extends State<TutorDocumentsGroupsScreen>
                       final total = item['total_students'] ?? 0;
                       final uploaded = item['uploaded_students'] ?? 0;
                       final percent = total > 0 ? (uploaded / total) : 0.0;
+                      
+                      final String fullGroup = item['group_number']?.toString() ?? "";
+                      final List<String> groupParts = fullGroup.split(" ");
+                      final String groupCode = groupParts.isNotEmpty ? groupParts[0] : "";
+                      final String groupDirection = groupParts.length > 1 ? groupParts.sublist(1).join(" ") : "";
 
                       return Card(
                         margin: const EdgeInsets.only(bottom: 16),
@@ -88,10 +93,26 @@ class _TutorDocumentsGroupsScreenState extends State<TutorDocumentsGroupsScreen>
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      "Guruh: ${item['group_number']}",
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            "Guruh: $groupCode",
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                                          ),
+                                          if (groupDirection.isNotEmpty)
+                                            Padding(
+                                              padding: const EdgeInsets.only(top: 4.0),
+                                              child: Text(
+                                                groupDirection,
+                                                style: TextStyle(color: Colors.grey[600], fontSize: 13, fontWeight: FontWeight.w500),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
                                     ),
+                                    const SizedBox(width: 8),
                                     const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey),
                                   ],
                                 ),

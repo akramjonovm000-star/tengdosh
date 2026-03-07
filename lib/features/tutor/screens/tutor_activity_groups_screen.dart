@@ -452,6 +452,11 @@ class _TutorActivityGroupsScreenState extends State<TutorActivityGroupsScreen> w
           final item = _groupsStats[index];
           final pending = item['pending_count'] ?? 0;
           final today = item['today_count'] ?? 0;
+          
+          final String fullGroup = item['group_number']?.toString() ?? "";
+          final List<String> groupParts = fullGroup.split(" ");
+          final String groupCode = groupParts.isNotEmpty ? groupParts[0] : "";
+          final String groupDirection = groupParts.length > 1 ? groupParts.sublist(1).join(" ") : "";
 
           return Card(
             margin: const EdgeInsets.only(bottom: 12),
@@ -487,9 +492,17 @@ class _TutorActivityGroupsScreenState extends State<TutorActivityGroupsScreen> w
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "Guruh: ${item['group_number']}",
+                            "Guruh: $groupCode",
                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                           ),
+                          if (groupDirection.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4.0),
+                              child: Text(
+                                groupDirection,
+                                style: TextStyle(color: Colors.grey[600], fontSize: 13, fontWeight: FontWeight.w500),
+                              ),
+                            ),
                           const SizedBox(height: 8),
                           Row(
                             children: [
