@@ -51,14 +51,6 @@ async def get_appeals_stats(
         # Base Query
         base_query = select(StudentFeedback).join(Student).where(Student.university_id == uni_id)
         
-        # Filter strictly by Role destination
-        if current_role in [StaffRole.OWNER, StaffRole.DEVELOPER]:
-            pass # Can see all
-        elif current_role in dean_level_roles:
-            base_query = base_query.where(StudentFeedback.assigned_role == "dekanat")
-        elif current_role in [StaffRole.RAHBARIYAT, StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR]:
-            base_query = base_query.where(StudentFeedback.assigned_role == "rahbariyat")
-        
         if not is_global and f_id:
             base_query = base_query.where(Student.faculty_id == f_id)
             
