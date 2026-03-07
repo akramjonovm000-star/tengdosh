@@ -1,5 +1,5 @@
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/services/data_service.dart';
 import 'package:provider/provider.dart';
@@ -30,6 +30,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
   List<Map<String, String>> _messages = [];
   bool _isLoading = true;
   bool _isTyping = false;
+  Offset? _tapPosition;
 
   @override
   void initState() {
@@ -261,8 +262,49 @@ class _AiChatScreenState extends State<AiChatScreen> {
   Widget _buildMessageBubble(String text, bool isUser) {
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      child: GestureDetector(
+        onTapDown: (details) {
+          _tapPosition = details.globalPosition;
+        },
+        onLongPress: () {
+          if (!isUser && _tapPosition != null) {
+            final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+            showMenu(
+              context: context,
+              position: RelativeRect.fromRect(
+                 _tapPosition! & const Size(40, 40),
+                 Offset.zero & overlay.size,
+              ),
+              color: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              items: [
+                PopupMenuItem(
+                  child: Row(
+                    children: const [
+                      Icon(Icons.copy, size: 18, color: AppTheme.primaryBlue),
+                      SizedBox(width: 8),
+                      Text("Nusxalash", style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+                    ],
+                  ),
+                  onTap: () async {
+                    await Clipboard.setData(ClipboardData(text: text));
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("Matndan nusxa olindi"), 
+                          duration: Duration(seconds: 2),
+                          backgroundColor: AppTheme.primaryBlue,
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ],
+            );
+          }
+        },
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
         decoration: BoxDecoration(
