@@ -29,20 +29,29 @@ async def calculate_grant_score(student: Student, session: AsyncSession, hemis_s
     """
     
     # 1. Get GPA
-    # Use existing helper to calculate GPA
     gpa = 0.0
     try:
-        # We want overall GPA likely, so pass no semester? Or loop?
-        # get_student_performance calculates based on "subject-list" which usually returns all subjects or current semester.
-        # Let's try fetching without semester_code to get all/default.
-        gpa = await hemis_service.get_student_performance(student.hemis_token)
+        from services.university_service import UniversityService
+        from services.gpa_calculator import GPACalculator
+        
+        base_url = UniversityService.get_api_url(student.hemis_login)
+        
+        # Fetch the subject list which contains grades
+        raw_subjects = await hemis_service.get_student_subject_list(
+            token=student.hemis_token, 
+            student_id=student.id, 
+            base_url=base_url
+        )
+        
+        if raw_subjects:
+            # Calculate cumulative GPA
+            gpa_result = GPACalculator.calculate_cumulative(raw_subjects)
+            gpa = gpa_result.gpa
+            
     except Exception as e:
         print(f"Error fetching GPA for grant: {e}")
         
     # User Formula: GPA * 16 (Max 80)
-    # If GPA is > 5.0 (e.g. 100 scale), we might need normalization? 
-    # Usually Hemis GPA is 2.0 - 5.0. 
-    # If GPA is 0, score is 0.
     academic_score = gpa * 16
     if academic_score > 80: academic_score = 80 # Cap just in case
     
