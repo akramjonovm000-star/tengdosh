@@ -451,9 +451,13 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
               Row(
                 children: [
                   if (appeal.status == 'pending' || appeal.status == 'processing')
-                    IconButton(
-                      icon: const Icon(Icons.forward, size: 20, color: AppTheme.primaryBlue),
-                      tooltip: "Yo'naltirish",
+                    TextButton.icon(
+                      icon: const Icon(Icons.forward, size: 16),
+                      label: const Text("Yo'naltirish", style: TextStyle(fontSize: 13)),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppTheme.primaryBlue,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      ),
                       onPressed: () => _showForwardDialog(appeal.id),
                     ),
                   if (appeal.status == 'pending' || appeal.status == 'processing')
@@ -473,8 +477,8 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
 
   void _showForwardDialog(int id) {
     final List<Map<String, String>> targets = [
-      {'val': 'tyutor', 'label': 'Tyutorga'},
-      {'val': 'dekanat', 'label': 'Dekanatga'},
+      {'val': 'tyutor', 'label': "O'zining tyutoriga"},
+      {'val': 'dekanat', 'label': "O'zining dekaniga"},
       {'val': 'rahbariyat', 'label': 'Rahbariyatga'},
       {'val': 'psixolog', 'label': 'Psixologga'},
       {'val': 'inspektor', 'label': 'Inspektor profilaktikaga'},
