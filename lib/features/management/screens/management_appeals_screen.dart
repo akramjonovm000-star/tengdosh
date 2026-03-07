@@ -35,7 +35,7 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     _loadData();
   }
   
@@ -113,8 +113,7 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
           indicatorColor: AppTheme.primaryBlue,
           tabs: [
             Tab(text: "Statistika"),
-            Tab(text: "Bizga kelgan"),
-            Tab(text: "Barcha murojaatlar"),
+            Tab(text: "Murojaatlar"),
           ],
         ),
       ),
@@ -129,7 +128,6 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
                         controller: _tabController,
                         children: [
                           _buildStatsTab(),
-                          _buildListTab(isAddressedToMe: true),
                           _buildListTab(isAddressedToMe: false),
                         ],
                       ),
