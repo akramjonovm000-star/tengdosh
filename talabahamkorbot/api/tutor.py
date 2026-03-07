@@ -929,37 +929,30 @@ async def get_tutor_certificate_stats(
 
     # Optimized Aggregate Query
     from sqlalchemy import distinct
-    from config import HEMIS_ADMIN_TOKEN
-    from services.hemis_service import HemisService
-    
-    # Fetch accurate totals from HEMIS
-    hemis_counts = await HemisService.get_group_student_counts(group_numbers, HEMIS_ADMIN_TOKEN)
     
     stmt = (
         select(
             Student.group_number,
-            func.count(distinct(StudentDocument.student_id)).label("students_with_certs")
+            func.count(distinct(Student.id)).label("total_count"),
+            func.count(distinct(case((StudentDocument.file_type == 'certificate', StudentDocument.student_id), else_=None))).label("students_with_certs")
         )
-        .join(StudentDocument, Student.id == StudentDocument.student_id)
-        .where(
-            Student.group_number.in_(group_numbers),
-            StudentDocument.file_type == "certificate"
-        )
+        .outerjoin(StudentDocument, Student.id == StudentDocument.student_id)
+        .where(Student.group_number.in_(group_numbers))
         .group_by(Student.group_number)
     )
     
     result = await db.execute(stmt)
     rows = result.all()
     
-    uploaded_map = {r.group_number: r.students_with_certs for r in rows}
+    stats_map = {r.group_number: {"total": r.total_count, "uploaded": r.students_with_certs} for r in rows}
     
     data = []
     for gn in group_numbers:
-        total = hemis_counts.get(gn, 0)
+        stats = stats_map.get(gn, {"total": 0, "uploaded": 0})
         data.append({
             "group_number": gn,
-            "total_students": total,
-            "uploaded_students": uploaded_map.get(gn, 0)
+            "total_students": stats["total"],
+            "uploaded_students": stats["uploaded"]
         })
         
     return {"success": True, "data": data}
