@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query, UploadFile, File, Form, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
@@ -15,7 +15,7 @@ from database.db_connect import get_session
 import logging
 
 logger = logging.getLogger(__name__)
-from api.dependencies import get_current_student, get_premium_student
+from api.dependencies import get_current_student, get_premium_student, check_global_subscription
 from config import OPENAI_MODEL_CHAT, OPENAI_MODEL_OWNER, ADMIN_ACCESS_ID
 
 router = APIRouter(tags=["ai"])
@@ -61,7 +61,8 @@ async def clear_chat_history(
 async def chat_with_ai(
     req: ChatRequest,
     student: Student = Depends(get_premium_student),
-    db: AsyncSession = Depends(get_session)
+    db: AsyncSession = Depends(get_session),
+    check_sub: bool = Depends(check_global_subscription)
 ):
     """
     AI Chat endpoint with persistence.

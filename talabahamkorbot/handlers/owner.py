@@ -8,7 +8,7 @@ from pathlib import Path
 from utils.owner_stats import get_owner_dashboard_text
 
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery, BufferedInputFile
+from aiogram.types import Message, CallbackQuery, BufferedInputFile, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 
 from sqlalchemy import select, func, distinct, case
@@ -671,11 +671,13 @@ async def owner_process_broadcast(message: Message, state: FSMContext):
         [InlineKeyboardButton(text="❌ Bekor qilish", callback_data="owner_menu")]
     ])
 
-    await message.copy_to(chat_id=message.chat.id, reply_markup=kb)
+    # forward does not support custom reply_markup, so we forward first, then send kb with text
+    await message.forward(chat_id=message.chat.id)
     
     await message.answer(
-        "👆 Yuqorida xabar ko'rinishi.\n"
+        "👆 Yuqorida xabar ko'rinishi (Forwarded).\n"
         "Agar hammasi to'g'ri bo'lsa, <b>Yuborishni boshlash</b> tugmasini bosing.",
+        reply_markup=kb,
         parse_mode="HTML"
     )
 
@@ -710,7 +712,7 @@ async def cb_confirm_broadcast(call: CallbackQuery, state: FSMContext, session: 
     
     for i, acc in enumerate(accounts):
         try:
-            await call.bot.copy_message(
+            await call.bot.forward_message(
                 chat_id=acc.telegram_id,
                 from_chat_id=chat_id,
                 message_id=message_id

@@ -62,6 +62,9 @@ class OwnerStates(StatesGroup):
 class OwnerGifts(StatesGroup):
     waiting_user_id = State()
     selecting_duration = State()
+    selecting_universities_all = State()
+    selecting_faculties_all = State()
+    selecting_specialties_all = State()
     selecting_duration_all = State()
     waiting_revoke_id = State()
     

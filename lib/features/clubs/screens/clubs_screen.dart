@@ -250,7 +250,7 @@ class _ClubsScreenState extends State<ClubsScreen> {
                             "${club['members_count'] ?? 0} a'zo",
                             style: TextStyle(color: Colors.grey[500], fontSize: 12),
                           ),
-                          if (club['is_leader'] == true) ...[
+                          if (club['is_primary_leader'] == true) ...[
                             const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -261,6 +261,19 @@ class _ClubsScreenState extends State<ClubsScreen> {
                               child: const Text(
                                 "👑 Sardor",
                                 style: TextStyle(color: AppTheme.primaryBlue, fontWeight: FontWeight.bold, fontSize: 11),
+                              ),
+                            )
+                          ] else if (club['is_leader'] == true) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.purple.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                "🛡 Boshqaruvchi",
+                                style: TextStyle(color: Colors.purple, fontWeight: FontWeight.bold, fontSize: 11),
                               ),
                             )
                           ] else if (isJoined) ...[

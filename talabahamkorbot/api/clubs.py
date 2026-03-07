@@ -40,6 +40,9 @@ async def get_my_clubs(
             getattr(m.club, 'department', '') == 'Student Council' and 
             (getattr(student, 'role', '') in ('student_council', 'yetakchi') or getattr(student, 'hemis_role', '') in ('student_council', 'yetakchi'))
         )
+        if is_direct_leader:
+            data.club.is_primary_leader = True
+            
         if is_direct_leader or is_student_council_admin:
             data.club.is_leader = True
             data.role = "leader"
@@ -136,6 +139,9 @@ async def get_all_clubs(
             getattr(club, 'department', '') == 'Student Council' and 
             (getattr(student, 'role', '') in ('student_council', 'yetakchi') or getattr(student, 'hemis_role', '') in ('student_council', 'yetakchi'))
         )
+        if is_direct_leader:
+            data.is_primary_leader = True
+            
         if is_direct_leader or is_student_council_admin:
             data.is_leader = True
             

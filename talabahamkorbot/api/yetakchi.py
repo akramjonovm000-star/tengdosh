@@ -9,7 +9,7 @@ import uuid
 
 from database.db_connect import get_db
 from database.models import Student, Staff, YetakchiActivity, YetakchiEvent, UserDocument
-from api.dependencies import get_yetakchi
+from api.dependencies import get_yetakchi, check_global_subscription
 from api.schemas import PostResponseSchema 
 
 router = APIRouter()
@@ -192,7 +192,8 @@ async def create_yetakchi_event(
     event_date: str = Form(...),
     documents: List[UploadFile] = File(None),
     yetakchi = Depends(get_yetakchi),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    check_sub: bool = Depends(check_global_subscription)
 ):
     from utils.student_utils import save_file
     
@@ -361,7 +362,8 @@ async def create_yetakchi_announcement(
     content: str = Form(...),
     image: Optional[UploadFile] = File(None),
     yetakchi = Depends(get_yetakchi),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    check_sub: bool = Depends(check_global_subscription)
 ):
     from utils.student_utils import save_file
     

@@ -246,8 +246,8 @@ async def start_scheduler():
 
 # Middlewares Order: DB -> Activity -> Subscription
 dp.update.outer_middleware(DbSessionMiddleware())
-# dp.update.middleware(ActivityMiddleware())
-# dp.update.middleware(SubscriptionMiddleware())
+dp.update.middleware(ActivityMiddleware())
+dp.update.middleware(SubscriptionMiddleware())
 
 # Root is now handled in api/oauth.py to support Hemis Callback
 # @app.get("/")

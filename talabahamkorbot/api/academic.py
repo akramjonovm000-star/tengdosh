@@ -449,7 +449,35 @@ async def get_attendance(
         logger.error(f"Attendance error for student {student.id}: {e}")
         return {"success": True, "data": {"total": 0, "excused": 0, "unexcused": 0, "items": []}}
 
+from pydantic import BaseModel
+class QRAttendanceSchema(BaseModel):
+    token: str
+    code: str
+
+@router.post("/qr-attendance")
+async def process_qr_attendance(
+    payload: QRAttendanceSchema,
+    student: Student = Depends(get_current_student),
+    db: AsyncSession = Depends(get_session)
+):
+    token = getattr(student, 'hemis_token', None)
+    if not token:
+        return {"success": False, "message": "No Token"}
+
+    base_url = UniversityService.get_api_url(student.hemis_login)
+    if await HemisService.check_auth_status(token, base_url=base_url) == "AUTH_ERROR":
+        raise HTTPException(status_code=401, detail="HEMIS_AUTH_ERROR")
+
+    result = await HemisService.send_qr_attendance(
+        token=token,
+        qr_token=payload.token,
+        qr_code=payload.code,
+        base_url=base_url
+    )
+    return result
+
 @router.get("/resources/{subject_id}")
+
 async def get_resources(subject_id: str, student: Student = Depends(get_student_or_staff)):
     if isinstance(student, Staff):
         return {"success": True, "data": []}

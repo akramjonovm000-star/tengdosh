@@ -103,6 +103,7 @@ class ClubSchema(BaseModel):
     members_count: int = 0
     is_joined: bool = False
     is_leader: bool = False # NEW
+    is_primary_leader: bool = False # NEW
     image_file_id: Optional[str] = None
     statute_link: Optional[str] = None
     channel_link: Optional[str] = None

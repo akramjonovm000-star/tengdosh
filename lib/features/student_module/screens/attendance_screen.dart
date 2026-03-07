@@ -77,6 +77,20 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
         actions: [
+          // [FEATURE FLAG: HIDDEN] 
+          // QR Davomat tizimi tayyorlangan, foydalanish uchun kommentdan chiqaring
+          /* 
+          IconButton(
+            icon: const Icon(Icons.qr_code_scanner, color: Colors.black87),
+            tooltip: "QR Davomat",
+            onPressed: () {
+              // TODO: Navigatsiya -> QR Scanner Screen va backend /qr-attendance api chaqiruvi
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("QR Davomat funksiyasi tez orada ishga tushadi"))
+              );
+            },
+          ),
+          */
           // Semi-transparent dropdown container
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),

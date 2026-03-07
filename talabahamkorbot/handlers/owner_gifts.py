@@ -204,13 +204,265 @@ async def cb_process_duration(call: CallbackQuery, state: FSMContext, session: A
     await call.answer()
 
 # -------------------------------------------------------------
-# 4.1 GIFT TO ALL START
+# MULTI-SELECT HELPER FUNCTIONS
+# -------------------------------------------------------------
+def build_multiselect_kb(items: list[str], selected: list[str], prefix: str, next_action: str) -> InlineKeyboardMarkup:
+    """
+    Builds a vertical keyboard with ✅ toggles for selecting options.
+    items: List of distinct strings (e.g., University names).
+    selected: List of currently selected strings.
+    prefix: Callback prefix for toggling, e.g., 'gift_uni_' -> 'gift_uni_INDEX'
+    """
+    keyboard = []
+    
+    # We map options by index to save callback data space
+    for idx, item_name in enumerate(items):
+        icon = "✅" if item_name in selected else "◻️"
+        # We pass idx to avoid long callback_data limits. The handler must look up `items[idx]`.
+        keyboard.append([InlineKeyboardButton(text=f"{icon} {item_name}", callback_data=f"{prefix}{idx}")])
+        
+    # Navigation row
+    action_row = []
+    if selected:
+        action_row.append(InlineKeyboardButton(text=f"✅ Tanlandi ({len(selected)}) - Keyingisi ➡", callback_data=next_action))
+    else:
+        action_row.append(InlineKeyboardButton(text="Barchasi (Tanlamasdan) - Keyingisi ➡", callback_data=next_action))
+        
+    keyboard.append(action_row)
+    keyboard.append([InlineKeyboardButton(text="⬅️ Bekor qilish", callback_data="owner_gifts_menu")])
+    
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+
+# -------------------------------------------------------------
+# 4.1 GIFT TO ALL START - SELECT UNIVERSITIES (STEP 1)
 # -------------------------------------------------------------
 @router.callback_query(F.data == "owner_gift_all_start")
 async def cb_gift_all_start(call: CallbackQuery, state: FSMContext, session: AsyncSession):
     if not await _is_owner(call.from_user.id, session):
         return await call.answer("❌ Ruxsat yo'q", show_alert=True)
 
+    # Fetch all distinct universities from active students
+    # Use Student table since we are gifting to students
+    stmt = select(Student.university_name).where(Student.university_name.isnot(None)).distinct().order_by(Student.university_name)
+    rows = await session.execute(stmt)
+    universities = [r[0] for r in rows.all()]
+
+    await state.update_data(
+        gift_all_universities=universities, # Keep the mapping
+        gift_all_selected_unis=[],
+        gift_all_selected_faculties=[],
+        gift_all_selected_specialties=[]
+    )
+    
+    await state.set_state(OwnerGifts.selecting_universities_all)
+    
+    kb = build_multiselect_kb(
+        items=universities, 
+        selected=[], 
+        prefix="gift_uni_", 
+        next_action="gift_step_faculties"
+    )
+    
+    await call.message.edit_text(
+        "📢 <b>Barchaga Premium berish - Filtr (1/4)</b>\n\n"
+        "Qaysi Universitet(lar) uchun premium bermoqchisiz?\n"
+        "<i>Barchasini tanlash uchun shunchaki \"Keyingisi\" tugmasini bosing.</i>",
+        reply_markup=kb,
+        parse_mode="HTML"
+    )
+    await call.answer()
+
+@router.callback_query(OwnerGifts.selecting_universities_all, F.data.startswith("gift_uni_"))
+async def cb_toggle_university(call: CallbackQuery, state: FSMContext, session: AsyncSession):
+    idx = int(call.data.split("_")[2])
+    data = await state.get_data()
+    
+    universities = data.get("gift_all_universities", [])
+    selected = data.get("gift_all_selected_unis", [])
+    
+    if idx >= len(universities):
+        return await call.answer("Xatolik: Ro'yxat o'zgargan.", show_alert=True)
+        
+    uni_name = universities[idx]
+    
+    if uni_name in selected:
+        selected.remove(uni_name)
+    else:
+        selected.append(uni_name)
+        
+    await state.update_data(gift_all_selected_unis=selected)
+    
+    kb = build_multiselect_kb(
+        items=universities, 
+        selected=selected, 
+        prefix="gift_uni_", 
+        next_action="gift_step_faculties"
+    )
+    
+    try:
+        await call.message.edit_reply_markup(reply_markup=kb)
+    except Exception:
+        pass # Message is not modified (same state)
+    
+    await call.answer()
+
+
+# -------------------------------------------------------------
+# 4.2 GIFT TO ALL START - SELECT FACULTIES (STEP 2)
+# -------------------------------------------------------------
+@router.callback_query(OwnerGifts.selecting_universities_all, F.data == "gift_step_faculties")
+async def cb_step_faculties(call: CallbackQuery, state: FSMContext, session: AsyncSession):
+    data = await state.get_data()
+    selected_unis = data.get("gift_all_selected_unis", [])
+    
+    stmt = select(Student.faculty_name).where(Student.faculty_name.isnot(None))
+    if selected_unis:
+        stmt = stmt.where(Student.university_name.in_(selected_unis))
+        
+    stmt = stmt.distinct().order_by(Student.faculty_name)
+    rows = await session.execute(stmt)
+    faculties = [r[0] for r in rows.all()]
+    
+    if not faculties:
+        # Skip this step if no faculties found for the combination
+        await state.update_data(gift_all_faculties=[], gift_all_selected_faculties=[])
+        return await cb_step_specialties(call, state, session, skip=True)
+        
+    await state.update_data(gift_all_faculties=faculties, gift_all_selected_faculties=[])
+    await state.set_state(OwnerGifts.selecting_faculties_all)
+    
+    kb = build_multiselect_kb(
+        items=faculties, 
+        selected=[], 
+        prefix="gift_fac_", 
+        next_action="gift_step_specialties"
+    )
+    
+    uni_text = "Barchasi" if not selected_unis else f"{len(selected_unis)} ta tanlandi"
+    
+    await call.message.edit_text(
+        f"📢 <b>Barchaga Premium berish - Filtr (2/4)</b>\n\n"
+        f"🏫 Universitet: {uni_text}\n\n"
+        "Qaysi Fakultet(lar) uchun premium bermoqchisiz?\n"
+        "<i>Barchasini tanlash uchun shunchaki \"Keyingisi\" tugmasini bosing.</i>",
+        reply_markup=kb,
+        parse_mode="HTML"
+    )
+    await call.answer()
+
+@router.callback_query(OwnerGifts.selecting_faculties_all, F.data.startswith("gift_fac_"))
+async def cb_toggle_faculty(call: CallbackQuery, state: FSMContext, session: AsyncSession):
+    idx = int(call.data.split("_")[2])
+    data = await state.get_data()
+    
+    faculties = data.get("gift_all_faculties", [])
+    selected = data.get("gift_all_selected_faculties", [])
+    
+    if idx >= len(faculties):
+        return await call.answer("Xatolik: Ro'yxat o'zgargan.", show_alert=True)
+        
+    fac_name = faculties[idx]
+    
+    if fac_name in selected:
+        selected.remove(fac_name)
+    else:
+        selected.append(fac_name)
+        
+    await state.update_data(gift_all_selected_faculties=selected)
+    
+    kb = build_multiselect_kb(
+        items=faculties, 
+        selected=selected, 
+        prefix="gift_fac_", 
+        next_action="gift_step_specialties"
+    )
+    try: await call.message.edit_reply_markup(reply_markup=kb)
+    except Exception: pass
+    await call.answer()
+
+
+# -------------------------------------------------------------
+# 4.3 GIFT TO ALL START - SELECT SPECIALTIES (STEP 3)
+# -------------------------------------------------------------
+@router.callback_query(OwnerGifts.selecting_faculties_all, F.data == "gift_step_specialties")
+async def cb_step_specialties(call: CallbackQuery, state: FSMContext, session: AsyncSession, skip=False):
+    data = await state.get_data()
+    selected_unis = data.get("gift_all_selected_unis", [])
+    selected_facs = data.get("gift_all_selected_faculties", [])
+    
+    stmt = select(Student.specialty_name).where(Student.specialty_name.isnot(None))
+    if selected_unis:
+        stmt = stmt.where(Student.university_name.in_(selected_unis))
+    if selected_facs:
+        stmt = stmt.where(Student.faculty_name.in_(selected_facs))
+        
+    stmt = stmt.distinct().order_by(Student.specialty_name)
+    rows = await session.execute(stmt)
+    specialties = [r[0] for r in rows.all()]
+    
+    if not specialties:
+        await state.update_data(gift_all_specialties=[], gift_all_selected_specialties=[])
+        return await cb_step_duration(call, state, session, skip=True)
+        
+    await state.update_data(gift_all_specialties=specialties, gift_all_selected_specialties=[])
+    await state.set_state(OwnerGifts.selecting_specialties_all)
+    
+    kb = build_multiselect_kb(
+        items=specialties, 
+        selected=[], 
+        prefix="gift_spec_", 
+        next_action="gift_step_duration"
+    )
+    
+    fac_text = "Barchasi" if not selected_facs else f"{len(selected_facs)} ta tanlandi"
+    
+    await call.message.edit_text(
+        f"📢 <b>Barchaga Premium berish - Filtr (3/4)</b>\n\n"
+        f"🏛 Fakultet: {fac_text}\n\n"
+        "Qaysi Yo'nalish(lar) uchun premium bermoqchisiz?\n"
+        "<i>Barchasini tanlash uchun shunchaki \"Keyingisi\" tugmasini bosing.</i>",
+        reply_markup=kb,
+        parse_mode="HTML"
+    )
+    if not skip: await call.answer()
+
+@router.callback_query(OwnerGifts.selecting_specialties_all, F.data.startswith("gift_spec_"))
+async def cb_toggle_specialty(call: CallbackQuery, state: FSMContext, session: AsyncSession):
+    idx = int(call.data.split("_")[2])
+    data = await state.get_data()
+    
+    specialties = data.get("gift_all_specialties", [])
+    selected = data.get("gift_all_selected_specialties", [])
+    
+    if idx >= len(specialties):
+        return await call.answer("Xatolik: Ro'yxat o'zgargan.", show_alert=True)
+        
+    spec_name = specialties[idx]
+    
+    if spec_name in selected:
+        selected.remove(spec_name)
+    else:
+        selected.append(spec_name)
+        
+    await state.update_data(gift_all_selected_specialties=selected)
+    
+    kb = build_multiselect_kb(
+        items=specialties, 
+        selected=selected, 
+        prefix="gift_spec_", 
+        next_action="gift_step_duration"
+    )
+    try: await call.message.edit_reply_markup(reply_markup=kb)
+    except Exception: pass
+    await call.answer()
+
+
+# -------------------------------------------------------------
+# 4.4 GIFT TO ALL START - SELECT DURATION (STEP 4)
+# -------------------------------------------------------------
+@router.callback_query(OwnerGifts.selecting_specialties_all, F.data == "gift_step_duration")
+async def cb_step_duration(call: CallbackQuery, state: FSMContext, session: AsyncSession, skip=False):
     await state.set_state(OwnerGifts.selecting_duration_all)
     
     kb = InlineKeyboardMarkup(inline_keyboard=[
@@ -222,13 +474,27 @@ async def cb_gift_all_start(call: CallbackQuery, state: FSMContext, session: Asy
         [InlineKeyboardButton(text="⬅️ Bekor qilish", callback_data="owner_gifts_menu")]
     ])
     
+    data = await state.get_data()
+    selected_unis = data.get("gift_all_selected_unis", [])
+    selected_facs = data.get("gift_all_selected_faculties", [])
+    selected_specs = data.get("gift_all_selected_specialties", [])
+    
+    filter_summary = []
+    if selected_unis: filter_summary.append(f"🏫 <b>Universitetlar:</b> {len(selected_unis)} ta")
+    if selected_facs: filter_summary.append(f"🏛 <b>Fakultetlar:</b> {len(selected_facs)} ta")
+    if selected_specs: filter_summary.append(f"🎓 <b>Yo'nalishlar:</b> {len(selected_specs)} ta")
+    
+    summary_text = "\n".join(filter_summary) if filter_summary else "🌐 Barcha foydalanuvchilar (Filtrlanmagan)"
+    
     await call.message.edit_text(
-        "📢 <b>Barcha foydalanuvchilarga Premium berish</b>\n\n"
-        "Barcha login qilgan talabalarga premium beriladi. Muddatni tanlang:",
+        f"📢 <b>Barchaga Premium berish - Muddat (4/4)</b>\n\n"
+        f"Sizning tanlovingiz:\n{summary_text}\n\n"
+        "Yuqoridagi auditoriya uchun qancha muddatga Premium bermoqchisiz?",
         reply_markup=kb,
         parse_mode="HTML"
     )
-    await call.answer()
+    if not skip: await call.answer()
+
 
 # -------------------------------------------------------------
 # 4.2 PROCESS DURATION ALL & GIVE PREMIUM
@@ -263,43 +529,71 @@ async def cb_process_duration_all(call: CallbackQuery, state: FSMContext, sessio
         expiry_date = now + timedelta(days=365)
         duration_text = "Bir yil"
         
-    # Bulk Update Students
+    # Bulk Update
     from sqlalchemy import update as sa_update
-    from database.models import StudentNotification
+    
+    data = await state.get_data()
+    selected_unis = data.get("gift_all_selected_unis", [])
+    selected_facs = data.get("gift_all_selected_faculties", [])
+    selected_specs = data.get("gift_all_selected_specialties", [])
     
     # 1. Update Students
     stmt_student = sa_update(Student).values(
         is_premium=True,
         premium_expiry=expiry_date
     )
+    
+    # Apply Filters to Student Table
+    if selected_unis:
+        stmt_student = stmt_student.where(Student.university_name.in_(selected_unis))
+    if selected_facs:
+        stmt_student = stmt_student.where(Student.faculty_name.in_(selected_facs))
+    if selected_specs:
+        stmt_student = stmt_student.where(Student.specialty_name.in_(selected_specs))
+        
     await session.execute(stmt_student)
     
-    # 2. Update Users (if they have is_premium field)
-    stmt_user = sa_update(User).values(
+    # 2. Update Users Table (Requires joining/subqueries or just using the identical fields if replicated)
+    # Since User model doesn't store university_name natively from HEMIS, but Student does,
+    # we can update User rows matching the Student rows we just updated.
+    from sqlalchemy import select as sa_select
+    student_logins_stmt = sa_select(Student.hemis_login)
+    if selected_unis:
+        student_logins_stmt = student_logins_stmt.where(Student.university_name.in_(selected_unis))
+    if selected_facs:
+        student_logins_stmt = student_logins_stmt.where(Student.faculty_name.in_(selected_facs))
+    if selected_specs:
+        student_logins_stmt = student_logins_stmt.where(Student.specialty_name.in_(selected_specs))
+        
+    stmt_user = sa_update(User).where(User.hemis_login.in_(student_logins_stmt)).values(
         is_premium=True,
         premium_expiry=expiry_date
     )
-    await session.execute(stmt_user)
     
-    # 3. Add notifications (This part is tricky for ALL users, usually we don't insert 50k rows. 
-    # Better to send a global broadcast via a service later, but user requested 'barcha login qilganlarga'.
-    # For now, let's at least perform the bulk update. The app's profile screen checks the DB anyway.)
+    await session.execute(stmt_user)
     
     await session.commit()
     
     # 4. Trigger Global Broadcast in background
     try:
         from services.notification_service import NotificationService
+        
+        filter_summary = []
+        if selected_unis: filter_summary.append(f"Qamrov: {len(selected_unis)} ta OTM")
+        if selected_facs: filter_summary.append(f"{len(selected_facs)} ta Fakultet")
+        if selected_specs: filter_summary.append(f"{len(selected_specs)} ta Yo'nalish")
+        target_info = "\n" + ", ".join(filter_summary) if filter_summary else ""
+        
         NotificationService.run_broadcast.delay(
-            title="🎁 Barchaga Premium sovg'a!",
-            body=f"Ma'muriyat tomonidan barcha foydalanuvchilarga {duration_text} muddatga Premium obuna taqdim etildi! 🎉",
+            title="🎁 Maxsus Premium sovg'asi!",
+            body=f"Ma'muriyat tomonidan jamoamizga {duration_text} muddatga Premium obuna taqdim etildi! 🎉{target_info}",
             data={"type": "premium_gift"}
         )
     except Exception as e:
         logger.error(f"Global broadcast failed: {e}")
 
     await call.message.edit_text(
-        f"✅ <b>Barchaga Premium berildi!</b>\n⏳ Muddat: {duration_text}\n\n"
+        f"✅ <b>Filtrlangan Guxruhga Premium berildi!</b>\n⏳ Muddat: {duration_text}\n\n"
         f"Xabar tarqatish jarayoni fonda boshlandi.",
         reply_markup=get_back_inline_kb("owner_gifts_menu"),
         parse_mode="HTML"

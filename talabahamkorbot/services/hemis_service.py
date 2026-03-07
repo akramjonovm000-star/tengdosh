@@ -1946,3 +1946,43 @@ class HemisService:
                 pass
                 
         return 0
+
+    @staticmethod
+    async def send_qr_attendance(token: str, qr_token: str, qr_code: str, base_url: str = None) -> dict:
+        """
+        Submits QR attendance data to HEMIS.
+        """
+        if not token:
+            return {"success": False, "message": "No token provided"}
+            
+        client = await HemisService.get_client()
+        final_base = base_url or HemisService.BASE_URL
+        url = f"{final_base}/student/qr-attendance"
+        
+        payload = {
+            "token": qr_token,
+            "code": qr_code
+        }
+        
+        try:
+            response = await HemisService.fetch_with_retry(
+                client, 
+                "POST", 
+                url, 
+                json=payload, 
+                headers=HemisService.get_headers(token)
+            )
+            data = response.json()
+            if response.status_code == 200:
+                return {
+                    "success": data.get("success", True),
+                    "message": data.get("message", "Davomat muvaffaqiyatli belgilandi")
+                }
+            else:
+                return {
+                    "success": False,
+                    "message": data.get("message", "Xatolik yuz berdi")
+                }
+        except Exception as e:
+            logger.error(f"Error in send_qr_attendance: {e}")
+            return {"success": False, "message": "Tizimga ulanishda xatolik"}

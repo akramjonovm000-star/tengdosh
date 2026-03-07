@@ -10,5 +10,5 @@ async def cb_check_subscription(call: CallbackQuery):
     Shunchaki xabarni o'chirib, "Rahmat" deymiz.
     """
     await call.message.delete()
-    await call.message.answer("✅ Rahmat! Botdan foydalanishingiz mumkin.")
+    await call.message.answer("✅ Rahmat! Boshlash uchun quyidagi tugmani bosing:\n\n👉 /start")
     await call.answer()

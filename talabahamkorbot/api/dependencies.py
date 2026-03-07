@@ -150,37 +150,57 @@ async def get_student_or_staff(
     token_data: dict = Depends(get_current_user_token_data),
     db: AsyncSession = Depends(get_db)
 ):
-    """Allow both students and staff (management) to access shared resources"""
-    user_type = token_data.get("type", "student")
-    if user_type == "staff":
+    """Returns either a Student or Staff object for unified endpoints."""
+    if token_data.get("type", "student") == "staff":
         staff = await db.get(Staff, token_data["id"])
         if not staff:
             raise HTTPException(status_code=404, detail="Xodim topilmadi")
-        if token_data.get("hemis_token"):
-            staff.hemis_token = decrypt_data(token_data["hemis_token"])
-        if token_data.get("avatar"):
-            staff.transient_avatar = token_data["avatar"]
+        setattr(staff, 'hemis_token', decrypt_data(token_data.get("hemis_token")))
+        setattr(staff, 'image_url', decrypt_data(token_data.get("avatar")))
+        setattr(staff, 'role_type', 'staff')
         return staff
-    elif user_type == "student" or user_type == "telegram":
-        if user_type == "telegram":
-            from database.models import TgAccount
-            from sqlalchemy import select
-            tg_acc = await db.scalar(select(TgAccount).where(TgAccount.telegram_id == token_data["id"]))
-            if not tg_acc or not tg_acc.student_id:
-                raise HTTPException(status_code=404, detail="Student not found (TG)")
-            student = await db.get(Student, tg_acc.student_id)
-        else:
-            student = await db.get(Student, token_data["id"])
-            
-        if not student:
-            raise HTTPException(status_code=404, detail="Talaba topilmadi")
-        if token_data.get("hemis_token"):
-            student.hemis_token = decrypt_data(token_data["hemis_token"])
-        if token_data.get("avatar"):
-            student.transient_avatar = token_data["avatar"]
-        return student
-    else:
-        raise HTTPException(status_code=403, detail="Ruxsat etilmagan foydalanuvchi turi")
+        
+    student = await db.get(Student, token_data["id"])
+    if not student:
+        raise HTTPException(status_code=404, detail="Talaba topilmadi")
+    setattr(student, 'hemis_token', decrypt_data(token_data.get("hemis_token")))
+    setattr(student, 'image_url', decrypt_data(token_data.get("avatar")))
+    setattr(student, 'role_type', 'student')
+    return student
+
+async def check_global_subscription(
+    token_data: dict = Depends(get_current_user_token_data),
+    db: AsyncSession = Depends(get_db)
+):
+    """FastAPI Dependency: Checks if the API user is subscribed to @talabahamkor via their linked TgAccount."""
+    user_type = token_data.get("type", "student")
+    user_id = token_data["id"]
+    
+    stmt = select(TgAccount)
+    if user_type == "student": stmt = stmt.where(TgAccount.student_id == user_id)
+    elif user_type == "staff": stmt = stmt.where(TgAccount.staff_id == user_id)
+    else: return True
+        
+    account = await db.scalar(stmt)
+    if not account or not account.telegram_id:
+        raise HTTPException(status_code=403, detail="Telegram profil ulash majburiy. Iltimos botga kiring.")
+        
+    from main import bot
+    import asyncio
+    
+    try:
+        member = await asyncio.wait_for(bot.get_chat_member(chat_id="@talabahamkor", user_id=account.telegram_id), timeout=2.0)
+        if member.status not in ("member", "administrator", "creator"):
+            raise HTTPException(status_code=403, detail="Botga fayl yoki rasm yuklash uchun asosiy kanalimizga a'zo bo'lishingiz kerak: @talabahamkor")
+    except asyncio.TimeoutError:
+        pass
+    except HTTPException:
+        raise
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"API Sub Check Failed: {e}")
+        
+    return True
 
 
 async def get_premium_student(student: Student = Depends(get_current_student)):

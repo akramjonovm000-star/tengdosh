@@ -46,6 +46,21 @@ class SubscriptionMiddleware(BaseMiddleware):
                 try: await event.answer()
                 except: pass
             return res
+            
+        # Is this an automated channel post or a forward from a channel?
+        is_channel_post = getattr(event, "sender_chat", None) is not None and getattr(event.sender_chat, "type", "") == "channel"
+        is_forwarded_channel = getattr(event, "forward_from_chat", None) is not None and getattr(event.forward_from_chat, "type", "") == "channel"
+
+        # Check Global Channel Requirement (@talabahamkor)
+        # Skip this check if it's a channel post, a broadcast forward, or the Owner
+        is_media = isinstance(event, Message) and (event.document or event.photo or event.video)
+        is_start = isinstance(event, Message) and event.text and event.text.startswith('/start')
+        
+        if (is_media or is_start) and not is_channel_post and not is_forwarded_channel:
+            global_channel = "@talabahamkor"
+            is_global_member = await self._is_member_of(data.get("bot"), user.id, global_channel)
+            if not is_global_member:
+                return await self._block_with_subscription(event, global_channel)
 
         # Check Cache
         now = datetime.utcnow()
@@ -135,3 +150,39 @@ class SubscriptionMiddleware(BaseMiddleware):
         except Exception as e:
             logger.error(f"Subscription check CRITICAL failed for user {user.id}: {e}")
             return await handler(event, data)
+
+    async def _is_member_of(self, bot, user_id: int, channel_id_str: str) -> bool:
+        """Helper to quickly check membership with a short timeout."""
+        if not bot:
+            return True
+        import asyncio
+        try:
+            member = await asyncio.wait_for(bot.get_chat_member(chat_id=channel_id_str, user_id=user_id), timeout=1.5)
+            return member.status in ("member", "administrator", "creator")
+        except asyncio.TimeoutError:
+            return True # Fallback on timeout
+        except Exception:
+            return False
+
+    async def _block_with_subscription(self, event, channel_id_str: str):
+        """Blocks interaction and shows subscribe keyboard."""
+        bot = event.bot
+        import asyncio
+        try:
+            chat_info = await asyncio.wait_for(bot.get_chat(channel_id_str), timeout=1.5)
+            invite_link = chat_info.invite_link or f"https://t.me/{chat_info.username}" if chat_info.username else "https://t.me/"
+        except:
+            invite_link = "https://t.me/"
+            if channel_id_str.startswith("@"):
+                invite_link += channel_id_str[1:]
+
+        from keyboards.inline_kb import get_subscription_check_kb
+        text = "🚫 <b>Diqqat!</b> Botga fayl yoki rasm yuklash uchun asosiy kanalimizga a'zo bo'lishingiz kerak."
+
+        if isinstance(event, Message):
+            await event.answer(text, reply_markup=get_subscription_check_kb(invite_link))
+        elif isinstance(event, CallbackQuery):
+            await event.answer("❌ Asosiy kanalga a'zo emassiz!", show_alert=True)
+            try: await event.message.answer(text, reply_markup=get_subscription_check_kb(invite_link))
+            except: pass
+        return

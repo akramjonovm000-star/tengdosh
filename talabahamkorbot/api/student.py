@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from api.dependencies import get_current_student, get_db, get_premium_student, get_student_or_staff
+from api.dependencies import get_current_student, get_db, get_premium_student, get_student_or_staff, check_global_subscription
 from api.schemas import StudentProfileSchema
 from database.models import Student, TgAccount
 from sqlalchemy import select
@@ -271,7 +271,8 @@ async def upload_profile_image(
     request: Request,
     file: UploadFile = File(...),
     student: Student = Depends(get_student_or_staff),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    check_sub: bool = Depends(check_global_subscription)
 ):
     """
     Upload and set a custom profile image for the student/staff.

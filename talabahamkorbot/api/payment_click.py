@@ -24,8 +24,8 @@ def generate_sign_string(trans_id, service_id, secret, merchant_trans_id, amount
     except Exception:
         amount_str = str(amount)
         
-    if merchant_prepare_id is not None and click_paydoc_id is not None:
-        raw = f"{trans_id}{service_id}{click_paydoc_id}{secret}{merchant_trans_id}{merchant_prepare_id}{amount_str}{action}{sign_time}"
+    if merchant_prepare_id is not None:
+        raw = f"{trans_id}{service_id}{secret}{merchant_trans_id}{merchant_prepare_id}{amount_str}{action}{sign_time}"
     else:
         raw = f"{trans_id}{service_id}{secret}{merchant_trans_id}{amount_str}{action}{sign_time}"
     return hashlib.md5(raw.encode('utf-8')).hexdigest()

@@ -6,7 +6,7 @@ from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
 
-from api.dependencies import get_current_student, get_db
+from api.dependencies import get_current_student, get_db, check_global_subscription
 from api.schemas import FeedbackListSchema, AppealListResponseSchema, AppealStatsSchema
 from database.models import Student, StudentFeedback, FeedbackReply, TgAccount, PendingUpload
 
@@ -391,7 +391,8 @@ async def create_feedback(
     session_id: Optional[str] = Form(None), # For Telegram-upload flow
     token: str = Depends(require_action_token), # [SECURITY] ATS Enforced
     student: Student = Depends(get_current_student),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    check_sub: bool = Depends(check_global_subscription) # Added dependency
 ):
     """
     Send feedback/appeal to specific staff role.

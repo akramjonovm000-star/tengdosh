@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 from typing import List
 
-from api.dependencies import get_current_student, get_premium_student, get_db
+from api.dependencies import get_current_student, get_premium_student, get_db, check_global_subscription
 from api.schemas import ActivityListSchema
 from database.models import Student, UserActivity, UserActivityImage
 from bot import bot
@@ -160,7 +160,8 @@ async def create_activity(
     session_id: str = Form(None), # LINK TO UPLOADED FILE
     token: str = Depends(require_action_token), # [SECURITY] ATS Enforced
     student: Student = Depends(get_premium_student),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    check_sub: bool = Depends(check_global_subscription)
 ):
     """
     Create activity using PRE-UPLOADED file from Telegram.
