@@ -29,32 +29,48 @@ async def get_tutor_document_stats(
     if not group_numbers:
         return {"success": True, "data": []}
 
-    # 2. Optimized Aggregate Query from Local Data
-    from sqlalchemy import distinct
+    # 2. Optimized Query combining local uploads and true capacity
+    from sqlalchemy import distinct, or_
+    import re
+    from config import HEMIS_ADMIN_TOKEN
+    from services.hemis_service import HemisService
     
-    stmt = (
-        select(
-            Student.group_number,
-            func.count(distinct(Student.id)).label("total_count"),
-            func.count(distinct(StudentDocument.student_id)).label("uploaded_count")
+    hemis_counts = await HemisService.get_group_student_counts(group_numbers, HEMIS_ADMIN_TOKEN)
+    conditions = [Student.group_number.op('~*')(f"^{re.escape(g.strip())}( |$)") for g in group_numbers]
+    
+    uploaded_map = {}
+    if conditions:
+        stmt = (
+            select(
+                Student.group_number,
+                func.count(distinct(StudentDocument.student_id)).label("uploaded_count")
+            )
+            .outerjoin(StudentDocument, Student.id == StudentDocument.student_id)
+            .where(or_(*conditions))
+            .group_by(Student.group_number)
         )
-        .outerjoin(StudentDocument, Student.id == StudentDocument.student_id)
-        .where(Student.group_number.in_(group_numbers))
-        .group_by(Student.group_number)
-    )
-    
-    result = await db.execute(stmt)
-    rows = result.all()
-    
-    stats_map = {r.group_number: {"total": r.total_count, "uploaded": r.uploaded_count} for r in rows}
+        
+        result = await db.execute(stmt)
+        rows = result.all()
+        
+        def map_to_group(full_gn):
+            for gn in group_numbers:
+                if re.match(f"^{re.escape(gn.strip())}( |$)", full_gn, re.I):
+                    return gn
+            return full_gn
+            
+        for r in rows:
+            b_gn = map_to_group(r.group_number)
+            uploaded_map[b_gn] = uploaded_map.get(b_gn, 0) + r.uploaded_count
     
     data = []
     for gn in group_numbers:
-        stats = stats_map.get(gn, {"total": 0, "uploaded": 0})
+        total = hemis_counts.get(gn, 0)
+        uploaded = uploaded_map.get(gn, 0)
         data.append({
             "group_number": gn,
-            "total_students": stats["total"],
-            "uploaded_students": stats["uploaded"]
+            "total_students": total,
+            "uploaded_students": uploaded
         })
         
     return {"success": True, "data": data}
@@ -299,18 +315,24 @@ async def get_tutor_dashboard(
     if not group_numbers:
         return {"success": True, "data": {"student_count": 0, "group_count": 0, "kpi": 0}}
         
-    # 2. Count Total Students (From DB)
+    # 2. Count Total Students (From HEMIS API)
     from sqlalchemy import or_
+    from config import HEMIS_ADMIN_TOKEN
+    from services.hemis_service import HemisService
     import re
     
+    hemis_student_count = await HemisService.get_total_students_for_groups(group_numbers, HEMIS_ADMIN_TOKEN)
     conditions = [Student.group_number.op('~*')(f"^{re.escape(g.strip())}( |$)") for g in group_numbers]
 
-    if conditions:
-        student_count = await db.scalar(
-            select(func.count(Student.id)).where(or_(*conditions))
-        )
+    if hemis_student_count > 0:
+        student_count = hemis_student_count
     else:
-        student_count = 0
+        if conditions:
+            student_count = await db.scalar(
+                select(func.count(Student.id)).where(or_(*conditions))
+            )
+        else:
+            student_count = 0
 
     # 2.1 Count Active Students (Logged into App - Has HEMIS Token)
     from database.models import User
@@ -479,13 +501,17 @@ async def get_all_tutor_appeals(
     if not group_numbers:
         return {"success": True, "data": []}
 
+    from sqlalchemy import or_
+    import re
+    conditions = [Student.group_number.op('~*')(f"^{re.escape(g.strip())}( |$)") for g in group_numbers]
+
     stmt = (
         select(StudentFeedback, Student)
         .join(Student, StudentFeedback.student_id == Student.id)
         .where(
             StudentFeedback.assigned_role == "tyutor",
             StudentFeedback.parent_id == None,
-            Student.group_number.in_(group_numbers)
+            or_(*conditions)
         )
         .order_by(StudentFeedback.created_at.desc())
     )
@@ -527,6 +553,10 @@ async def get_tutor_appeals_stats(
     group_numbers = groups_result.scalars().all()
     if not group_numbers:
         return {"success": True, "stats": {"pending": 0, "answered": 0, "resolved": 0}}
+        
+    from sqlalchemy import or_
+    import re
+    conditions = [Student.group_number.op('~*')(f"^{re.escape(g.strip())}( |$)") for g in group_numbers]
 
     stmt = (
         select(StudentFeedback.status)
@@ -534,7 +564,7 @@ async def get_tutor_appeals_stats(
         .where(
             StudentFeedback.assigned_role == "tyutor",
             StudentFeedback.parent_id == None,
-            Student.group_number.in_(group_numbers)
+            or_(*conditions)
         )
     )
     result = await db.execute(stmt)
@@ -943,32 +973,48 @@ async def get_tutor_certificate_stats(
     if not group_numbers:
         return {"success": True, "data": []}
 
-    # Optimized Aggregate Query
-    from sqlalchemy import distinct
+    # Optimized Query combining local certs and true capacity
+    from sqlalchemy import distinct, or_
+    import re
+    from config import HEMIS_ADMIN_TOKEN
+    from services.hemis_service import HemisService
     
-    stmt = (
-        select(
-            Student.group_number,
-            func.count(distinct(Student.id)).label("total_count"),
-            func.count(distinct(case((StudentDocument.file_type == 'certificate', StudentDocument.student_id), else_=None))).label("students_with_certs")
+    hemis_counts = await HemisService.get_group_student_counts(group_numbers, HEMIS_ADMIN_TOKEN)
+    conditions = [Student.group_number.op('~*')(f"^{re.escape(g.strip())}( |$)") for g in group_numbers]
+    
+    uploaded_map = {}
+    if conditions:
+        stmt = (
+            select(
+                Student.group_number,
+                func.count(distinct(case((StudentDocument.file_type == 'certificate', StudentDocument.student_id), else_=None))).label("students_with_certs")
+            )
+            .outerjoin(StudentDocument, Student.id == StudentDocument.student_id)
+            .where(or_(*conditions))
+            .group_by(Student.group_number)
         )
-        .outerjoin(StudentDocument, Student.id == StudentDocument.student_id)
-        .where(Student.group_number.in_(group_numbers))
-        .group_by(Student.group_number)
-    )
-    
-    result = await db.execute(stmt)
-    rows = result.all()
-    
-    stats_map = {r.group_number: {"total": r.total_count, "uploaded": r.students_with_certs} for r in rows}
+        
+        result = await db.execute(stmt)
+        rows = result.all()
+        
+        def map_to_group(full_gn):
+            for gn in group_numbers:
+                if re.match(f"^{re.escape(gn.strip())}( |$)", full_gn, re.I):
+                    return gn
+            return full_gn
+            
+        for r in rows:
+            b_gn = map_to_group(r.group_number)
+            uploaded_map[b_gn] = uploaded_map.get(b_gn, 0) + r.students_with_certs
     
     data = []
     for gn in group_numbers:
-        stats = stats_map.get(gn, {"total": 0, "uploaded": 0})
+        total = hemis_counts.get(gn, 0)
+        uploaded = uploaded_map.get(gn, 0)
         data.append({
             "group_number": gn,
-            "total_students": stats["total"],
-            "uploaded_students": stats["uploaded"]
+            "total_students": total,
+            "uploaded_students": uploaded
         })
         
     return {"success": True, "data": data}

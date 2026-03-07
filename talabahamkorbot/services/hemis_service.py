@@ -1750,21 +1750,21 @@ class HemisService:
             return {}
             
         counts = {}
-        # We need to resolve each group name to an ID to query student count
-        for group_name in group_numbers:
-            # 1. Resolve Group ID
-            group_id = await HemisService.resolve_group_id(group_name, token=token)
-            if group_id:
-                # 2. Get Count for this Group
-                # Optimization: get_admin_student_count is cached? No, but lightweight.
-                count = await HemisService.get_admin_student_count(
-                    {"_group": group_id}, 
-                    token=token
-                )
-                counts[group_name] = count
-            else:
-                counts[group_name] = 0
+        sem = asyncio.Semaphore(5)
+        
+        async def fetch_count(g_name):
+            async with sem:
+                g_id = await HemisService.resolve_group_id(g_name, token=token)
+                if g_id:
+                    c = await HemisService.get_admin_student_count({"_group": g_id}, token=token)
+                    return g_name, c
+                return g_name, 0
                 
+        tasks = [fetch_count(g) for g in group_numbers]
+        results = await asyncio.gather(*tasks)
+        for g, c in results:
+            counts[g] = c
+            
         return counts
 
     @staticmethod
