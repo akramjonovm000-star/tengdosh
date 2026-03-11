@@ -115,6 +115,69 @@ async def get_tutor_group_students(
         
     return {"success": True, "data": data}
 
+@router.get("/documents/all")
+async def get_all_document_details(
+    db: AsyncSession = Depends(get_session),
+    tutor: Staff = Depends(get_current_staff)
+):
+    """
+    Get detailed document status for all students across all assigned groups.
+    """
+    groups_result = await db.execute(select(TutorGroup.group_number).where(TutorGroup.tutor_id == tutor.id))
+    group_numbers = groups_result.scalars().all()
+    
+    if not group_numbers:
+        return {"success": True, "data": []}
+
+    from sqlalchemy import or_
+    import re
+    
+    conditions = [Student.group_number.op('~*')(f"^{re.escape(g.strip())}( |$)") for g in group_numbers]
+    
+    stmt = (
+        select(Student)
+        .options(joinedload(Student.all_documents))
+        .where(or_(*conditions))
+        .order_by(Student.full_name)
+    )
+    
+    result = await db.execute(stmt)
+    students = result.unique().scalars().all()
+    
+    def get_cat(d):
+        if d.file_type == 'certificate': return 'sertifikat'
+        n = getattr(d, 'category', '') or d.file_name.lower()
+        if 'passport' in n or 'pasport' in n: return 'passport'
+        if 'diplom' in n: return 'diplom'
+        if 'rezyume' in n or 'cv' in n or 'rezume' in n: return 'rezyume'
+        if 'obyektivka' in n or 'obektivka' in n: return 'obyektivka'
+        return 'boshqa'
+
+    data = []
+    for s in students:
+        data.append({
+            "id": s.id,
+            "full_name": s.full_name,
+            "image": s.image_url,
+            "hemis_id": s.hemis_id,
+            "group": s.group_number,
+            "has_document": any(d.file_type in ["document", "certificate"] for d in s.all_documents),
+            "documents": [
+                {
+                    "id": d.id,
+                    "title": d.file_name,
+                    "type": d.file_type,
+                    "category": get_cat(d),
+                    "created_at": d.uploaded_at.isoformat(),
+                    "file_id": d.telegram_file_id,
+                    "file_url": f"/api/v1/management/documents/{d.id}/download" if d.file_type == "document" else f"/api/v1/management/certificates/{d.id}/download",
+                    "status": "approved"
+                } for d in s.all_documents if d.file_type in ["document", "certificate"]
+            ]
+        })
+        
+    return {"success": True, "data": data}
+
 @router.get("/documents/group/{group_number}")
 async def get_group_document_details(
     group_number: str,

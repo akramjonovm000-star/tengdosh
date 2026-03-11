@@ -2301,6 +2301,23 @@ class DataService {
     return [];
   }
 
+  // 38. Get All Document Details
+  Future<List<dynamic>?> getAllDocumentDetails() async {
+    try {
+      final response = await _get("${ApiConstants.backendUrl}/tutor/documents/all");
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        if (body['success'] == true) {
+          return body['data'];
+        }
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching all document details: $e");
+      return null;
+    }
+    return [];
+  }
+
   // 37.1 Get Group Students
   Future<List<dynamic>?> getTutorGroupStudents(String groupNumber) async {
     try {
