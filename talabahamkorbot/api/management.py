@@ -1531,14 +1531,16 @@ async def _process_and_send_zip_bg(export_items: list, tg_id: int, title: str):
                 await bot.download_file(tg_file.file_path, file_io)
                 file_bytes = file_io.getvalue()
                 
-                # Robust extension detection
+                # Robust extension detection with Magic Bytes Fallback
                 ext = None
                 
                 if tg_file.file_path and tg_file.file_path.startswith("photos/"):
                     ext = "jpg"
                     
                 if not ext and item["file_name"] and "." in item["file_name"]:
-                    ext = item["file_name"].split(".")[-1].lower()
+                    possible_ext = item["file_name"].split(".")[-1].lower()
+                    if possible_ext in ["pdf", "jpg", "jpeg", "png", "doc", "docx", "rtf", "txt", "heic"]:
+                        ext = possible_ext
                     
                 if not ext and item["mime_type"]:
                     mime = item["mime_type"].lower()
@@ -1548,10 +1550,24 @@ async def _process_and_send_zip_bg(export_items: list, tg_id: int, title: str):
                     elif "word" in mime or "doc" in mime: ext = "docx"
                     
                 if not ext and tg_file.file_path and "." in tg_file.file_path:
-                    ext = tg_file.file_path.split(".")[-1].lower()
-                    
+                    possible_ext = tg_file.file_path.split(".")[-1].lower()
+                    if possible_ext in ["pdf", "jpg", "jpeg", "png", "doc", "docx", "mp4", "heic"]:
+                        ext = possible_ext
+                        
+                # Ultimate detection via True File Headers (Magic Bytes)
                 if not ext:
-                    ext = "pdf"
+                    if file_bytes.startswith(b"%PDF"):
+                        ext = "pdf"
+                    elif file_bytes.startswith(b"PK\x03\x04"):
+                        ext = "docx"
+                    elif file_bytes.startswith(b"\xff\xd8\xff"):
+                        ext = "jpg"
+                    elif file_bytes.startswith(b"\x89PNG\r\n\x1a\n"):
+                        ext = "png"
+                    elif file_bytes.startswith(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"):
+                        ext = "doc"
+                    else:
+                        ext = "pdf"
 
                 # Strict sanitization to prevent subdirectories ("/") and invalid Windows chars
                 def sanitize_name(text):
