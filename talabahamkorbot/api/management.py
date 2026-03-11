@@ -1197,10 +1197,20 @@ async def send_student_cert_to_management(
         )
         # Better detection
         is_photo = cert.mime_type and "image" in cert.mime_type
-        if is_photo:
-            await bot.send_photo(tg_acc.telegram_id, cert.telegram_file_id, caption=caption, parse_mode="HTML")
-        else:
-            await bot.send_document(tg_acc.telegram_id, cert.telegram_file_id, caption=caption, parse_mode="HTML")
+        
+        try:
+            if is_photo:
+                await bot.send_photo(tg_acc.telegram_id, cert.telegram_file_id, caption=caption, parse_mode="HTML")
+            else:
+                await bot.send_document(tg_acc.telegram_id, cert.telegram_file_id, caption=caption, parse_mode="HTML")
+        except Exception as e:
+            if "Bad Request" in str(e) and ("Document" in str(e) or "Photo" in str(e) or "wrong file identifier" in str(e)):
+                 if is_photo:
+                     await bot.send_document(tg_acc.telegram_id, cert.telegram_file_id, caption=caption, parse_mode="HTML")
+                 else:
+                     await bot.send_photo(tg_acc.telegram_id, cert.telegram_file_id, caption=caption, parse_mode="HTML")
+            else:
+                 raise e
             
         return {"success": True, "message": "Sertifikat Telegramingizga yuborildi!"}
     except Exception as e:
@@ -1259,14 +1269,22 @@ async def send_student_doc_to_management(
             f"Guruh: <b>{student.group_number}</b>\n"
             f"Hujjat: <b>{doc.file_name}</b>"
         )
-        
-        # Better detection
         is_photo = doc.mime_type and "image" in doc.mime_type
         
-        if is_photo:
-            await bot.send_photo(tg_acc.telegram_id, doc.telegram_file_id, caption=caption, parse_mode="HTML")
-        else:
-            await bot.send_document(tg_acc.telegram_id, doc.telegram_file_id, caption=caption, parse_mode="HTML")
+        try:
+            if is_photo:
+                await bot.send_photo(tg_acc.telegram_id, doc.telegram_file_id, caption=caption, parse_mode="HTML")
+            else:
+                await bot.send_document(tg_acc.telegram_id, doc.telegram_file_id, caption=caption, parse_mode="HTML")
+        except Exception as e:
+            if "Bad Request" in str(e) and ("Document" in str(e) or "Photo" in str(e) or "wrong file identifier" in str(e)):
+                # Fallback to the other method
+                if is_photo:
+                    await bot.send_document(tg_acc.telegram_id, doc.telegram_file_id, caption=caption, parse_mode="HTML")
+                else:
+                    await bot.send_photo(tg_acc.telegram_id, doc.telegram_file_id, caption=caption, parse_mode="HTML")
+            else:
+                raise e
             
         return {"success": True, "message": "Hujjat botga yuborildi"}
     except Exception as e:
