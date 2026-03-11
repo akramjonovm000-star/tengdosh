@@ -312,7 +312,7 @@ class _TutorDocumentsGroupsScreenState extends State<TutorDocumentsGroupsScreen>
                               Wrap(
                                 spacing: 8,
                                 runSpacing: 8,
-                                children: docs.map((doc) {
+                                children: docs.map<Widget>((doc) {
                                   bool isCert = doc['type'] == 'certificate';
                                   return InkWell(
                                     onTap: () {
@@ -362,7 +362,6 @@ class _TutorDocumentsGroupsScreenState extends State<TutorDocumentsGroupsScreen>
                                      const SizedBox(width: 6),
                                      Text("Hujjatlar yuklanmagan", style: TextStyle(fontSize: 13, color: Colors.grey[600], fontStyle: FontStyle.italic)),
                                    ],
-                                 ),
                                  ),
                                ),
                             const SizedBox(height: 8),
