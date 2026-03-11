@@ -1531,20 +1531,27 @@ async def _process_and_send_zip_bg(export_items: list, tg_id: int, title: str):
                 await bot.download_file(tg_file.file_path, file_io)
                 file_bytes = file_io.getvalue()
                 
-                ext = "pdf"
-                if item["file_name"] and "." in item["file_name"]:
+                # Robust extension detection
+                ext = None
+                
+                if tg_file.file_path and tg_file.file_path.startswith("photos/"):
+                    ext = "jpg"
+                    
+                if not ext and item["file_name"] and "." in item["file_name"]:
                     ext = item["file_name"].split(".")[-1].lower()
-                elif item["mime_type"]:
+                    
+                if not ext and item["mime_type"]:
                     mime = item["mime_type"].lower()
                     if "pdf" in mime: ext = "pdf"
                     elif "jpeg" in mime or "jpg" in mime: ext = "jpg"
                     elif "png" in mime: ext = "png"
                     elif "word" in mime or "doc" in mime: ext = "docx"
-                elif tg_file.file_path:
-                    if tg_file.file_path.startswith("photos/"):
-                        ext = "jpg"
-                    elif "." in tg_file.file_path:
-                        ext = tg_file.file_path.split(".")[-1].lower()
+                    
+                if not ext and tg_file.file_path and "." in tg_file.file_path:
+                    ext = tg_file.file_path.split(".")[-1].lower()
+                    
+                if not ext:
+                    ext = "pdf"
 
                 # Strict sanitization to prevent subdirectories ("/") and invalid Windows chars
                 def sanitize_name(text):
