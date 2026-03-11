@@ -1502,48 +1502,63 @@ async def _process_and_send_zip_bg(export_items: list, tg_id: int, title: str):
     MAX_BYTES = 40 * 1024 * 1024  # 40 MB safe limit
     
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
-        async with aiohttp.ClientSession() as session:
-            for item in export_items:
-                try:
-                    tg_file = await bot.get_file(item["telegram_file_id"])
-                    file_path = tg_file.file_path
-                    download_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}"
+        import re
+        for item in export_items:
+            try:
+                tg_file = await bot.get_file(item["telegram_file_id"])
+                
+                # Use bot.download_file for robust downloading
+                file_io = io.BytesIO()
+                await bot.download_file(tg_file.file_path, file_io)
+                file_bytes = file_io.getvalue()
+                
+                ext = "pdf"
+                if item["file_name"] and "." in item["file_name"]:
+                    ext = item["file_name"].split(".")[-1].lower()
+                elif tg_file.file_path and "." in tg_file.file_path:
+                    ext = tg_file.file_path.split(".")[-1].lower()
+                elif item["mime_type"]:
+                    mime = item["mime_type"].lower()
+                    if "pdf" in mime: ext = "pdf"
+                    elif "jpeg" in mime or "jpg" in mime: ext = "jpg"
+                    elif "png" in mime: ext = "png"
+                    elif "word" in mime or "doc" in mime: ext = "docx"
+
+                # Strict sanitization to prevent subdirectories ("/") and invalid Windows chars
+                def sanitize_name(text):
+                    text = str(text or "").replace("ʻ", "'").replace("‘", "'").replace("’", "'")
+                    # Keep alphanumeric, space, dot, dash, underscore
+                    text = re.sub(r'[^\w\s\.-]', '_', text)
+                    return text.strip().replace(" ", "_")
+
+                clean_name = sanitize_name(item["student_full_name"])
+                clean_title = sanitize_name(item["file_name"] or "Hujjat")
+                
+                # Prevent double extensions
+                if clean_title.lower().endswith(f".{ext}"):
+                    clean_title = clean_title[:-len(ext)-1]
                     
-                    async with session.get(download_url) as resp:
-                        if resp.status == 200:
-                            file_bytes = await resp.read()
-                            
-                            ext = "pdf"
-                            if item["file_name"] and "." in item["file_name"]:
-                                ext = item["file_name"].split(".")[-1]
-                            elif file_path and "." in file_path:
-                                ext = file_path.split(".")[-1]
-                            elif item["mime_type"]:
-                                if "pdf" in item["mime_type"]: ext = "pdf"
-                                elif "jpeg" in item["mime_type"] or "jpg" in item["mime_type"]: ext = "jpg"
-                                elif "png" in item["mime_type"]: ext = "png"
-                                elif "word" in item["mime_type"] or "doc" in item["mime_type"]: ext = "docx"
-                                
-                            clean_name = item["student_full_name"].replace(" ", "_").replace("'", "").replace("\"", "")
-                            f_name_raw = item["file_name"] or "Hujjat"
-                            clean_title = f_name_raw.replace(" ", "_").replace("'", "").replace("\"", "")
-                            filename = f"{clean_name}_{clean_title}_{item['id']}.{ext}"
-                            
-                            if zip_buffer.tell() + len(file_bytes) > MAX_BYTES:
-                                size_limit_reached = True
-                                break
-                            
-                            zip_file.writestr(filename, file_bytes)
-                            count += 1
-                            if count % 10 == 0:
-                                logger.info(f"Yig'ilayotgan ZIP jarayoni: {count} ta hujjat tirkaldi. Joriy hajm: {zip_buffer.tell() / (1024*1024):.2f} MB")
-                except Exception as e:
-                    logger.error(f"Error zipping doc {item['id']}: {e}")
-                    
-                if size_limit_reached:
-                    warning_msg = "Telegram bot orqali maksimal fayl hajmi chegaralanganligi (50MB) sababli arxiv to'ldi.\nIltimos, qolgan hujjatlarni olish uchun Guruh kurs yoki ro'yxat filtrlaridan foydalaning."
-                    zip_file.writestr("DIQQAT_XABARNOMA.txt", warning_msg.encode("utf-8"))
+                filename = f"{clean_name}_{clean_title}_{item['id']}.{ext}"
+                
+                # Enforce safe ascii encoding to avoid ZipFile extractor bugs on Windows
+                from unidecode import unidecode
+                filename = unidecode(filename) # Convert to basic ascii characters
+                
+                if zip_buffer.tell() + len(file_bytes) > MAX_BYTES:
+                    size_limit_reached = True
                     break
+                
+                zip_file.writestr(filename, file_bytes)
+                count += 1
+                if count % 10 == 0:
+                    logger.info(f"Yig'ilayotgan ZIP jarayoni: {count} ta hujjat tirkaldi. Joriy hajm: {zip_buffer.tell() / (1024*1024):.2f} MB")
+            except Exception as e:
+                logger.error(f"Error zipping doc {item['id']}: {e}")
+                
+            if size_limit_reached:
+                warning_msg = "Telegram bot orqali maksimal fayl hajmi chegaralanganligi (40MB) sababli arxiv to'ldi.\nIltimos, qolgan hujjatlarni olish uchun Guruh kurs yoki ro'yxat filtrlaridan foydalaning."
+                zip_file.writestr("DIQQAT_XABARNOMA.txt", warning_msg.encode("utf-8"))
+                break
 
     if count == 0:
         try:
