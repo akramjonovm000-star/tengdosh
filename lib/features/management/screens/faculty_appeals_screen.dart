@@ -22,11 +22,18 @@ class _FacultyAppealsScreenState extends State<FacultyAppealsScreen> {
   String? _error;
   List<Appeal> _appeals = [];
   String? _selectedTopic; // Null means "All"
+  final ScrollController _filterScrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _loadAppeals();
+  }
+
+  @override
+  void dispose() {
+    _filterScrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadAppeals() async {
@@ -137,6 +144,7 @@ class _FacultyAppealsScreenState extends State<FacultyAppealsScreen> {
                 
                 // Smart Chips Scroll
                 SingleChildScrollView(
+                  controller: _filterScrollController,
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
                   child: Row(

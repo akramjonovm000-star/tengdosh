@@ -31,12 +31,20 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
   String? _selectedRole;
   
   late TabController _tabController;
+  final ScrollController _filterScrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _loadData();
+  }
+  
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _filterScrollController.dispose();
+    super.dispose();
   }
   
   Future<void> _loadData() async {
@@ -273,6 +281,7 @@ class _ManagementAppealsScreenState extends State<ManagementAppealsScreen> with 
           height: 60,
           padding: const EdgeInsets.symmetric(vertical: 12),
           child: ListView(
+            controller: _filterScrollController,
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             physics: const BouncingScrollPhysics(),
