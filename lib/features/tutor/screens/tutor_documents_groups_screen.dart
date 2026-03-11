@@ -279,15 +279,18 @@ class _TutorDocumentsGroupsScreenState extends State<TutorDocumentsGroupsScreen>
                                       const SizedBox(height: 4),
                                       Row(
                                         children: [
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: Colors.indigo.withOpacity(0.1),
-                                              borderRadius: BorderRadius.circular(8)
-                                            ),
-                                            child: Text(
-                                              student['group'] ?? '',
-                                              style: const TextStyle(fontSize: 12, color: Colors.indigo, fontWeight: FontWeight.bold),
+                                          Flexible(
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: Colors.indigo.withOpacity(0.1),
+                                                borderRadius: BorderRadius.circular(8)
+                                              ),
+                                              child: Text(
+                                                student['group'] ?? '',
+                                                style: const TextStyle(fontSize: 12, color: Colors.indigo, fontWeight: FontWeight.bold),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
                                             ),
                                           ),
                                           const SizedBox(width: 8),
