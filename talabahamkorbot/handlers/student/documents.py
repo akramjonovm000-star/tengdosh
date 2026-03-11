@@ -97,7 +97,7 @@ async def handle_app_file_upload(message: types.Message, state):
                  
                  await message.answer(
                      f"✅ <b>Murojaat fayli</b> qabul qilindi!\n\n"
-                     "Endi ilovaga qaytib, <b>'YUBORISH'</b> tugmasini bosing.",
+                     "Ilovaga qaytsangiz, murojaatingiz avtomatik ravishda tasdiqlanib yuboriladi.",
                      parse_mode="HTML"
                  )
                  await state.clear()

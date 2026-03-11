@@ -394,8 +394,7 @@ async def create_feedback(
     session_id: Optional[str] = Form(None), # For Telegram-upload flow
     token: str = Depends(require_action_token), # [SECURITY] ATS Enforced
     student: Student = Depends(get_current_student),
-    db: AsyncSession = Depends(get_db),
-    check_sub: bool = Depends(check_global_subscription) # Added dependency
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Send feedback/appeal to specific staff role.
