@@ -32,11 +32,22 @@ async def get_tutor_document_stats(
     # 2. Optimized Query combining local uploads and true capacity
     from sqlalchemy import distinct, or_
     import re
-    from config import HEMIS_ADMIN_TOKEN
-    from services.hemis_service import HemisService
     
-    hemis_counts = await HemisService.get_group_student_counts(group_numbers, HEMIS_ADMIN_TOKEN)
     conditions = [Student.group_number.op('~*')(f"^{re.escape(g.strip())}( |$)") for g in group_numbers]
+    
+    def map_to_group(full_gn):
+        for gn in group_numbers:
+            if re.match(f"^{re.escape(gn.strip())}( |$)", full_gn, re.I):
+                return gn
+        return full_gn
+
+    db_counts = {}
+    if conditions:
+        stmt_counts = select(Student.group_number, func.count(Student.id)).where(or_(*conditions)).group_by(Student.group_number)
+        res_counts = await db.execute(stmt_counts)
+        for g_name, c in res_counts.all():
+            b_gn = map_to_group(g_name)
+            db_counts[b_gn] = db_counts.get(b_gn, 0) + c
     
     uploaded_map = {}
     if conditions:
@@ -53,19 +64,13 @@ async def get_tutor_document_stats(
         result = await db.execute(stmt)
         rows = result.all()
         
-        def map_to_group(full_gn):
-            for gn in group_numbers:
-                if re.match(f"^{re.escape(gn.strip())}( |$)", full_gn, re.I):
-                    return gn
-            return full_gn
-            
         for r in rows:
             b_gn = map_to_group(r.group_number)
             uploaded_map[b_gn] = uploaded_map.get(b_gn, 0) + r.uploaded_count
-    
+
     data = []
     for gn in group_numbers:
-        total = hemis_counts.get(gn, 0)
+        total = db_counts.get(gn, 0)
         uploaded = uploaded_map.get(gn, 0)
         data.append({
             "group_number": gn,
@@ -398,24 +403,18 @@ async def get_tutor_dashboard(
     if not group_numbers:
         return {"success": True, "data": {"student_count": 0, "group_count": 0, "kpi": 0}}
         
-    # 2. Count Total Students (From HEMIS API)
+    # 2. Count Total Students (From Local DB to ensure stability)
     from sqlalchemy import or_
-    from config import HEMIS_ADMIN_TOKEN
-    from services.hemis_service import HemisService
     import re
     
-    hemis_student_count = await HemisService.get_total_students_for_groups(group_numbers, HEMIS_ADMIN_TOKEN)
     conditions = [Student.group_number.op('~*')(f"^{re.escape(g.strip())}( |$)") for g in group_numbers]
 
-    if hemis_student_count > 0:
-        student_count = hemis_student_count
+    if conditions:
+        student_count = await db.scalar(
+            select(func.count(Student.id)).where(or_(*conditions))
+        )
     else:
-        if conditions:
-            student_count = await db.scalar(
-                select(func.count(Student.id)).where(or_(*conditions))
-            )
-        else:
-            student_count = 0
+        student_count = 0
 
     # 2.1 Count Active Students (Logged into App - Has HEMIS Token)
     from database.models import User
