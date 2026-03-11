@@ -20,7 +20,7 @@ router = APIRouter(tags=["Feedback"])
 from models.states import FeedbackStates
 from aiogram.fsm.storage.base import StorageKey
 
-async def set_bot_state(user_id: int, state):
+async def set_bot_state(user_id: int, state, data: dict = None):
     from bot import dp, bot
     from config import BOT_TOKEN
     
@@ -35,6 +35,8 @@ async def set_bot_state(user_id: int, state):
     # Convert state object to string if needed
     state_str = state.state if hasattr(state, "state") else str(state)
     await dp.storage.set_state(key, state_str)
+    if data:
+        await dp.storage.set_data(key, data)
 
 class MessageSchema(BaseModel):
     id: int
@@ -338,8 +340,9 @@ async def initiate_feedback_upload(
         
         await bot.send_message(tg_account.telegram_id, text, parse_mode="HTML")
         
-        # [CRITICAL] Set Bot State
-        await set_bot_state(tg_account.telegram_id, FeedbackStates.WAIT_FOR_APP_FILE)
+        # [CRITICAL] Set Bot State and Data
+        from models.states import FeedbackStates
+        await set_bot_state(tg_account.telegram_id, FeedbackStates.WAIT_FOR_APP_FILE, {"app_upload_session": session_id})
         
         return {
             "success": True, 

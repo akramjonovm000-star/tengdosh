@@ -44,7 +44,7 @@ async def get_my_certificates(
 from models.states import CertificateAddStates
 from aiogram.fsm.storage.base import StorageKey
 
-async def set_bot_state(user_id: int, state):
+async def set_bot_state(user_id: int, state, data: dict = None):
     from bot import dp, bot
     from config import BOT_TOKEN
     
@@ -59,6 +59,8 @@ async def set_bot_state(user_id: int, state):
     # Convert state object to string if needed
     state_str = state.state if hasattr(state, "state") else str(state)
     await dp.storage.set_state(key, state_str)
+    if data:
+        await dp.storage.set_data(key, data)
 
 class InitCertRequest(BaseModel):
     session_id: str
@@ -117,7 +119,7 @@ async def initiate_certificate_upload(
         await bot.send_message(tg_account.telegram_id, text, parse_mode="HTML")
         
         # [CRITICAL] Set Bot State
-        await set_bot_state(tg_account.telegram_id, CertificateAddStates.WAIT_FOR_APP_FILE)
+        await set_bot_state(tg_account.telegram_id, CertificateAddStates.WAIT_FOR_APP_FILE, {"app_upload_session": session_id})
         
         return {"success": True, "message": "Botga yuklash so'rovi yuborildi. Telegramni oching.", "session_id": session_id, "bot_link": auth_link}
     except Exception as e:
