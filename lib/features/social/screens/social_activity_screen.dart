@@ -86,7 +86,15 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
     return map[key.toLowerCase()] ?? "Boshqa";
   }
 
-
+  String _getLongCategoryName(String shortName) {
+    if (shortName == "To'garak") return "“5 muhim tashabbus” doirasidagi toʻgaraklarda faol ishtiroki";
+    if (shortName == "Yutuqlar") return "Xalqaro, respublika, viloyat miqyosidagi koʻrik-tanlov, fan olimpiadalari va sport musobaqalarida erishgan natijalari";
+    if (shortName == "Ma'rifat darslari") return "Talabalarning “Maʼrifat darslari”dagi faol ishtiroki";
+    if (shortName == "Volontyorlik") return "Volontyorlik va jamoat ishlaridagi faolligi";
+    if (shortName == "Madaniy tashriflar") return "Teatr va muzey, xiyobon, kino, tarixiy qadamjolarga tashriflar";
+    if (shortName == "Sport") return "Talabalarning sport bilan shugʻullanishi va sogʻlom turmush tarziga amal qilishi";
+    return shortName;
+  }
 
   @override
   void dispose() {
@@ -199,7 +207,7 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
                   child: Text(
                     isEdit 
                       ? AppDictionary.tr(context, 'social_form_edit_title')
-                      : (_step == 1 ? AppDictionary.tr(context, 'social_form_step1_title') : AppDictionary.tr(context, 'social_form_step2_title')),
+                      : (_step == 1 ? AppDictionary.tr(context, 'social_form_step1_title') : (_selectedCategory ?? "")),
                     style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -334,7 +342,7 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    _selectedCategory ?? "",
+                    _getLongCategoryName(_selectedCategory ?? ""),
                     style: const TextStyle(color: AppTheme.primaryBlue, fontWeight: FontWeight.bold),
                   ),
                 ),
