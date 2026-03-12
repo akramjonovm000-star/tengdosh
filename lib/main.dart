@@ -103,7 +103,8 @@ class _TalabaHamkorAppState extends State<TalabaHamkorApp> {
              } else {
                 final user = auth.currentUser;
                 if (user != null) {
-                  final rolePrefix = (user.role == 'student') ? 'student' : 'staff';
+                  final isStudentBase = (user.role == 'student' || user.role == 'yetakchi');
+                  final rolePrefix = isStudentBase ? 'student' : 'staff';
                   final link = 'https://t.me/talabahamkorbot?start=login__${rolePrefix}_id_${user.id}';
                   final uri = Uri.parse(link);
                   try {

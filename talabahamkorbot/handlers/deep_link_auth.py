@@ -71,9 +71,22 @@ async def cmd_start_deep_link(message: Message, command: CommandObject, session:
         db_user = user_result.scalar_one_or_none()
         
         if not db_user:
+            # Fallback for old app versions incorrectly formatting rolePrefix (e.g., yetakchi as staff)
+            if role_type == "staff":
+                fallback_result = await session.execute(select(Student).where(Student.id == db_id))
+                db_user = fallback_result.scalar_one_or_none()
+                if db_user:
+                    role_type = "student" # Correct it
+            elif role_type == "student":
+                fallback_result = await session.execute(select(Staff).where(Staff.id == db_id))
+                db_user = fallback_result.scalar_one_or_none()
+                if db_user:
+                    role_type = "staff" # Correct it
+
+        if not db_user:
             await message.answer("❌ Tizimda profilingiz topilmadi.", parse_mode="HTML")
             return
-            
+
         # If already bound to this specific user, no need to ask again
         if tg_account:
             if (role_type == "student" and tg_account.student_id == db_id) or \
