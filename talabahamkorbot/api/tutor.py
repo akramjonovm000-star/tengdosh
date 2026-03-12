@@ -383,6 +383,9 @@ async def get_tutor_groups(
             "unread_appeals_count": unread_count or 0
         })
 
+    # eng ko'p murojaat yuborgan guruhlar tepaga chiqishi kerak
+    result_data.sort(key=lambda x: x["unread_appeals_count"], reverse=True)
+
     return {
         "success": True, 
         "data": result_data
