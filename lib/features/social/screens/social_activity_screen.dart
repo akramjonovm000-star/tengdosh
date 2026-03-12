@@ -96,6 +96,18 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
     return shortName;
   }
 
+  String _getCatScore(String cat) {
+    switch (cat) {
+      case "To'garak": return "0 — 20";
+      case "Yutuqlar": return "0 — 10";
+      case "Ma'rifat darslari": return "0 — 10";
+      case "Volontyorlik": return "0 — 5";
+      case "Madaniy tashriflar": return "0 — 5";
+      case "Sport": return "0 — 5";
+      default: return "";
+    }
+  }
+
   @override
   void dispose() {
     _pollingTimer?.cancel();
@@ -336,14 +348,33 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryBlue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    color: AppTheme.primaryBlue.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.primaryBlue.withOpacity(0.1)),
                   ),
-                  child: Text(
-                    _getLongCategoryName(_selectedCategory ?? ""),
-                    style: const TextStyle(color: AppTheme.primaryBlue, fontWeight: FontWeight.bold),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _getLongCategoryName(_selectedCategory ?? ""),
+                        style: const TextStyle(color: AppTheme.primaryBlue, fontWeight: FontWeight.bold, height: 1.3),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          "${_getCatScore(_selectedCategory ?? "")} ball",
+                          style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 24),
