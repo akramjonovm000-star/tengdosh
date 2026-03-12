@@ -28,6 +28,7 @@ class _TutorDocumentsGroupsScreenState extends State<TutorDocumentsGroupsScreen>
   String _searchQuery = '';
   String? _selectedGroup;
   String? _selectedType; // e.g. "Barchasi", "Passport", "Sertifikat", "Diplom", "Rezyume", "Obyektivka"
+  String? _selectedStatus; // "Barchasi", "Yuborgan", "Yubormagan"
 
   final TextEditingController _searchController = TextEditingController();
 
@@ -92,18 +93,27 @@ class _TutorDocumentsGroupsScreenState extends State<TutorDocumentsGroupsScreen>
           if (student['group'] != _selectedGroup) return false;
         }
         
-        // Type filter (Shows students who DO NOT have the selected document)
+        // Type and Status logic
+        final docs = student['documents'] as List<dynamic>? ?? [];
+        
         if (_selectedType != null && _selectedType != "Barchasi") {
-           final docs = student['documents'] as List<dynamic>? ?? [];
            String cat = _selectedType!.toLowerCase();
-           
-           bool hasDoc = docs.any((d) {
+           bool hasSpecificDoc = docs.any((d) {
               String docCat = (d['category'] ?? '').toString().toLowerCase();
               return docCat == cat;
            });
            
-           // IF they already have it, filter them out so we only see those missing it
-           if (hasDoc) return false;
+           if (_selectedStatus == "Yuborgan") {
+              if (!hasSpecificDoc) return false;
+           } else if (_selectedStatus == "Yubormagan") {
+              if (hasSpecificDoc) return false;
+           }
+        } else {
+           if (_selectedStatus == "Yuborgan") {
+              if (docs.isEmpty) return false;
+           } else if (_selectedStatus == "Yubormagan") {
+              if (docs.isNotEmpty) return false;
+           }
         }
 
         return true;
@@ -212,6 +222,35 @@ class _TutorDocumentsGroupsScreenState extends State<TutorDocumentsGroupsScreen>
                             }).toList(),
                             onChanged: (val) {
                                setState(() => _selectedType = val);
+                               _applyFilters();
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                           color: Colors.orange.withOpacity(0.05),
+                           borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            isExpanded: true,
+                            hint: const Text("Holati", style: TextStyle(fontSize: 14)),
+                            value: _selectedStatus,
+                            icon: const Icon(Icons.arrow_drop_down, color: Colors.orange),
+                            items: ["Barchasi", "Yuborgan", "Yubormagan"].map((s) {
+                               return DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 14), overflow: TextOverflow.ellipsis));
+                            }).toList(),
+                            onChanged: (val) {
+                               setState(() => _selectedStatus = val);
                                _applyFilters();
                             },
                           ),
