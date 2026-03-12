@@ -231,12 +231,39 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
     );
   }
 
+  String _getLongCatName(String cat) {
+    switch (cat) {
+      case "To'garak": return "“5 muhim tashabbus” doirasidagi toʻgaraklarda faol ishtiroki";
+      case "Yutuqlar": return "Xalqaro, respublika, viloyat miqyosidagi koʻrik-tanlov, fan olimpiadalari va sport musobaqalarida erishgan natijalari";
+      case "Ma'rifat darslari": return "Talabalarning “Maʼrifat darslari”dagi faol ishtiroki";
+      case "Volontyorlik": return "Volontyorlik va jamoat ishlaridagi faolligi";
+      case "Madaniy tashriflar": return "Teatr va muzey, xiyobon, kino, tarixiy qadamjolarga tashriflar";
+      case "Sport": return "Talabalarning sport bilan shugʻullanishi va sogʻlom turmush tarziga amal qilishi";
+      default: return cat;
+    }
+  }
+
+  String _getCatScore(String cat) {
+    switch (cat) {
+      case "To'garak": return "0 — 20 ball";
+      case "Yutuqlar": return "0 — 10 ball";
+      case "Ma'rifat darslari": return "0 — 10 ball";
+      case "Volontyorlik": return "0 — 5 ball";
+      case "Madaniy tashriflar": return "0 — 5 ball";
+      case "Sport": return "0 — 5 ball";
+      default: return "";
+    }
+  }
+
   Widget _buildCategoryStep() {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: widget.categories.length,
       itemBuilder: (context, index) {
         final category = widget.categories[index];
+        final longName = _getLongCatName(category);
+        final score = _getCatScore(category);
+
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: InkWell(
@@ -265,8 +292,32 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
                     child: const Icon(Icons.category, color: AppTheme.primaryBlue, size: 20),
                   ),
                   const SizedBox(width: 16),
-                  Text(category, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                  const Spacer(),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (score.isNotEmpty) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              score,
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        Text(
+                          longName,
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, height: 1.3),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
                   const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
                 ],
               ),
