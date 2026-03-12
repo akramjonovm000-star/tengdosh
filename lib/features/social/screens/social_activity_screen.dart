@@ -75,15 +75,25 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
     // keys are "togarak", "yutuqlar"
     // Let's do a best effort match
     final map = {
-      "togarak": "“5 muhim tashabbus” doirasidagi toʻgaraklarda faol ishtiroki",
-      "marifat": "Talabalarning “Maʼrifat darslari”dagi faol ishtiroki",
-      "madaniy": "Teatr va muzey, xiyobon, kino, tarixiy qadamjolarga tashriflar",
-      "sport": "Talabalarning sport bilan shugʻullanishi va sogʻlom turmush tarziga amal qilishi",
-      "volontyorlik": "Volontyorlik va jamoat ishlaridagi faolligi",
-      "yutuqlar": "Xalqaro, respublika, viloyat miqyosidagi koʻrik-tanlov, fan olimpiadalari va sport musobaqalarida erishgan natijalari",
+      "togarak": "To'garak",
+      "marifat": "Ma'rifat darslari",
+      "madaniy": "Madaniy tashriflar",
+      "sport": "Sport",
+      "volontyorlik": "Volontyorlik",
+      "yutuqlar": "Yutuqlar",
       "boshqa": "Boshqa"
     };
     return map[key.toLowerCase()] ?? "Boshqa";
+  }
+
+  String _getLongCategoryName(String shortName) {
+    if (shortName == "To'garak") return "“5 muhim tashabbus” doirasidagi toʻgaraklarda faol ishtiroki";
+    if (shortName == "Yutuqlar") return "Xalqaro, respublika, viloyat miqyosidagi koʻrik-tanlov, fan olimpiadalari va sport musobaqalarida erishgan natijalari";
+    if (shortName == "Ma'rifat darslari") return "Talabalarning “Maʼrifat darslari”dagi faol ishtiroki";
+    if (shortName == "Volontyorlik") return "Volontyorlik va jamoat ishlaridagi faolligi";
+    if (shortName == "Madaniy tashriflar") return "Teatr va muzey, xiyobon, kino, tarixiy qadamjolarga tashriflar";
+    if (shortName == "Sport") return "Talabalarning sport bilan shugʻullanishi va sogʻlom turmush tarziga amal qilishi";
+    return shortName;
   }
 
   @override
@@ -274,37 +284,37 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
     String descHint = AppDictionary.tr(context, 'social_base_desc_hint');
 
     switch (_selectedCategory) {
-      case "Talabalarning “Maʼrifat darslari”dagi faol ishtiroki":
+      case "Ma'rifat darslari":
         titleLabel = AppDictionary.tr(context, 'social_marifat_name');
         titleHint = AppDictionary.tr(context, 'social_marifat_hint');
         descLabel = AppDictionary.tr(context, 'social_marifat_desc');
         descHint = AppDictionary.tr(context, 'social_marifat_desc_hint');
         break;
-      case "“5 muhim tashabbus” doirasidagi toʻgaraklarda faol ishtiroki":
+      case "To'garak":
         titleLabel = AppDictionary.tr(context, 'social_togarak_name');
         titleHint = AppDictionary.tr(context, 'social_togarak_hint');
         descLabel = AppDictionary.tr(context, 'social_togarak_desc');
         descHint = AppDictionary.tr(context, 'social_togarak_desc_hint');
         break;
-      case "Xalqaro, respublika, viloyat miqyosidagi koʻrik-tanlov, fan olimpiadalari va sport musobaqalarida erishgan natijalari":
+      case "Yutuqlar":
         titleLabel = AppDictionary.tr(context, 'social_yutuq_name');
         titleHint = AppDictionary.tr(context, 'social_yutuq_hint');
         descLabel = AppDictionary.tr(context, 'social_yutuq_desc');
         descHint = AppDictionary.tr(context, 'social_yutuq_desc_hint');
         break;
-      case "Volontyorlik va jamoat ishlaridagi faolligi":
+      case "Volontyorlik":
         titleLabel = AppDictionary.tr(context, 'social_volont_name');
         titleHint = AppDictionary.tr(context, 'social_volont_hint');
         descLabel = AppDictionary.tr(context, 'social_volont_desc');
         descHint = AppDictionary.tr(context, 'social_volont_desc_hint');
         break;
-      case "Teatr va muzey, xiyobon, kino, tarixiy qadamjolarga tashriflar":
+      case "Madaniy tashriflar":
         titleLabel = AppDictionary.tr(context, 'social_madaniy_name');
         titleHint = AppDictionary.tr(context, 'social_madaniy_hint');
         descLabel = AppDictionary.tr(context, 'social_madaniy_desc');
         descHint = AppDictionary.tr(context, 'social_madaniy_desc_hint');
         break;
-      case "Talabalarning sport bilan shugʻullanishi va sogʻlom turmush tarziga amal qilishi":
+      case "Sport":
         titleLabel = AppDictionary.tr(context, 'social_sport_name');
         titleHint = AppDictionary.tr(context, 'social_sport_hint');
         descLabel = AppDictionary.tr(context, 'social_sport_desc');
@@ -332,7 +342,7 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    _selectedCategory ?? "",
+                    _getLongCategoryName(_selectedCategory ?? ""),
                     style: const TextStyle(color: AppTheme.primaryBlue, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -624,16 +634,8 @@ class _SocialActivityScreenState extends State<SocialActivityScreen> {
   // Registration Check
 
 
-  final List<String> _categories = [
-    "Barchasi", 
-    "“5 muhim tashabbus” doirasidagi toʻgaraklarda faol ishtiroki", 
-    "Xalqaro, respublika, viloyat miqyosidagi koʻrik-tanlov, fan olimpiadalari va sport musobaqalarida erishgan natijalari", 
-    "Talabalarning “Maʼrifat darslari”dagi faol ishtiroki", 
-    "Volontyorlik va jamoat ishlaridagi faolligi", 
-    "Teatr va muzey, xiyobon, kino, tarixiy qadamjolarga tashriflar", 
-    "Talabalarning sport bilan shugʻullanishi va sogʻlom turmush tarziga amal qilishi", 
-    "Boshqa"
-  ];  final List<String> _statuses = ["Barchasi", "Tasdiqlangan", "Kutilayotgan", "Rad etilgan"];
+  final List<String> _categories = ["Barchasi", "To'garak", "Yutuqlar", "Ma'rifat darslari", "Volontyorlik", "Madaniy tashriflar", "Sport", "Boshqa"];
+  final List<String> _statuses = ["Barchasi", "Tasdiqlangan", "Kutilayotgan", "Rad etilgan"];
 
   List<SocialActivity> _activities = [];
 
@@ -986,12 +988,12 @@ class _SocialActivityScreenState extends State<SocialActivityScreen> {
   }
 
   String _getCategoryKey(String uiLabel) {
-    if (uiLabel == "“5 muhim tashabbus” doirasidagi toʻgaraklarda faol ishtiroki") return "togarak";
-    if (uiLabel == "Talabalarning “Maʼrifat darslari”dagi faol ishtiroki") return "marifat";
-    if (uiLabel == "Teatr va muzey, xiyobon, kino, tarixiy qadamjolarga tashriflar") return "madaniy";
-    if (uiLabel == "Talabalarning sport bilan shugʻullanishi va sogʻlom turmush tarziga amal qilishi") return "sport";
-    if (uiLabel == "Volontyorlik va jamoat ishlaridagi faolligi") return "volontyorlik";
-    if (uiLabel == "Xalqaro, respublika, viloyat miqyosidagi koʻrik-tanlov, fan olimpiadalari va sport musobaqalarida erishgan natijalari") return "yutuqlar";
+    if (uiLabel == "To'garak") return "togarak";
+    if (uiLabel == "Ma'rifat darslari") return "marifat";
+    if (uiLabel == "Madaniy tashriflar") return "madaniy";
+    if (uiLabel == "Sport") return "sport";
+    if (uiLabel == "Volontyorlik") return "volontyorlik";
+    if (uiLabel == "Yutuqlar") return "yutuqlar";
     if (uiLabel == "Boshqa") return "boshqa";
     return uiLabel.toLowerCase();
   }

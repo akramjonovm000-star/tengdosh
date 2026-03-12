@@ -8,6 +8,18 @@ class SocialActivityDetailScreen extends StatelessWidget {
 
   const SocialActivityDetailScreen({super.key, required this.activity});
 
+  String _getLongCategoryNameFromKey(String key) {
+    switch (key.toLowerCase()) {
+      case 'togarak': return '“5 muhim tashabbus” doirasidagi toʻgaraklarda faol ishtiroki';
+      case 'yutuqlar': return 'Xalqaro, respublika, viloyat miqyosidagi koʻrik-tanlov, fan olimpiadalari va sport musobaqalarida erishgan natijalari';
+      case 'marifat': return 'Talabalarning “Maʼrifat darslari”dagi faol ishtiroki';
+      case 'volontyorlik': return 'Volontyorlik va jamoat ishlaridagi faolligi';
+      case 'madaniy': return 'Teatr va muzey, xiyobon, kino, tarixiy qadamjolarga tashriflar';
+      case 'sport': return 'Talabalarning sport bilan shugʻullanishi va sogʻlom turmush tarziga amal qilishi';
+      default: return UzbekNameFormatter.format(key);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     Color statusColor;
@@ -75,12 +87,18 @@ class SocialActivityDetailScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Chip(
-                        label: Text(
-                          UzbekNameFormatter.format(activity.category)
+                      Expanded(
+                        child: Wrap(
+                          children: [
+                            Chip(
+                              label: Text(
+                                _getLongCategoryNameFromKey(activity.category)
+                              ),
+                              backgroundColor: Colors.blue[50],
+                              labelStyle: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                            ),
+                          ],
                         ),
-                        backgroundColor: Colors.blue[50],
-                        labelStyle: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
