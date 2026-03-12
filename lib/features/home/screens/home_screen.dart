@@ -480,11 +480,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: Icons.star_rounded,
                   color: Colors.orange,
                   onTap: () {
-                    final hasPremium = Provider.of<AuthProvider>(context, listen: false).currentUser?.hasActivePremium ?? false;
-                    if (!hasPremium) {
-                       _showPremiumDialog();
-                       return;
-                    }
                     Navigator.push(context, MaterialPageRoute(builder: (_) => SocialActivityScreen()));
                   },
                 ),

@@ -292,7 +292,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               // 2. Features
               _buildFeatureItem(Icons.verified, "Premium belgisi"),
               _buildFeatureItem(Icons.psychology, "AI moduli"),
-              _buildFeatureItem(Icons.public, "Ijtimoiy faollik va reklamasiz"),
+              _buildFeatureItem(Icons.public, "Reklamasiz foydalanish va eksklyuziv bo'limlar"),
               
               const SizedBox(height: 30),
 
