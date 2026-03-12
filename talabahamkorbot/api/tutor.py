@@ -309,7 +309,11 @@ async def request_documents(
         if sent:
             return {"success": True, "message": "Xabar yuborildi"}
         else:
-            return {"success": False, "message": "Xabar yuborishda xato yoki talaba ulanmagan"}
+            from fastapi.responses import JSONResponse
+            return JSONResponse(
+                status_code=400, 
+                content={"success": False, "message": "Talaba ilovaga kirmagan va botga ulanmagan"}
+            )
         
     elif actual_group:
         # Verify access
