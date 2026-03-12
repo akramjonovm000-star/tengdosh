@@ -857,7 +857,7 @@ async def login_via_hemis(
             "id": student.id,
             "hemis_token": encrypted_token # Embed Encrypted Token
         },
-        expires_delta=timedelta(minutes=60 * 24 * 7), # 7 days
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
         user_agent=user_agent
     )
 

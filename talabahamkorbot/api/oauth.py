@@ -156,7 +156,7 @@ async def authlog_callback(request: Request, code: Optional[str] = None, error: 
             # student.token_expires_at = token_expires_at # DISABLED
             # FORCE UPDATE info
             student.full_name = full_name
-            if image_url:
+            if image_url and not (student.image_url and "static/uploads" in student.image_url):
                 student.image_url = image_url
             
             # [FIX] Map external university_id to local university_id safely
