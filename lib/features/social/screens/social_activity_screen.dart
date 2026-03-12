@@ -519,39 +519,7 @@ class _AddActivitySheetState extends State<AddActivitySheet> {
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
-              GestureDetector(
-                onTap: () async {
-                  try {
-                    setState(() => _isUploading = true);
-                    await Provider.of<DataService>(context, listen: false).unlinkTelegram();
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppDictionary.tr(context, 'msg_old_account_disconnected_new'))));
-                    await _initUpload();
-                  } catch (e) {
-                    setState(() => _isUploading = false);
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Xatolik: $e")));
-                  }
-                },
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey[300]!),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                       Icon(Icons.refresh, color: Colors.grey, size: 18),
-                       SizedBox(width: 8),
-                       Text(AppDictionary.tr(context, 'msg_my_tg_is_new'), 
-                         style: TextStyle(color: Colors.black54, fontWeight: FontWeight.w600, fontSize: 13)
-                       ),
-                    ],
-                  ),
-                ),
-              ),
+
             ],
           ),
       ],
