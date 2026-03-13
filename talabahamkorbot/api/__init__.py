@@ -51,7 +51,10 @@ router.include_router(security_router, tags=["Security"])
 router.include_router(academic_router, prefix="/student", tags=["Academic (Student)"])
 router.include_router(academic_router, prefix="/education", tags=["Academic"])
 
+from .attendance import router as attendance_router
+
 # 3. STUDENT FEATURES
+router.include_router(attendance_router, prefix="/student/attendance", tags=["Attendance"])
 router.include_router(dashboard_router, prefix="/student/dashboard", tags=["Dashboard"])
 router.include_router(activities_router, prefix="/student/activities", tags=["Activities"])
 router.include_router(clubs_router, prefix="/student/clubs", tags=["Clubs"])

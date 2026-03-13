@@ -248,6 +248,23 @@ class DataService {
     return {};
   }
 
+  // QR Attendance
+  Future<Map<String, dynamic>> markQrAttendance(String qrCode) async {
+    try {
+      final response = await _post(
+        '${ApiConstants.backendUrl}/student/attendance/qr-scan',
+        body: {'qr_code': qrCode},
+      );
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+      return {'success': false, 'message': 'HTTP xatolik: ${response.statusCode}'};
+    } catch (e) {
+      debugPrint("DataService: Error marking QR attendance: $e");
+      return {'success': false, 'message': 'Ulanishda xatolik: $e'};
+    }
+  }
+
   Future<List<dynamic>> getManagementFaculties() async {
     try {
       final response = await _get(ApiConstants.managementFaculties);

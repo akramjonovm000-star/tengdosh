@@ -23,6 +23,7 @@ import '../../certificates/screens/certificates_screen.dart';
 import 'package:talabahamkor_mobile/features/home/widgets/management_dashboard.dart';
 import 'package:talabahamkor_mobile/features/tutor/screens/tutor_dashboard_screen.dart'; // [NEW]
 import 'package:talabahamkor_mobile/features/profile/screens/subscription_screen.dart';
+import 'package:talabahamkor_mobile/features/student_module/screens/qr_scanner_screen.dart';
 import '../../clubs/screens/clubs_screen.dart';
 import '../../appeals/screens/appeals_screen.dart';
 import '../../library/screens/library_screen.dart';
@@ -334,6 +335,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ],
                   ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.qr_code_scanner_rounded, size: 28, color: Colors.black87),
+                  onPressed: () {
+                    // Navigate to QR Scanner Screen
+                    Navigator.push(
+                      context, 
+                      MaterialPageRoute(builder: (_) => const QRScannerScreen())
+                    );
+                  },
                 ),
                 Consumer<NotificationProvider>(
                   builder: (context, notificationProvider, _) => Stack(
