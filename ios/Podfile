@@ -1,5 +1,5 @@
 
-platform :ios, '13.0'
+platform :ios, '15.0'
 
 # CocoaPods analytics disables sending stats
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
@@ -53,7 +53,7 @@ post_install do |installer|
       # Suppress warnings and set consistent deployment target
       config.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
       config.build_settings['SWIFT_SUPPRESS_WARNINGS'] = 'YES'
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
       config.build_settings['DEBUG_INFORMATION_FORMAT'] = 'dwarf-with-dsym'
       
       # Fix module lookup issues with static linkage
@@ -70,7 +70,7 @@ post_install do |installer|
 
       # [FIX] Specific patch for objective_c package App Store Rejection
       if target.name == 'objective_c'
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
         config.build_settings['SUPPORTED_PLATFORMS'] = 'iphoneos'
       end
 
@@ -92,8 +92,8 @@ post_install do |installer|
   # This patches the framework embedding script to handle symlinks correctly
   installer.pods_project.targets.each do |target|
       target.build_configurations.each do |config|
-          if config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < 13.0
-            config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+          if config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < 15.0
+            config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
           end
       end
   end
