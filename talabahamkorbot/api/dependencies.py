@@ -324,10 +324,19 @@ async def get_club_leader(club_id: int, student: Student = Depends(get_current_s
         raise HTTPException(status_code=404, detail="Club not found")
         
     is_direct_leader = getattr(club, 'leader_student_id', None) == student.id
-    is_student_council_admin = (
-        getattr(club, 'department', '') == 'Student Council' and 
-        (getattr(student, 'role', '') in ('student_council', 'yetakchi') or getattr(student, 'hemis_role', '') in ('student_council', 'yetakchi'))
-    )
+    
+    # Generalized department admin logic
+    club_dept = getattr(club, 'department', '') or ''
+    club_dept_norm = club_dept.lower().replace(' ', '_')
+    s_role = getattr(student, 'role', '') or ''
+    s_hemis = getattr(student, 'hemis_role', '') or ''
+    roles = [s_role.lower(), s_hemis.lower()]
+    
+    is_student_council_admin = False
+    if club_dept_norm == 'student_council' and ('student_council' in roles or 'yetakchi' in roles):
+        is_student_council_admin = True
+    elif club_dept_norm and club_dept_norm in roles:
+        is_student_council_admin = True
         
     if not (is_direct_leader or is_student_council_admin):
         raise HTTPException(status_code=403, detail="Kechirasiz, siz ushbu klub sardori emassiz.")

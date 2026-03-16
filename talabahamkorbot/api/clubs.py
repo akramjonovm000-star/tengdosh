@@ -32,20 +32,65 @@ async def get_my_clubs(
         .where(ClubMembership.student_id == student.id)
         .options(selectinload(ClubMembership.club))
     )
+    result_memberships = memberships.all()
+    joined_club_ids = {m.club_id for m in result_memberships}
+    
+    # Check for department admin / leader roles
+    all_clubs = await db.scalars(select(Club))
+    
+    s_role = getattr(student, 'role', '') or ''
+    s_hemis = getattr(student, 'hemis_role', '') or ''
+    roles = [s_role.lower(), s_hemis.lower()]
+    
+    admin_clubs = []
+    
+    for c in all_clubs.all():
+        is_direct_leader = getattr(c, 'leader_student_id', None) == student.id
+        club_dept = getattr(c, 'department', '') or ''
+        club_dept_norm = club_dept.lower().replace(' ', '_')
+        
+        is_dept_admin = False
+        if club_dept_norm == 'student_council' and ('student_council' in roles or 'yetakchi' in roles):
+            is_dept_admin = True
+        elif club_dept_norm and club_dept_norm in roles:
+            is_dept_admin = True
+            
+        if (is_direct_leader or is_dept_admin) and c.id not in joined_club_ids:
+            from datetime import datetime
+            mock_m = ClubMembership(
+                id=0,
+                student_id=student.id,
+                club_id=c.id,
+                club=c,
+                status="active",
+                joined_at=datetime.utcnow()
+            )
+            admin_clubs.append(mock_m)
+            joined_club_ids.add(c.id)
+            
+    combined = list(result_memberships) + admin_clubs
     result = []
-    for m in memberships.all():
+    
+    for m in combined:
         data = ClubMembershipSchema.from_orm(m)
-        is_direct_leader = m.club.leader_student_id == student.id
-        is_student_council_admin = (
-            getattr(m.club, 'department', '') == 'Student Council' and 
-            (getattr(student, 'role', '') in ('student_council', 'yetakchi') or getattr(student, 'hemis_role', '') in ('student_council', 'yetakchi'))
-        )
+        is_direct_leader = getattr(m.club, 'leader_student_id', None) == student.id
+        
+        club_dept = getattr(m.club, 'department', '') or ''
+        club_dept_norm = club_dept.lower().replace(' ', '_')
+        
+        is_dept_admin = False
+        if club_dept_norm == 'student_council' and ('student_council' in roles or 'yetakchi' in roles):
+            is_dept_admin = True
+        elif club_dept_norm and club_dept_norm in roles:
+            is_dept_admin = True
+            
         if is_direct_leader:
             data.club.is_primary_leader = True
             
-        if is_direct_leader or is_student_council_admin:
+        if is_direct_leader or is_dept_admin:
             data.club.is_leader = True
             data.role = "leader"
+            
         result.append(data)
     return result
 
@@ -135,14 +180,25 @@ async def get_all_clubs(
         data.is_joined = is_joined
         
         is_direct_leader = club.leader_student_id == student.id
-        is_student_council_admin = (
-            getattr(club, 'department', '') == 'Student Council' and 
-            (getattr(student, 'role', '') in ('student_council', 'yetakchi') or getattr(student, 'hemis_role', '') in ('student_council', 'yetakchi'))
-        )
+        
+        club_dept = getattr(club, 'department', '') or ''
+        club_dept_norm = club_dept.lower().replace(' ', '_')
+        s_role = getattr(student, 'role', '') or ''
+        s_hemis = getattr(student, 'hemis_role', '') or ''
+        roles = [s_role.lower(), s_hemis.lower()]
+        
+        is_dept_admin = False
+        if club_dept_norm == 'student_council' and ('student_council' in roles or 'yetakchi' in roles):
+            is_dept_admin = True
+        elif club_dept_norm and club_dept_norm in roles:
+            is_dept_admin = True
+            
+        data.is_joined = is_joined or is_direct_leader or is_dept_admin
+        
         if is_direct_leader:
             data.is_primary_leader = True
             
-        if is_direct_leader or is_student_council_admin:
+        if is_direct_leader or is_dept_admin:
             data.is_leader = True
             
         clubs_data.append(data)
