@@ -8,6 +8,7 @@ import traceback
 from api.dependencies import get_current_student, get_db
 from api.schemas import ElectionDetailSchema, ElectionCandidateSchema, ElectionVoteRequestSchema
 from database.models import Student, Election, ElectionCandidate, ElectionVote
+from config import DOMAIN
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -54,15 +55,21 @@ async def get_election_details(
         # Convert to schema
         candidate_schemas = []
         for cand in election.candidates:
-            # Debug log for each candidate's relations
-            logger.info(f"Processing candidate {cand.id}: student={cand.student is not None}, faculty={cand.faculty is not None}")
-            
+            # [FIX] Handle image URL proxy
+            full_image_url = None
+            if cand.photo_id:
+                if cand.photo_id.startswith("http"):
+                    full_image_url = cand.photo_id
+                else:
+                    full_image_url = f"https://{DOMAIN}/api/v1/files/{cand.photo_id}"
+
             candidate_schemas.append(ElectionCandidateSchema(
                 id=cand.id,
                 full_name=cand.student.full_name if cand.student else "Ismsiz nomzod",
                 faculty_name=cand.faculty.name if cand.faculty else "Noma'lum fakultet",
+                status="active", # Always active for display in this list
                 campaign_text=cand.campaign_text,
-                image_url=cand.photo_id,
+                image_url=full_image_url,
                 order=cand.order
             ))
 

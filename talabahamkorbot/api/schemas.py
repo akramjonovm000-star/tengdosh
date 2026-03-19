@@ -348,6 +348,7 @@ class ElectionCandidateSchema(BaseModel):
     id: int
     full_name: str
     faculty_name: str
+    status: str = "active" # [NEW] Required by mobile app
     campaign_text: Optional[str]
     image_url: Optional[str]
     order: int
