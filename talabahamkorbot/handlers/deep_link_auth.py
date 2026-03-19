@@ -293,14 +293,14 @@ async def cmd_start_generic(message: Message, state: FSMContext, session: AsyncS
     Check if user is Owner/Developer/Admin and show menu.
     """
     user_id = message.from_user.id
-    from config import OWNER_TELEGRAM_ID
+    from config import DEVELOPERS
     from database.models import StaffRole
 
-    # 1. Check if OWNER
-    if user_id == int(OWNER_TELEGRAM_ID):
+    # 1. Check if DEVELOPER
+    if user_id in DEVELOPERS:
         from keyboards.inline_kb import get_owner_main_menu_inline_kb
         await message.answer(
-            f"👋 Assalomu alaykum, <b>Owner</b>!\n\nBoshqaruv menyusi:",
+            f"👋 Assalomu alaykum, <b>Developer</b>!\n\nBoshqaruv menyusi:",
             reply_markup=get_owner_main_menu_inline_kb(),
             parse_mode="HTML"
         )

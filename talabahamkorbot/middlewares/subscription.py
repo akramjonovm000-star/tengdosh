@@ -46,6 +46,10 @@ class SubscriptionMiddleware(BaseMiddleware):
                 try: await event.answer()
                 except: pass
             return res
+
+        from config import DEVELOPERS
+        if user.id in DEVELOPERS:
+            return await handler(event, data)
             
         # Is this an automated channel post or a forward from a channel?
         is_channel_post = getattr(event, "sender_chat", None) is not None and getattr(event.sender_chat, "type", "") == "channel"

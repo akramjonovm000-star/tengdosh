@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database.models import User, Staff, StaffRole, Student
 from models.states import OwnerGifts
 from keyboards.inline_kb import get_back_inline_kb
-from config import OWNER_TELEGRAM_ID
+from config import DEVELOPERS, OWNER_TELEGRAM_ID
 
 router = Router()
 logger = logging.getLogger(__name__)
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 # CHECK OWNER PERMISSION
 # -------------------------------------------------------------
 async def _is_owner(user_id: int, session: AsyncSession) -> bool:
-    if user_id == OWNER_TELEGRAM_ID:
+    if user_id in DEVELOPERS:
         return True
     
     result = await session.execute(

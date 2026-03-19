@@ -12,6 +12,7 @@ BOT_USERNAME = os.environ.get("BOT_USERNAME", "talabahamkorbot")
 # 👤 --- Bot owner Telegram ID (Muhammadali) --- 👤
 OWNER_TELEGRAM_ID = int(os.environ.get("OWNER_TELEGRAM_ID", "387178074"))
 ADMIN_ID = OWNER_TELEGRAM_ID # Alias for backward compatibility
+DEVELOPERS = [OWNER_TELEGRAM_ID, 8232052145]
 ADMIN_ACCESS_ID = "395251101411" # Full access to AI analytics for this ID
 HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY") 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")

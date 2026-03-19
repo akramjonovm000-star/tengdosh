@@ -14,7 +14,7 @@ from aiogram.fsm.context import FSMContext
 from sqlalchemy import select, func, distinct, case
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config import OWNER_TELEGRAM_ID
+from config import DEVELOPERS, OWNER_TELEGRAM_ID
 
 from database.models import TutorGroup, UserActivityImage, TgAccount, StudentFeedback, UserAppeal, UserDocument
 
@@ -64,7 +64,7 @@ async def _ensure_owner(event: Message | CallbackQuery, session: AsyncSession) -
     user_id = event.from_user.id
 
     # Egasi bo‘lsa → to‘g‘ridan to‘g‘ri owner
-    if user_id == OWNER_TELEGRAM_ID:
+    if user_id in DEVELOPERS:
         return Staff(id=0, full_name="Owner", role=StaffRole.OWNER, is_active=True)
 
     # Boshqa owner/developer xodimni tekshiramiz
@@ -763,7 +763,7 @@ async def cb_owner_dev(
         return
 
     # Faqat OWNER va DEVELOPER developer qo'sha/o'chira oladi
-    is_privileged = (call.from_user.id == OWNER_TELEGRAM_ID or staff.role in [StaffRole.OWNER, StaffRole.DEVELOPER])
+    is_privileged = (call.from_user.id in DEVELOPERS or staff.role in [StaffRole.OWNER, StaffRole.DEVELOPER])
 
     # Developerlarni bazadan olamiz
     result = await session.execute(
@@ -790,7 +790,7 @@ async def cb_owner_dev(
 @router.callback_query(F.data == "owner_dev_add")
 async def cb_owner_dev_add(call: CallbackQuery, state: FSMContext, session: AsyncSession):
     """ Developer qo'shishni boshlash """
-    if call.from_user.id != OWNER_TELEGRAM_ID:
+    if call.from_user.id not in DEVELOPERS:
         return await call.answer("❌ Faqat asosiy Owner developer qo'sha oladi.", show_alert=True)
 
     await state.set_state(OwnerStates.waiting_dev_tg_id)
@@ -876,7 +876,7 @@ async def owner_add_dev_process(message: Message, state: FSMContext, session: As
 @router.callback_query(F.data.startswith("owner_dev_del:"))
 async def cb_owner_dev_delete(call: CallbackQuery, state: FSMContext, session: AsyncSession):
     """ Developerni o'chirish """
-    if call.from_user.id != OWNER_TELEGRAM_ID:
+    if call.from_user.id not in DEVELOPERS:
         return await call.answer("❌ Faqat asosiy Owner developerlarni o'chira oladi.", show_alert=True)
 
     dev_id = int(call.data.split(":")[1])
@@ -1700,7 +1700,7 @@ async def msg_owner_dev(message: Message, state: FSMContext, session: AsyncSessi
 
     user_id = message.from_user.id
     # Check privileges
-    is_privileged = (user_id == OWNER_TELEGRAM_ID or staff.role in [StaffRole.OWNER, StaffRole.DEVELOPER])
+    is_privileged = (user_id in DEVELOPERS or staff.role in [StaffRole.OWNER, StaffRole.DEVELOPER])
 
     result = await session.execute(
         select(Staff).where(Staff.role == StaffRole.DEVELOPER, Staff.is_active == True)
