@@ -24,6 +24,8 @@ async def get_election_details(
     Matches logic from bot's show_election_main.
     """
     try:
+        logger.info(f"Fetching election {election_id} for student {student.id} (Univ: {student.university_id}, Faculty: {student.faculty_id})")
+        
         election = await db.scalar(
             select(Election)
             .where(
@@ -39,7 +41,7 @@ async def get_election_details(
         )
         
         if not election:
-            logger.warning(f"Election {election_id} not found for student {student.id}")
+            logger.warning(f"Election {election_id} not found for student {student.id} with UnivID {student.university_id}")
             raise HTTPException(status_code=404, detail="Saylov topilmadi")
 
         # Check if student already voted
@@ -54,7 +56,15 @@ async def get_election_details(
 
         # Convert to schema
         candidate_schemas = []
+        all_cands_count = len(election.candidates)
+        logger.info(f"Election {election_id} has {all_cands_count} total candidates.")
+
         for cand in election.candidates:
+            # [FIX] Filter by Faculty (per user request)
+            # Only show candidates from the student's own faculty
+            if cand.faculty_id != student.faculty_id:
+                continue
+
             # [FIX] Handle image URL proxy
             full_image_url = None
             if cand.photo_id:
@@ -72,6 +82,8 @@ async def get_election_details(
                 image_url=full_image_url,
                 order=cand.order
             ))
+
+        logger.info(f"Returning {len(candidate_schemas)} candidates for student {student.id} (matching faculty)")
 
         return ElectionDetailSchema(
             id=election.id,
