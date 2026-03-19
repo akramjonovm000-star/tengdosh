@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from database.db_connect import get_db
 from database.models import Student
-from api.dependencies import get_current_user_direct, require_action_token
+from api.dependencies import get_current_student, require_action_token
 import aiohttp
 from pydantic import BaseModel
 
@@ -15,7 +15,7 @@ class QRScanRequest(BaseModel):
 async def scan_qr_attendance(
     request: QRScanRequest,
     # token: str = Depends(require_action_token),
-    student: Student = Depends(get_current_user_direct),
+    student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
 ):
     """
