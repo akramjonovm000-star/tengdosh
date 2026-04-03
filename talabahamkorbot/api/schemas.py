@@ -92,6 +92,10 @@ class StudentDashboardSchema(BaseModel):
     # Management Info
     total_students: Optional[int] = None
     total_employees: Optional[int] = None
+    
+    # Rating Info
+    has_active_rating: bool = False
+    active_rating_roles: list[str] = []
 
 class ClubSchema(BaseModel):
     id: int
@@ -369,6 +373,51 @@ class ElectionDetailSchema(BaseModel):
     class Config:
         from_attributes = True
 
+class ElectionResponseSchema(BaseModel):
+    success: bool
+    data: ElectionDetailSchema
+
 class ElectionVoteRequestSchema(BaseModel):
     candidate_id: int
+
+
+# ============================================================
+# RATING SCHEMAS
+# ============================================================
+
+class RatingTargetSchema(BaseModel):
+    staff_id: int
+    full_name: str
+    image_url: Optional[str]
+    role_name: str # Tyutor, Dekan, etc.
+    
+    class Config:
+        from_attributes = True
+
+class RatingSubmitSchema(BaseModel):
+    rated_person_id: int
+    role_type: str
+    rating: int # 1-5
+
+class RatingStatusSchema(BaseModel):
+    is_active: bool
+    active_roles: list[str] = [] # tutor, dean, vice_dean
+
+class RatingStatsBreakdownSchema(BaseModel):
+    rating: int
+    count: int
+    percentage: float
+
+class StaffRatingStatsSchema(BaseModel):
+    staff_id: int
+    full_name: str
+    image_url: Optional[str]
+    role_name: str
+    average_rating: float
+    total_votes: int
+    breakdown: list[RatingStatsBreakdownSchema]
+
+class RatingActivationToggleSchema(BaseModel):
+    role_type: str # tutor, dean, vice_dean
+    is_active: bool
 

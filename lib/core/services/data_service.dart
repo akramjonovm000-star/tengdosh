@@ -9,7 +9,8 @@ import '../models/attendance.dart';
 import '../models/lesson.dart';
 import 'package:talabahamkor_mobile/features/social/models/social_activity.dart';
 import 'package:talabahamkor_mobile/features/home/models/announcement_model.dart';
-import 'package:talabahamkor_mobile/features/home/models/banner_model.dart'; // [NEW]
+import 'package:talabahamkor_mobile/features/home/models/banner_model.dart';
+import 'package:talabahamkor_mobile/features/accommodation/models/accommodation_listing.dart';
 import 'local_database_service.dart';
 import '../../features/academic/models/survey_models.dart';
 
@@ -246,6 +247,47 @@ class DataService {
       debugPrint("DataService: Error fetching management dashboard: $e");
     }
     return {};
+  }
+
+  Future<bool> getManagementRatingStatus() async {
+    try {
+      final response = await _get(ApiConstants.managementRatingStatus);
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        return body['is_active'] ?? false;
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching rating status: $e");
+    }
+    return false;
+  }
+
+  Future<bool> toggleRatingActivation(String roleType, bool isActive) async {
+    try {
+      final response = await _post(
+        ApiConstants.managementRatingActivate,
+        body: {'role_type': roleType, 'is_active': isActive},
+      );
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        return body['success'] ?? false;
+      }
+    } catch (e) {
+      debugPrint("DataService: Error toggling rating activation: $e");
+    }
+    return false;
+  }
+
+  Future<List<dynamic>> getManagementRatingStats() async {
+    try {
+      final response = await _get(ApiConstants.managementRatingStats);
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching management rating stats: $e");
+    }
+    return [];
   }
 
   // QR Attendance
@@ -1630,7 +1672,10 @@ class DataService {
     final response = await _get("${ApiConstants.backendUrl}/election/$electionId");
     if (response.statusCode == 200) {
       final body = json.decode(response.body);
-      if (body['success'] == true) return body['data'];
+      // Support both wrapped {"success": true, "data": {...}} and raw {...}
+      if (body is Map<String, dynamic>) {
+        return body['data'] ?? body;
+      }
     }
     return {};
   }
@@ -2682,5 +2727,124 @@ class DataService {
       debugPrint("DataService: Error fetching contract info: $e");
     }
     return {};
+  // --- ACCOMMODATION ---
+  Future<List<AccommodationListing>> getAccommodationListings() async {
+    try {
+      final response = await _get('${ApiConstants.accommodation}/listings');
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(utf8.decode(response.bodyBytes));
+        return data.map((json) => AccommodationListing.fromJson(json)).toList();
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching accommodation listings: $e");
+    }
+    return [];
+  }
+
+  Future<Map<String, dynamic>> createAccommodationListing(Map<String, dynamic> data) async {
+    try {
+      final response = await _post(
+        '${ApiConstants.accommodation}/listings',
+        body: data,
+      );
+      if (response.statusCode == 200) {
+        return json.decode(utf8.decode(response.bodyBytes));
+      }
+    } catch (e) {
+      debugPrint("DataService: Error creating accommodation listing: $e");
+    }
+    return {'success': false, 'message': 'Xatolik yuz berdi'};
+  }
+
+  // --- DORMITORY ---
+  Future<List<dynamic>> getDormRoommates() async {
+    try {
+       final resp = await _get(ApiConstants.dormRoommates);
+       if (resp.statusCode == 200) return json.decode(utf8.decode(resp.bodyBytes));
+    } catch (_) {}
+    return [];
+  }
+
+  Future<List<dynamic>> getDormRules() async {
+    try {
+      final resp = await _get(ApiConstants.dormRules);
+      if (resp.statusCode == 200) return json.decode(utf8.decode(resp.bodyBytes));
+    } catch (_) {}
+    return [];
+  }
+
+  Future<List<dynamic>> getDormMenu() async {
+    try {
+      final resp = await _get(ApiConstants.dormMenu);
+      if (resp.statusCode == 200) return json.decode(utf8.decode(resp.bodyBytes));
+    } catch (_) {}
+    return [];
+  }
+
+  Future<List<dynamic>> getDormRoster() async {
+    try {
+      final resp = await _get(ApiConstants.dormRoster);
+      if (resp.statusCode == 200) return json.decode(utf8.decode(resp.bodyBytes));
+    } catch (_) {}
+    return [];
+  }
+
+  Future<List<dynamic>> getMyDormIssues() async {
+    try {
+      final resp = await _get(ApiConstants.dormMyIssues);
+      if (resp.statusCode == 200) return json.decode(utf8.decode(resp.bodyBytes));
+    } catch (_) {}
+    return [];
+  }
+
+  Future<Map<String, dynamic>> createDormIssue(String category, String description) async {
+    try {
+      final resp = await _post(ApiConstants.dormIssues, body: {
+        'category': category,
+        'description': description,
+      });
+      return json.decode(utf8.decode(resp.bodyBytes));
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  Future<List<dynamic>> getRatingTargets(String roleType) async {
+    try {
+      final response = await _get('${ApiConstants.ratingTargets}/$roleType');
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching rating targets: $e");
+    }
+    return [];
+  }
+
+  Future<Map<String, dynamic>> submitRating({
+    required int ratedPersonId,
+    required String roleType,
+    required int rating,
+  }) async {
+    try {
+      final response = await _post(
+        ApiConstants.ratingSubmit,
+        body: {
+          'rated_person_id': ratedPersonId,
+          'role_type': roleType,
+          'rating': rating,
+        },
+      );
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        return {'success': true, 'message': body['message'] ?? 'Bahoyingiz qabul qilindi'};
+      } else {
+        final body = json.decode(response.body);
+        return {'success': false, 'message': body['detail'] ?? 'Xatolik yuz berdi'};
+      }
+    } catch (e) {
+      debugPrint("DataService: Error submitting rating: $e");
+      return {'success': false, 'message': 'Ulanishda xatolik yuz berdi'};
+    }
   }
 }

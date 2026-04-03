@@ -29,8 +29,11 @@ class ApiConstants {
   static const String managementAppealsResolve = '$backendUrl/management/appeals'; // Fixed path
   static const String managementDocumentsArchive = '$backendUrl/management/archive';
   static const String aiClusterAppeals = '$backendUrl/ai/cluster-appeals';
-  static const String managementAnalyticsDashboard = '$backendUrl/management/analytics/dashboard'; // [FIXED]
-  static const String managementActivities = '$backendUrl/management/activities'; // [NEW]
+  static String get managementAnalyticsDashboard => '$backendUrl/management/analytics/dashboard'; // [FIXED]
+  static String get managementActivities => '$backendUrl/management/activities'; // [NEW]
+  static String get managementRatingStats => '$backendUrl/management/rating/stats';
+  static String get managementRatingStatus => '$backendUrl/management/rating/status';
+  static String get managementRatingActivate => '$backendUrl/management/rating/activate';
   
   // Announcements
   static const String announcements = '$backendUrl/announcements';
@@ -75,4 +78,18 @@ class ApiConstants {
   static const String surveyStart = '$backendUrl/student/survey-start';
   static const String surveyAnswer = '$backendUrl/student/survey-answer';
   static const String surveyFinish = '$backendUrl/student/survey-finish';
+
+  // Accommodation & Dormitory
+  static const String accommodation = '$backendUrl/accommodation';
+  static const String dormInfo = '$accommodation/dorm/info';
+  static const String dormRoommates = '$accommodation/dorm/roommates';
+  static const String dormIssues = '$accommodation/dorm/issue';
+  static const String dormMyIssues = '$accommodation/dorm/my-issues';
+  static const String dormRules = '$accommodation/dorm/rules';
+  static const String dormMenu = '$accommodation/dorm/menu';
+  static String get dormRoster => '$accommodation/dorm/roster';
+  
+  // Rating
+  static String get ratingTargets => '$backendUrl/rating/targets';
+  static String get ratingSubmit => '$backendUrl/rating/submit';
 }

@@ -21,6 +21,7 @@ class Student {
   final int? universityId; // [NEW]
   final String? firstName; // [NEW]
   final String? lastName;  // [NEW]
+  final String? accommodationName; // [NEW]
 
   Student({
     required this.id,
@@ -45,6 +46,7 @@ class Student {
     this.universityId,
     this.firstName,
     this.lastName,
+    this.accommodationName,
   });
 
   bool get hasActivePremium {
@@ -141,6 +143,7 @@ class Student {
       universityId: json['university_id'] is int ? json['university_id'] : int.tryParse(json['university_id']?.toString() ?? ""), // [NEW]
       firstName: firstName != null ? sentenceCase(firstName.trim()) : null,
       lastName: lastName != null ? sentenceCase(lastName.trim()) : null,
+      accommodationName: json['accommodation_name'],
     );
   }
 
@@ -168,6 +171,7 @@ class Student {
       'university_id': universityId, // [NEW]
       'first_name': firstName,
       'last_name': lastName,
+      'accommodation_name': accommodationName,
     };
   }
 
@@ -194,6 +198,7 @@ class Student {
     int? universityId,
     String? firstName,
     String? lastName,
+    String? accommodationName,
   }) {
     return Student(
       id: id ?? this.id,
@@ -218,6 +223,7 @@ class Student {
       universityId: universityId ?? this.universityId,
       firstName: firstName ?? this.firstName,
       lastName: lastName ?? this.lastName,
+      accommodationName: accommodationName ?? this.accommodationName,
     );
   }
 }

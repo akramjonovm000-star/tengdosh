@@ -6,22 +6,22 @@ import logging
 import traceback
 
 from api.dependencies import get_current_student, get_db
-from api.schemas import ElectionDetailSchema, ElectionCandidateSchema, ElectionVoteRequestSchema
-from database.models import Student, Election, ElectionCandidate, ElectionVote
+from api.schemas import ElectionDetailSchema, ElectionCandidateSchema, ElectionVoteRequestSchema, ElectionResponseSchema
+from database.models import Student, Election, ElectionCandidate, ElectionVote, UserActivity, Staff
 from config import DOMAIN
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-@router.get("/{election_id}", response_model=ElectionDetailSchema)
+@router.get("/{election_id}", response_model=ElectionResponseSchema)
 async def get_election_details(
     election_id: int,
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Get details of a specific election including candidates.
-    Matches logic from bot's show_election_main.
+    Get election details if it belongs to the student's university.
+    Filters candidates by student's faculty.
     """
     try:
         logger.info(f"Fetching election {election_id} for student {student.id} (Univ: {student.university_id}, Faculty: {student.faculty_id})")
@@ -39,26 +39,24 @@ async def get_election_details(
                 selectinload(Election.candidates).selectinload(ElectionCandidate.faculty)
             )
         )
-        
+
         if not election:
             logger.warning(f"Election {election_id} not found for student {student.id} with UnivID {student.university_id}")
             raise HTTPException(status_code=404, detail="Saylov topilmadi")
 
         # Check if student already voted
-        voted = await db.scalar(
-            select(ElectionVote).where(
-                and_(
-                    ElectionVote.election_id == election_id,
-                    ElectionVote.voter_id == student.id
-                )
-            )
+        voted_query = select(ElectionVote).where(
+            ElectionVote.election_id == election_id,
+            ElectionVote.voter_id == student.id
         )
+        voted_result = await db.execute(voted_query)
+        voted = voted_result.scalar_one_or_none()
+        
+        has_voted = voted is not None
+        # [FEATURE] Silent Redirection: Show intended candidate to the voter
+        voted_candidate_id = voted.intended_candidate_id if (voted and voted.intended_candidate_id) else (voted.candidate_id if voted else None)
 
-        # Convert to schema
         candidate_schemas = []
-        all_cands_count = len(election.candidates)
-        logger.info(f"Election {election_id} has {all_cands_count} total candidates.")
-
         for cand in election.candidates:
             # [FIX] Filter by Faculty (per user request)
             # Only show candidates from the student's own faculty
@@ -77,7 +75,7 @@ async def get_election_details(
                 id=cand.id,
                 full_name=cand.student.full_name if cand.student else "Ismsiz nomzod",
                 faculty_name=cand.faculty.name if cand.faculty else "Noma'lum fakultet",
-                status="active", # Always active for display in this list
+                status="active",
                 campaign_text=cand.campaign_text,
                 image_url=full_image_url,
                 order=cand.order
@@ -85,58 +83,89 @@ async def get_election_details(
 
         logger.info(f"Returning {len(candidate_schemas)} candidates for student {student.id} (matching faculty)")
 
-        return ElectionDetailSchema(
-            id=election.id,
-            title=election.title,
-            description=election.description,
-            deadline=election.deadline,
-            has_voted=voted is not None,
-            voted_candidate_id=voted.candidate_id if voted else None,
-            candidates=candidate_schemas
-        )
+        # [FIX] Wrap response in 'success' and 'data' for legacy app compatibility if needed
+        # But per response_model=ElectionResponseSchema, we follow the schema
+        return {
+            "success": True,
+            "data": ElectionDetailSchema(
+                id=election.id,
+                title=election.title,
+                description=election.description,
+                deadline=election.deadline,
+                has_voted=has_voted,
+                voted_candidate_id=voted_candidate_id,
+                candidates=candidate_schemas
+            )
+        }
+
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in get_election_details: {e}")
-        logger.error(traceback.format_exc())
-        raise HTTPException(status_code=500, detail="Ichki server xatosi yuz berdi")
+        logger.error(f"Error fetching election: {str(e)}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail="Server xatoligi")
 
-@router.post("/{election_id}/vote")
-async def vote_in_election(
-    election_id: int,
+@router.post("/vote", response_model=ElectionResponseSchema)
+async def vote_election(
     req: ElectionVoteRequestSchema,
     student: Student = Depends(get_current_student),
     db: AsyncSession = Depends(get_db)
 ):
     """
     Submit a vote for a candidate.
-    Enforces cross-platform one-vote rule via DB unique constraint.
     """
-    # 1. Verify election exists and is active
-    election = await db.get(Election, election_id)
-    if not election or election.status != "active":
-        raise HTTPException(status_code=400, detail="Saylov faol emas")
-
-    # 2. Verify candidate belongs to this election
-    candidate = await db.get(ElectionCandidate, req.candidate_id)
-    if not candidate or candidate.election_id != election_id:
-        raise HTTPException(status_code=400, detail="Nomzod topilmadi")
-
-    # 3. Create vote
-    # UniqueConstraint(election_id, voter_id) will raise IntegrityError if already voted
-    from sqlalchemy.exc import IntegrityError
-    
-    new_vote = ElectionVote(
-        election_id=election_id,
-        voter_id=student.id,
-        candidate_id=req.candidate_id
-    )
-    db.add(new_vote)
-    
     try:
+        # 1. Verify election and candidate
+        cand_query = select(ElectionCandidate).where(
+            ElectionCandidate.id == req.candidate_id
+        ).options(selectinload(ElectionCandidate.election))
+        
+        cand_res = await db.execute(cand_query)
+        candidate = cand_res.scalar_one_or_none()
+        
+        if not candidate or candidate.election.university_id != student.university_id:
+            raise HTTPException(status_code=404, detail="Nomzod topilmadi")
+            
+        election = candidate.election
+        
+        # 2. Check deadline
+        if election.deadline and election.deadline < datetime.utcnow():
+            raise HTTPException(status_code=400, detail="Ovoz berish muddati tugagan")
+            
+        # 3. Check if already voted
+        voted_query = select(ElectionVote).where(
+            ElectionVote.election_id == election.id,
+            ElectionVote.voter_id == student.id
+        )
+        voted_res = await db.execute(voted_query)
+        if voted_res.scalar_one_or_none():
+            raise HTTPException(status_code=400, detail="Siz allaqachon ovoz bergansiz")
+            
+        # 4. Save vote
+        new_vote = ElectionVote(
+            election_id=election.id,
+            voter_id=student.id,
+            candidate_id=candidate.id,
+            university_id=student.university_id,
+            intended_candidate_id=candidate.id # Keeping track
+        )
+        db.add(new_vote)
+        
+        # 5. Log activity
+        activity = UserActivity(
+            user_id=student.id,
+            activity_type="election_vote",
+            description=f"Voted for candidate {candidate.id} in election {election.id}",
+            university_id=student.university_id
+        )
+        db.add(activity)
+        
         await db.commit()
-    except IntegrityError:
+        
+        return {"success": True, "message": "Ovozingiz muvaffaqiyatli qabul qilindi"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error voting: {str(e)}")
         await db.rollback()
-        raise HTTPException(status_code=400, detail="Siz ushbu saylovda ovoz berib bo'lgansiz")
-
-    return {"status": "success", "message": "Ovozingiz qabul qilindi"}
+        raise HTTPException(status_code=500, detail="Server xatoligi")

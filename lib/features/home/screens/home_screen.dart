@@ -16,6 +16,7 @@ import 'package:talabahamkor_mobile/features/ai/screens/management_ai_screen.dar
 import 'package:talabahamkor_mobile/features/student_module/widgets/student_dashboard_widgets.dart';
 import 'package:talabahamkor_mobile/features/student_module/screens/academic_screen.dart';
 import 'package:talabahamkor_mobile/features/student_module/screens/election_screen.dart';
+import 'package:talabahamkor_mobile/features/student_module/screens/student_rating_screen.dart';
 import 'package:talabahamkor_mobile/features/social/screens/social_activity_screen.dart';
 import 'package:talabahamkor_mobile/features/documents/screens/documents_screen.dart';
 import 'package:talabahamkor_mobile/core/services/permission_service.dart'; // [NEW]
@@ -28,6 +29,7 @@ import '../../clubs/screens/clubs_screen.dart';
 import '../../appeals/screens/appeals_screen.dart';
 import '../../library/screens/library_screen.dart';
 import 'package:talabahamkor_mobile/features/notifications/screens/notifications_screen.dart';
+import 'package:talabahamkor_mobile/features/accommodation/screens/accommodation_screen.dart';
 import 'package:talabahamkor_mobile/core/providers/notification_provider.dart';
 import 'package:talabahamkor_mobile/core/localization/app_dictionary.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -466,6 +468,60 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
+            if (_dashboard?['has_active_rating'] == true && (_dashboard?['active_rating_roles'] as List).contains('tutor'))
+              Container(
+                margin: const EdgeInsets.only(bottom: 24),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.blue[400]!, Colors.blue[700]!],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(color: Colors.blue.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4)),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.star_rate_rounded, color: Colors.white, size: 32),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "Tyutor baholash",
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+                          ),
+                          Text(
+                            "O'z tyutoringizni 1 dan 5 gacha baholang",
+                            style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13),
+                          ),
+                        ],
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const StudentRatingScreen(roleType: 'tutor')),
+                        ).then((_) => _loadData(refresh: true));
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.blue[700],
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        elevation: 0,
+                      ),
+                      child: const Text("Baholash"),
+                    )
+                  ],
+                ),
+              ),
+
             // 3. Module Grid (Dashboard)
             Text(
               AppDictionary.tr(context, 'lbl_services'), // Mapping general services
@@ -532,6 +588,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     );
                   },
+                ),
+                DashboardCard(
+                  title: AppDictionary.tr(context, 'module_accommodation'),
+                  icon: Icons.home_work_rounded,
+                  color: Colors.purple,
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AccommodationScreen())),
                 ),
               ],
             ),

@@ -119,6 +119,18 @@ class AppDictionary {
       'uz': 'Xizmatlar',
       'ru': 'Услуги',
     },
+    'module_accommodation': {
+      'uz': 'Turar joy',
+      'ru': 'Жилье',
+    },
+    'module_accommodation_add': {
+      'uz': 'E\'lon berish',
+      'ru': 'Подать объявление',
+    },
+    'module_accommodation_share': {
+      'uz': 'Sherik topish',
+      'ru': 'Поиск сожителя',
+    },
 
     // --- PROFILE SCREEN ---
     'profile_title': {

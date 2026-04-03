@@ -243,3 +243,10 @@ class ClubEditStates(StatesGroup):
 
 class ClubEventActivityState(StatesGroup):
     waiting_for_photo = State()
+
+# ============================================================
+#                     ACCOMMODATION / HOUSING
+# ============================================================
+
+class HousingAddStates(StatesGroup):
+    waiting_for_images = State()

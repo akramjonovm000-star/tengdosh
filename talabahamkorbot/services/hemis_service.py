@@ -35,7 +35,12 @@ class HemisService:
         last_exception = None
         for i in range(tries):
             try:
+                # [DEBUG] Log all outbound requests
+                logger.info(f"DEBUG REQ: {method} {url} | Headers: {kwargs.get('headers')}")
                 response = await client.request(method, url, **kwargs)
+                
+                if response.status_code not in [200, 201]:
+                    logger.warning(f"DEBUG RESP ERR: {response.status_code} | Body: {response.text[:200]}")
                 return response
             except (httpx.ConnectError, httpx.ReadTimeout, httpx.ConnectTimeout) as e:
                 last_exception = e
@@ -75,9 +80,11 @@ class HemisService:
 
     @staticmethod
     def get_headers(token: str = None):
-        # We don't use class HEADERS here because we set default headers in Client
-        # But for specific requests we might need Authorization
-        h = {} 
+        # Essential headers for HEMIS API compatibility
+        h = {
+            "Accept": "application/json",
+            "User-Agent": "TalabaHamkor-Bot/1.0"
+        } 
         if token:
             h["Authorization"] = f"Bearer {token}"
         return h
@@ -206,6 +213,7 @@ class HemisService:
         
         # Determine URL
         final_base = base_url or HemisService.BASE_URL
+        if final_base.endswith("/"): final_base = final_base[:-1]
         url = f"{final_base}/auth/login"
         
         # --- TEST CREDENTIALS ---
@@ -213,17 +221,25 @@ class HemisService:
             return "test_token_tutor", None
         # ------------------------
 
-        # [MODIFIED] Ensure login is string for TSUE compatibility
-        safe_login = str(login)
+        # [JMCU FIX] JMCU (395) requires integer login for some endpoints
+        # TSUE (312) and others work with strings, but JMCU is strict.
+        safe_login = login
+        if str(login).startswith("395") and str(login).isdigit():
+            safe_login = int(login)
+        else:
+            safe_login = str(login)
+
         json_payload = {"login": safe_login, "password": password}
 
         try:
             # We don't overwrite headers, just use defaults + json content type is automatic with json=
-            # LOGGING ADDED FOR DEBUGGING
-            logger.info(f"Authenticating User: {safe_login}...")
+            # [JMCU FIX] Ensure Accept and User-Agent are sent
+            headers = HemisService.get_headers()
+            
+            logger.info(f"Authenticating User: {safe_login} (type={type(safe_login)})...")
             
             response = await HemisService.fetch_with_retry(
-                client, "POST", url, data=json_payload
+                client, "POST", url, json=json_payload, headers=headers
             )
             
 
@@ -342,12 +358,14 @@ class HemisService:
         
         # Ensure rest_url uses the correct base
         rest_base = base_url or HemisService.BASE_URL
+        if rest_base.endswith("/"): rest_base = rest_base[:-1]
              
         rest_url = f"{rest_base}/account/me"
         # Updated fields per user suggestion and GitHub Guide
         oauth_profile_url = f"{domain}/oauth/api/user?fields=id,uuid,type,roles,name,login,picture,email,university_id,phone,employee_id_number,firstname,surname,patronymic,birth_date,departments"
 
         headers = HemisService.get_headers(token)
+        logger.info(f"DEBUG: get_me token_len={len(token) if token else 0} | headers={headers}")
 
         try:
             async with httpx.AsyncClient(verify=False) as client:

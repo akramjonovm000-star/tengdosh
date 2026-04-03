@@ -48,6 +48,11 @@ from keyboards.inline_kb import (
     get_owner_banner_menu_kb,
     get_banner_list_kb,
     get_banner_actions_kb,
+    get_rating_main_menu_kb,
+    get_rating_universities_kb,
+    get_rating_role_selection_kb,
+    get_existing_ratings_kb,
+    get_rating_detail_actions_kb,
 )
 
 logger = logging.getLogger(__name__)
@@ -767,7 +772,7 @@ async def cb_owner_dev(
 
     # Developerlarni bazadan olamiz
     result = await session.execute(
-        select(Staff).where(Staff.role == StaffRole.DEVELOPER, Staff.is_active == True)
+        select(Staff).where(Staff.role.in_([StaffRole.DEVELOPER, StaffRole.OWNER]), Staff.is_active == True)
     )
     developers = result.scalars().all()
 
@@ -1747,3 +1752,147 @@ async def msg_owner_main_menu(message: Message, state: FSMContext, session: Asyn
         reply_markup=get_owner_main_menu_inline_kb(),
         parse_mode="HTML"
     )
+
+# ============================================================
+#             RATING MANAGEMENT HANDLERS (REFINED)
+# ============================================================
+
+from database.models import RatingActivation, RatingRecord
+
+@router.callback_query(F.data == "owner_rating_list")
+async def owner_rating_main_menu(call: CallbackQuery):
+    """Main Rating Menu"""
+    await call.message.edit_text(
+        "⭐ <b>Baholash tizimi (Rating)</b>\n\n"
+        "Quyidagi amallardan birini tanlang:",
+        reply_markup=get_rating_main_menu_kb(),
+        parse_mode="HTML"
+    )
+    await call.answer()
+
+@router.callback_query(F.data == "rating_create_start")
+async def rating_create_uni_list(call: CallbackQuery, session: AsyncSession):
+    """Step 1: Select Uni for new survey"""
+    universities = (await session.execute(select(University).order_by(University.name))).scalars().all()
+    if not universities:
+        return await call.answer("O'quv yurtlari topilmadi.", show_alert=True)
+        
+    text = "🆕 <b>Yangi so'rovnoma yaratish</b>\n\n"
+    for i, uni in enumerate(universities, 1):
+        text += f"{i}. {uni.name}\n"
+    text += "\nUniversitetni tanlang:"
+    
+    await call.message.edit_text(
+        text,
+        reply_markup=get_rating_universities_kb(universities),
+        parse_mode="HTML"
+    )
+    await call.answer()
+
+@router.callback_query(F.data.startswith("rating_create_uni:"))
+async def rating_create_role_select(call: CallbackQuery):
+    """Step 2: Select Role for new survey"""
+    uni_id = int(call.data.split(":")[1])
+    await call.message.edit_text(
+        "📝 <b>Lavozimni tanlang</b>\n\n"
+        "So'rovnoma qaysi lavozimdagilar uchun yaratilsin?",
+        reply_markup=get_rating_role_selection_kb(uni_id),
+        parse_mode="HTML"
+    )
+    await call.answer()
+
+@router.callback_query(F.data.startswith("rating_create_final:"))
+async def rating_create_finish(call: CallbackQuery, session: AsyncSession):
+    """Step 3: Create Activation"""
+    _, role_type, uni_id = call.data.split(":")
+    uni_id = int(uni_id)
+    
+    # Check if exists
+    act = await session.scalar(select(RatingActivation).where(
+        RatingActivation.university_id == uni_id,
+        RatingActivation.role_type == role_type
+    ))
+    
+    if not act:
+        act = RatingActivation(university_id=uni_id, role_type=role_type, is_active=True)
+        session.add(act)
+    else:
+        act.is_active = True # Force active if recreated
+        
+    await session.commit()
+    await call.answer("✅ So'rovnoma yaratildi va faollashtirildi!", show_alert=True)
+    await owner_rating_main_menu(call)
+
+@router.callback_query(F.data == "rating_existing_list")
+async def rating_existing_list(call: CallbackQuery, session: AsyncSession):
+    """List all surveys"""
+    stmt = select(RatingActivation).options(selectinload(RatingActivation.university)).order_by(RatingActivation.created_at.desc())
+    res = await session.execute(stmt)
+    activations = res.scalars().all()
+    
+    if not activations:
+        return await call.answer("Hozircha hech qanday so'rovnoma yo'q.", show_alert=True)
+        
+    await call.message.edit_text(
+        "📋 <b>Mavjud so'rovnomalar:</b>",
+        reply_markup=get_existing_ratings_kb(activations),
+        parse_mode="HTML"
+    )
+    await call.answer()
+
+@router.callback_query(F.data.startswith("rating_view_detail:"))
+async def rating_activation_detail(call: CallbackQuery, session: AsyncSession):
+    """View details of a survey"""
+    act_id = int(call.data.split(":")[1])
+    stmt = select(RatingActivation).where(RatingActivation.id == act_id).options(selectinload(RatingActivation.university))
+    act = await session.scalar(stmt)
+    
+    if not act:
+        return await call.answer("So'rovnoma topilmadi.", show_alert=True)
+        
+    status_str = "🟢 Faol" if act.is_active else "🔴 To'xtatilgan"
+    role_map = {"tutor": "Tyutorlar", "dean": "Dekan", "vice_dean": "Dekan o'rinbosarlari"}
+    
+    # Total votes count
+    q_votes = select(func.count(RatingRecord.id)).where(
+        RatingRecord.university_id == act.university_id,
+        RatingRecord.role_type == act.role_type
+    )
+    votes_res = await session.execute(q_votes)
+    total_votes = votes_res.scalar()
+    
+    await call.message.edit_text(
+        f"⭐ <b>So'rovnoma tafsilotlari</b>\n\n"
+        f"🏛 <b>OTM:</b> {act.university.name}\n"
+        f"👤 <b>Lavozim:</b> {role_map.get(act.role_type, act.role_type)}\n"
+        f"📊 <b>Holati:</b> {status_str}\n"
+        f"🗳 <b>Jami ovozlar:</b> {total_votes}\n\n"
+        "Boshqarish uchun tugmalardan foydalaning:",
+        reply_markup=get_rating_detail_actions_kb(act.id, act.is_active),
+        parse_mode="HTML"
+    )
+    await call.answer()
+
+@router.callback_query(F.data.startswith("rating_detail_toggle:"))
+async def rating_detail_toggle(call: CallbackQuery, session: AsyncSession):
+    act_id = int(call.data.split(":")[1])
+    act = await session.get(RatingActivation, act_id)
+    if act:
+        act.is_active = not act.is_active
+        await session.commit()
+        await call.answer("✅ Holat o'zgardi!")
+        await rating_activation_detail(call, session)
+    else:
+        await call.answer("Xato: Topilmadi")
+
+@router.callback_query(F.data.startswith("rating_detail_delete:"))
+async def rating_detail_delete(call: CallbackQuery, session: AsyncSession):
+    act_id = int(call.data.split(":")[1])
+    act = await session.get(RatingActivation, act_id)
+    if act:
+        await session.delete(act)
+        await session.commit()
+        await call.answer("🗑 O'chirildi.")
+        await rating_existing_list(call, session)
+    else:
+        await call.answer("Xato: Topilmadi")

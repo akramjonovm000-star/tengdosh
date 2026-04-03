@@ -12,7 +12,7 @@ import logging
 import re
 
 # [SECURITY] Import Limiter
-from api.security import limiter, create_access_token
+from api.security import limiter, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
 from datetime import timedelta
 
 router = APIRouter()
@@ -820,8 +820,8 @@ async def login_via_hemis(
     # [NEW] Prefetch Data in Background
     import asyncio
     try:
-        logger.info(f"Triggering background prefetch for student {student.id}")
-        asyncio.create_task(HemisService.prefetch_data(student.hemis_token, student.id))
+        # Use the fresh Hemis token instead of the null student attribute
+        asyncio.create_task(HemisService.prefetch_data(token, student.id, base_url=base_url))
         logger.info("Background prefetch task created")
     except Exception as e:
         logger.error(f"Failed to create prefetch task: {e}")

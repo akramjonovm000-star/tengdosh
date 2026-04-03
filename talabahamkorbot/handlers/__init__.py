@@ -22,9 +22,13 @@ root_router.include_router(deep_link_auth_router)
 # 2. STUDENT
 from .clubs_sync import router as clubs_sync_router
 from .student.club_event import router as club_event_router
+from .student.housing import router as housing_router
+from .student.dorm import router as dorm_router
 root_router.include_router(student_documents_router)
 root_router.include_router(clubs_sync_router)
 root_router.include_router(club_event_router)
+root_router.include_router(housing_router)
+root_router.include_router(dorm_router)
 
 # 3. OWNER
 root_router.include_router(owner_router)

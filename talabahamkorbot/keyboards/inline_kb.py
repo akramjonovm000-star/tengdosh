@@ -107,6 +107,12 @@ def get_owner_main_menu_inline_kb() -> InlineKeyboardMarkup:
                     callback_data="owner_clubs_menu",
                 )
             ],
+            [
+                InlineKeyboardButton(
+                    text="⭐ Baholash (Rating)",
+                    callback_data="owner_rating_list",
+                )
+            ],
         ]
     )
 
@@ -283,6 +289,12 @@ def get_university_actions_kb(university_id: int) -> InlineKeyboardMarkup:
                 InlineKeyboardButton(
                     text="📌 Kanal majburiyatini sozlash",
                     callback_data=f"uni_channel_menu:{university_id}",
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="⭐ Baholashni sozlash (Rating)",
+                    callback_data=f"rating_uni_menu:{university_id}",
                 )
             ],
             [
@@ -885,6 +897,95 @@ def get_student_main_menu_kb() -> InlineKeyboardMarkup:
              ],
             [
                 InlineKeyboardButton(text="👤 Profil", callback_data="student_profile"),
+            ]
+        ]
+    )
+
+# ============================================================
+# RATING MANAGEMENT KEYBOARDS (REFINED)
+# ============================================================
+
+def get_rating_main_menu_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="➕ Yangi so'rovnoma yaratish", callback_data="rating_create_start")
+            ],
+            [
+                InlineKeyboardButton(text="📋 Mavjud so'rovnomalar", callback_data="rating_existing_list")
+            ],
+            [
+                InlineKeyboardButton(text="⬅️ Ortga", callback_data="owner_menu")
+            ]
+        ]
+    )
+
+def get_rating_universities_kb(universities: list) -> InlineKeyboardMarkup:
+    buttons = []
+    current_row = []
+    
+    for i, uni in enumerate(universities, 1):
+        current_row.append(
+            InlineKeyboardButton(
+                text=str(i),
+                callback_data=f"rating_create_uni:{uni.id}"
+            )
+        )
+        if len(current_row) == 5:
+            buttons.append(current_row)
+            current_row = []
+            
+    if current_row:
+        buttons.append(current_row)
+        
+    buttons.append([InlineKeyboardButton(text="⬅️ Ortga", callback_data="owner_rating_list")])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+def get_rating_role_selection_kb(university_id: int) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="👨‍🏫 Tyutorlarni baholash", callback_data=f"rating_create_final:tutor:{university_id}")
+            ],
+            [
+                InlineKeyboardButton(text="🏛 Dekanni baholash", callback_data=f"rating_create_final:dean:{university_id}")
+            ],
+            [
+                InlineKeyboardButton(text="🏢 Dekan o'rinbosarini baholash", callback_data=f"rating_create_final:vice_dean:{university_id}")
+            ],
+            [
+                InlineKeyboardButton(text="⬅️ Ortga", callback_data="rating_create_start")
+            ]
+        ]
+    )
+
+def get_existing_ratings_kb(activations: list) -> InlineKeyboardMarkup:
+    buttons = []
+    for act in activations:
+        status = "✅" if act.is_active else "⏹"
+        role_map = {"tutor": "Tyutor", "dean": "Dekan", "vice_dean": "D.O'rinbosari"}
+        role_label = role_map.get(act.role_type, act.role_type)
+        
+        btn_text = f"{status} {act.university.name[:20]} - {role_label}"
+        buttons.append([
+            InlineKeyboardButton(text=btn_text, callback_data=f"rating_view_detail:{act.id}")
+        ])
+    
+    buttons.append([InlineKeyboardButton(text="⬅️ Ortga", callback_data="owner_rating_list")])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+def get_rating_detail_actions_kb(activation_id: int, is_active: bool) -> InlineKeyboardMarkup:
+    toggle_text = "⏹ To'xtatish" if is_active else "▶️ Faollashtirish"
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text=toggle_text, callback_data=f"rating_detail_toggle:{activation_id}")
+            ],
+            [
+                InlineKeyboardButton(text="🗑 O'chirish", callback_data=f"rating_detail_delete:{activation_id}")
+            ],
+            [
+                InlineKeyboardButton(text="⬅️ Ortga", callback_data="rating_existing_list")
             ]
         ]
     )

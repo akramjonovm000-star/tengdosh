@@ -35,7 +35,11 @@ from .management_appeals import router as management_appeals_router
 from .management_appeals import router as management_appeals_router
 from .banner import router as banner_router
 from .announcements import router as announcements_router
+import os
+from .accommodation import router as accommodation_router
 from .app_config import router as app_config_router
+from .rating import router as rating_router
+from .management_rating import router as management_rating_router
 
 
 # 1. CORE & AUTH
@@ -63,6 +67,7 @@ router.include_router(surveys_router, prefix="/student", tags=["Surveys"])
 router.include_router(notifications_router, prefix="/student/notifications", tags=["Notifications"])
 router.include_router(documents_router, prefix="/student/documents", tags=["Documents"])
 router.include_router(certificates_router, prefix="/student/certificates", tags=["Certificates"])
+router.include_router(accommodation_router, prefix="/student", tags=["Accommodation"])
 # Support for legacy /api/v1/documents/send path
 router.include_router(documents_router, prefix="/documents", tags=["Documents (Legacy)"])
 
@@ -87,6 +92,8 @@ router.include_router(election_router, prefix="/election", tags=["Election"])
 router.include_router(management_router, tags=["Management"])
 router.include_router(management_appeals_router, tags=["Management Appeals"])
 router.include_router(tutor_router, tags=["Tutor"])
+router.include_router(rating_router, prefix="/rating", tags=["Rating"])
+router.include_router(management_rating_router, prefix="/management/rating", tags=["Management Rating"])
 
 
 

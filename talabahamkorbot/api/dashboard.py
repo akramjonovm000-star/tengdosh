@@ -4,7 +4,7 @@ from sqlalchemy import select, func
 
 from api.dependencies import get_current_student, get_db
 from api.schemas import StudentDashboardSchema
-from database.models import Student, Staff, UserActivity, ClubMembership, Election
+from database.models import Student, Staff, UserActivity, ClubMembership, Election, RatingActivation
 
 router = APIRouter()
 
@@ -101,6 +101,16 @@ async def get_dashboard_stats(
         if active_election:
             active_election_id = active_election.id
 
+    # 6. Rating Info
+    act_query = select(RatingActivation).where(
+        RatingActivation.university_id == student.university_id,
+        RatingActivation.is_active == True
+    )
+    act_res = await db.execute(act_query)
+    activations = act_res.scalars().all()
+    has_active_rating = len(activations) > 0
+    active_roles = [a.role_type for a in activations]
+
     return StudentDashboardSchema(
         gpa=gpa,
         missed_hours=missed_total,
@@ -110,5 +120,7 @@ async def get_dashboard_stats(
         clubs_count=clubs_count,
         activities_approved_count=approved_count,
         has_active_election=has_active_election,
-        active_election_id=active_election_id
+        active_election_id=active_election_id,
+        has_active_rating=has_active_rating,
+        active_rating_roles=active_roles
     )

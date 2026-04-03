@@ -15,6 +15,7 @@ from sqlalchemy import (
 )
 from typing import ClassVar # [FIX]
 from sqlalchemy.types import JSON
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db_connect import Base
@@ -446,7 +447,7 @@ class Student(Base):
     balance: Mapped[int] = mapped_column(Integer, default=0)
     trial_used: Mapped[bool] = mapped_column(Boolean, default=False)
     
-    # [NEW] Limits & Badge
+
     ai_usage_count: Mapped[int] = mapped_column(Integer, default=0)
     ai_limit: Mapped[int] = mapped_column(Integer, default=25)
     ai_last_reset: Mapped[datetime | None] = mapped_column(DateTime(), nullable=True)
@@ -510,6 +511,52 @@ class Student(Base):
     def __repr__(self):
         return f"<Student {self.full_name}>"
 
+
+# ============================================================
+#                     ACCOMMODATION / DORMITORY
+# ============================================================
+
+class DormitoryIssue(Base):
+    __tablename__ = "dormitory_issues"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    student_id: Mapped[int] = mapped_column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    
+    category: Mapped[str] = mapped_column(String(64), nullable=False) # Plumbing, Electricity, Furniture
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    image_urls: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
+    
+    status: Mapped[str] = mapped_column(String(32), default="pending", index=True) # pending, in_progress, fixed
+    created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow, index=True)
+
+    student: Mapped["Student"] = relationship("Student")
+
+class DormitoryRule(Base):
+    __tablename__ = "dormitory_rules"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    importance: Mapped[str] = mapped_column(String(32), default="medium") # high, medium, low
+
+class DormitoryRoster(Base):
+    __tablename__ = "dormitory_rosters"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    student_id: Mapped[int] = mapped_column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False)
+    day_of_week: Mapped[str] = mapped_column(String(32), nullable=False) # Dushanba, Seshanba...
+    duty_type: Mapped[str] = mapped_column(String(64), nullable=False) # Qavat tozaligi, Xona tozaligi
+
+    student: Mapped["Student"] = relationship("Student")
+
+class DormitoryMenu(Base):
+    __tablename__ = "dormitory_menus"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    day_name: Mapped[str] = mapped_column(String(32), nullable=False)
+    breakfast: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    lunch: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    dinner: Mapped[str | None] = mapped_column(String(512), nullable=True)
 
 
 class TakenUsername(Base):
@@ -1315,6 +1362,8 @@ class MarketItem(Base):
     category: Mapped[str] = mapped_column(String(32), default=MarketCategory.OTHER.value, index=True)
     
     image_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    image_urls: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True) # Multiple Telegram File IDs
+    address: Mapped[str | None] = mapped_column(String(512), nullable=True)
     contact_phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
     telegram_username: Mapped[str | None] = mapped_column(String(64), nullable=True)
     
@@ -1478,7 +1527,7 @@ class ElectionCandidate(Base):
     election: Mapped["Election"] = relationship("Election", back_populates="candidates")
     student: Mapped["Student"] = relationship("Student")
     faculty: Mapped["Faculty"] = relationship("Faculty")
-    votes: Mapped[list["ElectionVote"]] = relationship("ElectionVote", back_populates="candidate", cascade="all, delete-orphan")
+    votes: Mapped[list["ElectionVote"]] = relationship("ElectionVote", back_populates="candidate", cascade="all, delete-orphan", foreign_keys="[ElectionVote.candidate_id]")
 
 class ElectionVote(Base):
     __tablename__ = "election_votes"
@@ -1490,12 +1539,14 @@ class ElectionVote(Base):
     election_id: Mapped[int] = mapped_column(Integer, ForeignKey("elections.id", ondelete="CASCADE"), nullable=False, index=True)
     voter_id: Mapped[int] = mapped_column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
     candidate_id: Mapped[int] = mapped_column(Integer, ForeignKey("election_candidates.id", ondelete="CASCADE"), nullable=False, index=True)
+    intended_candidate_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("election_candidates.id", ondelete="CASCADE"), nullable=True)
     
     created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
 
     election: Mapped["Election"] = relationship("Election", back_populates="votes")
     voter: Mapped["Student"] = relationship("Student")
-    candidate: Mapped["ElectionCandidate"] = relationship("ElectionCandidate", back_populates="votes")
+    candidate: Mapped["ElectionCandidate"] = relationship("ElectionCandidate", back_populates="votes", foreign_keys="[ElectionVote.candidate_id]")
+    intended_candidate: Mapped["ElectionCandidate | None"] = relationship("ElectionCandidate", foreign_keys="[ElectionVote.intended_candidate_id]")
 
 
 # ============================================================
@@ -1707,3 +1758,28 @@ class AppConfig(Base):
     update_url_android: Mapped[str] = mapped_column(String, nullable=True)
     update_url_ios: Mapped[str] = mapped_column(String, nullable=True)
     maintenance_mode: Mapped[bool] = mapped_column(Boolean, default=False)
+
+class RatingActivation(Base):
+    __tablename__ = "rating_activations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    university_id: Mapped[int] = mapped_column(Integer, ForeignKey("universities.id", ondelete="CASCADE"), nullable=False, index=True)
+    role_type: Mapped[str] = mapped_column(String(32), nullable=False) # tutor, dean, vice_dean
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
+
+    university: Mapped["University"] = relationship("University")
+
+class RatingRecord(Base):
+    __tablename__ = "rating_records"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
+    rated_person_id: Mapped[int] = mapped_column(Integer, ForeignKey("staff.id", ondelete="CASCADE"), nullable=False, index=True)
+    role_type: Mapped[str] = mapped_column(String(32), nullable=False) # tutor, dean, vice_dean
+    university_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    rating: Mapped[int] = mapped_column(Integer, nullable=False) # 1-5
+    created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
+
+    user: Mapped["Student"] = relationship("Student")
+    rated_person: Mapped["Staff"] = relationship("Staff")

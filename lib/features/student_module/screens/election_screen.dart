@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/services/data_service.dart';
+import '../../../core/constants/api_constants.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:talabahamkor_mobile/core/localization/app_dictionary.dart';
 
 class ElectionScreen extends StatefulWidget {
@@ -37,6 +39,13 @@ class _ElectionScreenState extends State<ElectionScreen> {
     try {
       final data = await _service.getElectionDetails(widget.electionId);
       if (mounted) {
+        if (data.isEmpty) {
+          setState(() {
+            _error = "Saylov ma'lumotlari topilmadi.";
+            _isLoading = false;
+          });
+          return;
+        }
         setState(() {
           _election = data;
           _isLoading = false;
@@ -139,10 +148,20 @@ class _ElectionScreenState extends State<ElectionScreen> {
             const SizedBox(height: 24),
             Row(
               children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: AppTheme.primaryBlue.withOpacity(0.1),
-                  child: const Text("🎓", style: TextStyle(fontSize: 24)),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(30),
+                  child: Container(
+                    width: 60, height: 60,
+                    color: AppTheme.primaryBlue.withOpacity(0.1),
+                    child: cand['image_url'] != null
+                      ? CachedNetworkImage(
+                          imageUrl: "${ApiConstants.fileProxy}/${cand['image_url']}",
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 2),
+                          errorWidget: (context, url, error) => const Icon(Icons.person, color: AppTheme.primaryBlue),
+                        )
+                      : const Center(child: Text("🎓", style: TextStyle(fontSize: 24))),
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -367,7 +386,16 @@ class _ElectionScreenState extends State<ElectionScreen> {
                         color: AppTheme.primaryBlue.withOpacity(0.05),
                         shape: BoxShape.circle,
                       ),
-                      child: const Center(child: Icon(Icons.person, color: AppTheme.primaryBlue, size: 35)),
+                      child: ClipOval(
+                        child: cand['image_url'] != null
+                          ? CachedNetworkImage(
+                              imageUrl: "${ApiConstants.fileProxy}/${cand['image_url']}",
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                              errorWidget: (context, url, error) => const Icon(Icons.person, color: AppTheme.primaryBlue, size: 35),
+                            )
+                          : const Icon(Icons.person, color: AppTheme.primaryBlue, size: 35),
+                      ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(

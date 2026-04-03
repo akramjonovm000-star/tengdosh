@@ -9,6 +9,7 @@ import '../../../../core/services/data_service.dart';
 import '../../management/screens/management_archive_screen.dart';
 import '../../management/screens/management_appeals_screen.dart';
 import '../screens/management/activity_monitoring_screen.dart'; // [NEW]
+import '../screens/management/management_rating_hub_screen.dart';
 import '../../library/screens/library_screen.dart';
 import 'package:talabahamkor_mobile/core/localization/app_dictionary.dart';
 
@@ -170,6 +171,12 @@ class ManagementDashboard extends StatelessWidget {
                     );
                   },
                 ),
+                DashboardCard(
+                  title: "Saylov",
+                  icon: Icons.how_to_reg_rounded,
+                  color: Colors.redAccent,
+                  onTap: () => _showElectionSubmenu(context),
+                ),
           ],
         ),
         const SizedBox(height: 32),
@@ -303,6 +310,61 @@ class ManagementDashboard extends StatelessWidget {
               icon: Icons.account_balance_wallet_rounded,
               color: Colors.cyan,
               onTap: () => _showNotImplemented(context, "Moliya"),
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showElectionSubmenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "Saylov Bo'limi",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            _buildSubmenuItem(
+              context,
+              title: "Tyutor rating",
+              icon: Icons.star_rate_rounded,
+              color: Colors.orange,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ManagementRatingHubScreen()),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            _buildSubmenuItem(
+              context,
+              title: "Saylov (Tez kunda)",
+              icon: Icons.how_to_vote_rounded,
+              color: Colors.blueGrey,
+              onTap: () => _showNotImplemented(context, "Saylovlar"),
             ),
             const SizedBox(height: 24),
           ],
