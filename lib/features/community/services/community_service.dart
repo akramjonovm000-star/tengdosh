@@ -219,7 +219,20 @@ class CommunityService {
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(utf8.decode(response.bodyBytes));
+        final decoded = json.decode(utf8.decode(response.bodyBytes));
+        List<dynamic> data;
+        
+        if (decoded is List) {
+          data = decoded;
+        } else if (decoded is Map \u0026\u0026 decoded.containsKey('data')) {
+           data = decoded['data'] is List ? decoded['data'] : [];
+        } else if (decoded is Map \u0026\u0026 decoded.containsKey('posts')) {
+           data = decoded['posts'] is List ? decoded['posts'] : [];
+        } else {
+           print("CommunityService: Unknown JSON structure for posts");
+           return [];
+        }
+        
         return data.map((json) => _mapJsonToPost(json)).toList();
       } else {
         print("CommunityService: Failed to load posts: ${response.statusCode}");
@@ -237,15 +250,22 @@ class CommunityService {
         Uri.parse('${ApiConstants.communityPosts}/reposted?target_student_id=$studentId&skip=$skip&limit=$limit'),
         headers: await _getHeaders(),
       );
-      print("Reposts Response CODE: ${response.statusCode} for $studentId");
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(utf8.decode(response.bodyBytes));
+        final decoded = json.decode(utf8.decode(response.bodyBytes));
+        List<dynamic> data;
+        if (decoded is List) {
+          data = decoded;
+        } else if (decoded is Map \u0026\u0026 decoded.containsKey('data')) {
+           data = decoded['data'] is List ? decoded['data'] : [];
+        } else {
+           return [];
+        }
         return data.map((json) => _mapJsonToPost(json)).toList();
       }
       return [];
     } catch (e) {
-      print("Error loading reposts: $e");
+      print("CommunityService: Error loading reposts: $e");
       return [];
     }
   }
@@ -258,7 +278,11 @@ class CommunityService {
       );
 
       if (response.statusCode == 200) {
-        return _mapJsonToPost(json.decode(response.body));
+        final decoded = json.decode(utf8.decode(response.bodyBytes));
+        if (decoded is Map \u0026\u0026 decoded.containsKey('data')) {
+           return _mapJsonToPost(decoded['data']);
+        }
+        return _mapJsonToPost(decoded);
       } else {
         print("CommunityService: Failed to load post: ${response.statusCode}");
         return null;
