@@ -2727,6 +2727,8 @@ class DataService {
       debugPrint("DataService: Error fetching contract info: $e");
     }
     return {};
+  }
+
   // --- ACCOMMODATION ---
   Future<List<AccommodationListing>> getAccommodationListings() async {
     try {
@@ -2887,5 +2889,4 @@ class DataService {
     }
     return false;
   }
-}
 }

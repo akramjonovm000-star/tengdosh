@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/services/auth_service.dart';
 import '../../../../core/models/student.dart';
@@ -500,9 +499,7 @@ class CommunityService {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
-        return data.map((json) {
-          final createdAtStr = json['created_at'];
-        }).toList();
+        return data.map((json) => Comment.fromJson(json)).toList();
       } else {
         print("CommunityService: Failed to load comments: ${response.statusCode}");
         return [];

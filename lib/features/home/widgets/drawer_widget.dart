@@ -15,10 +15,10 @@ class AppDrawer extends StatelessWidget {
       child: Column(
         children: [
           UserAccountsDrawerHeader(
-            decoration: const const BoxDecoration(color: AppTheme.primaryBlue),
+            decoration: const BoxDecoration(color: AppTheme.primaryBlue),
             accountName: Text(AppDictionary.tr(context, 'lbl_student')),
             accountEmail: Text(AppDictionary.tr(context, 'lbl_student_portal')),
-            currentAccountPicture: const const CircleAvatar(
+            currentAccountPicture: const CircleAvatar(
               backgroundColor: Colors.white,
               child: Icon(Icons.person, color: AppTheme.primaryBlue),
             ),

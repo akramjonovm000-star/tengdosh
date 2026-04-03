@@ -157,11 +157,11 @@ class _MarketScreenState extends State<MarketScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const const Text(
+              const Text(
                 "O'qish uchun kerakli hamma narsa",
                 style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Serif'),
               ),
-              const const SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 AppDictionary.tr(context, 'lbl_books_clothes_tech'),
                 style: const TextStyle(color: Colors.white70, fontSize: 14),
