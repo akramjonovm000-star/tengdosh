@@ -35,6 +35,7 @@ target 'Runner' do
   pod 'SDWebImage', :modular_headers => true
   pod 'SDWebImageWebPCoder', :modular_headers => true
   pod 'libwebp', :modular_headers => true
+  pod 'app_links', :modular_headers => true
   
   # Fix GoogleUtilities/Firebase header issues
   pod 'GoogleUtilities', :modular_headers => true
