@@ -28,11 +28,8 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
   int _unreadCount = 0; // NEW
 
   // Filters for Management
-  List<dynamic> _faculties = [];
-  List<String> _specialties = [];
   int? _selectedFacultyId;
   String? _selectedSpecialtyName;
-  bool _isFiltersLoading = false;
 
   // State Management for Silent Updates
   final Map<String, List<Post>> _posts = {
@@ -136,18 +133,18 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
   }
 
   Future<void> _loadFilters() async {
-    setState(() => _isFiltersLoading = true);
+    
     try {
       final data = await _service.getCommunityFilters();
       if (mounted) {
         setState(() {
-          _faculties = data['faculties'] ?? [];
-          _specialties = List<String>.from(data['specialties'] ?? []);
-          _isFiltersLoading = false;
+          
+          
+          
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _isFiltersLoading = false);
+      
       debugPrint("Load Filters Error: $e");
     }
   }

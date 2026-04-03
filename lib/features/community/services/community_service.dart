@@ -271,7 +271,6 @@ class CommunityService {
   }
 
   Future<Map<String, dynamic>?> likePost(String postId) async {
-    final token = await _authService.getToken(); 
     final url = '${ApiConstants.communityPosts}/$postId/like';
     print("CommunityService: Liking post at $url");
     
@@ -503,7 +502,6 @@ class CommunityService {
         final List<dynamic> data = json.decode(response.body);
         return data.map((json) {
           final createdAtStr = json['created_at'];
-          return Comment.fromJson(json);
         }).toList();
       } else {
         print("CommunityService: Failed to load comments: ${response.statusCode}");
@@ -536,7 +534,6 @@ class CommunityService {
         // Map manually because it's a single object, not list
         final createdAtStr = jsonMap['created_at'];
         return Comment.fromJson(jsonMap);
-      } else {
         throw Exception("Failed to create comment: ${response.statusCode}");
       }
     } catch (e) {

@@ -153,17 +153,18 @@ class _MarketScreenState extends State<MarketScreen> {
              opacity: 0.3
           )
         ),
-        child: const Center(
+        child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
+              const const Text(
                 "O'qish uchun kerakli hamma narsa",
                 style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Serif'),
               ),
-              SizedBox(height: 8),
-              Text(AppDictionary.tr(context, 'lbl_books_clothes_tech'),
-                style: TextStyle(color: Colors.white70, fontSize: 14),
+              const const SizedBox(height: 8),
+              Text(
+                AppDictionary.tr(context, 'lbl_books_clothes_tech'),
+                style: const TextStyle(color: Colors.white70, fontSize: 14),
               ),
             ],
           ),

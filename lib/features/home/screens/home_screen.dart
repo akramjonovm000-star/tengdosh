@@ -19,7 +19,6 @@ import 'package:talabahamkor_mobile/features/student_module/screens/election_scr
 import 'package:talabahamkor_mobile/features/student_module/screens/student_rating_screen.dart';
 import 'package:talabahamkor_mobile/features/social/screens/social_activity_screen.dart';
 import 'package:talabahamkor_mobile/features/documents/screens/documents_screen.dart';
-import 'package:talabahamkor_mobile/core/services/permission_service.dart'; // [NEW]
 import '../../certificates/screens/certificates_screen.dart';
 import 'package:talabahamkor_mobile/features/home/widgets/management_dashboard.dart';
 import 'package:talabahamkor_mobile/features/tutor/screens/tutor_dashboard_screen.dart'; // [NEW]
