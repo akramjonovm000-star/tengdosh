@@ -79,18 +79,18 @@ class _ActivityMonitoringScreenState extends State<ActivityMonitoringScreen> {
                     const SizedBox(height: 24),
                     
                     // 2. Category Breakdown
-                    const Text(
-                      "Kategoriyalar Bo'yicha",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    Text(
+                      AppDictionary.tr(context, 'lbl_by_categories'),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
                     _buildCategoryBreakdown(),
                     const SizedBox(height: 24),
                     
                     // 3. Recent Submissions
-                    const Text(
-                      "So'nggi Yuklanganlar",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    Text(
+                      AppDictionary.tr(context, 'lbl_recent_uploads'),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
                     _buildRecentSubmissions(),
@@ -113,28 +113,28 @@ class _ActivityMonitoringScreenState extends State<ActivityMonitoringScreen> {
       mainAxisSpacing: 16,
       children: [
         _buildStatCard(
-          "Jami Faolliklar", 
+          AppDictionary.tr(context, 'lbl_total_activities'), 
           "${_dashboardStats!['total_activities']}", 
           Icons.local_activity, 
           Colors.blue,
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ActivityReviewScreen(title: "Barcha Faolliklar", initialStatus: "Barchasi"))),
         ),
         _buildStatCard(
-            "Kutilmoqda", 
+            AppDictionary.tr(context, 'lbl_pending'), 
             "${_dashboardStats!['pending_count']}", 
             Icons.hourglass_empty, 
             Colors.orange,
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ActivityReviewScreen(title: AppDictionary.tr(context, 'lbl_pending_activities'), initialStatus: "pending"))),
         ),
         _buildStatCard(
-            "Tasdiqlangan", 
+            AppDictionary.tr(context, 'lbl_approved'), 
             "${_dashboardStats!['approved_count']}", 
             Icons.check_circle, 
             Colors.green,
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ActivityReviewScreen(title: AppDictionary.tr(context, 'lbl_approved_activities'), initialStatus: "approved"))),
         ),
         _buildStatCard(
-            "Bu Oy", 
+            AppDictionary.tr(context, 'lbl_this_month'), 
             "${_dashboardStats!['activities_this_month']}", 
             Icons.calendar_today, 
             Colors.purple,

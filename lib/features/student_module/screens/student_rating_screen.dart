@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/services/data_service.dart';
+import '../../../../core/localization/app_dictionary.dart';
 import 'package:talabahamkor_mobile/core/theme/app_theme.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -76,7 +77,7 @@ class _StudentRatingScreenState extends State<StudentRatingScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text("Baholash"),
+        title: Text(AppDictionary.tr(context, 'lbl_rate_your_tutor')),
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -92,13 +93,13 @@ class _StudentRatingScreenState extends State<StudentRatingScreen> {
                       const SizedBox(height: 20),
                       _buildTutorCard(),
                       const SizedBox(height: 48),
-                      const Text(
-                        "Tyutoringizni baholang",
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      Text(
+                        AppDictionary.tr(context, 'lbl_rate_your_tutor'),
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        "1 dan 5 gacha raqamlardan birini tanlang",
+                        AppDictionary.tr(context, 'lbl_rating_select_hint'),
                         style: TextStyle(color: Colors.grey[600], fontSize: 14),
                       ),
                       const SizedBox(height: 32),
@@ -222,9 +223,9 @@ class _StudentRatingScreenState extends State<StudentRatingScreen> {
                 width: 24,
                 child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
               )
-            : const Text(
-                "Baholash",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            : Text(
+                AppDictionary.tr(context, 'lbl_tutor_rating'),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
       ),
     );
@@ -244,21 +245,21 @@ class _EmptyTargetView extends StatelessWidget {
           children: [
             Icon(Icons.person_off_rounded, size: 80, color: Colors.grey[300]),
             const SizedBox(height: 24),
-            const Text(
-              "Baholash uchun tyutor topilmadi",
+            Text(
+              AppDictionary.tr(context, 'msg_no_rating_targets'),
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             Text(
-              "Sizning guruhingizga tyutor biriktirilmagan yoki hozirda baholash imkoniyati yo'q.",
+              AppDictionary.tr(context, 'msg_rating_unavailable'),
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey[600]),
             ),
             const SizedBox(height: 32),
             ElevatedButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text("Orqaga"),
+              child: Text(AppDictionary.tr(context, 'btn_back')),
             ),
           ],
         ),

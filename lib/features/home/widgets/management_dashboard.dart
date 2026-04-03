@@ -140,7 +140,7 @@ class ManagementDashboard extends StatelessWidget {
               },
             ),
                 DashboardCard(
-                  title: "Analitika",
+                  title: AppDictionary.tr(context, 'lbl_analytics'),
                   icon: Icons.insights_rounded,
                   color: Colors.indigo,
                   onTap: () => _showNotImplemented(context, "Analitika"),
@@ -172,7 +172,7 @@ class ManagementDashboard extends StatelessWidget {
                   },
                 ),
                 DashboardCard(
-                  title: "Saylov",
+                  title: AppDictionary.tr(context, 'lbl_election'),
                   icon: Icons.how_to_reg_rounded,
                   color: Colors.redAccent,
                   onTap: () => _showElectionSubmenu(context),
@@ -335,9 +335,9 @@ class ManagementDashboard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  "Saylov Bo'limi",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                Text(
+                  AppDictionary.tr(context, 'lbl_election_section'),
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close),
@@ -348,7 +348,7 @@ class ManagementDashboard extends StatelessWidget {
             const SizedBox(height: 24),
             _buildSubmenuItem(
               context,
-              title: "Tyutor rating",
+              title: AppDictionary.tr(context, 'lbl_tutor_rating'),
               icon: Icons.star_rate_rounded,
               color: Colors.orange,
               onTap: () {

@@ -491,12 +491,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            "Tyutor baholash",
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+                          Text(
+                            AppDictionary.tr(context, 'lbl_tutor_rating'),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
                           ),
                           Text(
-                            "O'z tyutoringizni 1 dan 5 gacha baholang",
+                            AppDictionary.tr(context, 'lbl_rating_select_hint'),
                             style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13),
                           ),
                         ],
@@ -516,7 +516,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         elevation: 0,
                       ),
-                      child: const Text("Baholash"),
+                      child: Text(AppDictionary.tr(context, 'lbl_tutor_rating')),
                     )
                   ],
                 ),

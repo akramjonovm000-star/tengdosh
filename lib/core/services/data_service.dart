@@ -2847,4 +2847,44 @@ class DataService {
       return {'success': false, 'message': 'Ulanishda xatolik yuz berdi'};
     }
   }
+
+  Future<List<dynamic>> getManagementRatingStats() async {
+    try {
+      final response = await _get(ApiConstants.ratingStats);
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching management rating stats: $e");
+    }
+    return [];
+  }
+
+  Future<Map<String, dynamic>> toggleRatingActivation(String roleType, bool active) async {
+    try {
+      final response = await _post(ApiConstants.ratingActivate, body: {
+        'role_type': roleType,
+        'active': active,
+      });
+      if (response.statusCode == 200) {
+        return json.decode(utf8.decode(response.bodyBytes));
+      }
+    } catch (e) {
+      debugPrint("DataService: Error updating rating activation: $e");
+    }
+    return {'success': false, 'message': 'Ulanishda xatolik yuz berdi'};
+  }
+
+  Future<bool> getManagementRatingStatus() async {
+    try {
+      final response = await _get(ApiConstants.ratingStatus);
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        return body['active'] ?? false;
+      }
+    } catch (e) {
+      debugPrint("DataService: Error getting rating status: $e");
+    }
+    return false;
+  }
 }

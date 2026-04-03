@@ -32,8 +32,8 @@ class _ManagementRatingHubScreenState extends State<ManagementRatingHubScreen> {
 
   Future<void> _toggleStatus() async {
     setState(() => _isLoading = true);
-    final success = await _dataService.toggleRatingActivation('tutor', !_isActive);
-    if (success) {
+    final result = await _dataService.toggleRatingActivation('tutor', !_isActive);
+    if (result['success'] == true) {
       await _loadStatus();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -47,7 +47,10 @@ class _ManagementRatingHubScreenState extends State<ManagementRatingHubScreen> {
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Xatolik yuz berdi"), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(result['message'] ?? "Xatolik yuz berdi"),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }

@@ -1533,6 +1533,89 @@ class AppDictionary {
       'ru': "Фильтр",
     },
 
+    'lbl_tutor_rating_stats': {
+      'uz': "Tutor Rating Statistikasi",
+      'ru': "Статистика рейтинга тьюторов",
+    },
+    'lbl_rating_distribution': {
+      'uz': "Baholar Taqsimoti",
+      'ru': "Распределение оценок",
+    },
+    'lbl_tutor_rating': {
+      'uz': "Tyutor Baholash",
+      'ru': "Оценка тьютора",
+    },
+    'lbl_votes_count': {
+      'uz': "ta ovoz",
+      'ru': "голосов",
+    },
+    'lbl_rating_score': {
+      'uz': "baho",
+      'ru': "балл",
+    },
+    'msg_rating_success': {
+      'uz': "Bahoyingiz qabul qilindi",
+      'ru': "Ваша оценка принята",
+    },
+    'msg_no_rating_targets': {
+      'uz': "Baholash uchun tyutor topilmadi",
+      'ru': "Тьютор для оценки не найден",
+    },
+    'msg_rating_unavailable': {
+      'uz': "Sizning guruhingizga tyutor biriktirilmagan yoki hozirda baholash imkoniyati yo'q.",
+      'ru': "Тьютор не закреплен за вашей группой или в данный момент оценка недоступна.",
+    },
+    'btn_back': {
+      'uz': "Orqaga",
+      'ru': "Назад",
+    },
+    'lbl_rating_select_hint': {
+      'uz': "1 dan 5 gacha raqamlardan birini tanlang",
+      'ru': "Выберите одну из цифр от 1 до 5",
+    },
+    'lbl_rate_your_tutor': {
+      'uz': "Tyutoringizni baholang",
+      'ru': "Оцените своего тьютора",
+    },
+
+    'lbl_analytics': {
+      'uz': "Analitika",
+      'ru': "Аналитика",
+    },
+    'lbl_election': {
+      'uz': "Saylov",
+      'ru': "Выборы",
+    },
+    'lbl_election_section': {
+      'uz': "Saylov Bo'limi",
+      'ru': "Раздел Выборов",
+    },
+
+    'lbl_by_categories': {
+      'uz': "Kategoriyalar Bo'yicha",
+      'ru': "По категориям",
+    },
+    'lbl_recent_uploads': {
+      'uz': "So'nggi Yuklanganlar",
+      'ru': "Последние загрузки",
+    },
+    'lbl_total_activities': {
+      'uz': "Jami Faolliklar",
+      'ru': "Всего активностей",
+    },
+    'lbl_pending': {
+      'uz': "Kutilmoqda",
+      'ru': "Ожидание",
+    },
+    'lbl_approved': {
+      'uz': "Tasdiqlangan",
+      'ru': "Одобрено",
+    },
+    'lbl_this_month': {
+      'uz': "Bu Oy",
+      'ru': "В этом месяце",
+    },
+
     // Default Fallbacks
     'error': {
       'uz': 'Xatolik',

@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart';
 import '../../../../core/services/data_service.dart';
+import '../../../../core/localization/app_dictionary.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class ManagementRatingStatsScreen extends StatefulWidget {
@@ -35,7 +37,7 @@ class _ManagementRatingStatsScreenState extends State<ManagementRatingStatsScree
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text("Tutor Rating Statistikasi"),
+        title: Text(AppDictionary.tr(context, 'lbl_tutor_rating_stats')),
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
@@ -147,7 +149,7 @@ class _RankingCardState extends State<_RankingCard> with SingleTickerProviderSta
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          "${item['total_votes']} ta ovoz",
+                          "${item['total_votes']} ${AppDictionary.tr(context, 'lbl_votes_count')}",
                           style: TextStyle(color: Colors.grey[600], fontSize: 11),
                         ),
                       ],
@@ -161,9 +163,9 @@ class _RankingCardState extends State<_RankingCard> with SingleTickerProviderSta
                   padding: const EdgeInsets.all(24.0),
                   child: Column(
                     children: [
-                      const Text(
-                        "Baholar Taqsimoti",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      Text(
+                        AppDictionary.tr(context, 'lbl_rating_distribution'),
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 32),
                       Row(
@@ -216,7 +218,7 @@ class _RankingCardState extends State<_RankingCard> with SingleTickerProviderSta
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              "$rating baho",
+              "$rating ${AppDictionary.tr(context, 'lbl_rating_score')}",
               style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
             ),
           ),
@@ -323,11 +325,11 @@ class _NoDataView extends StatelessWidget {
           Icon(Icons.query_stats_rounded, size: 80, color: Colors.grey[300]),
           const SizedBox(height: 16),
           Text(
-            "Hozircha ma\'lumotlar yo\'q.",
+            AppDictionary.tr(context, 'msg_no_data'),
             style: TextStyle(fontSize: 18, color: Colors.grey[600], fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
-          const Text("Birinchi so'rovnoma yaratasiz kerak.", textAlign: TextAlign.center),
+          const Text("...", textAlign: TextAlign.center),
         ],
       ),
     );
