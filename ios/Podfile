@@ -55,14 +55,14 @@ post_install do |installer|
       config.build_settings['SWIFT_SUPPRESS_WARNINGS'] = 'YES'
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.5'
       
-      # FIX: Ensure search paths are inherited and reach the pod build dir
-      # This solves the "Search path not found" warnings
+      # FIX: Ensure search paths reach the pod build dir recursively
       config.build_settings['FRAMEWORK_SEARCH_PATHS'] ||= '$(inherited) '
       config.build_settings['FRAMEWORK_SEARCH_PATHS'] << ' "${PODS_CONFIGURATION_BUILD_DIR}/**"'
       config.build_settings['HEADER_SEARCH_PATHS'] ||= '$(inherited) '
       config.build_settings['HEADER_SEARCH_PATHS'] << ' "${PODS_CONFIGURATION_BUILD_DIR}/**"'
+      config.build_settings['ALWAYS_SEARCH_USER_PATHS'] = 'YES'
 
-      # Fix module lookup issues
+      # Fix module lookup issues for Swift-ObjC compatibility
       config.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
       config.build_settings['DEFINES_MODULE'] = 'YES'
       config.build_settings['SWIFT_INSTALL_OBJC_HEADER'] = 'YES'
@@ -101,8 +101,7 @@ post_install do |installer|
     end
   end
   
-  # Fix for "PhaseScriptExecution failed" in Xcode 15+ due to sandbox/rsync
-  # This patches the framework embedding script to handle symlinks correctly
+  # Ensure all pod targets are using at least 15.5 to avoid version mismatches
   installer.pods_project.targets.each do |target|
       target.build_configurations.each do |config|
           if config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < 15.5
