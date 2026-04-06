@@ -26,7 +26,7 @@ end
 require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
 
 target 'Runner' do
-  use_frameworks! :linkage => :static
+  use_frameworks!
   use_modular_headers!
 
   # [PATCH] Resolve plugin dependency duplication (e.g. app_links)
@@ -64,6 +64,7 @@ post_install do |installer|
       config.build_settings['CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER'] = 'NO'
       config.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
       config.build_settings['DEFINES_MODULE'] = 'YES'
+      config.build_settings['SWIFT_INSTALL_OBJC_HEADER'] = 'YES'
 
       # [FIX] Force ONLY_ACTIVE_ARCH = YES for Debug to fix architecture mismatch
       if config.name == 'Debug'
