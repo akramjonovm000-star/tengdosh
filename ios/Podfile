@@ -29,8 +29,16 @@ target 'Runner' do
   use_frameworks! :linkage => :static
   use_modular_headers!
 
-  # [FIX] Force app_links to use local plugin path to avoid duplication with standard CocoaPod
-  pod 'app_links', :path => File.join('.symlinks', 'plugins', 'app_links', 'ios')
+  # [PATCH] Resolve plugin dependency duplication (e.g. app_links)
+  # This prevents "multiple dependencies with different sources" errors by skipping redundant declarations.
+  def pod(name, *args)
+    @seen_pods ||= {}
+    if @seen_pods[name]
+      return
+    end
+    @seen_pods[name] = true
+    super(name, *args)
+  end
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 
