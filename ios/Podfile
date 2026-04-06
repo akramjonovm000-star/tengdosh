@@ -101,12 +101,26 @@ post_install do |installer|
     end
   end
   
-  # Ensure all pod targets are using at least 15.5 to avoid version mismatches
+  # Ensure all pod targets are using at least 15.5 and correct search paths
   installer.pods_project.targets.each do |target|
       target.build_configurations.each do |config|
           if config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < 15.5
             config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.5'
           end
       end
+  end
+
+  # [CRITICAL FIX] Force the MAIN PROJECT to see the Pods artifacts
+  # This fixes "Module not found" in GeneratedPluginRegistrant.m
+  installer.aggregate_targets.each do |target|
+    target.user_project.targets.each do |user_target|
+      user_target.build_configurations.each do |config|
+        config.build_settings['FRAMEWORK_SEARCH_PATHS'] ||= '$(inherited) '
+        config.build_settings['FRAMEWORK_SEARCH_PATHS'] << ' "${PODS_CONFIGURATION_BUILD_DIR}/**"'
+        config.build_settings['HEADER_SEARCH_PATHS'] ||= '$(inherited) '
+        config.build_settings['HEADER_SEARCH_PATHS'] << ' "${PODS_CONFIGURATION_BUILD_DIR}/**"'
+      end
+    end
+    target.user_project.save
   end
 end
