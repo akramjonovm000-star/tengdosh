@@ -117,7 +117,7 @@ class _CreateManagementSurveyScreenState extends State<CreateManagementSurveyScr
       "end_at": DateFormat('yyyy-MM-dd HH:mm:ss').format(_endDate),
       "questions": _questions.map((q) => {
         "text": q.text,
-        "options": q.options,
+        "options": q.options.map((o) => {"text": o}).toList(),
       }).toList(),
     };
 
