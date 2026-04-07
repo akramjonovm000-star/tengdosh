@@ -301,7 +301,7 @@ class DataService {
   Future<Map<String, dynamic>> createManagementSurvey(Map<String, dynamic> surveyData) async {
     try {
       final response = await _post(
-        '${ApiConstants.backendUrl}/management/rating',
+        ApiConstants.managementRatingActivate,
         body: surveyData,
       );
       if (response.statusCode == 200 || response.statusCode == 201) {

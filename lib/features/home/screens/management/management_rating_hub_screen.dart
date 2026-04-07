@@ -80,20 +80,10 @@ class _ManagementRatingHubScreenState extends State<ManagementRatingHubScreen> {
             child: Column(
               children: [
                 const SizedBox(height: 10),
-                // 1. Permanent Toggle Button
+                // 1. Manage Survey Card
                 _buildLargeButton(
                   context,
-                  title: _isActive ? "Baholashni to'xtatish" : "Baholashni boshlash",
-                  subtitle: _isActive ? "Hozirda barcha tyutorlar uchun faol" : "Hozirda baholash to'xtatilgan",
-                  icon: _isActive ? Icons.stop_circle_outlined : Icons.play_circle_outline_rounded,
-                  color: _isActive ? Colors.red : Colors.green,
-                  onTap: _toggleStatus,
-                ),
-                const SizedBox(height: 24),
-                // 2. Manage Survey Button
-                _buildLargeButton(
-                  context,
-                  title: _activeSurvey == null ? "Yangi so'rovnoma yaratish" : "So'rovnomani tahrirlash",
+                  title: _activeSurvey == null ? "Yangi so'rovnoma yaratish" : "So'rovnomani boshqarish",
                   subtitle: "Savollar, variantlar va muddatlar",
                   icon: Icons.settings_suggest_rounded,
                   color: Colors.blue,
@@ -110,23 +100,122 @@ class _ManagementRatingHubScreenState extends State<ManagementRatingHubScreen> {
                   },
                 ),
                 const SizedBox(height: 24),
-                // 3. Stats Button
-                _buildLargeButton(
-                  context,
-                  title: "Natijalar va statistika",
-                  subtitle: "Tyutorlar reytingini ko'rish",
-                  icon: Icons.analytics_rounded,
-                  color: Colors.indigo,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const ManagementRatingStatsScreen()),
-                    );
-                  },
+                // 2. Stats & Analytics Card with Toggle inside
+                _buildStatsCard(context),
+              ],
+            ),
+          ),
+    );
+  }
+
+  Widget _buildStatsCard(BuildContext context) {
+    const Color color = Colors.indigo;
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+        border: Border.all(color: color.withOpacity(0.1), width: 2),
+      ),
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ManagementRatingStatsScreen()),
+              );
+            },
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.analytics_rounded, color: color, size: 48),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    "Natijalar va statistika",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      height: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "Tyutorlar reytingini ko'rish",
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const Divider(height: 1),
+          // Toggle Action Part
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      _isActive ? Icons.check_circle_outline_rounded : Icons.pause_circle_outline_rounded,
+                      color: _isActive ? Colors.green : Colors.grey,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _isActive ? "Hozirda faol" : "To'xtatilgan",
+                      style: TextStyle(
+                        color: _isActive ? Colors.green : Colors.grey[600],
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                TextButton.icon(
+                  onPressed: _toggleStatus,
+                  icon: Icon(
+                    _isActive ? Icons.stop_circle_outlined : Icons.play_circle_outline_rounded,
+                    color: _isActive ? Colors.red : Colors.green,
+                  ),
+                  label: Text(
+                    _isActive ? "To'xtatish" : "Faollashtirish",
+                    style: TextStyle(
+                      color: _isActive ? Colors.red : Colors.green,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    backgroundColor: (_isActive ? Colors.red : Colors.green).withOpacity(0.1),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                 ),
               ],
             ),
           ),
+        ],
+      ),
     );
   }
 
