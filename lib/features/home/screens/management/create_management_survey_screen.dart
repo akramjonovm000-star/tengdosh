@@ -3,7 +3,8 @@ import 'package:intl/intl.dart';
 import '../../../../core/services/data_service.dart';
 
 class CreateManagementSurveyScreen extends StatefulWidget {
-  const CreateManagementSurveyScreen({super.key});
+  final Map<String, dynamic>? initialData;
+  const CreateManagementSurveyScreen({super.key, this.initialData});
 
   @override
   State<CreateManagementSurveyScreen> createState() => _CreateManagementSurveyScreenState();
@@ -11,16 +12,40 @@ class CreateManagementSurveyScreen extends StatefulWidget {
 
 class _CreateManagementSurveyScreenState extends State<CreateManagementSurveyScreen> {
   final DataService _dataService = DataService();
-  final TextEditingController _titleController = TextEditingController(text: "Tyutorlarni baholash");
+  late final TextEditingController _titleController;
   
   DateTime _startDate = DateTime.now();
   DateTime _endDate = DateTime.now().add(const Duration(days: 7));
   
-  List<QuestionData> _questions = [
-    QuestionData(text: "", options: ["A'lo", "Yaxshi", "Qoniqarli", "Yomon"])
-  ];
+  List<QuestionData> _questions = [];
 
   bool _isLoading = false;
+  bool _isEditing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isEditing = widget.initialData != null;
+    _titleController = TextEditingController(text: widget.initialData?['title'] ?? "Tyutorlarni baholash");
+    
+    if (_isEditing) {
+      final data = widget.initialData!;
+      if (data['start_at'] != null) _startDate = DateTime.parse(data['start_at']);
+      if (data['end_at'] != null) _endDate = DateTime.parse(data['end_at']);
+      
+      final List<dynamic>? questionsJson = data['questions'];
+      if (questionsJson != null) {
+        _questions = questionsJson.map((q) => QuestionData(
+          text: q['text'] ?? "",
+          options: List<String>.from(q['options'] ?? []),
+        )).toList();
+      }
+    }
+
+    if (_questions.isEmpty) {
+      _questions.add(QuestionData(text: "", options: ["A'lo", "Yaxshi", "Qoniqarli", "Yomon"]));
+    }
+  }
 
   Future<void> _selectDateTime(BuildContext context, bool isStart) async {
     final DateTime? pickedDate = await showDatePicker(
@@ -95,12 +120,20 @@ class _CreateManagementSurveyScreenState extends State<CreateManagementSurveyScr
       }).toList(),
     };
 
-    final result = await _dataService.createManagementSurvey(surveyData);
+    final Map<String, dynamic> result;
+    if (_isEditing) {
+      result = await _dataService.updateManagementSurvey(widget.initialData!['id'], surveyData);
+    } else {
+      result = await _dataService.createManagementSurvey(surveyData);
+    }
 
     if (mounted) {
       setState(() => _isLoading = false);
       if (result['success'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("So'rovnoma muvaffaqiyatli yaratildi"), backgroundColor: Colors.green));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(_isEditing ? "So'rovnoma yangilandi" : "So'rovnoma muvaffaqiyatli yaratildi"), 
+          backgroundColor: Colors.green
+        ));
         Navigator.pop(context, true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result['message'] ?? "Xatolik yuz berdi"), backgroundColor: Colors.red));
@@ -116,7 +149,7 @@ class _CreateManagementSurveyScreenState extends State<CreateManagementSurveyScr
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text("Yangi so'rovnoma"),
+        title: Text(_isEditing ? "So'rovnomani tahrirlash" : "Yangi so'rovnoma"),
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,

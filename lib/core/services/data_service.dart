@@ -316,6 +316,36 @@ class DataService {
     }
   }
 
+  Future<Map<String, dynamic>> getManagementActiveSurvey() async {
+    try {
+      final response = await _get(ApiConstants.managementRatingActiveSurvey);
+      if (response.statusCode == 200) {
+        return json.decode(utf8.decode(response.bodyBytes));
+      }
+    } catch (e) {
+      debugPrint("DataService: Error fetching active survey: $e");
+    }
+    return {};
+  }
+
+  Future<Map<String, dynamic>> updateManagementSurvey(int surveyId, Map<String, dynamic> surveyData) async {
+    try {
+      final response = await _post(
+        '${ApiConstants.managementRatingUpdate}/$surveyId',
+        body: surveyData,
+      );
+      if (response.statusCode == 200) {
+        return json.decode(utf8.decode(response.bodyBytes));
+      } else {
+        final body = json.decode(utf8.decode(response.bodyBytes));
+        return {'success': false, 'message': body['message'] ?? 'Xato: ${response.statusCode}'};
+      }
+    } catch (e) {
+      debugPrint("DataService: Error updating management survey: $e");
+      return {'success': false, 'message': 'Ulanishda xatolik: $e'};
+    }
+  }
+
   Future<List<dynamic>> getManagementRatingStats() async {
     try {
       final response = await _get(ApiConstants.managementRatingStats);

@@ -34,6 +34,8 @@ class ApiConstants {
   static String get managementRatingStats => '$backendUrl/management/rating/stats';
   static String get managementRatingStatus => '$backendUrl/management/rating/status';
   static String get managementRatingActivate => '$backendUrl/management/rating/activate';
+  static String get managementRatingUpdate => '$backendUrl/management/rating/update';
+  static String get managementRatingActiveSurvey => '$backendUrl/management/rating/active-survey';
   
   // Announcements
   static const String announcements = '$backendUrl/announcements';

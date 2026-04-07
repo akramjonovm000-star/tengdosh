@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/services/data_service.dart';
 import 'create_management_survey_screen.dart';
+import 'management_rating_stats_screen.dart';
 
 class ManagementRatingHubScreen extends StatefulWidget {
   const ManagementRatingHubScreen({super.key});
@@ -14,6 +15,8 @@ class _ManagementRatingHubScreenState extends State<ManagementRatingHubScreen> {
   bool _isActive = false;
   bool _isLoading = true;
 
+  Map<String, dynamic>? _activeSurvey;
+
   @override
   void initState() {
     super.initState();
@@ -21,38 +24,16 @@ class _ManagementRatingHubScreenState extends State<ManagementRatingHubScreen> {
   }
 
   Future<void> _loadStatus() async {
+    setState(() => _isLoading = true);
     final status = await _dataService.getManagementRatingStatus();
+    final activeSurvey = await _dataService.getManagementActiveSurvey();
+    
     if (mounted) {
       setState(() {
         _isActive = status;
+        _activeSurvey = activeSurvey.isNotEmpty ? activeSurvey : null;
         _isLoading = false;
       });
-    }
-  }
-
-  Future<void> _toggleStatus() async {
-    setState(() => _isLoading = true);
-    final Map<String, dynamic> result = await _dataService.toggleRatingActivation('tutor', !_isActive);
-    if (result['success'] == true) {
-      await _loadStatus();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_isActive ? "So'rovnoma faollashtirildi" : "So'rovnoma to'xtatildi"),
-            backgroundColor: _isActive ? Colors.green : Colors.orange,
-          ),
-        );
-      }
-    } else {
-      setState(() => _isLoading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result['message'] ?? "Xatolik yuz berdi"),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
     }
   }
 
@@ -66,45 +47,67 @@ class _ManagementRatingHubScreenState extends State<ManagementRatingHubScreen> {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            _buildLargeButton(
-              context,
-              title: "Tyutorlarni baholash so'rovnomasini yaratish",
-              subtitle: _isActive ? "Hozirda faol" : "Hozirda to'xtatilgan",
-              icon: Icons.add_task_rounded,
-              color: _isActive ? Colors.green : Colors.blue,
-              isLoading: _isLoading,
-              onTap: () async {
-                final result = await Navigator.push(
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator())
+        : SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              children: [
+                const SizedBox(height: 10),
+                _buildLargeButton(
                   context,
-                  MaterialPageRoute(builder: (context) => const CreateManagementSurveyScreen()),
-                );
-                if (result == true) {
-                  _loadStatus();
-                }
-              },
-            ),
-            const SizedBox(height: 24),
-            _buildLargeButton(
-              context,
-              title: "Mavjud so'rovnomalar bo'yicha statistika",
-              subtitle: "Natijalarni ko'rish",
-              icon: Icons.analytics_rounded,
-              color: Colors.indigo,
-              onTap: () {
-                Navigator.push(
+                  title: "Tyutorlarni baholash so'rovnomasini yaratish",
+                  subtitle: _isActive ? "Hozirda faol" : "Hozirda to'xtatilgan",
+                  icon: Icons.add_task_rounded,
+                  color: _isActive ? Colors.green : Colors.blue,
+                  onTap: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const CreateManagementSurveyScreen()),
+                    );
+                    if (result == true) {
+                      _loadStatus();
+                    }
+                  },
+                ),
+                if (_activeSurvey != null) ...[
+                  const SizedBox(height: 24),
+                  _buildLargeButton(
+                    context,
+                    title: "So'rovnomani tahrirlash",
+                    subtitle: "Savollar va muddatlarni o'zgartirish",
+                    icon: Icons.edit_calendar_rounded,
+                    color: Colors.orange,
+                    onTap: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CreateManagementSurveyScreen(initialData: _activeSurvey),
+                        ),
+                      );
+                      if (result == true) {
+                        _loadStatus();
+                      }
+                    },
+                  ),
+                ],
+                const SizedBox(height: 24),
+                _buildLargeButton(
                   context,
-                  MaterialPageRoute(builder: (context) => const ManagementRatingStatsScreen()),
-                );
-              },
+                  title: "Mavjud so'rovnomalar bo'yicha statistika",
+                  subtitle: "Natijalarni ko'rish",
+                  icon: Icons.analytics_rounded,
+                  color: Colors.indigo,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ManagementRatingStatsScreen()),
+                    );
+                  },
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
