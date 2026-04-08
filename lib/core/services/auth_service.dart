@@ -70,6 +70,7 @@ class AuthService {
         url,
         headers: {
           'Content-Type': 'application/json',
+          'X-Api-Key': ApiConstants.apiToken,
           'User-Agent': 'TalabaHamkor/1.0 (Mobile)',
         },
         body: jsonEncode({'login': login, 'password': password}),
@@ -139,6 +140,7 @@ class AuthService {
         url,
         headers: {
           'Authorization': 'Bearer $token',
+          'X-Api-Key': ApiConstants.apiToken,
           'Content-Type': 'application/json'
         },
         body: jsonEncode({'username': username}),
@@ -173,6 +175,7 @@ class AuthService {
         url,
         headers: {
           'Authorization': 'Bearer $token',
+          'X-Api-Key': ApiConstants.apiToken,
           'Content-Type': 'application/json'
         },
       );
@@ -206,6 +209,7 @@ class AuthService {
         url,
         headers: {
           'Authorization': 'Bearer $token',
+          'X-Api-Key': ApiConstants.apiToken,
           'Content-Type': 'application/json'
         },
       ).timeout(const Duration(seconds: 15));
@@ -286,6 +290,7 @@ class AuthService {
         url,
         headers: {
           'Content-Type': 'application/json',
+          'X-Api-Key': ApiConstants.apiToken,
         },
         body: jsonEncode({'login': login, 'password': password}),
       );
