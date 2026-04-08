@@ -19,6 +19,7 @@ class NotificationService {
         Uri.parse('${ApiConstants.backendUrl}/student/notifications/list?skip=$skip&limit=$limit'),
         headers: {
           'Authorization': 'Bearer $token',
+          'X-Api-Key': ApiConstants.apiToken,
           'Content-Type': 'application/json',
         },
       );
@@ -43,6 +44,7 @@ class NotificationService {
         Uri.parse('${ApiConstants.backendUrl}/student/notifications/unread-count'),
         headers: {
           'Authorization': 'Bearer $token',
+          'X-Api-Key': ApiConstants.apiToken,
         },
       );
 
@@ -65,6 +67,7 @@ class NotificationService {
         Uri.parse('${ApiConstants.backendUrl}/student/notifications/$id/read'),
         headers: {
           'Authorization': 'Bearer $token',
+          'X-Api-Key': ApiConstants.apiToken,
         },
       );
     } catch (e) {

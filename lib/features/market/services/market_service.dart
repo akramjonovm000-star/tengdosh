@@ -26,6 +26,7 @@ class MarketService {
         uri,
         headers: {
           'Authorization': 'Bearer $token',
+          'X-Api-Key': ApiConstants.apiToken,
           'Content-Type': 'application/json',
         },
       );
@@ -50,6 +51,7 @@ class MarketService {
         Uri.parse('${ApiConstants.backendUrl}/market'),
         headers: {
           'Authorization': 'Bearer $token',
+          'X-Api-Key': ApiConstants.apiToken,
           'Content-Type': 'application/json',
         },
         body: json.encode(data),
@@ -71,6 +73,7 @@ class MarketService {
         Uri.parse('${ApiConstants.backendUrl}/market/$id'),
         headers: {
           'Authorization': 'Bearer $token',
+          'X-Api-Key': ApiConstants.apiToken,
         },
       );
 
@@ -86,7 +89,10 @@ class MarketService {
     try {
       await http.post(
         Uri.parse('${ApiConstants.backendUrl}/market/$id/view'),
-        headers: {'Authorization': 'Bearer $token'},
+        headers: {
+          'Authorization': 'Bearer $token',
+          'X-Api-Key': ApiConstants.apiToken,
+        },
       );
     } catch (e) {
       print('View Item Error: $e');

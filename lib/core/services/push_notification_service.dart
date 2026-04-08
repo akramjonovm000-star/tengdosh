@@ -62,6 +62,7 @@ class PushNotificationService {
         headers: {
           "Content-Type": "application/json",
           "Authorization": "Bearer $userToken",
+          'X-Api-Key': ApiConstants.apiToken,
         },
         body: jsonEncode({"fcm_token": token}),
       );

@@ -102,6 +102,7 @@ class DataService {
       // Auth Header
       final token = await _authService.getToken();
       request.headers['Authorization'] = 'Bearer $token';
+      request.headers['X-Api-Key'] = ApiConstants.apiToken;
 
       // File
       request.files.add(
@@ -686,6 +687,7 @@ class DataService {
       Uri.parse('${ApiConstants.activities}/upload/init'),
       headers: {
         'Authorization': 'Bearer $token',
+        'X-Api-Key': ApiConstants.apiToken,
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: {
@@ -706,7 +708,10 @@ class DataService {
     final token = await _authService.getToken();
     final response = await http.get(
       Uri.parse('${ApiConstants.activities}/upload/status/$sessionId'),
-      headers: {'Authorization': 'Bearer $token'},
+      headers: {
+        'Authorization': 'Bearer $token',
+        'X-Api-Key': ApiConstants.apiToken,
+      },
     );
 
     if (response.statusCode == 200) {
@@ -722,6 +727,7 @@ class DataService {
       Uri.parse(ApiConstants.tutorActivitiesUploadInit),
       headers: {
         'Authorization': 'Bearer $token',
+        'X-Api-Key': ApiConstants.apiToken,
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: {
@@ -733,16 +739,12 @@ class DataService {
     if (response.statusCode == 200) {
       return json.decode(response.body);
     } else {
-      throw Exception('Failed to init tutor upload session: ${response.body}');
+      throw Exception('Failed to init tutor upload: ${response.body}');
     }
   }
 
   Future<Map<String, dynamic>> tutorCheckUploadStatus(String sessionId) async {
-    final token = await _authService.getToken();
-    final response = await http.get(
-      Uri.parse('${ApiConstants.tutorActivitiesUploadStatus}/$sessionId'),
-      headers: {'Authorization': 'Bearer $token'},
-    );
+    final response = await _get('${ApiConstants.tutorActivitiesUploadStatus}/$sessionId');
 
     if (response.statusCode == 200) {
       return json.decode(response.body);
@@ -758,8 +760,6 @@ class DataService {
     required List<int> studentIds,
     String? sessionId,
   }) async {
-    final token = await _authService.getToken();
-    
     final payload = {
       "category": category,
       "name": name,
@@ -769,12 +769,8 @@ class DataService {
       if (sessionId != null) "session_id": sessionId,
     };
 
-    final response = await http.post(
-      Uri.parse(ApiConstants.tutorActivitiesBulk),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
+    final response = await _post(
+      ApiConstants.tutorActivitiesBulk,
       body: json.encode(payload),
     );
 
@@ -801,6 +797,7 @@ class DataService {
     final token = await _authService.getToken();
     var request = http.MultipartRequest('POST', Uri.parse(ApiConstants.activities));
     request.headers['Authorization'] = 'Bearer $token';
+    request.headers['X-Api-Key'] = ApiConstants.apiToken;
     
     request.fields['category'] = category;
     request.fields['name'] = name;
@@ -831,6 +828,7 @@ class DataService {
     
     final request = http.MultipartRequest('PATCH', uri);
     request.headers['Authorization'] = 'Bearer $token';
+    request.headers['X-Api-Key'] = ApiConstants.apiToken;
     
     // For PATCH, we use Form data as defined in FastAPI endpoint
     request.fields['category'] = category;
@@ -1188,6 +1186,7 @@ class DataService {
       
       request.headers.addAll({
         'Authorization': 'Bearer $token',
+        'X-Api-Key': ApiConstants.apiToken,
       });
 
       request.fields['text'] = text;
@@ -1230,6 +1229,7 @@ class DataService {
       Uri.parse('${ApiConstants.feedback}$id/reply'),
       headers: {
         'Authorization': 'Bearer $token',
+        'X-Api-Key': ApiConstants.apiToken,
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: {'text': text},
@@ -1869,6 +1869,7 @@ class DataService {
       uri,
       headers: {
         'Authorization': 'Bearer $token',
+        'X-Api-Key': ApiConstants.apiToken,
       },
     );
 
@@ -2072,6 +2073,7 @@ class DataService {
       
       final token = await _authService.getToken();
       request.headers['Authorization'] = 'Bearer $token';
+      request.headers['X-Api-Key'] = ApiConstants.apiToken;
 
       request.fields['text'] = text;
       request.fields['role'] = role;
@@ -2232,6 +2234,7 @@ class DataService {
       // Use MultipartRequest for optional file upload
       var request = http.MultipartRequest('POST', Uri.parse('${ApiConstants.backendUrl}/ai/summarize'));
       request.headers['Authorization'] = 'Bearer $token';
+      request.headers['X-Api-Key'] = ApiConstants.apiToken;
 
       if (text != null && text.isNotEmpty) {
         request.fields['text'] = text;
@@ -2266,6 +2269,7 @@ class DataService {
       
       var request = http.MultipartRequest('POST', Uri.parse('${ApiConstants.backendUrl}/student/image'));
       request.headers['Authorization'] = 'Bearer $token';
+      request.headers['X-Api-Key'] = ApiConstants.apiToken;
       
       request.files.add(await http.MultipartFile.fromPath('file', filePath));
       
@@ -2546,6 +2550,7 @@ class DataService {
         Uri.parse(url),
         headers: {
           'Authorization': 'Bearer $token',
+          'X-Api-Key': ApiConstants.apiToken,
           'Content-Type': 'application/json',
         },
         body: json.encode({"student_id": studentId, "category": category ?? "all"}),

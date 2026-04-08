@@ -78,6 +78,7 @@ class CommunityService {
     final token = await _authService.getToken();
     return {
       'Authorization': 'Bearer $token',
+      'X-Api-Key': ApiConstants.apiToken,
       'Content-Type': 'application/json',
     };
   }

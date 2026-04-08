@@ -15,6 +15,7 @@ class AppealService {
     final token = await _getToken();
     return {
       'Authorization': 'Bearer $token',
+      'X-Api-Key': ApiConstants.apiToken,
       'Content-Type': 'application/json',
     };
   }
@@ -64,6 +65,7 @@ class AppealService {
             Uri.parse("${ApiConstants.backendUrl}/student/feedback/stats"),
             headers: {
               "Authorization": "Bearer $token",
+              'X-Api-Key': ApiConstants.apiToken,
               "Accept": "application/json",
               "User-Agent": "TalabaHamkor/1.0 (Mobile)",
             },
@@ -139,6 +141,7 @@ class AppealService {
         url,
         headers: {
           'Authorization': 'Bearer $token',
+          'X-Api-Key': ApiConstants.apiToken,
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: body,
@@ -196,7 +199,10 @@ class AppealService {
     try {
       final response = await http.get(
         url,
-        headers: { 'Authorization': 'Bearer $token' },
+        headers: { 
+          'Authorization': 'Bearer $token',
+          'X-Api-Key': ApiConstants.apiToken,
+        },
       );
 
       if (response.statusCode == 200) {
@@ -221,6 +227,7 @@ class AppealService {
         url,
         headers: {
           'Authorization': 'Bearer $token',
+          'X-Api-Key': ApiConstants.apiToken,
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: {'text': text},
@@ -244,6 +251,7 @@ class AppealService {
         url,
         headers: {
           'Authorization': 'Bearer $token',
+          'X-Api-Key': ApiConstants.apiToken,
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: {'text': text, 'role': role},
@@ -267,6 +275,7 @@ class AppealService {
         url,
         headers: {
           'Authorization': 'Bearer $token',
+          'X-Api-Key': ApiConstants.apiToken,
         },
       );
 
