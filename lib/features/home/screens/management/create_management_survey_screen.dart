@@ -114,12 +114,13 @@ class _CreateManagementSurveyScreenState extends State<CreateManagementSurveyScr
       "title": _titleController.text,
       "role_type": "tutor",
       "type": "rating",
+      "is_active": true,
       "start_at": DateFormat('yyyy-MM-dd HH:mm:ss').format(_startDate),
       "end_at": DateFormat('yyyy-MM-dd HH:mm:ss').format(_endDate),
-      "questions": json.encode(_questions.map((q) => {
+      "questions": _questions.map((q) => {
         "text": q.text,
         "options": q.options.map((o) => {"text": o}).toList(),
-      }).toList()),
+      }).toList(),
     };
 
     final Map<String, dynamic> result;
