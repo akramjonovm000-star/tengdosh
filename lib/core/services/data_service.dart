@@ -309,6 +309,12 @@ class DataService {
       } else {
         try {
           final body = json.decode(utf8.decode(response.bodyBytes));
+          if (response.statusCode == 422) {
+            return {
+              'success': false, 
+              'message': 'Validation Xatosi: ${body['errors'] ?? body['message'] ?? body.toString()}'
+            };
+          }
           return {'success': false, 'message': body['message'] ?? 'Xato: ${response.statusCode}'};
         } catch (_) {
           return {'success': false, 'message': 'Server xatosi: ${response.statusCode}'};
@@ -341,8 +347,18 @@ class DataService {
       if (response.statusCode == 200) {
         return json.decode(utf8.decode(response.bodyBytes));
       } else {
-        final body = json.decode(utf8.decode(response.bodyBytes));
-        return {'success': false, 'message': body['message'] ?? 'Xato: ${response.statusCode}'};
+        try {
+          final body = json.decode(utf8.decode(response.bodyBytes));
+          if (response.statusCode == 422) {
+            return {
+              'success': false, 
+              'message': 'Validation Xatosi: ${body['errors'] ?? body['message'] ?? body.toString()}'
+            };
+          }
+          return {'success': false, 'message': body['message'] ?? 'Xato: ${response.statusCode}'};
+        } catch (_) {
+          return {'success': false, 'message': 'Server xatosi: ${response.statusCode}'};
+        }
       }
     } catch (e) {
       debugPrint("DataService: Error updating management survey: $e");
