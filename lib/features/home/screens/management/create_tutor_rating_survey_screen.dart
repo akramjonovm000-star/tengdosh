@@ -95,7 +95,7 @@ class _CreateTutorRatingSurveyScreenState extends State<CreateTutorRatingSurveyS
       "title": _titleController.text,
       "description": _descriptionController.text,
       "role_type": "tutor",
-      "type": "tutor_rating", // specific type for tutor rating with no questions
+      "type": "rating", // Must be "rating" to pass Laravel authorize() FormRequest check
       "is_active": true,
       "start_at": DateFormat('yyyy-MM-dd HH:mm:ss').format(_startDate),
       "end_at": DateFormat('yyyy-MM-dd HH:mm:ss').format(_endDate),
