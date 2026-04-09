@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/services/data_service.dart';
 import 'create_management_survey_screen.dart';
+import 'create_tutor_rating_survey_screen.dart';
 import 'management_rating_stats_screen.dart';
 
 class ManagementRatingHubScreen extends StatefulWidget {
@@ -87,7 +88,54 @@ class _ManagementRatingHubScreenState extends State<ManagementRatingHubScreen> {
                   subtitle: "Savollar, variantlar va muddatlar",
                   icon: Icons.settings_suggest_rounded,
                   color: Colors.blue,
+                  onTap: () {
+                    _showCreateOptions(context);
+                  },
+                ),
+                const SizedBox(height: 24),
+                // 2. Stats & Analytics Card with Toggle inside
+                _buildStatsCard(context),
+              ],
+            ),
+          ),
+    );
+  }
+
+  void _showCreateOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Text(
+                    "Tanlang",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.quiz_outlined, color: Colors.blue),
+                  ),
+                  title: const Text("So'rovnoma yaratish", style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text("Maxsus savollar va variantlar yaratish"),
                   onTap: () async {
+                    Navigator.pop(context);
                     final result = await Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -99,12 +147,35 @@ class _ManagementRatingHubScreenState extends State<ManagementRatingHubScreen> {
                     }
                   },
                 ),
-                const SizedBox(height: 24),
-                // 2. Stats & Analytics Card with Toggle inside
-                _buildStatsCard(context),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.star_outline_rounded, color: Colors.orange),
+                  ),
+                  title: const Text("Tyutor rating", style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text("Tyutorni 1 dan 5 gacha baholash tizimi"),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CreateTutorRatingSurveyScreen(initialData: _activeSurvey),
+                      ),
+                    );
+                    if (result == true) {
+                      _loadStatus();
+                    }
+                  },
+                ),
               ],
             ),
           ),
+        );
+      },
     );
   }
 
