@@ -422,4 +422,9 @@ class StaffRatingStatsSchema(BaseModel):
 class RatingActivationToggleSchema(BaseModel):
     role_type: str # tutor, dean, vice_dean
     is_active: bool
+    title: Optional[str] = None
+    description: Optional[str] = None
+    start_at: Optional[str] = None # For compatibility with Flutter model
+    end_at: Optional[str] = None   # For compatibility with Flutter model
+    expires_at: Optional[datetime] = None
 

@@ -1,4 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
+from datetime import datetime
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 from typing import List
@@ -130,10 +132,12 @@ async def toggle_rating_activation(
     # 1. Permission check
     is_authorized = staff.role in [
         StaffRole.REKTOR, StaffRole.PROREKTOR, StaffRole.YOSHLAR_PROREKTOR,
-        StaffRole.OWNER, StaffRole.DEVELOPER, StaffRole.DEKAN
+        StaffRole.OWNER, StaffRole.DEVELOPER, StaffRole.DEKAN,
+        StaffRole.DEKAN_ORINBOSARI, StaffRole.DEKAN_YOSHLAR, StaffRole.RAHBARIYAT,
+        StaffRole.DEKANAT
     ]
     if not is_authorized:
-        raise HTTPException(status_code=403, detail="Sizda ushbu amalni bajarish huquqi yo'q")
+        raise HTTPException(status_code=403, detail=f"Sizda ({staff.role}) ushbu amalni bajarish huquqi yo'q")
 
     # 2. Find or Create activation record
     query = select(RatingActivation).where(
@@ -145,13 +149,42 @@ async def toggle_rating_activation(
 
     if activation:
         activation.is_active = req.is_active
+        if req.title: activation.title = req.title
+        if req.description: activation.description = req.description
+        if req.end_at:
+            try:
+                # Flutter sends format 'yyyy-MM-dd HH:mm:ss'
+                activation.expires_at = datetime.strptime(req.end_at, '%Y-%m-%d %H:%M:%S')
+            except:
+                pass
     else:
+        expires_at = None
+        if req.end_at:
+            try:
+                expires_at = datetime.strptime(req.end_at, '%Y-%m-%d %H:%M:%S')
+            except:
+                pass
+                
         activation = RatingActivation(
             university_id=staff.university_id,
             role_type=req.role_type,
-            is_active=req.is_active
+            is_active=req.is_active,
+            title=req.title,
+            description=req.description,
+            expires_at=expires_at
         )
         db.add(activation)
 
     await db.commit()
-    return {"success": True, "is_active": activation.is_active}
+    return {"success": True, "is_active": activation.is_active, "message": "Muvaffaqiyatli saqlandi"}
+
+@router.post("/update")
+async def update_rating_activation(
+    req: RatingActivationToggleSchema,
+    staff: Staff = Depends(get_current_staff),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Alias for /activate to handle existing survey updates.
+    """
+    return await toggle_rating_activation(req, staff, db)
