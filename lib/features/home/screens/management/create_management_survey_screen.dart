@@ -22,6 +22,7 @@ class _CreateManagementSurveyScreenState extends State<CreateManagementSurveyScr
 
   bool _isLoading = false;
   bool _isEditing = false;
+  bool _isActive = false; // Default to Draft (False)
 
   @override
   void initState() {
@@ -33,6 +34,7 @@ class _CreateManagementSurveyScreenState extends State<CreateManagementSurveyScr
       final data = widget.initialData!;
       if (data['start_at'] != null) _startDate = DateTime.parse(data['start_at']);
       if (data['end_at'] != null) _endDate = DateTime.parse(data['end_at']);
+      _isActive = data['is_active'] ?? false;
       
       final List<dynamic>? questionsJson = data['questions'];
       if (questionsJson != null) {
@@ -111,10 +113,11 @@ class _CreateManagementSurveyScreenState extends State<CreateManagementSurveyScr
     setState(() => _isLoading = true);
 
     final surveyData = {
+      if (_isEditing) "id": widget.initialData!['id'],
       "title": _titleController.text,
       "role_type": "tutor",
       "type": "rating",
-      "is_active": true,
+      "is_active": _isActive,
       "start_at": DateFormat('yyyy-MM-dd HH:mm:ss').format(_startDate),
       "end_at": DateFormat('yyyy-MM-dd HH:mm:ss').format(_endDate),
       "questions": _questions.map((q) => {
@@ -204,6 +207,15 @@ class _CreateManagementSurveyScreenState extends State<CreateManagementSurveyScr
                               ),
                             ),
                           ],
+                        ),
+                        const SizedBox(height: 20),
+                        SwitchListTile(
+                          title: const Text("Aktivlashtirish", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          subtitle: Text(_isActive ? "So'rovnoma hozir faol" : "So'rovnoma qoralama (draft) holatida saqlanadi", style: const TextStyle(fontSize: 11)),
+                          value: _isActive,
+                          onChanged: (val) => setState(() => _isActive = val),
+                          activeColor: Colors.blue,
+                          contentPadding: EdgeInsets.zero,
                         ),
                       ],
                     ),

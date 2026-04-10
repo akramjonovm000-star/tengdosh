@@ -1768,6 +1768,7 @@ class RatingActivation(Base):
     title: Mapped[str | None] = mapped_column(String(255), nullable=True)
     description: Mapped[str | None] = mapped_column(Text(), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    questions: Mapped[list | None] = mapped_column(JSON, default=[], nullable=True) # [NEW] Custom questions array
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
 
@@ -1781,7 +1782,8 @@ class RatingRecord(Base):
     rated_person_id: Mapped[int] = mapped_column(Integer, ForeignKey("staff.id", ondelete="CASCADE"), nullable=False, index=True)
     role_type: Mapped[str] = mapped_column(String(32), nullable=False) # tutor, dean, vice_dean
     university_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
-    rating: Mapped[int] = mapped_column(Integer, nullable=False) # 1-5
+    rating: Mapped[int] = mapped_column(Integer, nullable=False) # 1-5 (Overall or single)
+    answers: Mapped[list | None] = mapped_column(JSON, default=[], nullable=True) # [NEW] Custom question answers
     created_at: Mapped[datetime] = mapped_column(DateTime(), default=datetime.utcnow)
 
     user: Mapped["Student"] = relationship("Student")

@@ -398,11 +398,13 @@ class RatingTargetSchema(BaseModel):
 class RatingSubmitSchema(BaseModel):
     rated_person_id: int
     role_type: str
-    rating: int # 1-5
+    rating: int # 1-5 (Overall or single)
+    answers: Optional[list] = [] # [NEW] Custom question answers
 
 class RatingStatusSchema(BaseModel):
     is_active: bool
     active_roles: list[str] = [] # tutor, dean, vice_dean
+    questions: Optional[list] = [] # [NEW] Custom questions list
     expires_at: Optional[datetime] = None
 
 class RatingStatsBreakdownSchema(BaseModel):
@@ -420,11 +422,13 @@ class StaffRatingStatsSchema(BaseModel):
     breakdown: list[RatingStatsBreakdownSchema]
 
 class RatingActivationToggleSchema(BaseModel):
+    id: Optional[int] = None # [NEW] Targeted Survey ID
     role_type: str # tutor, dean, vice_dean
     is_active: bool
     title: Optional[str] = None
     description: Optional[str] = None
-    start_at: Optional[str] = None # For compatibility with Flutter model
-    end_at: Optional[str] = None   # For compatibility with Flutter model
+    start_at: Optional[str] = None   # For compatibility with Flutter model
+    end_at: Optional[str] = None     # For compatibility with Flutter model
     expires_at: Optional[datetime] = None
+    questions: Optional[list] = None # [NEW] Custom questions list
 

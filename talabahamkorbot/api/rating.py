@@ -29,10 +29,12 @@ async def get_active_ratings(
     
     active_roles = [a.role_type for a in activations]
     expires_at = activations[0].expires_at if activations else None
+    questions = activations[0].questions if activations else []
     
     return {
         "is_active": len(active_roles) > 0,
         "active_roles": active_roles,
+        "questions": questions,
         "expires_at": expires_at
     }
 
@@ -137,7 +139,8 @@ async def submit_rating(
         rated_person_id=req.rated_person_id,
         role_type=req.role_type,
         university_id=student.university_id,
-        rating=req.rating
+        rating=req.rating,
+        answers=req.answers or []
     )
     db.add(new_record)
     await db.commit()
