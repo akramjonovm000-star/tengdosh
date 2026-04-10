@@ -4,7 +4,7 @@ from sqlalchemy import select, func
 
 from api.dependencies import get_current_student, get_db
 from api.schemas import StudentDashboardSchema
-from database.models import Student, Staff, UserActivity, ClubMembership, Election, RatingActivation
+from database.models import Student, Staff, UserActivity, ClubMembership, Election, RatingActivation, RatingRecord
 
 router = APIRouter()
 
@@ -101,16 +101,30 @@ async def get_dashboard_stats(
         if active_election:
             active_election_id = active_election.id
 
-    # 6. Rating Info
+    # 6. Rating Info (Enhanced)
     act_query = select(RatingActivation).where(
         RatingActivation.university_id == student.university_id,
         RatingActivation.is_active == True
-    )
+    ).order_by(RatingActivation.created_at.desc())
+    
     act_res = await db.execute(act_query)
     activations = act_res.scalars().all()
     has_active_rating = len(activations) > 0
     active_roles = [a.role_type for a in activations]
-    rating_expires_at = activations[0].expires_at if activations else None
+    
+    # Prioritize 'water' role if multiple exist
+    main_act = next((a for a in activations if a.role_type == 'water'), activations[0]) if activations else None
+    
+    # Check if already voted for the primary one
+    has_voted = False
+    if main_act:
+        vote_query = select(RatingRecord).where(
+            RatingRecord.user_id == student.id,
+            RatingRecord.activation_id == main_act.id
+        ).limit(1)
+        v_res = await db.execute(vote_query)
+        if v_res.scalar_one_or_none():
+            has_voted = True
 
     return StudentDashboardSchema(
         gpa=gpa,
@@ -124,5 +138,9 @@ async def get_dashboard_stats(
         active_election_id=active_election_id,
         has_active_rating=has_active_rating,
         active_rating_roles=active_roles,
-        expires_at=rating_expires_at
+        expires_at=main_act.expires_at if main_act else None,
+        active_rating_id=main_act.id if main_act else None,
+        active_rating_title=main_act.title if main_act else (main_act.activation_name if main_act else None),
+        active_rating_questions=main_act.questions if main_act else None,
+        has_voted=has_voted
     )

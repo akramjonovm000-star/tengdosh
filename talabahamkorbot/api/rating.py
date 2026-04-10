@@ -108,6 +108,24 @@ async def get_rating_targets(
                 role_name=role_display
             ))
 
+    elif role_type == "water":
+        # Global/General survey (like WATER) - return a virtual target
+        act_query = select(RatingActivation).where(
+            RatingActivation.university_id == student.university_id,
+            RatingActivation.role_type == "water",
+            RatingActivation.is_active == True
+        )
+        act_res = await db.execute(act_query)
+        activation = act_res.scalar_one_or_none()
+        
+        if activation:
+            targets.append(RatingTargetSchema(
+                staff_id=0, # Virtual ID
+                full_name=activation.title or "So'rovnoma",
+                image_url=None,
+                role_name="Umumiy so'rovnoma"
+            ))
+
     return targets
 
 @router.post("/submit")
@@ -118,25 +136,30 @@ async def submit_rating(
 ):
     """
     Anonymously submit a rating (1-5 targets). 
-    Enforces one-rating-per-student-per-person rule.
+    Enforces one-rating-per-student-per-activation rule.
     """
     # 1. Basic validation
-    if req.rating < 1 or req.rating > 5:
-        raise HTTPException(status_code=400, detail="Baho 1-5 oralig'ida bo'lishi kerak")
-        
-    # 2. Check if already rated this person
+    # For custom surveys, rating might be 0 (if only multi-choice answers matter)
+    # but we'll stick to 1-5 or 0 for now.
+    
+    # 2. Check if already rated for THIS activation
     check_query = select(RatingRecord).where(
         RatingRecord.user_id == student.id,
-        RatingRecord.rated_person_id == req.rated_person_id
+        RatingRecord.activation_id == req.activation_id
     )
+    
+    # If it's a person-specific rating, also check person
+    if req.rated_person_id and req.rated_person_id > 0:
+        check_query = check_query.where(RatingRecord.rated_person_id == req.rated_person_id)
+        
     check_res = await db.execute(check_query)
     if check_res.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Siz ushbu shaxsni allaqachon baholagansiz")
+        raise HTTPException(status_code=400, detail="Siz ushbu so'rovnomada allaqachon qatnashgansiz")
         
     # 3. Save rating
     new_record = RatingRecord(
         user_id=student.id,
-        rated_person_id=req.rated_person_id,
+        rated_person_id=req.rated_person_id if (req.rated_person_id and req.rated_person_id > 0) else None,
         activation_id=req.activation_id,
         role_type=req.role_type,
         university_id=student.university_id,
@@ -146,4 +169,4 @@ async def submit_rating(
     db.add(new_record)
     await db.commit()
     
-    return {"status": "success", "message": "Bahoyingiz qabul qilindi. Rahmat!"}
+    return {"status": "success", "message": "Ma'lumotlaringiz qabul qilindi. Rahmat!"}

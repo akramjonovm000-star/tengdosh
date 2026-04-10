@@ -18,12 +18,10 @@ class _StudentRatingScreenState extends State<StudentRatingScreen> {
   final DataService _dataService = DataService();
   bool _isLoading = true;
   dynamic _target;
-  int? _selectedRating;
-  bool _isSubmitting = false;
-  
-  DateTime? _expiresAt;
-  Timer? _timer;
-  Duration _timeLeft = Duration.zero;
+  final Map<String, dynamic> _answers = {};
+  List<dynamic>? _questions;
+  int? _activationId;
+  String? _surveyTitle;
 
   @override
   void initState() {
@@ -39,22 +37,32 @@ class _StudentRatingScreenState extends State<StudentRatingScreen> {
 
   Future<void> _loadData() async {
     try {
-      final targets = await _dataService.getRatingTargets(widget.roleType);
-      
-      // Get expires_at from dashboard data as well
+      // 1. Get Dashboard Metadata first (has questions)
       final dashboard = await _dataService.getDashboardStats();
-      final expiresAtStr = dashboard['expires_at'];
       
       if (mounted) {
         setState(() {
-          if (targets.isNotEmpty) {
-            _target = targets.first;
-          }
+          _questions = dashboard['active_rating_questions'];
+          _activationId = dashboard['active_rating_id'];
+          _surveyTitle = dashboard['active_rating_title'];
+          
+          final expiresAtStr = dashboard['expires_at'];
           if (expiresAtStr != null) {
             _expiresAt = DateTime.tryParse(expiresAtStr);
             if (_expiresAt != null) {
               _startTimer();
             }
+          }
+        });
+      }
+
+      // 2. Get Targets (if not general survey)
+      final targets = await _dataService.getRatingTargets(widget.roleType);
+      
+      if (mounted) {
+        setState(() {
+          if (targets.isNotEmpty) {
+            _target = targets.first;
           }
           _isLoading = false;
         });
@@ -93,13 +101,35 @@ class _StudentRatingScreenState extends State<StudentRatingScreen> {
   }
 
   Future<void> _submit() async {
-    if (_selectedRating == null || _target == null) return;
+    // Validation
+    if (_questions != null && _questions!.isNotEmpty) {
+       if (_answers.length < _questions!.length) {
+         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Iltimos, barcha savollarga javob bering")));
+         return;
+       }
+    } else {
+       if (_selectedRating == null) return;
+    }
+
+    if (_target == null) return;
 
     setState(() => _isSubmitting = true);
+    
+    // Prepare answers list if multi-question
+    List<Map<String, dynamic>>? answerList;
+    if (_questions != null) {
+      answerList = _answers.entries.map((e) => {
+        'question_id': int.tryParse(e.key) ?? 0,
+        'selected_option': e.value
+      }).toList();
+    }
+
     final result = await _dataService.submitRating(
       ratedPersonId: _target['staff_id'],
       roleType: widget.roleType,
-      rating: _selectedRating!,
+      rating: _selectedRating ?? 5, // Default to 5 if multi-question only
+      activationId: _activationId,
+      answers: answerList
     );
 
     if (mounted) {
@@ -133,7 +163,7 @@ class _StudentRatingScreenState extends State<StudentRatingScreen> {
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: Text(
-          AppDictionary.tr(context, 'lbl_rate_your_tutor'),
+          _surveyTitle ?? AppDictionary.tr(context, 'lbl_rate_your_tutor'),
           style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         centerTitle: true,
@@ -155,7 +185,11 @@ class _StudentRatingScreenState extends State<StudentRatingScreen> {
                           children: [
                             _buildTutorCard(),
                             const SizedBox(height: 32),
-                            _buildRatingSection(),
+                            if (_questions != null && _questions!.isNotEmpty) ...[
+                               _buildMultiQuestionSection(),
+                            ] else ...[
+                               _buildRatingSection(),
+                            ],
                             const SizedBox(height: 40),
                             _buildSubmitButton(),
                             const SizedBox(height: 32),
@@ -202,6 +236,11 @@ class _StudentRatingScreenState extends State<StudentRatingScreen> {
   }
 
   Widget _buildTutorCard() {
+    // Hide tutor card if it's a virtual generic target
+    if (widget.roleType == 'water' || _target['staff_id'] == 0) {
+       return Container();
+    }
+
     final imageUrl = _target['image_url'];
     return Container(
       width: double.infinity,
@@ -248,12 +287,68 @@ class _StudentRatingScreenState extends State<StudentRatingScreen> {
               borderRadius: BorderRadius.circular(100),
             ),
             child: Text(
-              _target['role_name'] ?? 'Guruh tyutori',
+              _target['role_name'] ?? 'Tyutor',
               style: GoogleFonts.inter(color: AppTheme.primaryBlue, fontWeight: FontWeight.w600, fontSize: 13),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMultiQuestionSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ..._questions!.map((q) {
+          final qId = q['id'].toString();
+          final title = q['title'] ?? "";
+          final options = q['options'] as List? ?? [];
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12, top: 24),
+                child: Text(
+                  title,
+                  style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.textBlack),
+                ),
+              ),
+              ...options.map((opt) {
+                final isSelected = _answers[qId] == opt;
+                return GestureDetector(
+                  onTap: () => setState(() => _answers[qId] = opt),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppTheme.primaryBlue.withOpacity(0.1) : Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected ? AppTheme.primaryBlue : Colors.grey[300]!,
+                        width: 1.5
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+                          color: isSelected ? AppTheme.primaryBlue : Colors.grey,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(opt.toString(), style: GoogleFonts.inter(fontSize: 15)),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ],
+          );
+        }),
+      ],
     );
   }
 
@@ -272,7 +367,7 @@ class _StudentRatingScreenState extends State<StudentRatingScreen> {
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 20),
           child: Text(
-            "Tyutoringizga baho bering",
+            "O'z bahongizni bering",
             style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textBlack),
           ),
         ),
@@ -334,7 +429,11 @@ class _StudentRatingScreenState extends State<StudentRatingScreen> {
   }
 
   Widget _buildSubmitButton() {
-    final isEnabled = _selectedRating != null && !_isSubmitting;
+    final bool hasSelection = (_questions != null && _questions!.isNotEmpty) 
+        ? _answers.length == _questions!.length
+        : _selectedRating != null;
+        
+    final isEnabled = hasSelection && !_isSubmitting;
 
     return Container(
       width: double.infinity,
@@ -394,7 +493,30 @@ class _EmptyTargetView extends StatelessWidget {
             ),
             const SizedBox(height: 32),
             Text(
-              AppDictionary.tr(context, 'msg_no_rating_targets'),
+              "Hozirda faol so'rovnomalar mavjud emas",
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.textBlack),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              "Yangi so'rovnomalar paydo bo'lganda sizga xabar beramiz.",
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(color: Colors.grey[600], fontSize: 16),
+            ),
+            const SizedBox(height: 40),
+            SizedBox(
+              width: 200,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(AppDictionary.tr(context, 'btn_back')),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.textBlack),
             ),

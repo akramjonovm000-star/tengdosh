@@ -97,6 +97,10 @@ class StudentDashboardSchema(BaseModel):
     has_active_rating: bool = False
     active_rating_roles: list[str] = []
     expires_at: Optional[datetime] = None
+    active_rating_id: Optional[int] = None # [NEW]
+    active_rating_title: Optional[str] = None # [NEW]
+    active_rating_questions: Optional[list] = None # [NEW]
+    has_voted: bool = False # [NEW]
 
 class ClubSchema(BaseModel):
     id: int

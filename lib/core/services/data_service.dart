@@ -2991,6 +2991,8 @@ class DataService {
     required int ratedPersonId,
     required String roleType,
     required int rating,
+    int? activationId,
+    List<Map<String, dynamic>>? answers,
   }) async {
     try {
       final response = await _post(
@@ -2999,6 +3001,8 @@ class DataService {
           'rated_person_id': ratedPersonId,
           'role_type': roleType,
           'rating': rating,
+          if (activationId != null) 'activation_id': activationId,
+          if (answers != null) 'answers': answers,
         },
       );
       if (response.statusCode == 200) {

@@ -229,10 +229,9 @@ async def list_management_surveys(
                 status = "active"
         
         # Calculate total votes for this specific activation
-        # Note: RatingRecord needs a way to link to an activation if we want exact stats per period.
-        # But currently RatingRecord only has role_type.
-        # For now, let's return a global count per person or an aggregate count.
-        # Actually, let's just return 0 or implement a better link later.
+        v_query = select(func.count(RatingRecord.id)).where(RatingRecord.activation_id == a.id)
+        v_res = await db.execute(v_query)
+        total_votes = v_res.scalar_one()
         
         surveys.append({
             "id": a.id,
@@ -244,7 +243,7 @@ async def list_management_surveys(
             "questions": a.questions or [],
             "start_at": a.created_at.strftime('%Y-%m-%d %H:%M:%S'),
             "end_at": a.expires_at.strftime('%Y-%m-%d %H:%M:%S') if a.expires_at else "Cheksiz",
-            "total_votes": 0 # Placeholder
+            "total_votes": total_votes
         })
         
     return surveys
@@ -259,3 +258,142 @@ async def update_rating_activation(
     Alias for /activate to handle existing survey updates.
     """
     return await toggle_rating_activation(req, staff, db)
+
+@router.get("/stats/{activation_id}")
+async def get_management_survey_stats(
+    activation_id: int,
+    staff: Staff = Depends(get_current_staff),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Detailed statistics for a specific survey activation.
+    """
+    # 1. Get Activation
+    act_query = select(RatingActivation).where(RatingActivation.id == activation_id)
+    act_res = await db.execute(act_query)
+    activation = act_res.scalar_one_or_none()
+    if not activation:
+        raise HTTPException(status_code=404, detail="So'rovnoma topilmadi")
+        
+    # 2. Get all records for this activation
+    rec_query = select(RatingRecord).where(RatingRecord.activation_id == activation_id)
+    rec_res = await db.execute(rec_query)
+    records = rec_res.scalars().all()
+    
+    overall_votes = len(records)
+    
+    # 3. Aggregate Questions Summary
+    questions_summary = []
+    questions_config = activation.questions or []
+    
+    for idx, q in enumerate(questions_config):
+        q_id = q.get('id')
+        q_text = q.get('question', f"Savol {idx+1}")
+        options = q.get('options', [])
+        
+        # Initialize distribution
+        dist = {str(opt): 0 for opt in options}
+        
+        for r in records:
+            if r.answers:
+                # Find answer by question_id if available, otherwise fallback to index
+                answer_val = None
+                if isinstance(r.answers, list):
+                    for ans_item in r.answers:
+                        if isinstance(ans_item, dict) and ans_item.get('question_id') == q_id:
+                            answer_val = ans_item.get('selected_option')
+                            break
+                    
+                    if answer_val is None and len(r.answers) > idx:
+                        ans_item = r.answers[idx]
+                        if isinstance(ans_item, dict):
+                            answer_val = ans_item.get('selected_option')
+                        else:
+                            answer_val = ans_item
+
+                if str(answer_val) in dist:
+                    dist[str(answer_val)] += 1
+        
+        votes_distribution = []
+        for opt in options:
+            count = dist[str(opt)]
+            pct = (count / overall_votes * 100) if overall_votes > 0 else 0
+            votes_distribution.append({
+                "label": str(opt),
+                "count": count,
+                "percentage": round(pct, 1)
+            })
+            
+        questions_summary.append({
+            "question": q_text,
+            "votes_distribution": votes_distribution
+        })
+        
+    # 4. Tutor Rankings with per-tutor question breakdown
+    tutors_ranking = []
+    tutor_groups = {}
+    for r in records:
+        if r.rated_person_id not in tutor_groups:
+            tutor_groups[r.rated_person_id] = []
+        tutor_groups[r.rated_person_id].append(r)
+        
+    for staff_id, t_recs in tutor_groups.items():
+        if not staff_id: continue
+        
+        s_query = select(Staff).where(Staff.id == staff_id)
+        s_res = await db.execute(s_query)
+        tutor_info = s_res.scalar_one_or_none()
+        
+        if tutor_info:
+            avg = sum(r.rating for r in t_recs) / len(t_recs) if t_recs else 0
+            
+            # Calculate per-tutor question breakdown
+            tutor_q_summary = []
+            for idx, q in enumerate(questions_config):
+                q_id = q.get('id')
+                options = q.get('options', [])
+                t_dist = {str(opt): 0 for opt in options}
+                
+                for r in t_recs:
+                    answer_val = None
+                    if isinstance(r.answers, list):
+                        for ans_item in r.answers:
+                            if isinstance(ans_item, dict) and ans_item.get('question_id') == q_id:
+                                answer_val = ans_item.get('selected_option')
+                                break
+                    if str(answer_val) in t_dist:
+                        t_dist[str(answer_val)] += 1
+                
+                t_dist_list = []
+                for opt in options:
+                    t_count = t_dist[str(opt)]
+                    t_pct = (t_count / len(t_recs) * 100) if t_recs else 0
+                    t_dist_list.append({
+                        "label": str(opt),
+                        "count": t_count,
+                        "percentage": round(t_pct, 1)
+                    })
+                
+                tutor_q_summary.append({
+                    "question": q.get('question', f"Savol {idx+1}"),
+                    "distribution": t_dist_list
+                })
+
+            tutors_ranking.append({
+                "staff_id": staff_id,
+                "full_name": tutor_info.full_name,
+                "average_rating": round(avg, 1),
+                "total_votes": len(t_recs),
+                "image_url": tutor_info.image_url,
+                "questions_breakdown": tutor_q_summary
+            })
+            
+    # Sort by avg rating
+    tutors_ranking.sort(key=lambda x: x['average_rating'], reverse=True)
+    
+    return {
+        "overall_votes": overall_votes,
+        "completion_rate": 100.0, # Placeholder
+        "questions_summary": questions_summary,
+        "tutors_ranking": tutors_ranking
+    }

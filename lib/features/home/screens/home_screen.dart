@@ -471,7 +471,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
 
             if (_dashboard?['has_active_rating'] == true && 
-                (_dashboard?['active_rating_roles'] as List).contains('tutor') &&
+                _dashboard?['has_voted'] != true &&
                 student != null)
               Container(
                 margin: const EdgeInsets.only(bottom: 24),
@@ -496,11 +496,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            AppDictionary.tr(context, 'lbl_tutor_rating'),
+                            _dashboard?['active_rating_title'] ?? AppDictionary.tr(context, 'lbl_tutor_rating'),
                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
                           ),
                           Text(
-                            "O'z tyutoringiz foaliyatini baholang",
+                            "O'z fikringizni bildiring va platformani yaxshilang",
                             style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13),
                           ),
                         ],
@@ -508,9 +508,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     ElevatedButton(
                       onPressed: () {
+                        final roles = _dashboard?['active_rating_roles'] as List? ?? [];
+                        final roleToPass = roles.contains('water') ? 'water' : (roles.isNotEmpty ? roles.first : 'tutor');
+                        
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const StudentRatingScreen(roleType: 'tutor')),
+                          MaterialPageRoute(builder: (_) => StudentRatingScreen(roleType: roleToPass as String)),
                         ).then((_) => _loadData(refresh: true));
                       },
                       style: ElevatedButton.styleFrom(
@@ -520,7 +523,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         elevation: 0,
                       ),
-                      child: Text(AppDictionary.tr(context, 'lbl_tutor_rating')),
+                      child: Text(AppDictionary.tr(context, 'btn_start')),
                     )
                   ],
                 ),
