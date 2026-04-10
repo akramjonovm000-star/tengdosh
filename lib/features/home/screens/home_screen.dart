@@ -472,7 +472,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             if (_dashboard?['has_active_rating'] == true && 
                 (_dashboard?['active_rating_roles'] as List).contains('tutor') &&
-                student != null && student.courseNumber < 4)
+                student != null)
               Container(
                 margin: const EdgeInsets.only(bottom: 24),
                 padding: const EdgeInsets.all(16),
