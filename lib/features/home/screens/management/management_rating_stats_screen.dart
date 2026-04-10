@@ -150,38 +150,6 @@ class _SurveyListItem extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        statusText,
-                        style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-                Text(
-                  "${survey['total_votes']} ta ovoz",
-                  style: TextStyle(color: Colors.grey[600], fontSize: 13, fontWeight: FontWeight.w500),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
             InkWell(
               onTap: () {
                 Navigator.push(
@@ -191,23 +159,61 @@ class _SurveyListItem extends StatelessWidget {
                   ),
                 );
               },
-              child: Text(
-                survey['title'] ?? 'Nomsiz so\'rovnoma',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              borderRadius: BorderRadius.circular(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: statusColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              statusText,
+                              style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        "${survey['total_votes']} ta ovoz",
+                        style: TextStyle(color: Colors.grey[600], fontSize: 13, fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    survey['title'] ?? 'Nomsiz so\'rovnoma',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Icon(Icons.calendar_today_outlined, size: 14, color: Colors.grey[600]),
+                      const SizedBox(width: 8),
+                      Text(
+                        "${survey['start_at'].substring(0, 10)} - ${survey['end_at'].substring(0, 10)}",
+                        style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                      ),
+                      const Spacer(),
+                      Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.blueGrey[200]),
+                    ],
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Icon(Icons.calendar_today_outlined, size: 14, color: Colors.grey[600]),
-                const SizedBox(width: 8),
-                Text(
-                  "${survey['start_at'].substring(0, 10)} - ${survey['end_at'].substring(0, 10)}",
-                  style: TextStyle(color: Colors.grey[600], fontSize: 13),
-                ),
-                const Spacer(),
-                const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey),
-              ],
             ),
             const SizedBox(height: 20),
             const Divider(height: 1),
