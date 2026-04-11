@@ -1581,10 +1581,6 @@ class AppDictionary {
       'uz': "Boshlash",
       'ru': "Начать",
     },
-    'btn_submit': {
-      'uz': "Yuborish",
-      'ru': "Отправить",
-    },
 
     'lbl_analytics': {
       'uz': "Analitika",
