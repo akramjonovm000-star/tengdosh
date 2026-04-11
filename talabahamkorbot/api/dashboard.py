@@ -140,7 +140,7 @@ async def get_dashboard_stats(
         active_rating_roles=active_roles,
         expires_at=main_act.expires_at if main_act else None,
         active_rating_id=main_act.id if main_act else None,
-        active_rating_title=main_act.title if main_act else (main_act.activation_name if main_act else None),
+        active_rating_title=(main_act.title if main_act and main_act.title else "So'rovnoma") if main_act else None,
         active_rating_questions=main_act.questions if main_act else None,
         has_voted=has_voted
     )

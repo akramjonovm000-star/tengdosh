@@ -83,31 +83,62 @@ class _SurveyDetailAnalyticsScreenState extends State<SurveyDetailAnalyticsScree
 
   @override
   Widget build(BuildContext context) {
+    final String roleType = _analytics['role_type'] ?? 'tutor';
+    final bool isGeneral = roleType == 'water' || roleType == 'food';
+    final List tutors = _analytics['tutors_ranking'] as List? ?? [];
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text(_analytics['title'] ?? widget.title),
         elevation: 0,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
+        actions: [
+          IconButton(
+            onPressed: _loadAnalytics,
+            icon: const Icon(Icons.refresh_rounded),
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSummaryHeader(),
-                  const SizedBox(height: 24),
-                  const Text("Savollar bo'yicha tahlil", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-                  ...(_analytics['questions_summary'] as List).map((q) => _buildQuestionAnalytics(q)).toList(),
-                  const SizedBox(height: 24),
-                  const Text("Tyutorlar reytingi", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-                  ...(_analytics['tutors_ranking'] as List).map((t) => _buildTutorRankCard(t)).toList(),
-                ],
+          : RefreshIndicator(
+              onRefresh: _loadAnalytics,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSummaryHeader(),
+                    const SizedBox(height: 24),
+                    const Text(
+                      "Umumiy savollar tahlili", 
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
+                    ),
+                    const SizedBox(height: 16),
+                    ...(_analytics['questions_summary'] as List? ?? []).map((q) => _buildQuestionAnalytics(q)).toList(),
+                    
+                    if (!isGeneral || tutors.length > 1) ...[
+                      const SizedBox(height: 24),
+                      Text(
+                        isGeneral ? "Batafsil natijalar" : "Tyutorlar reytingi", 
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
+                      ),
+                      const SizedBox(height: 16),
+                      ...tutors.map((t) => _buildTutorRankCard(t)).toList(),
+                    ] else if (tutors.isNotEmpty) ...[
+                      const SizedBox(height: 24),
+                      const Text(
+                        "Batafsil ma'lumot", 
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
+                      ),
+                      const SizedBox(height: 16),
+                      _buildTutorRankCard(tutors.first),
+                    ],
+                  ],
+                ),
               ),
             ),
     );
@@ -199,33 +230,99 @@ class _SurveyDetailAnalyticsScreenState extends State<SurveyDetailAnalyticsScree
   }
 
   Widget _buildTutorRankCard(dynamic t) {
+    final List<dynamic> breakdown = t['questions_breakdown'] ?? [];
+    
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      clipBehavior: Clip.antiAlias,
+      child: ExpansionTile(
+        title: Text(t['full_name'], style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text("${t['total_votes']} ta ovoz olingan", style: const TextStyle(fontSize: 12)),
         leading: CircleAvatar(
           backgroundColor: Colors.blue[50],
           backgroundImage: t['image_url'] != null ? CachedNetworkImageProvider(t['image_url']) : null,
           child: t['image_url'] == null ? const Icon(Icons.person, color: Colors.blue) : null,
         ),
-        title: Text(t['full_name'], style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text("${t['total_votes']} ta ovoz olingan", style: const TextStyle(fontSize: 12)),
         trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(color: Colors.blue, borderRadius: BorderRadius.circular(10)),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.star_rounded, color: Colors.white, size: 16),
+              const Icon(Icons.star_rounded, color: Colors.blue, size: 16),
               const SizedBox(width: 4),
               Text(
                 t['average_rating'].toString(),
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
               ),
             ],
           ),
         ),
+        childrenPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        expandedCrossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (breakdown.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text("Batafsil ma'lumot mavjud emas", style: TextStyle(color: Colors.grey, fontSize: 13)),
+            )
+          else ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+              child: Text(
+                "Savollar kesimida natijalar:",
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.indigo),
+              ),
+            ),
+            ...breakdown.map((q) => _buildTutorQuestionBreakdown(q)).toList(),
+          ]
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTutorQuestionBreakdown(dynamic q) {
+    final List<dynamic> dist = q['distribution'] ?? [];
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(q['question'], style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+          const SizedBox(height: 12),
+          ...dist.map((d) => Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(d['label'], style: const TextStyle(fontSize: 12)),
+                    Text("${d['percentage']}%", style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(2),
+                  child: LinearProgressIndicator(
+                    value: (d['percentage'] as num).toDouble() / 100,
+                    backgroundColor: Colors.white,
+                    color: _getBarColor(d['label']).withOpacity(0.7),
+                    minHeight: 4,
+                  ),
+                ),
+              ],
+            ),
+          )).toList(),
+        ],
       ),
     );
   }

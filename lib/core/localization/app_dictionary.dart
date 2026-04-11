@@ -1577,6 +1577,14 @@ class AppDictionary {
       'uz': "Tyutoringizni baholang",
       'ru': "Оцените своего тьютора",
     },
+    'btn_start': {
+      'uz': "Boshlash",
+      'ru': "Начать",
+    },
+    'btn_submit': {
+      'uz': "Yuborish",
+      'ru': "Отправить",
+    },
 
     'lbl_analytics': {
       'uz': "Analitika",

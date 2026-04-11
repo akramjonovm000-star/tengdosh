@@ -338,13 +338,27 @@ async def get_management_survey_stats(
         tutor_groups[r.rated_person_id].append(r)
         
     for staff_id, t_recs in tutor_groups.items():
-        if not staff_id: continue
+        tutor_info = None
+        full_name = "Umumiy natijalar"
+        image_url = None
         
-        s_query = select(Staff).where(Staff.id == staff_id)
-        s_res = await db.execute(s_query)
-        tutor_info = s_res.scalar_one_or_none()
-        
-        if tutor_info:
+        if staff_id and staff_id > 0:
+            s_query = select(Staff).where(Staff.id == staff_id)
+            s_res = await db.execute(s_query)
+            tutor_info = s_res.scalar_one_or_none()
+            if tutor_info:
+                full_name = tutor_info.full_name
+                image_url = tutor_info.image_url
+            else:
+                continue # Unknown staff
+        else:
+            # Virtual target (staff_id=0 or None)
+            if activation.role_type == 'water':
+                full_name = "Suv ta'minoti tahlili"
+            elif activation.role_type == 'food':
+                 full_name = "Oshxona faoliyati tahlili"
+
+        if True: # Always proceed for virtual or found staff
             avg = sum(r.rating for r in t_recs) / len(t_recs) if t_recs else 0
             
             # Calculate per-tutor question breakdown
@@ -392,6 +406,10 @@ async def get_management_survey_stats(
     tutors_ranking.sort(key=lambda x: x['average_rating'], reverse=True)
     
     return {
+        "id": activation.id,
+        "title": activation.title,
+        "description": activation.description,
+        "role_type": activation.role_type,
         "overall_votes": overall_votes,
         "completion_rate": 100.0, # Placeholder
         "questions_summary": questions_summary,
