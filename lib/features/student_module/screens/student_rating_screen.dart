@@ -22,6 +22,11 @@ class _StudentRatingScreenState extends State<StudentRatingScreen> {
   List<dynamic>? _questions;
   int? _activationId;
   String? _surveyTitle;
+  Timer? _timer;
+  DateTime? _expiresAt;
+  Duration _timeLeft = Duration.zero;
+  int? _selectedRating;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -104,7 +109,7 @@ class _StudentRatingScreenState extends State<StudentRatingScreen> {
     // Validation
     if (_questions != null && _questions!.isNotEmpty) {
        if (_answers.length < _questions!.length) {
-         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Iltimos, barcha savollarga javob bering")));
+         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Iltimos, barcha savollarga javob bering")));
          return;
        }
     } else {
@@ -493,36 +498,13 @@ class _EmptyTargetView extends StatelessWidget {
             ),
             const SizedBox(height: 32),
             Text(
-              "Hozirda faol so'rovnomalar mavjud emas",
+              AppDictionary.tr(context, 'msg_coming_soon'),
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.textBlack),
             ),
             const SizedBox(height: 12),
             Text(
-              "Yangi so'rovnomalar paydo bo'lganda sizga xabar beramiz.",
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(color: Colors.grey[600], fontSize: 16),
-            ),
-            const SizedBox(height: 40),
-            SizedBox(
-              width: 200,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(AppDictionary.tr(context, 'btn_back')),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.textBlack),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              AppDictionary.tr(context, 'msg_rating_unavailable'),
+              AppDictionary.tr(context, 'msg_no_data'),
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(color: Colors.grey[600], fontSize: 16),
             ),
