@@ -23,6 +23,7 @@ class _CreateManagementSurveyScreenState extends State<CreateManagementSurveyScr
   bool _isLoading = false;
   bool _isEditing = false;
   bool _isActive = false; // Default to Draft (False)
+  String _roleType = "tutor"; // Default role type
 
   @override
   void initState() {
@@ -35,6 +36,7 @@ class _CreateManagementSurveyScreenState extends State<CreateManagementSurveyScr
       if (data['start_at'] != null) _startDate = DateTime.parse(data['start_at']);
       if (data['end_at'] != null) _endDate = DateTime.parse(data['end_at']);
       _isActive = data['is_active'] ?? false;
+      _roleType = data['role_type'] ?? "tutor";
       
       final List<dynamic>? questionsJson = data['questions'];
       if (questionsJson != null) {
@@ -124,7 +126,7 @@ class _CreateManagementSurveyScreenState extends State<CreateManagementSurveyScr
     final surveyData = {
       if (_isEditing) "id": widget.initialData!['id'],
       "title": _titleController.text,
-      "role_type": "tutor",
+      "role_type": _roleType,
       "type": "rating",
       "is_active": _isActive,
       "start_at": DateFormat('yyyy-MM-dd HH:mm:ss').format(_startDate),
@@ -230,6 +232,8 @@ class _CreateManagementSurveyScreenState extends State<CreateManagementSurveyScr
                           activeColor: Colors.blue,
                           contentPadding: EdgeInsets.zero,
                         ),
+                        const SizedBox(height: 16),
+                        _buildRoleSelector(),
                       ],
                     ),
                   ),
@@ -399,6 +403,34 @@ class _CreateManagementSurveyScreenState extends State<CreateManagementSurveyScr
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildRoleSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("So'rovnoma yo'nalishi (Rol turi):", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.blueGrey)),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          value: _roleType,
+          items: const [
+            DropdownMenuItem(value: "tutor", child: Text("Tyutorlar baholashi")),
+            DropdownMenuItem(value: "water", child: Text("Suv ta'minoti tahlili")),
+            DropdownMenuItem(value: "food", child: Text("Oshxona / Ovqatlanish")),
+            DropdownMenuItem(value: "dean", child: Text("Dekanat / Ma'muriyat")),
+          ],
+          onChanged: (val) {
+            if (val != null) setState(() => _roleType = val);
+          },
+          decoration: InputDecoration(
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            filled: true,
+            fillColor: Colors.grey[50],
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          ),
+        ),
+      ],
     );
   }
 }

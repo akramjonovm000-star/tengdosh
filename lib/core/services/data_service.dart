@@ -198,6 +198,10 @@ class DataService {
           "has_active_rating": data['has_active_rating'] ?? false,
           "active_rating_roles": data['active_rating_roles'] ?? [],
           "expires_at": data['expires_at'],
+          "active_rating_id": data['active_rating_id'],
+          "active_rating_title": data['active_rating_title'],
+          "active_rating_questions": data['active_rating_questions'],
+          "has_voted": data['has_voted'] ?? false,
         };
 
         // Update Local DB (Non-blocking or at least non-failing for UI)

@@ -242,7 +242,12 @@ class _StudentRatingScreenState extends State<StudentRatingScreen> {
 
   Widget _buildTutorCard() {
     // Hide tutor card if it's a virtual generic target
-    if (widget.roleType == 'water' || _target['staff_id'] == 0) {
+    final isGeneral = widget.roleType == 'water' || 
+                      widget.roleType == 'food' || 
+                      widget.roleType == 'dean' ||
+                      (_target != null && _target['staff_id'] == 0);
+                      
+    if (isGeneral) {
        return Container();
     }
 
