@@ -72,7 +72,7 @@ async def get_rating_targets(
         ).options(selectinload(TutorGroup.tutor))
         
         tg_res = await db.execute(tg_query)
-        tg = tg_res.scalar_one_or_none()
+        tg = tg_res.scalars().first()
         
         if tg and tg.tutor:
             targets.append(RatingTargetSchema(
@@ -108,11 +108,11 @@ async def get_rating_targets(
                 role_name=role_display
             ))
 
-    elif role_type == "water":
-        # Global/General survey (like WATER) - return a virtual target
+    elif role_type in ["water", "food", "cleanliness", "management", "general"]:
+        # Global/General survey - return a virtual target
         act_query = select(RatingActivation).where(
             RatingActivation.university_id == student.university_id,
-            RatingActivation.role_type == "water",
+            RatingActivation.role_type == role_type,
             RatingActivation.is_active == True
         )
         act_res = await db.execute(act_query)
@@ -121,6 +121,24 @@ async def get_rating_targets(
         if activation:
             targets.append(RatingTargetSchema(
                 staff_id=0, # Virtual ID
+                full_name=activation.title or "So'rovnoma",
+                image_url=None,
+                role_name="Umumiy so'rovnoma"
+            ))
+
+    # [NEW] Ultimate fallback: If survey is active but no targets (e.g. tutor not assigned)
+    # return a generic target so student can still answer the custom questions.
+    if not targets:
+        act_query = select(RatingActivation).where(
+            RatingActivation.university_id == student.university_id,
+            RatingActivation.role_type == role_type,
+            RatingActivation.is_active == True
+        )
+        act_res = await db.execute(act_query)
+        activation = act_res.scalar_one_or_none()
+        if activation:
+            targets.append(RatingTargetSchema(
+                staff_id=0,
                 full_name=activation.title or "So'rovnoma",
                 image_url=None,
                 role_name="Umumiy so'rovnoma"
